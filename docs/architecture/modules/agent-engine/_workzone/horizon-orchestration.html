@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Agent Engine: External orchestration</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="horizon.css" />
+    <link rel="stylesheet" href="horizon-orchestration.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--horizon">
+      <div class="header">
+        <a class="back" href="../index.html">← Agent Engine</a>
+        <span class="hz-eyebrow">Beyond the horizon</span>
+        <h1 class="header__title">
+          External orchestration <span class="iter v2">v2</span>
+        </h1>
+        <div class="header__sub">agent-engine · beyond the horizon</div>
+      </div>
+
+      <!-- ── hero: the intrigue ── -->
+      <div class="hz-hero">
+        <p class="hz-hero__lead">
+          Achilles knowledge — <b>a node in the company's larger automation
+          pipeline</b>.
+        </p>
+        <p class="hz-hero__sub">
+          An external event wakes a workflow, the workflow asks Achilles, and
+          the answer moves on — into a task, an email, a dashboard. The agent
+          core never talks to third-party APIs directly: n8n handles the glue.
+        </p>
+      </div>
+
+      <!-- ════════════ Pipeline: Achilles as a node ════════════ -->
+      <div class="section" id="conveyor">
+        <h2 class="section__title">Achilles — one node in an n8n workflow</h2>
+        <div class="hz-stage">
+          <span class="hz-stage__cap">external n8n container</span>
+          <div class="hzo-flow">
+            <div class="hzo-col">
+              <div class="hzo-col__cap">triggers</div>
+              <div class="hzo-node"><span class="hzo-node__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 16.98h-5.99c-1.1 0-1.95.94-2.48 1.9A4 4 0 0 1 2 17c.01-.7.2-1.4.57-2" /><path d="m6 17 3.13-5.78c.53-.97.1-2.18-.5-3.1a4 4 0 1 1 6.89-4.06" /><path d="m12 6 3.13 5.73C15.66 12.7 16.9 13 18 13a4 4 0 0 1 0 8" /></svg></span>Webhook</div>
+              <div class="hzo-node"><span class="hzo-node__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2" /><path d="M5 3 2 6" /><path d="m22 6-3-3" /><path d="M6.38 18.7 4 21" /><path d="M17.64 18.67 20 21" /></svg></span>Schedule</div>
+              <div class="hzo-node"><span class="hzo-node__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /></svg></span>Event in chat</div>
+            </div>
+
+            <span class="hzo-arr">▸</span>
+
+            <div class="hzo-self">
+              <span class="hzo-self__name">⬡ Achilles</span>
+              <span class="hzo-self__sub">
+                knowledge query · agent run — answers with facts from the graph
+              </span>
+            </div>
+
+            <span class="hzo-arr">▸</span>
+
+            <div class="hzo-col">
+              <div class="hzo-col__cap">actions</div>
+              <div class="hzo-node"><span class="hzo-node__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M12 11h4" /><path d="M12 16h4" /><path d="M8 11h.01" /><path d="M8 16h.01" /></svg></span>Task in tracker</div>
+              <div class="hzo-node"><span class="hzo-node__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" /></svg></span>Email / report</div>
+              <div class="hzo-node"><span class="hzo-node__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></svg></span>Dashboard</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── foot: closing line + tie to the v1 boundary ── -->
+      <div class="hz-foot">
+        <span>
+          <b>The core stays clean.</b> All cross-system logic lives outside, in
+          the workflow.
+        </span>
+        <a href="stack.html" class="xref-page">Stack and structure</a>
+      </div>
+    </div>
+  </body>
+</html>

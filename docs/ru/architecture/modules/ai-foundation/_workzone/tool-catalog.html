@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — AI Foundation: Каталог инструментов</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="tool-catalog.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← AI Foundation</a>
+        <h1 class="header__title">Каталог инструментов</h1>
+        <div class="header__sub">ai-foundation · workzone</div>
+      </div>
+
+      <div class="draft-notice">
+        <strong>Прогноз схемы.</strong>
+        Дом таблицы
+        <a href="data-model.html#tools" class="xref-page"><code>tools</code></a>
+        — в модели данных этого модуля; связь выбора агента
+        (<a href="../../agent-engine/_workzone/data-model.html#agent-tools" class="xref-module"><code>agent_tools</code></a>)
+        — в Agent Engine. Ниже — концепция, не контракт API.
+      </div>
+
+      <p class="desc">
+        <strong>Инструмент</strong> — вызываемая функция, которую платформа даёт
+        модели как tool-schema. Каталог инструментов держит Admin.
+      </p>
+
+      <!-- ════════════════ MENTAL MODEL ════════════════ -->
+      <div class="tc-hero">
+        <div class="tc-flow">
+          <div class="tc-node tc-node--model">
+            <span class="tc-node__g">✦</span>
+            <span class="tc-node__t">Модель</span>
+            <span class="tc-node__s">зовёт по имени</span>
+          </div>
+          <div class="tc-edge">
+            <span class="tc-edge__arr">──▶</span>
+            <span class="tc-edge__lbl">даём как tool-schema</span>
+          </div>
+          <div class="tc-node tc-node--tool">
+            <span class="tc-node__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z" /></svg></span>
+            <span class="tc-node__t">Инструмент</span>
+            <span class="tc-node__s">имя · параметры · тело</span>
+          </div>
+          <div class="tc-edge">
+            <span class="tc-edge__arr">──▶</span>
+            <span class="tc-edge__lbl">результат в контекст</span>
+          </div>
+          <div class="tc-node">
+            <span class="tc-node__g">↩</span>
+            <span class="tc-node__t">Ответ</span>
+            <span class="tc-node__s">модель продолжает</span>
+          </div>
+        </div>
+        <div class="tc-hero__foot">
+          <span><b>Каталог</b> управляет набором — что включено · видит чат · разрешено агентам</span>
+          <span><b>Исполнение</b> — общий
+            <a href="../../agent-engine/_workzone/harness.html#primitive" class="xref-module">tool-calling харнесс</a>, не здесь</span>
+        </div>
+      </div>
+
+      <!-- ════════════════ КОНЦЕПЦИЯ ════════════════ -->
+      <div class="section" id="concept">
+        <div class="section__title">
+          Инструмент против промпта
+          <a href="prompt-library.html#tool-contract" class="xref-badge xref-badge--page">→ Тексты prompt</a>
+        </div>
+        <p class="desc">Разные сущности, их не путать.</p>
+        <div class="tc-vs">
+          <div class="tc-vs__col tc-vs__col--accent">
+            <div class="tc-vs__head">
+              <span class="tc-vs__name">Инструмент</span>
+              <span class="tc-vs__kind">функция</span>
+            </div>
+            <ul class="tc-vs__lines">
+              <li class="tc-vs__line">имя · параметры · тело</li>
+              <li class="tc-vs__line">подаётся как структурированная tool-schema</li>
+              <li class="tc-vs__line">модель зовёт по имени → результат в контекст</li>
+            </ul>
+          </div>
+          <div class="tc-vs__col tc-vs__col--alt">
+            <div class="tc-vs__head">
+              <span class="tc-vs__name">Промпт</span>
+              <span class="tc-vs__kind">текст</span>
+            </div>
+            <ul class="tc-vs__lines">
+              <li class="tc-vs__line">инструкция, что и как делать</li>
+              <li class="tc-vs__line">направляет поведение, не вызывается</li>
+            </ul>
+          </div>
+        </div>
+        <p class="tc-vs__take">
+          Схема инструмента приходит из <b>структурированного источника</b>, не
+          из прозы админа — контракт вызова надёжен и не ломается правкой текста.
+        </p>
+      </div>
+
+      <!-- ════════════════ ИСТОЧНИКИ · РЕЕСТР ════════════════ -->
+      <div class="section" id="sources">
+        <div class="section__title">
+          Откуда берётся инструмент — реестр типов
+          <a href="../../harvester/_workzone/connectors.html#registry" class="xref-module">→ Реестр коннекторов</a>
+        </div>
+        <p class="desc">
+          Каталог открытый; механизм — <strong>реестр типов</strong>, зеркало
+          реестра коннекторов Harvester: тип объявляет себя классом (имя ·
+          tool-schema · вид credential · тело) и саморегистрируется.
+        </p>
+        <p class="tc-origin">
+          <b>тип</b> — класс в коде, саморегистрируется &nbsp;──▶&nbsp;
+          <b>экземпляр</b> — строка в
+          <a href="data-model.html#tools" class="xref-page"><code>tools</code></a>
+          (флаги + ключ)
+        </p>
+        <div class="tc-src">
+          <div class="tc-src__card">
+            <div class="tc-src__name"><code>preset</code> <span class="iter v1">v1</span></div>
+            <div class="tc-src__desc">
+              Встроенные read-only классы платформы: <code>web_search</code>,
+              <code>fetch_url</code>.
+            </div>
+          </div>
+          <div class="tc-src__card">
+            <div class="tc-src__name"><code>custom</code> <span class="iter v1">v1</span></div>
+            <div class="tc-src__desc">
+              Свой класс организации по тому же контракту — pip-пакетом или в
+              дереве, в папке <code>custom/</code> (<a href="#custom" class="xref-anchor">свой инструмент</a>).
+            </div>
+          </div>
+          <div class="tc-src__card tc-src__card--v2">
+            <div class="tc-src__name"><code>mcp · openapi</code> <span class="iter v2">v2</span></div>
+            <div class="tc-src__desc">
+              Внешний самоописывающийся сервер, без кода.
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          <strong>Провайдер за интерфейсом.</strong> <code>web_search</code> —
+          один инструмент для модели (<code>web_search(query)</code>), а провайдер
+          (Tavily · Brave · Serper · Google CSE) выбирает <strong>админ на
+          экране</strong>, не конфиг-файлом: выбор ложится в несекретную колонку
+          <code>config</code>, ключ — в <code>credential_enc</code>. Модель видит
+          одну стабильную схему; чем её исполнить — дело адаптера. Тот же приём,
+          что у провайдеров <code>ai_models</code> и встроенного эмбеддера.
+        </p>
+        <p class="note">
+          Секрет инструмента (API-ключ) — не в <code>config</code> (JSONB), а в
+          отдельной колонке <code>credential_enc</code>: шифротекст AES-256-GCM
+          <a href="../../auth-security/_workzone/protection.html#crypto-core" class="xref-module">крипто-ядром Auth</a>,
+          наружу — только флаг «задан». Как ключи провайдеров и SMTP.
+          Человекочитаемое имя идёт через <code>t()</code>, в БД — только ключ.
+        </p>
+      </div>
+
+      <!-- ════════════════ СВОЙ ИНСТРУМЕНТ ════════════════ -->
+      <div class="section" id="custom">
+        <div class="section__title">
+          Свой инструмент — кодом
+          <a href="../../harvester/_workzone/connectors.html#custom" class="xref-module">→ Свой коннектор</a>
+        </div>
+        <p class="desc">
+          Организация добавляет свой инструмент одним классом по контракту:
+          тело — метод <code>call</code>, tool-schema — в манифесте,
+          регистрация декоратором.
+        </p>
+        <div class="tc-ide">
+          <div class="tc-ide__pane">
+            <div class="tc-ide__tab"># куда положить свой класс — два пути</div>
+<pre class="tc-code"><span class="kw">✦ канонический</span>
+  pip-пакет <span class="cm">→</span> entry point  achilles.tools
+  <span class="cm">ядро не трогаешь · апгрейд платформы чист</span>
+
+<span class="kw">○ быстрый dev</span>
+  в дереве <span class="cm">→</span> achilles/ai_foundation/tools/custom/
+  <span class="cm">своя папка · не мешает встроенным</span>
+</pre>
+          </div>
+        </div>
+        <ol class="tc-recipe">
+          <li class="tc-recipe__step"><b>1</b> подкласс · <code>call</code></li>
+          <li class="tc-recipe__step"><b>2</b> манифест · схема</li>
+          <li class="tc-recipe__step"><b>3</b> @register_tool</li>
+        </ol>
+        <div class="tc-ide">
+          <div class="tc-ide__pane">
+            <div class="tc-ide__tab">web_search.py</div>
+<pre class="tc-code"><span class="cm"># 3 · discovery подхватит сам</span>
+<span class="kw">@register_tool</span>
+<span class="kw">class</span> WebSearchTool(BaseTool):       <span class="cm"># контракт: схема + call</span>
+
+    manifest = ToolManifest(             <span class="cm"># определяет, что видит модель</span>
+        name       = "web_search",       <span class="cm"># ключ + имя в tool-schema</span>
+        params     = {"query": str},     <span class="cm"># аргументы для модели</span>
+        access     = ReadOnly,           <span class="cm"># read_only · write</span>
+        config     = [Provider],         <span class="cm"># Tavily · Brave · Serper · CSE</span>
+        credential = [ApiKey],           <span class="cm"># → credential_enc</span>
+    )
+
+    <span class="kw">def</span> call(self, args):               <span class="cm"># тело инструмента</span>
+        <span class="kw">return</span> provider.search(args.query)
+
+    <span class="kw">def</span> probe(self):                     <span class="cm"># кнопка «Протестировать» → status</span>
+        <span class="kw">return</span> provider.ping()           <span class="cm"># active · error</span>
+<span class="tc-warn"># <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg> любым способом ниже — в дереве или pip-пакетом — класс виден
+#   только после пересборки образа и передеплоя контейнера:
+#   discovery читает классы на старте процесса, не из Admin</span>
+</pre>
+          </div>
+          <div class="tc-ide__pane tc-ide__pane--tree">
+            <div class="tc-ide__tab">achilles/ai_foundation/tools/ · в дереве</div>
+<pre class="tc-tree">├── base.py        <span class="cm">BaseTool — контракт: манифест + call</span>
+├── registry.py    <span class="cm">discovery: пакет + entry points</span>
+├── web_search.py  <span class="cm">┐ встроенные</span>
+├── fetch_url.py   <span class="cm">┘ пресеты (read-only)</span>
+└── custom/        <span class="cm">← платформа папку не трогает</span>
+<span class="tc-tree__new">    └── jira.py    ← свой класс сюда</span>
+</pre>
+          </div>
+          <div class="tc-ide__pane tc-ide__pane--tree">
+            <div class="tc-ide__tab">achilles-jira-tool/ · отдельный pip-пакет</div>
+<pre class="tc-tree"><span class="cm"># ядро не трогаем — discovery найдёт через entry point</span>
+<span class="tc-tree__new">├── tool.py         ← тот же класс по контракту</span>
+└── pyproject.toml  <span class="cm">[project.entry-points."achilles.tools"]</span>
+</pre>
+          </div>
+        </div>
+        <p class="note">
+          Контракт <strong>нейтрален</strong>: read-only — политика пресетов
+          платформы, а свой класс может писать — под ответственность
+          организации, как custom-коннектор (общий процесс, без песочницы;
+          оператор сам решает, что ставить). Контракт <code>&lt; 1.0</code> не
+          заморожен — пакет ребилдится под версию платформы.
+        </p>
+      </div>
+
+      <!-- ════════════════ ПОЯВЛЕНИЕ В КАТАЛОГЕ ════════════════ -->
+      <div class="section" id="discovery">
+        <div class="section__title">Появление в каталоге — само</div>
+        <p class="desc">
+          Список на экране — <strong>живой реестр типов</strong>, не таблица:
+          таблица <a href="data-model.html#tools" class="xref-page"><code>tools</code></a>
+          хранит только состояние (флаги + ключ) и связана с типом по
+          <code>name</code>. Поэтому новый класс встаёт в каталог сам — без
+          миграции и правок UI.
+        </p>
+        <ul class="stk-dec__list">
+          <li>
+            Добавили класс → discovery на старте → строка в списке,
+            <strong>выключенная</strong> (нет записи в <code>tools</code> = обе
+            отметки <code>false</code>, <a href="#governance" class="xref-anchor">допуск</a>).
+          </li>
+          <li>
+            Запись в <code>tools</code> заводится <strong>лениво</strong> — при
+            первом включении или вводе ключа.
+          </li>
+          <li>
+            Убрали пакет → тип уходит из списка сам; осиротевшая запись по
+            <code>name</code> просто не сматчится и не мешает.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ════════════════ ПОВЕРХНОСТИ ════════════════ -->
+      <div class="section" id="surfaces">
+        <div class="section__title">
+          Две поверхности — чат и агенты
+          <a href="../../agent-engine/_workzone/harness.html#params" class="xref-module">→ Tool-calling харнесс</a>
+        </div>
+        <p class="desc">
+          Один каталог питает обе поверхности, но контур у них разный.
+        </p>
+        <div class="tc-vs">
+          <div class="tc-vs__col tc-vs__col--accent">
+            <div class="tc-vs__head"><span class="tc-vs__name">Чат</span></div>
+            <span class="tc-vs__cycle">один раунд → ответ</span>
+            <ul class="tc-vs__lines">
+              <li class="tc-vs__line">KS-поиск + инструменты, включённые админом (<code>chat_enabled</code>)</li>
+              <li class="tc-vs__line">1..N инструментов параллельно, напр. база знаний + web</li>
+            </ul>
+          </div>
+          <div class="tc-vs__col tc-vs__col--alt">
+            <div class="tc-vs__head"><span class="tc-vs__name">Агент</span></div>
+            <span class="tc-vs__cycle">петля ↻ до потолка</span>
+            <ul class="tc-vs__lines">
+              <li class="tc-vs__line">ядро из 3 KS-инструментов (<code>search</code> · <code>graph</code> · <code>sql</code>, всегда, locked)</li>
+              <li class="tc-vs__line">+ выбранные владельцем из allowlist</li>
+            </ul>
+          </div>
+        </div>
+        <p class="note">
+          KS-ядро у агента не снимается. Снятие <em>добавленного</em>
+          инструмента — <strong>мягкая деградация</strong>: агент продолжает на
+          ядре и в гейт готовности <em>не</em> входит (в отличие от снятия
+          модели, которое агента останавливает).
+        </p>
+        <p class="note">
+          <strong>«Locked» — про конфигурацию, не про безусловность.</strong>
+          «Всегда» и «locked» у ядра значат «нельзя выключить вручную ни админу,
+          ни владельцу», а не «присутствует при любом состоянии базы». Есть
+          вторая, производная ось: при пустой базе
+          (<a href="../../knowledge-store/_workzone/hybrid-search.html#emptiness" class="xref-module"
+            ><code>is_empty</code></a>) KS-инструменты не подаются вовсе — искать
+          нечем. Это единый принцип на обе поверхности: и
+          <code>search_knowledge</code> у чата, и ядро у агента отпадают, пока в
+          базе нет данных; решает это общий
+          <a href="../../agent-engine/_workzone/harness.html#params" class="xref-module"
+            >харнесс</a>, а не отметка админа. Не «снятие» и не деградация
+          конфигом — просто отсутствие данных; наполнится база — ядро вернётся
+          само.
+        </p>
+      </div>
+
+      <!-- ════════════════ УПРАВЛЕНИЕ ════════════════ -->
+      <div class="section" id="governance">
+        <div class="section__title">
+          Допуск: две независимые отметки
+          <a href="../../admin-panel/_wireframes/tools.html" class="xref-badge">→ Экран Инструменты AI</a>
+        </div>
+        <p class="desc">
+          Каталог — лишь реестр типов; допуск инструмента к работе задают
+          <strong>две независимые отметки</strong>, по одной на поверхность. Обе
+          по умолчанию выключены — инструмент входит в работу только осознанным
+          действием админа; активен он, пока подан хоть одной.
+        </p>
+        <div class="tc-flags">
+          <div class="tc-flag">
+            <div class="tc-flag__top">
+              <span class="tc-flag__name">Чат</span>
+              <span class="tc-switch">
+                <span class="tc-switch__track"><span class="tc-switch__knob"></span></span>
+                <span class="tc-switch__lbl">OFF</span>
+              </span>
+            </div>
+            <div class="tc-flag__desc"><code>chat_enabled</code> — инструмент виден чату.</div>
+            <div class="tc-flag__who">ставит админ</div>
+          </div>
+          <div class="tc-flag">
+            <div class="tc-flag__top">
+              <span class="tc-flag__name">Allowlist агентов</span>
+              <span class="tc-switch">
+                <span class="tc-switch__track"><span class="tc-switch__knob"></span></span>
+                <span class="tc-switch__lbl">OFF</span>
+              </span>
+            </div>
+            <div class="tc-flag__desc"><code>agents_allowed</code> — разрешён к выбору владельцем в редакторе агента.</div>
+            <div class="tc-flag__who">ставит админ</div>
+          </div>
+        </div>
+        <p class="note">
+          Включение инструмента и смена его настройки (провайдер, ключ) — это
+          админ-действие: оно ложится в <a href="../../admin-panel/_wireframes/audit-log.html" class="xref-module">аудит-журнал</a>
+          наравне с прочими изменениями доступа (сами вызовы модели туда не
+          льются — журнал держит значимые события, не каждый запрос). Дефолт OFF
+          и аудит включения — периметр осторожности: внешний выход открывается
+          явно и под наблюдением. Лимит / бюджет вызовов <code>web_search</code> —
+          <span class="iter v2">v2</span>.
+        </p>
+      </div>
+
+      <!-- ════════════════ ПРОВЕРКА РАБОТОСПОСОБНОСТИ ════════════════ -->
+      <div class="section" id="health">
+        <div class="section__title">
+          Проверка работоспособности — кнопка у админа
+          <a href="../../admin-panel/_wireframes/ai-models.html#providers" class="xref-badge">→ Так же у AI-моделей</a>
+        </div>
+        <p class="desc">
+          Ключ задан, провайдер выбран — но рабочий ли он? Админ не должен
+          узнавать о протухшем ключе из жалоб пользователей. У каждого инструмента
+          с внешним выходом — кнопка <strong>«Протестировать»</strong>: платформа
+          зовёт <code>probe()</code> типа (лёгкий пинг провайдера, не настоящий
+          запрос модели) и сохраняет итог. Зеркало проверки соединения у
+          <a href="../../admin-panel/_wireframes/ai-models.html#providers" class="xref-module">провайдеров AI-моделей</a>.
+        </p>
+        <div class="tc-status">
+          <span class="tc-pill tc-pill--active"><span class="tc-pill__dot"></span>active</span>
+          <span class="tc-pill tc-pill--error"><span class="tc-pill__dot"></span>error</span>
+          <span class="tc-pill tc-pill--unchecked"><span class="tc-pill__dot"></span>unchecked</span>
+        </div>
+        <ul class="stk-dec__list">
+          <li>
+            Итог пишется в <a href="data-model.html#tools" class="xref-page"><code>tools.status</code></a>
+            и <code>last_check_at</code> — состояние держится между заходами, на
+            экране это пилюля «проверено · N назад» либо «ошибка».
+          </li>
+          <li>
+            Кнопка живёт у инструментов с внешним выходом: <code>web_search</code>
+            (провайдер + ключ), <code>fetch_url</code> (доступность egress). Ядро
+            KS не тестируется — оно внутреннее и всегда доступно.
+          </li>
+          <li>
+            <code>probe()</code> — часть контракта типа, рядом с <code>call</code>;
+            свой инструмент организации объявляет её сам и встаёт в проверку
+            наравне с пресетами.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ════════════════ MCP · v2 ════════════════ -->
+      <div class="section" id="mcp">
+        <div class="section__title">
+          Внешние серверы — MCP <span class="iter v2">v2</span>
+        </div>
+        <p class="desc">
+          Подключение внешних MCP-серверов и инструментов записи — следующая
+          итерация. Зафиксированный дизайн: <strong>per-user OAuth</strong>
+          (каждый пользователь авторизуется сам), ACL держит сам сервер, доступ
+          <strong>read-only</strong> через курирование админом. В макетах — серые
+          неактивные заглушки.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

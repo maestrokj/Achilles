@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Stack and structure</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../swimlane.css" />
+    <link rel="stylesheet" href="stack.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Stack and structure</h1>
+        <div class="header__sub">admin panel · workzone</div>
+      </div>
+
+      <!-- ════════════ LANE: BACKEND ════════════ -->
+      <div class="swl-lane swl-lane--be">
+        <div class="swl-lane__rail">
+          <span class="swl-lane__tag">Backend</span>
+        </div>
+        <div class="swl-lane__body">
+          <!-- col: stack -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg> stack — libraries</div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Reuses the core</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill swl-pill--std" data-tip="ASGI web framework">FastAPI</span>
+                <span class="swl-pill swl-pill--std" data-tip="Pydantic DTOs">Pydantic v2</span>
+                <span class="swl-pill swl-pill--std" data-tip="ORM, async mode">SQLAlchemy · async</span>
+                <span class="swl-pill swl-pill--std" data-tip="async PostgreSQL driver">asyncpg</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- col: structure -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head">
+              <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.55l-.42-.85a1 1 0 0 0-.92-.6H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M3 5a2 2 0 0 0 2 2h3" /><path d="M3 3v13a2 2 0 0 0 2 2h3" /></svg> structure — files · <code>achilles/admin/</code>
+            </div>
+<pre class="file-tree">
+admin/              <span class="dim">module = a separate package</span>
+├── *.py            <span class="dim">constants · schemas · exceptions</span>
+├── services/       <span class="dim">dashboard (aggregates all modules) · settings — a folder from the start</span>
+└── routes/         <span class="dim">/admin/* endpoints — a folder from the start</span>
+</pre>
+
+            <details class="swl-note">
+              <summary>
+                Changes in existing files
+              </summary>
+              <div class="swl-note__body">
+                <code>core/models.py</code> (+ PlatformSettings),
+                <code>config.py</code> (+ platform settings),
+                <code>api/router.py</code> (+ include admin routes).
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════ LANE: FRONTEND ════════════ -->
+      <div class="swl-lane swl-lane--fe">
+        <div class="swl-lane__rail">
+          <span class="swl-lane__tag">Frontend</span>
+        </div>
+        <div class="swl-lane__body">
+          <!-- col: stack -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg> stack — libraries</div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Core</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="UI library">React</span>
+                <span class="swl-pill" data-tip="server state / request cache">TanStack Query</span>
+                <span class="swl-pill" data-tip="client-side routing">react-router-dom</span>
+                <span class="swl-pill" data-tip="HTTP client with auth interceptors">ky · HTTP + auth</span>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Tables</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="data grid — sorting, filtering, pagination; shadcn DataTable sits on top of it">@tanstack/react-table</span>
+              </div>
+            </div>
+
+            <div class="swl-grp swl-grp--v2">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Charts</span>
+                <span class="iter v2">v2</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="Dashboard: sync activity, storage usage, metrics; shadcn Charts are on recharts too">recharts</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- col: structure -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head">
+              <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.55l-.42-.85a1 1 0 0 0-.92-.6H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M3 5a2 2 0 0 0 2 2h3" /><path d="M3 3v13a2 2 0 0 0 2 2h3" /></svg> structure — files · <code>src/features/admin/</code>
+            </div>
+<pre class="file-tree">
+features/admin/         <span class="dim">module = a separate package</span>
+├── *.ts / *.tsx        <span class="dim">types · constants · AdminLayout (shell)</span>
+├── components/         <span class="dim">shared admin UI</span>
+└── &lt;section&gt;/          <span class="dim">a folder per sidebar section — dashboard · users · security · settings · …</span>
+</pre>
+
+            <details class="swl-note">
+              <summary>
+                Sub-features — a folder per sidebar section
+              </summary>
+              <div class="swl-note__body">
+                Each section is its own folder with its own <code>api.ts</code>,
+                <code>types.ts</code>, pages, and local
+                <code>components/</code>. A new section = a new folder, no
+                reorganization.
+              </div>
+            </details>
+
+            <details class="swl-note">
+              <summary>
+                AdminLayout — shell of all admin routes
+              </summary>
+              <div class="swl-note__body">
+                Wraps all admin routes; shared UI components live in the root
+                <code>components/</code>. The shell itself (sidebar + header +
+                <code>Outlet</code>) and role-based sidebar visibility are in
+                <a class="xref-page" href="../_wireframes/layout.html">layout</a>.
+              </div>
+            </details>
+
+            <details class="swl-note">
+              <summary>
+                Principle — the frontend calls domain routes
+              </summary>
+              <div class="swl-note__body">
+                The frontend calls the domain modules' routes directly (auth,
+                harvester, etc.). Only <code>admin/dashboard/</code>
+                aggregates through its own backend service.
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

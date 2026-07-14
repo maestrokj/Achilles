@@ -1,0 +1,370 @@
+/* Harvester — pipeline workzone diagrams.
+   The data descent: Extract → Transform → Load. Reuses the stk-* kit for the
+   three stage bands; adds per-stage accent presets and the page-only
+   primitives — the Transform sub-chain (pl-chain / pl-step), the
+   highlighted embed stitch to ai-models, the terminal sink, and the two
+   contract cards (RawItem / Entity).
+   Loaded by _workzone/pipeline.html on top of ../../module.css
+   + ../../layered-stack.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* Shared inline arrow used by the chain, sink and contract row. */
+.pl-arrow {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ── Stage accent presets — extract (cool) → transform (accent) → load ── */
+.stk-layer--extract {
+  --stk-lc: var(--s2);
+  --stk-lc-pale: var(--s2-pale);
+}
+.stk-layer--transform {
+  --stk-lc: var(--accent);
+  --stk-lc-pale: var(--tint-8);
+}
+.stk-layer--load {
+  --stk-lc: var(--s3);
+  --stk-lc-pale: var(--s3-pale);
+}
+
+/* ── Transform sub-chain — steps in one vertical lane inside the band ── */
+.pl-chain {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+/* Parameter-homes decision sits below the chain, full width of the band
+   (the body is a wrap-flex, so claim the whole row). */
+.stk-layer__body > .decision-box {
+  flex: 1 1 100%;
+  margin-bottom: 0;
+}
+
+.pl-step {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius-md);
+}
+
+/* Landing highlight when a cross-link deep-links to a step — reuses the
+   .section:target keyframes (module.css). */
+.pl-step[id] {
+  scroll-margin-top: 28vh;
+}
+
+.pl-step[id]:target {
+  animation: target-highlight 2.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-step[id]:target {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+}
+
+/* normalize — the one source-specific step: dashed edge marks it apart. */
+.pl-step--src {
+  border-left-style: dashed;
+  border-left-color: var(--s2);
+}
+
+/* contextualize — a v2 step laid in but not built: muted + dashed all round. */
+.pl-step--v2 {
+  border-style: dashed;
+  border-color: var(--border);
+  border-left-color: var(--text-muted);
+  background: var(--paper);
+  opacity: 0.72;
+}
+.pl-step--v2 .pl-step__n {
+  color: var(--text-muted);
+  border-color: var(--text-muted);
+}
+.pl-step--v2 .pl-step__name {
+  color: var(--text-dim);
+}
+
+.pl-step__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.pl-step__n {
+  flex: 0 0 auto;
+  width: 1.45rem;
+  height: 1.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--paper);
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+}
+
+.pl-step__name {
+  font-family: var(--mono);
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.pl-step__d {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+/* ── Badge + one-liner list — the reader scans the picks instead of
+      reading prose. Used by chunk (split strategies) and by Load
+      (storage targets, color-coded per paradigm below). ── */
+.pl-mech {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pl-mech__row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.pl-mech__badge {
+  flex: 0 0 auto;
+  min-width: 4.6rem;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  background: var(--tint-8);
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+  padding: 0.12rem 0.4rem;
+}
+
+.pl-mech__d {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* Load storage targets reuse pl-mech with per-paradigm badge colors,
+   matching data-model's storage fan-out; vector keeps the base accent. */
+.pl-mech__badge--rel {
+  color: var(--s3);
+  background: var(--s3-pale);
+  border-color: var(--s3);
+}
+.pl-mech__badge--graph {
+  color: var(--s2);
+  background: var(--s2-pale);
+  border-color: var(--s2);
+}
+
+/* Connector tick between two steps — a short centred down-arrow stem. */
+.pl-link {
+  align-self: center;
+  width: 0;
+  height: 16px;
+  border-left: 2px solid var(--dot);
+}
+
+/* embed — the key stitch to ai-models: accent fill + glow lift it out. */
+.pl-step--embed {
+  border: 1.5px solid var(--accent);
+  border-left-width: 4px;
+  background: var(--tint-8);
+  box-shadow: var(--card-shadow);
+}
+
+.pl-step--embed .pl-step__n {
+  color: var(--paper);
+  background: var(--accent);
+}
+
+/* ── Terminal sink — RawItem → Entity → saved, foot of the Load band ── */
+.stk-sink {
+  flex: 1 1 100%;
+  margin-top: 0.3rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--s3);
+}
+
+/* Контракты идут вплотную к стеку стадий, а .section даёт отступ только
+   снизу — добавляем воздух сверху, чтобы секция не сливалась со стеком. */
+.stk-stage + .section {
+  margin-top: 2rem;
+}
+
+/* ── Contracts — two cards joined by an arrow (RawItem → Entity) ── */
+.pl-contracts {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.pl-contract {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1rem;
+  border-left: 3px solid var(--s2);
+}
+
+.pl-contract--entity {
+  border-left-color: var(--accent);
+}
+
+.pl-contract__name {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.pl-contract__name code {
+  font-size: 0.88rem;
+}
+
+.pl-contract__role {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.pl-contract__d {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+/* ── Connector marker — clickable twin of .ai-tag (shared.css) ──
+   Flags the two source-specific steps (extract, normalize) as living in the
+   connector; links to its contract. Extract hue (--s2) sets it apart from the
+   accent ai-tag, and being an <a> it reacts on hover (the marker is the link). */
+.conn-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.16rem 0.42rem 0.16rem 0.34rem;
+  border-radius: var(--pill-radius);
+  color: var(--s2);
+  background: var(--s2-pale);
+  border: 1px solid transparent;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+}
+
+.conn-tag:hover {
+  border-color: var(--s2);
+  transform: translateY(-1px);
+}
+
+/* Hollow socket dot — a "port" glyph, the connector counterpart to the
+   ai shimmer; drawn, not an emoji, to sit cleanly in the mono pill. */
+.conn-tag__icon {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--s2);
+  border-radius: 50%;
+  background: transparent;
+}
+
+/* ── Cache marker — static twin of .ai-tag (no link, no hover) ──
+   Flags that embed reuses stored vectors: embeddings are memoized by the
+   fragment's content hash, so unchanged fragments skip the model. The "#"
+   glyph nods to the hash; the load hue (--s3) ties it to the idempotency the
+   Load band guarantees. */
+.cache-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.16rem 0.42rem 0.16rem 0.34rem;
+  border-radius: var(--pill-radius);
+  color: var(--s3);
+  background: var(--s3-pale);
+  white-space: nowrap;
+}
+
+/* Hash glyph — the content hash that keys the cache, drawn as a mono "#". */
+.cache-tag__icon {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 9px;
+  height: 9px;
+  font-size: 0.78rem;
+  line-height: 1;
+}
+.cache-tag__icon::before {
+  content: "#";
+}
+
+/* Arrow gutter between the two contract cards. */
+.pl-contract-arrow {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 0;
+  height: 0;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-left: 9px solid var(--dot);
+}
+
+@media (max-width: 640px) {
+  .pl-contracts {
+    flex-direction: column;
+  }
+  .pl-contract {
+    border-left-width: 3px;
+  }
+  .pl-contract-arrow {
+    align-self: center;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-top: 9px solid var(--dot);
+    border-bottom: 0;
+  }
+}

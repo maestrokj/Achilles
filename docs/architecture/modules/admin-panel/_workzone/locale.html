@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Language and region</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Language and region</h1>
+        <div class="header__sub">admin panel · workzone</div>
+      </div>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ── Where the locale for display comes from ── -->
+          <div class="stk-layer stk-layer--config" id="locale-resolution">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Locale resolution</span>
+              <span class="stk-layer__role"
+                >timezone · UI language</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <!-- The main rule: priority order. -->
+              <div class="stk-dec" id="resolution-chain">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Priority chain</span>
+                </div>
+                <div class="stk-dec__d">
+                  When displaying dates, times, the interface language, and formats, the frontend
+                  takes the first value that is set:
+                  <b
+                    >the user's personal override → the organization default → the browser
+                    locale</b
+                  >. The locale affects display only, not the data itself.
+                </div>
+              </div>
+
+              <!-- Level 1: organization (admin). -->
+              <div class="stk-dec" id="org-default">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Organization default</span>
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_wireframes/platform-settings.html#org-defaults"
+                    >→ Platform Settings</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Owner / Admin sets <code>timezone</code>,
+                  <code>locale</code>, <code>date_format</code> in
+                  <a class="xref-page" href="data-model.html#data-model"
+                    ><code>platform_settings</code></a
+                  >
+                  (singleton). It applies to everyone who hasn't overridden it — and
+                  serves as the reference point for sync schedules, agents, and digests.
+                </div>
+              </div>
+
+              <!-- Level 2: user (profile). -->
+              <div class="stk-dec" id="user-override">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Personal override</span>
+                  <a
+                    class="xref-badge"
+                    href="../../auth-security/_wireframes/profile-account.html#locale"
+                    >→ Profile</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  A user overrides it for themselves in their profile. Stored in
+                  per-user <code>timezone</code> / <code>locale</code> /
+                  <code>date_format</code> fields on
+                  <a
+                    class="xref-module"
+                    href="../../auth-security/_workzone/data-model.html#data-model"
+                    ><code>users</code></a
+                  >
+                  (nullable; <code>NULL</code> = inherit the organization
+                  default). An unset field falls through transparently to the
+                  organization level — you can override even a single field, not all three.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

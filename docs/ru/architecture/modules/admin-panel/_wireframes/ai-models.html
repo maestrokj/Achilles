@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: AI-модели</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">AI-модели</h1>
+        <div class="header__sub">
+          admin panel · макеты · ai
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Экран рендерится в контентной области каркаса">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Загрузка экрана — каркас (skeleton)">
+              <span class="in-load__icon"></span>загрузка
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">Провайдеры, каталог моделей и назначение по функциям. Весь расход AI — токены по людям и счёт по моделям — на экране <a href="usage.html" class="xref-page">Расходы AI</a>.</p>
+
+      <!-- ═══ Провайдеры ═══ -->
+      <div class="section" id="providers">
+        <div class="section__title">Провайдеры</div>
+        <p class="note">Подключения к источникам моделей — cloud-сервисы по API-ключу и локальные рантаймы по base URL. Платформенный эмбеддер присутствует всегда.</p>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">реестр провайдеров</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/ai-models
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/ai-models · Owner / Admin</span>
+                  </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-row wf-spread">
+                  <span class="wf-title">Провайдеры</span>
+                  <button class="wf-btn wf-btn--primary">
+
+                    Добавить провайдера
+                    <span class="wf-annot wf-annot--on-accent">1</span></button>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr>
+                      <th>Провайдер</th><th>Тип</th><th>Base URL</th><th>Ключ</th><th>Статус</th><th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Platform <span class="wf-annot">6</span></td>
+                      <td><span class="wf-chip">built-in</span></td>
+                      <td>http://embeddings:80</td>
+                      <td>—</td>
+                      <td><span class="wf-chip wf-chip--ok">active</span></td>
+                      <td><a class="wf-a wf-a--icon" title="Проверить соединение"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg></a> <span class="wf-sep">·</span> <span class="wf-chip__edit" title="Платформенный провайдер не удаляется"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span></td>
+                    </tr>
+                    <tr>
+                      <td>OpenAI</td>
+                      <td><span class="wf-chip">cloud</span></td>
+                      <td>api.openai.com</td>
+                      <td>••••a3f7</td>
+                      <td><span class="wf-chip wf-chip--ok">active</span> <span class="wf-annot">2</span></td>
+                      <td><a class="wf-a wf-a--icon" title="Проверить соединение"
+                          ><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg></a> <span class="wf-sep">·</span> ⋯ <span class="wf-annot">3</span></td>
+                    </tr>
+                    <tr>
+                      <td>Anthropic</td>
+                      <td><span class="wf-chip">cloud</span></td>
+                      <td>api.anthropic.com</td>
+                      <td>••••91kd</td>
+                      <td><span class="wf-chip wf-chip--ok">active</span></td>
+                      <td><a class="wf-a wf-a--icon" title="Проверить соединение"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg></a> <span class="wf-sep">·</span> ⋯</td>
+                    </tr>
+                    <tr>
+                      <td>Ollama (on-prem)</td>
+                      <td><span class="wf-chip">local</span> <span class="wf-annot">4</span></td>
+                      <td>http://gpu-01:11434</td>
+                      <td>—</td>
+                      <td><span class="wf-chip wf-chip--ok">active</span></td>
+                      <td><a class="wf-a wf-a--icon" title="Проверить соединение"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg></a> <span class="wf-sep">·</span> ⋯</td>
+                    </tr>
+                    <tr>
+                      <td>vLLM (research)</td>
+                      <td><span class="wf-chip">local</span></td>
+                      <td>http://vllm:8000</td>
+                      <td>—</td>
+                      <td><span class="wf-chip wf-chip--err">error</span> <span class="wf-annot">5</span></td>
+                      <td><a class="wf-a wf-a--icon" title="Проверить соединение"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg></a> <span class="wf-sep">·</span> ⋯</td>
+                    </tr>
+                    <tr class="wf-table__row--muted">
+                      <td>Google</td>
+                      <td><span class="wf-chip">cloud</span></td>
+                      <td>generativelanguage.googleapis.com</td>
+                      <td>••••0b2e</td>
+                      <td><span class="wf-chip">unchecked</span></td>
+                      <td><a class="wf-a wf-a--icon" title="Проверить соединение"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg></a> <span class="wf-sep">·</span> ⋯</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">⋯ меню провайдера</div>
+              <div class="wf-pop">
+                <button class="wf-btn">⋯</button>
+                <div class="wf-menu">
+                  <span class="wf-menu__item">Изменить</span>
+                  <span class="wf-menu__item">Проверить соединение</span>
+                  <hr class="wf-menu__sep" />
+                  <span class="wf-menu__item wf-menu__item--danger"><span class="wf-guarded">Удалить провайдера<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#irreversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a></span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-backdrop">
+            <div class="wf-gallery">
+              <div class="wf-frame">
+                <div class="wf-stage__caption">модал «добавить провайдера»</div>
+                <div class="wf-screen wf-screen--modal">
+                  <div class="wf-body">
+                    <div class="wf-stack">
+                      <span class="wf-title">Добавить провайдера</span>
+                      <div class="wf-field">
+                        <span class="wf-label">Тип</span>
+                        <div class="wf-input">
+                          Cloud (OpenAI / Anthropic / Google)
+                          <span class="wf-input__action">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                          </span>
+                        </div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Название</span>
+                        <div class="wf-input">OpenAI</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">API-ключ</span>
+                        <div class="wf-input wf-input--focus">sk-…</div>
+                        <span class="wf-hint">вводится один раз — обратно не показывается</span>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Endpoint (необязательно)</span>
+                        <div class="wf-input">api.openai.com</div>
+                        <span class="wf-hint">для прокси или своего развёртывания</span>
+                      </div>
+                      <div class="wf-row">
+                        <button class="wf-btn">Проверить соединение</button>
+                        <button class="wf-btn wf-btn--primary">Добавить</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Открывает модал добавления. После добавления каталог моделей провайдера (<a href="#model-discovery" class="xref-anchor">ниже</a>) заполняется автоматически.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Статус последней проверки соединения. «Проверить» поднимает
+              <a href="../../shared-ui/_wireframes/toasts.html" class="xref-module">тост</a>
+              с вердиктом.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Меню провайдера: изменить · проверить · удалить. «Удалить» запрещён, пока какая-то его модель назначена функции или входит в чат (<a href="#model-assignment" class="xref-anchor">назначение по функциям</a>).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              API-ключ показывается лишь маской; у локальных провайдеров его обычно нет.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              При ошибке провайдера его модели недоступны: затронутые
+              <a href="#model-assignment" class="xref-anchor">функции</a> ждут восстановления связи или переназначения Admin. Остальная платформа продолжает работать.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              <b>Platform</b> (<code>is_system</code>) — встроенный эмбеддер платформы, из коробки и без внешнего провайдера. Удалить нельзя, ключа нет.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Каталог провайдера и активация ═══ -->
+      <div class="section" id="model-discovery">
+        <div class="section__title">Каталог провайдера и активация</div>
+        <p class="note">Модели выбранного провайдера: discovery наполняет каталог автоматически, остальное Admin добавляет вручную. Из каталога модель включается в платформу прямо в строке.</p>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">каталог провайдера · discovery</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-row wf-spread">
+                  <span class="wf-row">
+                    <div class="wf-input">
+                      OpenAI
+                      <span class="wf-input__action">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                      </span>
+                    </div>
+                    <span class="wf-annot">1</span>
+                  </span>
+                  <span class="wf-row">
+                    <button class="wf-btn">Обновить</button>
+                    <button class="wf-btn wf-btn--primary">
+
+                      Добавить model ID
+                      <span class="wf-annot wf-annot--on-accent">2</span></button>
+                  </span>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr><th>Model ID</th><th>Название <span class="wf-annot">3</span></th><th>Тип</th><th>Источник</th><th></th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>gpt-4o</td>
+                      <td>GPT-4o <a class="wf-a wf-a--icon" title="Изменить название"
+                          ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></a></td>
+                      <td><a class="wf-chip" tabindex="0" title="Изменить тип">chat <span class="wf-chip__edit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                        ></a> <span class="wf-annot">4</span></td>
+                      <td><span class="wf-chip wf-chip--ok">discovered</span></td>
+                      <td><span class="wf-guarded"
+                          >Выключить<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                        ></span> <span class="wf-annot">5</span></td>
+                    </tr>
+                    <tr>
+                      <td>text-embedding-3-large</td>
+                      <td>Embedding 3 Large <a class="wf-a wf-a--icon" title="Изменить название"
+                          ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></a></td>
+                      <td><a class="wf-chip" tabindex="0" title="Изменить тип">embedding <span class="wf-chip__edit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                        ></a> <span class="wf-chip">3072-dim</span> <span class="wf-annot">6</span></td>
+                      <td><span class="wf-chip wf-chip--ok">discovered</span></td>
+                      <td><span class="wf-guarded"
+                          >Выключить<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                        ></span></td>
+                    </tr>
+                    <tr class="wf-table__row--muted">
+                      <td>gpt-4o-mini</td>
+                      <td>gpt-4o-mini</td>
+                      <td><a class="wf-chip" tabindex="0" title="Изменить тип"
+                          >chat <span class="wf-chip__edit"
+                            ><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                        ></a></td>
+                      <td><span class="wf-chip wf-chip--ok">discovered</span></td>
+                      <td><a class="wf-a">Включить</a></td>
+                    </tr>
+                    <tr class="wf-table__row--muted">
+                      <td>ft:custom-internal</td>
+                      <td>Internal FT</td>
+                      <td><a class="wf-chip" tabindex="0" title="Изменить тип"
+                          >chat <span class="wf-chip__edit"
+                            ><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                        ></a></td>
+                      <td><span class="wf-chip">manual</span></td>
+                      <td><a class="wf-a">Включить</a></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-backdrop">
+            <div class="wf-gallery">
+              <div class="wf-frame">
+                <div class="wf-stage__caption">модал «добавить model ID»</div>
+                <div class="wf-screen wf-screen--modal">
+                  <div class="wf-body">
+                    <div class="wf-stack">
+                      <span class="wf-title">Добавить model ID</span>
+                      <div class="wf-field">
+                        <span class="wf-label">Model ID</span>
+                        <div class="wf-input wf-input--focus">my-llama3-ft</div>
+                        <span class="wf-hint">точный идентификатор модели у провайдера</span>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Название</span>
+                        <div class="wf-input">Internal FT</div>
+                        <span class="wf-hint">отображаемое имя в назначении и расходах; правится потом</span>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Тип</span>
+                        <div class="wf-input">
+                          embedding
+                          <span class="wf-input__action">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                          </span>
+                        </div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Размерность эмбеддингов <span class="wf-annot">7</span></span>
+                        <div class="wf-input wf-input--focus">1024</div>
+                        <span class="wf-hint">показывается для типа embedding — ширина вектора, под которую размечена база знаний</span>
+                      </div>
+                      <div class="wf-row">
+                        <button class="wf-btn">Отмена</button>
+                        <button class="wf-btn wf-btn--primary">Добавить</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">изменить · название</div>
+              <div class="wf-pop">
+                <a class="wf-a wf-a--icon" tabindex="0"
+                  ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></a>
+                <div class="wf-menu">
+                  <div class="wf-field">
+                    <span class="wf-label">Название</span>
+                    <div class="wf-input wf-input--sm wf-input--focus">GPT-4o</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">изменить · тип</div>
+              <div class="wf-pop">
+                <a class="wf-chip" tabindex="0">chat <span class="wf-chip__edit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                ></a>
+                <div class="wf-menu">
+                  <span class="wf-menu__item">chat <span class="wf-menu__why">текст</span></span>
+                  <span class="wf-menu__item">embedding <span class="wf-menu__why">вектор</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Селектор провайдера — таблица под ним перерисовывается под его модели.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Открывает модал ручного ввода — для провайдеров без discovery и для fine-tuned / custom-моделей (источник «manual»).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Отображаемое имя модели в назначении и расходах. Карандаш правит его прямо в строке.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Тип (chat / embedding) решает, на какие функции модель можно назначить. Правится в строке; смена заблокирована, пока модель назначена функции или входит в чат.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              «Включить» активирует модель, «Выключить» возвращает её в невключённые. Выключение запрещено, пока модель назначена функции или входит в чат — сначала переназначить.
+            </li>
+            <li class="wf-legend__item"><span class="wf-annot wf-legend__num">6</span>
+            Модель эмбеддинга несёт свою ширину вектора. Назначить можно только модель, чья ширина совпадает с базой знаний (<a href="#model-assignment" class="xref-anchor">назначение по функциям</a>), поэтому она показана прямо в строке.</li>
+            <li class="wf-legend__item"><span class="wf-annot wf-legend__num">7</span>
+            Размерность эмбеддингов — ширина вектора модели, вводится здесь, потому что discovery её не сообщает. Встроенные модели идут с уже заданной; поле появляется только для типа embedding.</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Назначение моделей по функциям ═══ -->
+      <div class="section" id="model-assignment">
+        <div class="section__title">
+          Назначение моделей по функциям
+          <a href="../../harvester/_workzone/pipeline.html#embed" class="xref-badge">→ Harvester</a>
+          <a href="../../knowledge-store/_workzone/hybrid-search.html" class="xref-badge">→ Knowledge Store</a>
+          <a href="../../query-engine/_workzone/rag-pipeline.html#admin-row" class="xref-badge">→ Query Engine</a>
+        </div>
+        <p class="note">
+          Каждая функция платформы потребляет модель.
+          <strong>Системные</strong> (embedding) — по одной модели на функцию, назначает Admin. <strong>Чат и агенты</strong> — модель по умолчанию плюс список, из которого сотрудник или владелец агента выбирает сам.
+        </p>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">функции платформы</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-stack">
+                  <span class="wf-label">Системные функции</span>
+                  <table class="wf-table wf-table--pops">
+                    <thead>
+                      <tr><th>Функция</th><th>Модель</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          Embedding
+                          <span class="ai-tag" title="Этап использует нейросеть — инференс модели"><span class="ai-tag__icon"></span>AI</span>
+                        </td>
+                        <td>
+                          <span class="wf-pop">
+                            <span class="wf-input wf-input--sm" tabindex="0">Cohere embed-v3 ▾</span>
+                            <div class="wf-menu">
+                              <span class="wf-menu__item">Cohere embed-v3 <span class="wf-menu__why">Cohere · 1024 · текущая</span></span>
+                              <span class="wf-menu__item">bge-m3 <span class="wf-menu__why">Platform · 1024</span></span>
+                              <span class="wf-menu__item">Qwen3-Embedding-0.6B <span class="wf-menu__why">Platform · 1024</span></span>
+                              <span class="wf-menu__item wf-menu__item--disabled">Embedding 3 Small <span class="wf-menu__why">OpenAI · 1536 · нужно 1024</span></span>
+                              <span class="wf-menu__item wf-menu__item--disabled">Embedding 3 Large <span class="wf-menu__why">OpenAI · 3072 · нужно 1024</span></span>
+                              <span class="wf-menu__item wf-menu__item--disabled">Nomic Embed <span class="wf-menu__why">Ollama · размерность не задана</span></span>
+                            </div>
+                          </span>
+                          <span class="wf-annot">1</span>
+                        </td>
+                        <td><span class="wf-chip wf-chip--ok">назначено</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <div class="wf-stack">
+                  <span class="wf-label">
+                    Пользовательский чат
+                    <span class="ai-tag" title="Запрос сотрудника в чате — инференс модели"><span class="ai-tag__icon"></span>AI</span>
+                  </span>
+                  <span class="wf-hint">
+                    Сотрудник сам выбирает модель в чате — из этого списка;
+                    по умолчанию открыта основная. <span class="wf-annot">2</span>
+                  </span>
+                  <div class="wf-stack wf-stack--tight">
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-text">Claude Sonnet</span>
+                        <span class="wf-chip">Anthropic</span>
+                      </span>
+                      <span class="wf-chip wf-chip--ok">по умолчанию</span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-text">GPT-4o</span>
+                        <span class="wf-chip">OpenAI</span>
+                      </span>
+                      <span class="wf-row">
+                        <a class="wf-a">Сделать основной</a>
+                        <span class="wf-sep">·</span>
+                        <span class="wf-guarded"
+                          ><a class="wf-a">Убрать</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                        ></span>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="wf-row">
+                    <button class="wf-btn">Добавить модель</button>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <div class="wf-stack">
+                  <span class="wf-label">
+                    Агенты
+                    <span class="ai-tag" title="Прогон агента — инференс модели"><span class="ai-tag__icon"></span>AI</span>
+                  </span>
+                  <span class="wf-hint">
+                    Владелец выбирает модель агента из этого списка; по умолчанию
+                    — основная. Модель должна уметь вызывать
+                    <a href="tools.html" class="xref-page">инструменты</a>. <span class="wf-annot">3</span>
+                  </span>
+                  <div class="wf-stack wf-stack--tight">
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-text">Claude Sonnet</span>
+                        <span class="wf-chip">Anthropic</span>
+                      </span>
+                      <span class="wf-chip wf-chip--ok">по умолчанию</span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-text">GPT-4o</span>
+                        <span class="wf-chip">OpenAI</span>
+                      </span>
+                      <span class="wf-row">
+                        <a class="wf-a">Сделать основной</a>
+                        <span class="wf-sep">·</span>
+                        <span class="wf-guarded"
+                          ><a class="wf-a">Убрать</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                        ></span>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="wf-row">
+                    <button class="wf-btn">Добавить модель</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">embedding без назначения · выбор</div>
+              <div class="wf-pop">
+                <span class="wf-input wf-input--sm wf-input--empty" tabindex="0">Выбрать модель ▾</span>
+                <div class="wf-menu">
+                  <span class="wf-menu__item">bge-m3 <span class="wf-menu__why">Platform · 1024 · из коробки</span></span>
+                  <span class="wf-menu__item">Qwen3-Embedding-0.6B <span class="wf-menu__why">Platform · 1024 · из коробки</span></span>
+                  <span class="wf-menu__item">Cohere embed-v3 <span class="wf-menu__why">Cohere · 1024</span></span>
+                  <span class="wf-menu__item wf-menu__item--disabled">Embedding 3 Small <span class="wf-menu__why">OpenAI · 1536 · нужно 1024</span></span>
+                  <span class="wf-menu__item wf-menu__item--disabled">Nomic Embed <span class="wf-menu__why">Ollama · размерность не задана</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">список · нет включённых моделей</div>
+              <div class="wf-pop">
+                <span class="wf-input wf-input--sm wf-input--empty" tabindex="0">Выбрать модель ▾</span>
+                <div class="wf-menu">
+                  <span class="wf-menu__item wf-menu__item--disabled">Нет включённых моделей этого типа</span>
+                  <hr class="wf-menu__sep" />
+                  <a class="wf-menu__item" href="#model-discovery">Включить в каталоге →</a>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">чат · добавить модель</div>
+              <div class="wf-pop">
+                <button class="wf-btn" tabindex="0">Добавить модель</button>
+                <div class="wf-menu">
+                  <span class="wf-menu__item">GPT-4o mini <span class="wf-menu__why">OpenAI</span></span>
+                  <span class="wf-menu__item">Claude Haiku <span class="wf-menu__why">Anthropic</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">embedding · идёт переэмбеддинг</div>
+              <div class="wf-card wf-stack wf-stack--tight">
+                <div class="wf-row wf-spread">
+                  <span class="wf-text">Embedding</span>
+                  <div class="wf-input wf-input--sm wf-input--locked">
+                    bge-m3
+                    <span class="wf-chip__edit"
+                      ><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span></div>
+                </div>
+                <span class="wf-row">
+                  <span class="wf-spinner"></span>
+                  <span class="wf-chip wf-chip--warn">переэмбеддинг · 62%</span>
+                </span>
+                <span class="wf-hint">
+                  смена заблокирована до завершения ·
+                  <a href="knowledge-store.html#curation-run" class="xref-page">статус в Knowledge Store</a>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-backdrop">
+            <div class="wf-gallery">
+              <div class="wf-frame">
+                <div class="wf-stage__caption">модал «сменить embedding-модель»</div>
+                <div class="wf-screen wf-screen--modal">
+                  <div class="wf-body">
+                    <div class="wf-stack">
+                      <span class="wf-title">Сменить embedding-модель?</span>
+                      <div class="wf-alert wf-alert--error">
+                        Платформа перегенерирует все векторы под новую модель —
+                        массовый переэмбеддинг (≈13.1k фрагментов). Запустится
+                        фоновый прогон, пока он идёт — повторная смена недоступна.
+                      </div>
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-text">Cohere embed-v3</span>
+                        <span class="wf-row">
+                          <span class="wf-sep">→</span>
+                          <span class="wf-chip wf-chip--ok">bge-m3</span>
+                        </span>
+                      </div>
+                      <span class="wf-hint">
+                        Поиск во время пересчёта продолжает работать; статус
+                        прогона — в
+                        <a href="knowledge-store.html#curation-run" class="xref-page">Knowledge Store</a>.
+                      </span>
+                      <div class="wf-row">
+                        <button class="wf-btn">Отмена</button>
+                        <button class="wf-btn wf-btn--primary">Сменить и пересчитать</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span> Embedding — одна модель на индексацию и поиск; назначение единое, иначе поиск сломается. Дефолта нет: платформенный вариант доступен из коробки, но приём ждёт явного выбора Admin (встроенный <em>или</em> свой). Назначение заранее прогревает <a href="../../knowledge-store/_workzone/embedding-runtime.html#contention" class="xref-module">рантайм</a> — первый поиск не ждёт весов. База знаний хранит векторы фиксированной ширины — <b>1024</b> в v1 — поэтому выбрать можно только модель такой <a href="../../knowledge-store/_workzone/data-model.html#model-metric" class="xref-module">размерности</a>; остальные остаются в списке, но недоступны, с причиной рядом. Облачная модель не сообщает свою размерность при discovery, поэтому её задают при добавлении модели в каталог. Смена назначенной — особый случай: новые векторы несовместимы со старыми, поэтому выбор открывает <b>подтверждение</b> с запуском сплошного переэмбеддинга. Пока прогон идёт, строка показывает его ход и повторная смена заблокирована (<a href="../../knowledge-store/_workzone/lifecycle.html#embedding-refresh" class="xref-module">refresh</a>). </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span> Пользовательский чат — выбор у сотрудника: Admin собирает список разрешённых chat-моделей и помечает одну по умолчанию. Та же chat-модель ведёт диалог и сама решает, обращаться ли к базе знаний. </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span> Агенты — отдельный список chat-моделей с одной по умолчанию; владелец выбирает модель агента из него. Снятая отсюда модель останавливает агентов, что её выбрали, до смены на другую.
+              <a href="../../agent-engine/_workzone/governance.html#model" class="xref-module">Agent Engine</a>. </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

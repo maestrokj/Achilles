@@ -1,0 +1,116 @@
+<!doctype html>
+<!-- mfa · feature-local screen — MFA enabled, management -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: MFA Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit (feature-local screen,
+         one level deeper than _wireframes/ — see README → Styling) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../wireframe.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="index.html">← Two-factor authentication</a>
+        <h1 class="header__title">MFA Management <span class="iter v2">v2</span></h1>
+        <div class="header__sub">
+          auth / security · features · two-factor authentication
+          <a class="in-load in-load--skeleton" href="../../../shared-ui/_wireframes/loading-states.html#skeleton" title="Screen loading — skeleton">
+            <span class="in-load__icon"></span>loading
+          </a>
+        </div>
+      </div>
+
+      <p class="desc">
+        Managing enabled two-factor authentication. Setup is in the
+        <a href="mfa-setup.html" class="xref-page">wizard</a>.
+      </p>
+
+      <div class="section">
+        <div class="section__title">Wireframe</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">enabled · management</div>
+          <div class="wf-screen wf-screen--narrow">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/account/security/mfa
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/account/security/mfa · after login</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-appbar">
+              <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+              <span class="wf-appbar__spacer"></span>
+              <span class="wf-chip">Member</span>
+              <span class="wf-avatar">DS</span>
+            </div>
+
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-center wf-stack wf-stack--tight">
+                  <h2 class="wf-title">Two-factor authentication</h2>
+                </div>
+
+                <div class="wf-alert wf-alert--ok wf-row">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                  Two-factor authentication is enabled — a code from the app is
+                  requested at login.
+                </div>
+
+                <div class="wf-card wf-row wf-spread">
+                  <span class="wf-text">
+                    Authenticator app<br />
+                    <span class="wf-hint">TOTP · connected</span>
+                  </span>
+                  <span class="wf-chip">Active</span>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <div class="wf-stack wf-stack--tight">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-guarded"
+                      ><a class="wf-a" href="#">Generate new recovery codes</a><a class="wf-guard" href="../../../shared-ui/_wireframes/confirm-dialog.html#irreversible" title="Action protected by confirmation"><span class="wf-guard__icon"></span></a
+                    ></span>
+                    <span class="wf-annot">1</span>
+                  </div>
+                  <div class="wf-row wf-spread">
+                    <span class="wf-guarded"
+                      ><a class="wf-a wf-a--danger" href="#">Disable two-factor authentication</a><a class="wf-guard" href="../../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action protected by confirmation"><span class="wf-guard__icon"></span></a
+                    ></span>
+                    <span class="wf-annot">2</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Invalidates the old set of codes and shows a new one.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Disables MFA. The button is hidden for Owner and Admin — for them MFA is mandatory.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

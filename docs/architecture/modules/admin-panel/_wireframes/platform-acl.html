@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Platform ACL</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Platform ACL <span class="iter v2">v2</span></h1>
+        <div class="header__sub">
+          admin panel · wireframes · security
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Screen renders in the content area of the shell">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--keep" href="../../shared-ui/_wireframes/loading-states.html#keep-previous" title="Page or filter change — previous rows stay (keep-previous)">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">Rules that narrow data visibility on top of the source ACLs.</p>
+
+      <!-- ═══ Wireframe ═══ -->
+      <div class="section" id="platform-acl">
+        <div class="section__title">
+          Restriction rules
+          <a href="../../auth-security/_workzone/authorization.html#data-acl" class="xref-badge">→ Auth &amp; Security</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">platform acl</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/acl
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/acl · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-row wf-spread">
+                  <span class="wf-title">Platform restrictions</span>
+                  <button class="wf-btn wf-btn--primary">
+
+                    Add rule
+                    <span class="wf-annot wf-annot--on-accent">1</span></button>
+                </div>
+                <div class="wf-input wf-input--sm">
+                  <span class="wf-input__icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                  </span>
+                  Search by scope — source or container
+                </div>
+                <div class="wf-filters">
+                  <span class="wf-filter">Source <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Status <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-annot">2</span>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr><th>Scope</th><th>Access</th><th>Status</th><th></th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Slack — all channels</td>
+                      <td>roles <span class="wf-chip">Owner</span> <span class="wf-chip">Admin</span> <span class="wf-annot">3</span></td>
+                      <td><span class="wf-chip wf-chip--ok">active</span></td>
+                      <td><a class="wf-a">Edit</a> <span class="wf-sep">·</span> <span class="wf-guarded"
+                          ><a class="wf-a wf-a--danger">Delete</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a
+                        ></span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Confluence — HR space</td>
+                      <td>group <span class="wf-chip">HR</span></td>
+                      <td><span class="wf-chip wf-chip--ok">active</span></td>
+                      <td><a class="wf-a">Edit</a> <span class="wf-sep">·</span> <span class="wf-guarded"
+                          ><a class="wf-a wf-a--danger">Delete</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a
+                        ></span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">filter · source</div>
+              <div class="wf-pop">
+                <span class="wf-filter" tabindex="0">Source <span class="wf-filter__caret">▾</span></span>
+                <div class="wf-menu">
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> Slack</span>
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> Confluence</span>
+                  <span class="wf-opt"><span class="wf-opt__box"></span> Jira</span>
+                  <span class="wf-opt"><span class="wf-opt__box"></span> GitLab</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-backdrop">
+            <div class="wf-gallery">
+              <div class="wf-frame">
+                <div class="wf-stage__caption">“access rule” panel</div>
+                <div class="wf-screen wf-screen--modal">
+                  <div class="wf-body">
+                    <div class="wf-stack">
+                      <span class="wf-title">Access rule</span>
+                      <div class="wf-row">
+                        <div class="wf-field">
+                          <span class="wf-label">Source</span>
+                          <div class="wf-input">
+                            Confluence
+                            <span class="wf-input__action">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                            </span>
+                          </div>
+                        </div>
+                        <div class="wf-field">
+                          <span class="wf-label">Container</span>
+                          <div class="wf-input">
+                            HR space
+                            <span class="wf-input__action">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Visible to <span class="wf-annot">4</span></span>
+                        <div class="wf-input wf-input--focus">
+                          <span class="wf-chip">HR</span>
+                          <span class="wf-input__action">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                          </span>
+                        </div>
+                        <span class="wf-hint">A platform role or a group from the source</span>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Status</span>
+                        <div class="wf-row">
+                          <span class="wf-toggle wf-toggle--on"></span> Active
+                        </div>
+                      </div>
+                      <button class="wf-btn wf-btn--primary wf-btn--block">
+                        Save rule
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">visible to · roles and groups</div>
+              <div class="wf-pop">
+                <div class="wf-input wf-input--sm" tabindex="0">
+                  Add a role or group ▾
+                </div>
+                <div class="wf-menu">
+                  <span class="wf-label">Platform roles</span>
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> Owner</span>
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> Admin</span>
+                  <span class="wf-opt"><span class="wf-opt__box"></span> Member</span>
+                  <hr class="wf-menu__sep" />
+                  <span class="wf-label">Groups from the source</span>
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> HR · Confluence</span>
+                  <span class="wf-opt"><span class="wf-opt__box"></span> Eng · Slack</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              “Add rule” and “Edit” open the same side panel — scope, visible to, status.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Search by scope and the Source · Status facets —
+              <a href="../_workzone/list-controls.html#facets" class="xref-page">consistent across all lists</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              A rule targets a source or a container and narrows the circle the data is visible to.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              The subject is a platform role (Owner / Admin / Member) or a group inherited from the source.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

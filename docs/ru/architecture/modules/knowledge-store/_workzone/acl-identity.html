@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Knowledge Store: ACL и личности</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../knowledge-store.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="acl-identity.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Knowledge Store</a>
+        <h1 class="header__title">ACL и личности</h1>
+        <div class="header__sub">knowledge-store · workzone</div>
+      </div>
+
+      <p class="desc">
+        Knowledge Store — дом прав и личностей, которые
+        <a
+          href="../../harvester/_workzone/acl-identity.html#acl"
+          class="xref-module"
+          >Harvester</a
+        >
+        захватывает из источников и пишет сюда, а
+        <a
+          class="xref-badge"
+          href="../../query-engine/_workzone/retrieval.html#identity"
+          >→ Query Engine</a
+        >
+        применяет на выдаче. Страница держит модель: как из вошедшего
+        пользователя платформа доходит до
+        <a href="#resolution" class="xref-anchor">разрешённых ему сущностей</a> —
+        через <a href="#identity" class="xref-anchor">личности</a> и
+        <a href="#acl" class="xref-anchor">права источника</a>, — и где проходит
+        <a href="#iteration" class="xref-anchor">граница v1/v2</a>. Права
+        сохраняются в оригинальных терминах источника, без интерпретации в
+        платформенные уровни.
+      </p>
+
+      <!-- ════════════════ РЕЗОЛВ-ДЖОЙН ════════════════ -->
+      <div class="section" id="resolution">
+        <div class="section__title">
+          Резолв-джойн: от пользователя к разрешённым сущностям
+        </div>
+        <p class="desc">
+          Права применяются на запросе как <strong>pre-filter</strong>: кандидаты
+          сужаются по доступу <em>до</em> ранжирования. Чтобы ответить «что
+          доступно этому пользователю», платформа проходит цепочку — от
+          платформенного аккаунта к его личностям, их членствам в группах
+          источника и к гранту на сущности. Само применение —
+          <a
+            class="xref-badge"
+            href="../../query-engine/_workzone/retrieval.html#identity"
+            >→ Query Engine</a
+          >; здесь — звенья и их хранение.
+        </p>
+
+        <div class="ks-chain">
+          <div class="ks-chain__hop">
+            <span class="ks-chain__node ks-chain__node--auth">users</span>
+            <span class="ks-chain__edge"
+              ><span class="ks-chain__key">identity.user_id</span></span
+            >
+            <span class="ks-chain__node">identity</span>
+          </div>
+          <div class="ks-chain__hop">
+            <span class="ks-chain__node">identity</span>
+            <span class="ks-chain__edge"
+              ><span class="ks-chain__key">source_principal.identity_id</span></span
+            >
+            <span class="ks-chain__node">source_principal</span>
+          </div>
+          <div class="ks-chain__hop">
+            <span class="ks-chain__node">source_principal</span>
+            <span class="ks-chain__edge"
+              ><span class="ks-chain__key">group_membership</span></span
+            >
+            <span class="ks-chain__node">source_group</span>
+          </div>
+          <div class="ks-chain__hop">
+            <span class="ks-chain__node">source_group</span>
+            <span class="ks-chain__edge"
+              ><span class="ks-chain__key">entity_acl</span></span
+            >
+            <span class="ks-chain__node ks-chain__node--goal">entity</span>
+          </div>
+        </div>
+
+        <p class="note">
+          Прямой грант на сущность конкретному человеку короткозамыкает цепочку
+          через <code>entity_acl.source_principal_id</code>, минуя группу. Грант
+          <code>scope = 'public'</code> видят все — он добавляется к фильтру
+          напрямую, в обход цепочки членства.
+        </p>
+
+        <div class="ks-roles">
+          <div class="ks-roles__col ks-roles__col--src">
+            <div class="ks-roles__who">Harvester</div>
+            <div class="ks-roles__act">пишет</div>
+            <div class="ks-roles__d">
+              Захватывает права и людей из источника, делает upsert в эти таблицы
+              теми же режимами синхронизации, что и контент.
+            </div>
+          </div>
+          <div class="ks-roles__col ks-roles__col--here">
+            <div class="ks-roles__who">Knowledge Store</div>
+            <div class="ks-roles__act">хранит</div>
+            <div class="ks-roles__d">
+              Реляционный source of truth прав и личностей; строит резолв-джойн и
+              исполняет pre-filter рядом с векторами — одним SQL с поиском по
+              смыслу.
+            </div>
+          </div>
+          <div class="ks-roles__col ks-roles__col--dst">
+            <div class="ks-roles__who">Query Engine</div>
+            <div class="ks-roles__act">применяет</div>
+            <div class="ks-roles__d">
+              Передаёт личность вызывающего на запросе — резолв-джойн и фильтр
+              исполняет KS, Query Engine их не дублирует.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ ЛИЧНОСТИ ════════════════ -->
+      <div class="section">
+        <div class="section__title">Личности: человек источника → личность → аккаунт</div>
+        <p class="desc">
+          Тот же API коннектора, что отдаёт контент, отдаёт и людей источника.
+          Каждый человек источника — <code>source_principal</code>; одинаковые по
+          <code>email</code> сводятся в одну <code>identity</code>. Если личность
+          ещё и входит в платформу — <code>identity</code> мостом ссылается на
+          <a
+            href="../../auth-security/_workzone/data-model.html#data-model"
+            class="xref-module"
+            >Auth · users</a
+          >.
+        </p>
+
+        <div class="stk-stack">
+          <!-- identity -->
+          <div class="stk-layer stk-layer--ks" id="identity">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Личность</span>
+              <span class="stk-layer__role">Каноническая личность — цель свода.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">identity</span>
+                  <span class="dm-tbl__sub">сведённые личности</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (lower(email))</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE partial (user_id)</span>
+                    <span class="dm-badge dm-badge--fk">FK → users</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">email</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--uq" title="UNIQUE (lower(email))">UNIQUE</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">ключ свода · нормализованный <code>lower(email)</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">display_name</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">отображаемое имя</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">user_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → auth.users, ON DELETE SET NULL">FK→users</span
+                        ><span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--uq" title="UNIQUE (user_id) WHERE user_id IS NOT NULL — закрепляет мост 1:1; частичный индекс заодно обслуживает резолв">UNIQUE</span>
+                      </td>
+                      <td class="dm-note">мост к платформенному аккаунту · 1:1 закреплён <code>UNIQUE partial</code> · <code>NULL</code> = личность без входа в платформу</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Мост к Auth, не дубль</span>
+                </div>
+                <div class="stk-dec__d">
+                  «Личность» из источников и «учётка платформы» — разные сущности.
+                  <code>identity.user_id</code> — единственная связь между ними:
+                  заполнен, когда личность ещё и входит в платформу. Каналы
+                  <b>входа</b> — в
+                  <a
+                    href="../../auth-security/_workzone/data-model.html#identity-mapping"
+                    class="xref-module"
+                    >Auth · identity_mapping</a
+                  >
+                  (Slack-бот <code>source='slack'</code>, SSO Okta&nbsp;/&nbsp;Azure);
+                  здесь — Jira&nbsp;/&nbsp;Slack&nbsp;/&nbsp;Confluence как
+                  <b>контент</b>-источники. Тот же Slack носит две роли — вход (Auth)
+                  и контент (здесь), не путать.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Заполнение моста — авто-связь по email</span
+                  >
+                  <a class="xref-badge" href="../../auth-security/_workzone/authorization.html#identity"
+                    >→ Auth &amp; Security</a
+                  >
+                  <a class="xref-badge" href="../../harvester/_workzone/acl-identity.html#identity"
+                    >→ Harvester</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <code>identity.user_id</code> ставится автоматически по точному
+                  <code>lower(email)</code> — связь строго <b>1:1</b>: закреплена
+                  <code>UNIQUE partial</code> на <code>user_id</code>, а обе таблицы
+                  к тому же уникальны по email, так что коллизий нет (в отличие от
+                  свода <code>source_principal → identity</code>). Срабатывает
+                  <b>синхронно</b> в двух точках: когда в платформе заводится
+                  аккаунт (инвайт принят, setup, создание / смена email админом) —
+                  <a class="xref-module"
+                    href="../../auth-security/_workzone/authorization.html#identity"
+                    >Auth</a
+                  >
+                  просит связать существующую <code>identity</code> того же email;
+                  и когда
+                  <a class="xref-module"
+                    href="../../harvester/_workzone/acl-identity.html#identity"
+                    >Harvester</a
+                  >
+                  делает upsert <code>identity</code> — связывает с уже
+                  существующим <code>users</code>. Так вошедший сразу видит все
+                  свои аккаунты в источниках, без ожидания синхронизации.
+                  Операцию связывания держит Knowledge Store — владелец
+                  <code>identity</code>; Auth и Harvester её вызывают. Операция
+                  <b>идемпотентна и транзакционна</b>: повторный вызов с тем же
+                  email и аккаунтом — no-op (держат <code>UNIQUE</code>-ключи и
+                  upsert по <code>lower(email)</code>), а связывание идёт одной
+                  транзакцией в общей базе — без промежутка, где мост поставлен
+                  наполовину. Исход явный: либо связано, либо совпадения нет
+                  (личности этого email ещё нет, или адрес входа ≠ адрес
+                  источника) — несвязанное уходит на ручной разбор, не теряется
+                  молча.
+                </div>
+                <details>
+                  <summary>email входа ≠ email источника</summary>
+                  <div>
+                    Если в источнике человек под другим адресом
+                    (<code>alice.smith@corp</code> против <code>alice@corp</code>
+                    входа), авто-связь по точному email не сработает —
+                    <code>identity</code> остаётся без моста
+                    (<code>user_id = NULL</code>). Такую личность администратор
+                    привязывает к нужному пользователю вручную на
+                    <a class="xref-module"
+                      href="../../admin-panel/_wireframes/users.html#identity-mapping"
+                      >Admin · Identity Mapping</a
+                    >
+                    — тем же путём, что и несведённые <code>source_principal</code>.
+                    Авто-сведение по <em>разным</em> адресам (deep entity resolution)
+                    — <span class="iter v2">v2</span>, шаг Curation Pass; см.
+                    <a href="#iteration" class="xref-anchor">границу итерации</a>.
+                  </div>
+                </details>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- source_principal -->
+          <div class="stk-layer stk-layer--ks" id="source-principal">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Человек источника</span>
+              <span class="stk-layer__role">Учётка как её отдаёт источник.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">source_principal</span>
+                  <span class="dm-tbl__sub">люди из источников</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → sources</span>
+                    <span class="dm-badge dm-badge--fk">FK → identity</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (source_id, source_user_id)</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">source_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → Harvester.sources, ON DELETE CASCADE">FK→sources</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">источник · CASCADE</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_user_id</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">нативный id у источника</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">email</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">для свода · у части источников отсутствует</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">display_name</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">имя как в источнике</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">identity_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → identity, ON DELETE SET NULL">FK→identity</span
+                        ><span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note"><code>NULL</code> = unmatched, ждёт разбора в Admin</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Свод по email · несовпавшие — на разбор</span>
+                  <a class="xref-badge" href="../../admin-panel/_wireframes/users.html#identity-mapping"
+                    >→ Admin · Identity Mapping</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Люди источников с одинаковым точным <code>email</code> сводятся в
+                  одну <code>identity</code>. Кого свести не удалось (нет email,
+                  неоднозначность) — <code>identity_id</code> остаётся
+                  <code>NULL</code>: запись уходит на ручной разбор в Admin, где её
+                  привязывают к существующей личности или заводят новую. Нечёткое
+                  «разные email, тот же человек» — это deep entity resolution:
+                  <span class="iter v2">v2</span> (шаг Curation Pass).
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ ACL ════════════════ -->
+      <div class="section" id="acl">
+        <div class="section__title">Права источника: группы, членство, грант на сущность</div>
+        <p class="desc">
+          Права берутся в оригинальных терминах источника (проект Jira,
+          пространство Confluence, канал Slack) — без интерпретации в
+          платформенные уровни. Доступ держат две грани: <strong>тег</strong> —
+          в какой группе лежит сущность (<code>entity_acl</code>), и
+          <strong>членство</strong> — кто в группу входит
+          (<code>group_membership</code>); без обеих нельзя ответить, кому
+          сущность видна.
+        </p>
+
+        <div class="stk-stack">
+          <!-- source_group -->
+          <div class="stk-layer stk-layer--ks" id="source-group">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Группа источника</span>
+              <span class="stk-layer__role">Контейнер в оригинальных терминах.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">source_group</span>
+                  <span class="dm-tbl__sub">группы и контейнеры источника</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → sources</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (source_id, source_group_id)</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">source_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → Harvester.sources, ON DELETE CASCADE">FK→sources</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">источник · CASCADE</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_group_id</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">нативный id контейнера</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">name</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">отображаемое имя · «проект Backend»</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">kind</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">тип контейнера · project · space · channel · набор от манифеста</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- group_membership -->
+          <div class="stk-layer stk-layer--ks" id="group-membership">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">4</span>
+              <span class="stk-layer__name">Членство</span>
+              <span class="stk-layer__role">Кто входит в группу.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">group_membership</span>
+                  <span class="dm-tbl__sub">принадлежность к группам</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → source_group</span>
+                    <span class="dm-badge dm-badge--fk">FK → source_principal</span>
+                    <span class="dm-badge dm-badge--flag">PK (group, principal)</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-fk">
+                      <td class="dm-f">source_group_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--pk">PK</span
+                        ><span class="dm-c dm-c--fk" title="FK → source_group, ON DELETE CASCADE">FK→group</span>
+                      </td>
+                      <td class="dm-note">ведущий столбец составного PK (индекс PK покрывает лукап по группе) · CASCADE</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">source_principal_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--pk">PK</span
+                        ><span class="dm-c dm-c--fk" title="FK → source_principal, ON DELETE CASCADE">FK→principal</span
+                        ><span class="dm-c dm-c--idx" title="отдельный индекс: второй столбец PK, префиксом не покрыт">IDX</span>
+                      </td>
+                      <td class="dm-note">второй столбец PK · отдельный IDX под резолв principal→groups · CASCADE</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note">когда замечено членство</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Снимок текущего членства</span>
+                </div>
+                <div class="stk-dec__d">
+                  Одна строка на пару «группа × человек». Reconciliation сверяет
+                  членство с источником и приводит снимок в соответствие: добавили
+                  в проект — строка появляется, убрали — удаляется. Это снимок
+                  актуального, не лента изменений. Членство <b>плоское</b> — прямые
+                  пары; разворот вложенных групп (группа в группе, транзитивное
+                  членство) — <span class="iter v2">v2</span>, см.
+                  <a href="#iteration" class="xref-anchor">границу итерации</a>.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- entity_acl -->
+          <div class="stk-layer stk-layer--ks" id="entity-acl">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">5</span>
+              <span class="stk-layer__name">Грант на сущность</span>
+              <span class="stk-layer__role">Тег: кому видна сущность.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">entity_acl</span>
+                  <span class="dm-tbl__sub">права на сущности</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → entities</span>
+                    <span class="dm-badge dm-badge--flag">грант: группе · принципалу · public</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE partial (source_group_id, entity_id)</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE partial (source_principal_id, entity_id)</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE partial (entity_id) WHERE public</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">entity_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → entities (узел KS), ON DELETE CASCADE">FK→entities</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">сущность KS · CASCADE</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">scope</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK scope IN ('group','principal','public')">CHECK</span>
+                      </td>
+                      <td class="dm-note">кому грант · <code>group</code> · <code>principal</code> · <code>public</code></td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">source_group_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → source_group, ON DELETE CASCADE">FK→group</span
+                        ><span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">грант группе · заполнен при <code>scope=group</code></td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">source_principal_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → source_principal, ON DELETE CASCADE">FK→principal</span
+                        ><span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">грант прямому человеку · заполнен при <code>scope=principal</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note">когда замечен грант · без <code>updated_at</code> — снимок без полезной нагрузки</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Грант — группе, прямому человеку или всем (public)</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>scope</code> различает три формы гранта, CHECK держит их
+                  согласованными: <code>group</code> — заполнен
+                  <code>source_group_id</code> (доступ контейнеру/группе),
+                  <code>principal</code> — <code>source_principal_id</code> (адресно
+                  человеку), <code>public</code> — оба <code>NULL</code> (контент,
+                  открытый всем в источнике: public-канал Slack, anonymous-доступ
+                  Confluence). Public — wildcard-грант на уровне строки, без
+                  раздувания членства синтетической группой «everyone»; на резолве
+                  он добавляется к фильтру как <code>scope = 'public'</code>.
+                  Реляционная таблица — source of truth прав; как этот грант
+                  единым JOIN покрывает и поиск, и обход графа поверх
+                  <a href="data-model.html#projections" class="xref-page"
+                    >трёх проекций</a
+                  >
+                  одной базы, держит модель данных. Узел сущности
+                  (<code>entities</code>) проектируется со всем остальным
+                  Knowledge Store — здесь зафиксирована только грань прав.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Индексы под направление резолва · они же ключ дедупа</span>
+                </div>
+                <div class="stk-dec__d">
+                  Горячий путь — «набор групп пользователя → доступные сущности»,
+                  поэтому грант несёт <strong>уникальные частичные</strong> индексы
+                  <code>(source_group_id, entity_id)&nbsp;WHERE&nbsp;source_group_id&nbsp;IS&nbsp;NOT&nbsp;NULL</code>
+                  и
+                  <code>(source_principal_id, entity_id)&nbsp;WHERE&nbsp;source_principal_id&nbsp;IS&nbsp;NOT&nbsp;NULL</code>
+                  (а для public — <code>(entity_id)&nbsp;WHERE&nbsp;scope&nbsp;=&nbsp;'public'</code>),
+                  а не только одиночные FK: лукап идёт index-only, без захода в
+                  кучу за <code>entity_id</code>. Та же пара структур несёт двойную
+                  службу — порядок <code>(получатель, entity_id)</code> совпадает с
+                  направлением резолва, а уникальность даёт
+                  <strong>conflict target</strong> для upsert-реконсиляции
+                  (естественный ключ гранта при полиморфном получателе и суррогатном
+                  <code>id</code>): повторный захват — <code>ON CONFLICT DO NOTHING</code>,
+                  дубли исключены. Частичность (<code>WHERE …</code>) —
+                  потому что у каждой формы гранта (<code>scope</code>) заполнен свой
+                  набор столбцов. Когда множество доступных групп
+                  уже известно (его резолвит на запросе
+                  <a
+                    class="xref-badge"
+                    href="../../query-engine/_workzone/retrieval.html#identity"
+                    >→ Query Engine</a
+                  >), резолв-джойн от <code>users</code> схлопывается в фильтр по
+                  этому набору. Денормализация прав в массив на сущности — отдельный
+                  тяжёлый рычаг, отложен (open-questions).
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ ГРАНИЦА v1/v2 ════════════════ -->
+      <div class="section" id="iteration">
+        <div class="section__title">Граница v1 / v2</div>
+        <p class="desc">
+          В v1 — сырой захват прав и личностей, детерминированный свод по точному
+          email с ручным разбором несошедшегося, применение pre-filter и доводка
+          графа фоновым прогоном (Curation Pass). В v2 остаётся
+          <em>платформенная интерпретация</em> прав поверх source-уровня, нечёткое
+          (machine-guess) сведение личностей и жёсткие гарантии на выдаче.
+        </p>
+        <div class="dm-split">
+          <div class="dm-split__col dm-split__col--keep">
+            <div class="dm-split__h">
+              <span class="dm-split__t">v1 — сырой захват + pre-filter</span>
+            </div>
+            <p class="dm-split__d">
+              Пять таблиц выше · свод личностей по точному <code>email</code> ·
+              мост <code>identity ↔ users</code> авто-связью по точному email
+              (синхронно, обе стороны) + ручная привязка несошедшегося в Admin
+              (нет email, неоднозначность, адрес входа ≠ адрес источника) ·
+              грант группе / принципалу / public · членство и тег в оригинальных
+              терминах источника · pre-filter на выдаче (резолв-джойн). Права
+              eventually consistent: отзыв вступает в силу к ближайшей синхронизации.
+            </p>
+          </div>
+          <div class="dm-split__col dm-split__col--later">
+            <div class="dm-split__h">
+              <span class="dm-split__t">v2 — интерпретация и догадка</span>
+              <span class="iter v2">v2</span>
+            </div>
+            <p class="dm-split__d">
+              Платформенный ACL поверх source-прав (двойной фильтр, container-override,
+              <code>platform_acl_rules</code>, экран
+              <a
+                class="xref-badge"
+                href="../../admin-panel/_wireframes/platform-acl.html#platform-acl"
+                >→ Admin · Platform ACL</a
+              >) · live-check прав на выдаче (late-binding security trim) ·
+              нечёткое cross-source сведение личностей и авто-связь моста по
+              <em>разным</em> email (deep entity resolution — шаг Curation Pass) ·
+              разворот вложенных групп (group-in-group): транзитивное членство —
+              в v1 членство плоское, одна строка «группа × человек».
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

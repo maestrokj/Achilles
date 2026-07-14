@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Расходы AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Расходы AI</h1>
+        <div class="header__sub">
+          admin panel · макеты · ai
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Экран рендерится в контентной области каркаса">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--keep" href="../../shared-ui/_wireframes/loading-states.html#keep-previous" title="Смена страницы или фильтра — прежние строки остаются (keep-previous)">
+              <span class="in-load__icon"></span>загрузка
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">Единый дом расходов AI. Сверху — <strong>итого по компании</strong>: суммарный расход токенов за неделю, месяц и год (все функции). Ниже три среза: <strong>лимиты</strong> — недельные токен-потолки на сотрудника и месячное оповещение о бюджете организации; <strong>по сотрудникам</strong> — агенты и чат в токенах (кто сколько тратит); <strong>по моделям</strong> — счёт в деньгах, включая индексацию и поиск (на что уходит). Панорама и разрез по моделям берутся из реестра AI-ресурсов (<a href="../../ai-foundation/_workzone/data-model.html#ai-spend" class="xref-module"><code>model_usage</code></a>); расход по людям — из журналов прогонов и сообщений. Как устроен учёт — <a href="../../ai-foundation/_workzone/cost-accounting.html" class="xref-module">бизнес-логика расходов</a>. Пер-юзерная стоимость в деньгах, тренды и экспорт — <span class="iter v2">v2</span>.</p>
+
+      <!-- ═══ Итого по компании ═══
+           Панорама всего расхода токенов платформы за неделю/месяц/год.
+           Источник — model_usage (агрегат по дню, все функции: индексация,
+           поиск, чат, агенты), просуммированный по календарному периоду.
+           Производное, без отдельной таблицы-счётчика (как бюджет производный).
+           Шире разреза «по сотрудникам» ниже — там только агенты+чат,
+           привязываемые к людям; здесь — полный расход компании. -->
+      <div class="section" id="total">
+        <div class="section__title">
+          Итого по компании
+          <a href="../../ai-foundation/_workzone/cost-accounting.html" class="xref-badge">→ AI Foundation</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">панорама · все функции · model_usage</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/usage
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/usage · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <span class="wf-label">Расход токенов · вся организация</span>
+                <div class="wf-row">
+                  <div class="wf-stat">
+                    <span class="wf-stat__num">22.4M</span>
+                    <span class="wf-stat__label">Эта неделя</span>
+                    <span class="wf-stat__sub">$42 · все функции</span>
+                  </div>
+                  <div class="wf-stat">
+                    <span class="wf-stat__num">96.2M</span>
+                    <span class="wf-stat__label">Этот месяц</span>
+                    <span class="wf-stat__sub">$168 · из них на оповещении $200</span>
+                  </div>
+                  <div class="wf-stat">
+                    <span class="wf-stat__num">1.04B</span>
+                    <span class="wf-stat__label">Этот год</span>
+                    <span class="wf-stat__sub">$1 860 · все функции</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item wf-legend__item--note">
+              Полный расход платформы за календарное окно — все функции: индексация, RAG-поиск, чат, агенты. Производная <code>SUM</code> по периоду из <a href="../../ai-foundation/_workzone/data-model.html#ai-spend" class="xref-module"><code>model_usage</code></a>, без отдельной таблицы-счётчика. Шире разреза <a href="#by-user" class="xref-anchor">по сотрудникам</a> — там лишь агенты и чат, привязываемые к людям.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              Месячная плитка сверяется с порогом <a href="#limits" class="xref-anchor">оповещения о бюджете</a>. Тренды, графики и экспорт — <span class="iter v2">v2</span>.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Лимиты расхода ═══
+           Дом всех регуляторов бюджета. Два яруса:
+           · на сотрудника — недельные токен-потолки: агенты (блокирующий, перенесён
+             сюда с экрана AI-агенты) и чат (справочный, без блокировки в v1);
+           · на организацию — месячное оповещение о бюджете в деньгах (перенесено
+             сюда с витрины AI-модели; сигнал, не блок).
+           id=limits — на него ссылаются Agent Engine, Web App, карточка агента, AI Foundation. -->
+      <div class="section" id="limits">
+        <div class="section__title">
+          Лимиты расхода
+          <a href="../../agent-engine/_workzone/governance.html#budget" class="xref-badge">→ Agent Engine</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">platform_settings · лимиты расхода</div>
+          <div class="wf-screen">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/usage
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/usage · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <span class="wf-label">На сотрудника · недельные токены</span>
+                <div class="wf-card">
+                  <div class="wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text"><b>Бюджет токенов · агенты</b> <span class="wf-annot">1</span></span>
+                      <div class="wf-input wf-input--sm">2 000 000</div>
+                    </div>
+                    <span class="wf-hint">На сотрудника — общий на всех его агентов. Расход суммируется из журнала прогонов; за потолком прогоны ждут сброса в <strong>воскресенье 00:00</strong>. Пусто — без лимита.</span>
+                  </div>
+                </div>
+                <div class="wf-card">
+                  <div class="wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text"><b>Бюджет токенов · чат</b> <span class="wf-annot">2</span></span>
+                      <div class="wf-input wf-input--sm">500 000</div>
+                    </div>
+                    <span class="wf-hint">На сотрудника — расход личных диалогов за неделю. В v1 <strong>справочный</strong>: показывает «израсходовано из лимита», но запросы не блокирует — жёсткий отказ сверх потолка придёт в <span class="iter v2">v2</span>. Пусто — без лимита.</span>
+                  </div>
+                </div>
+                <span class="wf-label">На организацию · месячный счёт</span>
+                <div class="wf-card">
+                  <div class="wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text"><b>Оповещение о бюджете</b> <span class="wf-annot">3</span></span>
+                      <span class="wf-row">
+                        <div class="wf-input wf-input--sm">$200 / мес</div>
+                        <span class="wf-toggle wf-toggle--on"></span>
+                      </span>
+                    </div>
+                    <span class="wf-hint">Месячный счёт за AI на всю организацию. Достигнут порог — поднимается уведомление; запросы <strong>не блокирует</strong>. Тумблер не включить, пока сумма не задана. Сам расход по моделям — в разрезе <a href="#by-model" class="xref-anchor">по моделям</a> ниже.</span>
+                  </div>
+                </div>
+                <div class="wf-row wf-spread">
+                  <span class="wf-hint">Токен-потолки применяются ко всем сотрудникам; оповещение — на всю организацию</span>
+                  <button class="wf-btn wf-btn--primary">Сохранить</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Недельный <a href="../../agent-engine/_workzone/governance.html#budget" class="xref-module">бюджет агентов</a> — блокирующий: сверх потолка прогоны помечаются <code>skipped</code> и ждут сброса недели. Раньше жил на экране <a href="agents.html#agents" class="xref-page">AI-агенты</a>, переехал к расходу.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Недельный бюджет чата — справочный: учёт и индикатор без блокировки. Обе суммы недельные, окно календарное, сброс в воскресенье 00:00 в зоне организации — единое с бюджетом агентов.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Оповещение о бюджете — единственный денежный регулятор в v1: сумма и тумблер в singleton (<a href="../_workzone/data-model.html#ai-budget" class="xref-page"><code>ai_monthly_budget</code> · <code>ai_budget_alert_enabled</code></a>), CHECK не даёт включить без суммы. При достижении порога поднимается уведомление типа Budget — канал держит <a href="notifications.html" class="xref-page">модуль уведомлений</a>. Месячный счёт по моделям — в разрезе <a href="#by-model" class="xref-anchor">по моделям</a> ниже.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              Пер-юзерная стоимость в деньгах, потолки на подходе к лимиту и блокировка чата — <span class="iter v2">v2</span>.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Расход по сотрудникам ═══ -->
+      <div class="section" id="by-user">
+        <div class="section__title">Расход по сотрудникам</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">список · все сотрудники · эта неделя</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/usage
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/usage · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <span class="wf-title">Расход по сотрудникам</span>
+                <div class="wf-input wf-input--sm">
+                  <span class="wf-input__icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                  </span>
+                  Поиск по имени и email
+                </div>
+                <div class="wf-filters">
+                  <span class="wf-filter wf-filter--on">Период · эта неделя <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Роль <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-annot">4</span>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr>
+                      <th>Сотрудник</th><th>Агенты</th><th>Чат</th><th>Всего <span class="wf-filter__caret">▾</span> <span class="wf-annot">5</span></th><th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="wf-rowlink">
+                      <td><span class="wf-idcell"><a href="usage-detail.html" class="wf-userlink">Дмитрий Соколов</a><span class="wf-idcell__email">dmitry@company.com</span></span> <span class="wf-annot">7</span></td>
+                      <td>1.20M</td>
+                      <td>340k</td>
+                      <td><b>1.54M</b></td>
+                      <td>›</td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><span class="wf-idcell"><a href="usage-detail.html" class="wf-userlink">Игорь Лебедев</a><span class="wf-idcell__email">igor@company.com</span></span></td>
+                      <td>2.00M <span class="wf-chip wf-chip--warn">лимит недели</span> <span class="wf-annot">6</span></td>
+                      <td>120k</td>
+                      <td><b>2.12M</b></td>
+                      <td>›</td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><span class="wf-idcell"><a href="usage-detail.html" class="wf-userlink">Анна Орлова</a><span class="wf-idcell__email">anna@company.com</span></span></td>
+                      <td>640k</td>
+                      <td>610k <span class="wf-chip">сверх справочного</span></td>
+                      <td><b>1.25M</b></td>
+                      <td>›</td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><span class="wf-idcell"><a href="usage-detail.html" class="wf-userlink">Павел Зайцев</a><span class="wf-idcell__email">pavel@company.com</span></span></td>
+                      <td>410k</td>
+                      <td>300k</td>
+                      <td><b>710k</b></td>
+                      <td>›</td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><span class="wf-idcell"><a href="usage-detail.html" class="wf-userlink">Мария Ким</a><span class="wf-idcell__email">maria@company.com</span></span></td>
+                      <td>0</td>
+                      <td>180k</td>
+                      <td><b>180k</b></td>
+                      <td>›</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="wf-pager">
+                  <span class="wf-pager__count">1–50 из 128</span>
+                  <div class="wf-pager__pages">
+                    <span class="wf-page wf-page--nav wf-page--off">‹</span>
+                    <span class="wf-page wf-page--active">1</span>
+                    <span class="wf-page">2</span>
+                    <span class="wf-page wf-page--nav">›</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Фильтры — фасеты Период · Роль. Период по умолчанию «эта неделя» (окно сверки с потолками); доступны прошлые недели и месяц. Поведение поиска и фильтров —
+              <a href="../_workzone/list-controls.html#facets" class="xref-page">единое для всех списков</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Колонки <b>Агенты</b> и <b>Чат</b> — две привязываемые к человеку статьи; <b>Всего</b> — их сумма, по ней сортировка по умолчанию (убывание). Индексация и RAG-поиск сюда не входят — это системный расход платформы, виден в разрезе <a href="#by-model" class="xref-anchor">по моделям</a> ниже.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              Пилюля у агентского расхода — гейт превышен: новые прогоны ждут сброса недели. У чата сверх справочного потолка — серая отметка без блокировки.
+              <a href="../../agent-engine/_workzone/governance.html#budget" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              Клик по строке открывает
+              <a href="usage-detail.html" class="xref-page">детализацию сотрудника</a>: агенты по агентам, чат по моделям.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Расход по моделям ═══
+           Витрина $-расхода из model_usage (реестр AI Foundation), перенесена
+           сюда с экрана AI-модели. Org-уровень: по модели · функции, в деньгах,
+           включает индексацию и поиск — системный расход, к человеку не привязан. -->
+      <div class="section" id="by-model">
+        <div class="section__title">
+          Расход по моделям
+          <a href="../../ai-foundation/_workzone/data-model.html#ai-spend" class="xref-badge">→ AI Foundation</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">по моделям · model_usage · в деньгах</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/usage
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/usage · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-row wf-spread">
+                  <span class="wf-label">Расход · вся организация</span>
+                  <div class="wf-input wf-input--sm">30 дней ▾</div>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr><th>Модель</th><th>Функция</th><th>Запросы</th><th>Вход <span class="wf-annot">8</span></th><th>Выход</th><th>Стоимость</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><span class="wf-text">Embedding 3 Large</span> <span class="wf-chip">OpenAI</span></td>
+                      <td>Embedding</td>
+                      <td>128 400</td>
+                      <td>41.2M</td>
+                      <td>—</td>
+                      <td>$54.30</td>
+                    </tr>
+                    <tr>
+                      <td><span class="wf-text">GPT-4o</span> <span class="wf-chip">OpenAI</span></td>
+                      <td>Пользовательский чат</td>
+                      <td>84 200</td>
+                      <td>12.1M</td>
+                      <td>3.4M</td>
+                      <td>$48.20</td>
+                    </tr>
+                    <tr>
+                      <td><span class="wf-text">Claude Sonnet</span> <span class="wf-chip">Anthropic</span></td>
+                      <td>Пользовательский чат</td>
+                      <td>41 050</td>
+                      <td>8.9M</td>
+                      <td>2.1M</td>
+                      <td>$31.40</td>
+                    </tr>
+                    <tr>
+                      <td><span class="wf-text">Claude Haiku</span> <span class="wf-chip">Anthropic</span></td>
+                      <td>Пользовательский чат</td>
+                      <td>30 200</td>
+                      <td>6.1M</td>
+                      <td>1.5M</td>
+                      <td>$9.80</td>
+                    </tr>
+                    <tr>
+                      <td><span class="wf-text">GPT-4o mini</span> <span class="wf-chip">OpenAI</span></td>
+                      <td>Пользовательский чат</td>
+                      <td>22 010</td>
+                      <td>3.2M</td>
+                      <td>0.8M</td>
+                      <td>$4.10</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="wf-row">
+                  <button class="wf-btn wf-btn--ghost">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                    Показать все · 9 <span class="wf-annot">9</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              Вход и выход считаются раздельно: output-токен у cloud-чата дороже в разы (<a href="../../ai-foundation/_workzone/data-model.html#ai-pricing" class="xref-module">модель данных</a>). У embedding выхода нет. Это <b>org-уровень</b>: сумма по всей организации, к человеку не привязана — в отличие от разреза по сотрудникам выше.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">9</span>
+              По умолчанию видны топ-5 по стоимости; «Показать все» разворачивает остальные. Модели без цены оседают в хвосте. Источник — <a href="../../ai-foundation/_workzone/data-model.html#ai-spend" class="xref-module"><code>model_usage</code></a> (агрегат по модели · функции · дню).
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              Месячный порог этого счёта и оповещение — в <a href="#limits" class="xref-anchor">лимитах</a> вверху.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

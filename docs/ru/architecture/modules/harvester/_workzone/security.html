@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Harvester: Security</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="security.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Harvester</a>
+        <h1 class="header__title">Security</h1>
+        <div class="header__sub">harvester · workzone</div>
+      </div>
+
+      <p class="desc">
+        Harvester тянет данные из внешних сетей, и защищать нужно сам канал
+        приёма — два вектора:
+        <a href="#webhooks" class="xref-anchor">проверка входящих webhook'ов</a>
+        и <a href="#rate-limiting" class="xref-anchor">сдерживание частоты</a>
+        обращений к чужим API. Узко про канал: шифрование учётных данных держит
+        <a href="sources.html#fetch" class="xref-page">sources</a>, а перенос
+        прав доступа из источника —
+        <a href="acl-identity.html#acl" class="xref-page">acl-identity</a>.
+      </p>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ════════ WEBHOOKS ════════ -->
+          <div class="stk-layer stk-layer--webhooks" id="webhooks">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Webhook'и</span>
+              <span class="stk-layer__role"
+                >Принять только то, что реально от источника.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"
+                    >Ядро применяет — коннектор объявляет</span
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Не зашивать <code>if</code> на каждого провайдера: ядро держит
+                  единый механизм проверки, а
+                  <a href="connectors.html#manifest" class="xref-page"
+                    >коннектор</a
+                  >
+                  приносит свой <em>подключаемый верификатор</em> — он объявляет
+                  схему подписи, способ извлечь ключ дедупликации и есть ли в
+                  доставке метка времени. Ядро прогоняет три шага в строгом
+                  порядке <strong>свежесть → подпись → дедуп</strong> (дёшево →
+                  дорого): сначала отсеять по метке времени и заголовкам, и лишь
+                  то, что прошло подпись, пускать в дедуп — иначе неаутентичный
+                  поток сам станет DoS на хранилище дедупа. Новый источник =
+                  новый верификатор; ядро не трогаем.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Подлинность вызова</span>
+                </div>
+                <div class="stk-dec__d">
+                  Каждый входящий вызов нужно доказать как пришедший от
+                  источника — иначе в конвейер попадёт чужое. Схему подписи
+                  объявляет коннектор: HMAC над телом (Slack, GitHub),
+                  статичный токен в заголовке (GitLab) или JWT Connect-приложения
+                  (Atlassian); где источник не подписывает вовсе — откат на
+                  секретный неугадываемый endpoint. Подлинность не подтверждена —
+                  вызов отклонён.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Свежесть метки</span>
+                </div>
+                <div class="stk-dec__d">
+                  Где провайдер шлёт метку времени (Slack, GitLab), вызов старше
+                  окна свежести (единообразно <strong>5 минут</strong>)
+                  отбрасываем сразу, до подписи — это и первый барьер от
+                  переигрывания, и самая дешёвая отбраковка мусора. У источников
+                  без метки (GitHub, Atlassian) шаг пропускается, защиту от
+                  повтора несёт целиком дедуп.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Один вызов — один раз</span>
+                </div>
+                <div class="stk-dec__d">
+                  Подпись не спасает от повторного проигрывания перехваченного
+                  вызова. Ключ дедупликации каждой доставки (его извлекает
+                  верификатор коннектора) кладём в Redis атомарным
+                  <code>SET key NX EX</code> — первый раз ставит, повтор видит
+                  ключ и отбрасывается.
+                  <strong>TTL зависит от метки:</strong> 15 минут там, где есть
+                  timestamp (свежесть уже отрезала старое), и 24 часа там, где
+                  метки нет — чтобы ловить и ручные redelivery. Сам канал —
+                  только по TLS (терминирует reverse-proxy).
+                  <details>
+                    <summary>Декларации сегодняшних коннекторов</summary>
+                    <div>
+                      <ul class="stk-dec__list">
+                        <li>
+                          <strong>Slack</strong> — HMAC над
+                          <code>v0:ts:body</code>, метка есть (окно 5 мин), дедуп
+                          по <code>event_id</code>.
+                        </li>
+                        <li>
+                          <strong>GitHub</strong> —
+                          <code>X-Hub-Signature-256</code>, метки нет, дедуп по
+                          <code>X-GitHub-Delivery</code>.
+                        </li>
+                        <li>
+                          <strong>GitLab</strong> — статичный токен (план
+                          миграции на HMAC signing token), дедуп по
+                          <code>Idempotency-Key</code> / Event-UUID.
+                        </li>
+                        <li>
+                          <strong>Atlassian</strong> —
+                          <code>X-Hub-Signature</code> (admin) или JWT (Connect),
+                          метки нет, дедуп по
+                          <code>X-Atlassian-Webhook-Identifier</code>.
+                        </li>
+                      </ul>
+                    </div>
+                  </details>
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"
+                    >Отбить мусор<span class="iter v2">v2</span></span
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Зная адрес endpoint'а, его можно завалить мусором — каждый
+                  вызов стоит проверки подписи. Поэтому проверки и идут от
+                  дешёвых к дорогим (свежесть и заголовки — раньше HMAC, а
+                  неаутентичное в дедуп вообще не попадает), на endpoint висит
+                  лимит частоты на reverse-proxy, а сам путь неугадываем (секрет
+                  в адресе).
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Отказ — в лог и алерт</span>
+                </div>
+                <div class="stk-dec__d">
+                  Каждый отклонённый вызов уходит в лог: одиночный — шум,
+                  всплеск — сигнал, что секрет разъехался или endpoint щупают. На
+                  всплеск поднимается
+                  <a
+                    href="../../admin-panel/_wireframes/notifications.html#routing"
+                    class="xref-module"
+                    >уведомление</a
+                  >
+                  типа Security — тем же каналом, что и перебор пароля.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Где webhook'и настраиваются</span>
+                </div>
+                <div class="stk-dec__d">
+                  Webhook привязан к конкретному источнику — секрет и адрес
+                  заводятся там же, где подключение; какие события слать,
+                  выбирается на стороне источника, не у нас. Эту механику держит
+                  <a href="sources.html#fetch" class="xref-page">sources</a>;
+                  здесь — только проверка того, что по каналу пришло.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ RATE LIMITING ════════ -->
+          <div class="stk-layer stk-layer--ratelimit" id="rate-limiting">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Rate limiting per scope</span>
+              <a class="xref-badge" href="../../cache-workers/_workzone/rate-limit.html#consumers">→ Cache &amp; Workers</a>
+              <span class="stk-layer__role"
+                >Не забанили нас — и не положили источник.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Лимит по scope, не «на источник»</span>
+                </div>
+                <div class="stk-dec__d">
+                  Провайдеры лимитируют не «источник» вообще, а аккаунт, токен,
+                  воркспейс или сайт — и пороги у всех разные, со своими
+                  тарифными (<code>tier</code>) потолками. Поэтому ключ лимитера
+                  строится по <code>rate_limit_scope</code> из
+                  <a href="connectors.html#manifest" class="xref-page"
+                    >манифеста коннектора</a
+                  >
+                  (tenant / account_token / workspace_method / site), а не по
+                  абстракции «источник» — общего числа на всех нет. Манифест же
+                  объявляет стартовый и максимальный темп: безопасная отправная
+                  точка под типовой тариф, реальную же границу рантайм нащупывает
+                  по ответам самого источника.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Считаем стоимость, не запросы</span>
+                </div>
+                <div class="stk-dec__d">
+                  «Один запрос» — не единица нагрузки: у Atlassian поиск стоит 51
+                  point, у Slack лимит свой на каждый метод. Поэтому лимитер
+                  списывает не запросы, а <em>единицы стоимости</em> (cost per
+                  request, по умолчанию 1) — а во сколько единиц обходится
+                  конкретный запрос, объявляет коннектор. Так разнородные
+                  биллинги провайдеров ложатся на один счётчик без переделки
+                  ядра.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--wide">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Адаптивный темп (AIMD)</span>
+                </div>
+                <div class="stk-dec__d">
+                  Темп подстраивается под источник AIMD-контроллером: при
+                  спокойных ответах разгон +10% от нижней границы за окно оценки
+                  (≈10 c / 20 запросов), на <code>429</code> — резкий откат ×0.5
+                  (additive-increase / multiplicative-decrease). Пол и старт —
+                  темп из манифеста, потолок — его же максимум. Текущий темп
+                  <strong>не сбрасываем</strong> между прогонами — это выученная
+                  ёмкость API; в Redis он живёт с TTL в часы. Исполнитель —
+                  распределённый token-bucket в Redis, списание атомарно (Lua),
+                  ключ per-scope, переживает рестарт воркера.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Сигналы провайдера сильнее AIMD</span>
+                </div>
+                <div class="stk-dec__d">
+                  Когда источник говорит прямо — слушаем его, а не свою догадку.
+                  <code>Retry-After</code> — жёсткая пауза на весь scope, её
+                  уважают все воркеры, она перекрывает AIMD. А если
+                  <code>X-RateLimit-Remaining</code> мал — тормозим заранее:
+                  <code>safe_rps = Remaining / (Reset − now)</code>, берём
+                  <code>min</code> с темпом AIMD.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Стык с ретраями</span>
+                </div>
+                <div class="stk-dec__d">
+                  Throttling и повторы — одна линия: отбили по лимиту — повтор
+                  уходит уже с выдержкой. Сами ретраи и их backoff держит
+                  <a href="reliability.html#retry" class="xref-page"
+                    >reliability</a
+                  >.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

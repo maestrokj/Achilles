@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Notifications</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Notifications</h1>
+        <div class="header__sub">
+          admin panel · wireframes · settings
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Screen renders in the content area of the shell">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Screen loading — skeleton">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">
+        Where the organization's alerts go and to whom: delivery channels, routing by type, and recipients.
+        <a href="../../notifications/_workzone/dispatcher.html#dispatch" class="xref-module">→ Mechanics</a>
+      </p>
+
+      <!-- ═══ Delivery channels ═══ -->
+      <div class="section" id="channels">
+        <div class="section__title">Delivery channels</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">where an alert goes</div>
+          <div class="wf-screen wf-screen--wide wf-screen--pops">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/notifications
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/notifications · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-stack">
+                  <span class="wf-label">Built-in</span>
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text"><strong>In-app</strong> — notification center in the header</span>
+                      <span class="wf-row">
+                        <span class="wf-toggle wf-toggle--on wf-toggle--locked"></span>
+                        <span class="wf-annot">1</span>
+                      </span>
+                    </div>
+                    <span class="wf-hint">always on; a delivery guarantee, independent of email</span>
+                  </div>
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text"><strong>Email</strong> — to individual recipients, via the org SMTP</span>
+                      <span class="wf-row">
+                        <span class="wf-toggle wf-toggle--on"></span>
+                        <span class="wf-annot">2</span>
+                      </span>
+                    </div>
+                    <div class="wf-row wf-spread">
+                      <span class="wf-hint">via a queue — retries and burst throttling on spikes</span>
+                      <span class="wf-row">
+                        <span class="wf-chip wf-chip--ok">SMTP configured</span>
+                        <a href="platform-settings.html#smtp" class="wf-a">Settings</a>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <div class="wf-stack">
+                  <span class="wf-label">Webhooks — external tools</span>
+                  <table class="wf-table wf-table--pops">
+                    <thead>
+                      <tr>
+                        <th>Channel</th>
+                        <th>Endpoint</th>
+                        <th>Check</th>
+                        <th>Active</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>Slack</strong> <span class="wf-chip">preset</span></td>
+                        <td><code>hooks.slack.com/services/…</code></td>
+                        <td><span class="wf-chip wf-chip--ok">verified</span></td>
+                        <td>
+                          <span class="wf-row">
+                            <span class="wf-toggle wf-toggle--on"></span>
+                            <span class="wf-annot">3</span>
+                          </span>
+                        </td>
+                        <td>
+                          <span class="wf-pop">
+                            <button class="wf-btn">⋯</button>
+                            <div class="wf-menu">
+                              <span class="wf-menu__item">Test — send a sample event</span>
+                              <hr class="wf-menu__sep" />
+                              <span class="wf-menu__item wf-menu__item--danger"><span class="wf-guarded">Delete<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a></span></span>
+                            </div>
+                          </span>
+                        </td>
+                      </tr>
+                      <tr class="wf-table__row--muted">
+                        <td><strong>Ops on-call</strong> <span class="wf-chip">generic JSON</span></td>
+                        <td><code>ops.company.com/hooks/achilles</code></td>
+                        <td><span class="wf-chip wf-chip--ok">verified</span></td>
+                        <td>
+                          <span class="wf-row">
+                            <span class="wf-toggle"></span>
+                            <span class="wf-chip wf-dim">paused</span>
+                          </span>
+                        </td>
+                        <td>
+                          <span class="wf-pop">
+                            <button class="wf-btn">⋯</button>
+                            <div class="wf-menu">
+                              <span class="wf-menu__item">Test — send a sample event</span>
+                              <hr class="wf-menu__sep" />
+                              <span class="wf-menu__item wf-menu__item--danger"><span class="wf-guarded">Delete<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a></span></span>
+                            </div>
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div class="wf-pop wf-pop--block">
+                    <button class="wf-btn wf-btn--block">+ Add webhook</button>
+                    <div class="wf-menu">
+                      <a class="wf-opt">Slack — format preset</a>
+                      <a class="wf-opt">Generic — JSON payload</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              The in-app toggle is locked — the channel can't be turned off: it's the fallback, an alert stays visible on sign-in even when email and webhooks are silent.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              The toggle enables email delivery; it relies on the <a href="platform-settings.html#smtp" class="xref-page">org SMTP</a> — until SMTP is configured, the chip turns red and no mail goes out, leaving in-app and webhooks.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              A webhook is an outbound POST to the admin's endpoint. Slack is a preset with a ready-made message format; generic sends a <a href="../../notifications/_workzone/dispatcher.html#payload" class="xref-module">JSON payload</a>. “Test” sends a sample event. The toggle pauses the channel: a verified endpoint is kept on standby (Ops), routes intact, no delivery until it's turned on again. How a new channel is set up — <a href="#add-webhook" class="xref-anchor">the add form</a>.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">Only the Owner edits channels and routing; the Admin sees them read-only.</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Routing: type × channel ═══ -->
+      <div class="section" id="routing">
+        <div class="section__title">
+          Routing — type × channel
+          <a href="../../notifications/_workzone/dispatcher.html#catalog" class="xref-badge">→ Event catalog</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">org defaults</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-row wf-spread">
+                  <span class="wf-title">Where each type goes</span>
+                  <span class="wf-chip">defaults</span>
+                </div>
+                <span class="wf-text">
+                  The pills are a type's channels; clear them all and the type goes to no one. Left of the divider, individual recipients; right, webhooks.
+                  <span class="wf-pill wf-pill--on">on</span>
+                  <span class="wf-pill wf-pill--off">off</span>
+                  <span class="wf-pill wf-pill--paused">paused</span>
+                  <span class="wf-pill wf-pill--locked"><span class="wf-lock"></span>locked</span>
+                  <span class="wf-annot">4</span>
+                </span>
+
+                <div class="wf-card wf-stack wf-stack--tight">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-text"><strong>Sync</strong> — a run of failures, a source dropped, a lossy run</span>
+                    <span class="wf-chip wf-chip--err">critical</span>
+                  </div>
+                  <div class="wf-route">
+                    <span class="wf-pill wf-pill--locked"><span class="wf-lock"></span>In-app</span>
+                    <span class="wf-annot">5</span>
+                    <span class="wf-pill wf-pill--on">Email</span>
+                    <span class="wf-route__sep"></span>
+                    <span class="wf-pill wf-pill--on">Slack</span>
+                    <span class="wf-pill wf-pill--off">Ops</span>
+                  </div>
+                </div>
+
+                <div class="wf-card wf-stack wf-stack--tight">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-text"><strong>Security</strong> — brute force, role changes</span>
+                    <span class="wf-chip wf-chip--err">critical</span>
+                  </div>
+                  <div class="wf-route">
+                    <span class="wf-pill wf-pill--locked"><span class="wf-lock"></span>In-app</span>
+                    <span class="wf-pill wf-pill--on">Email</span>
+                    <span class="wf-route__sep"></span>
+                    <span class="wf-pill wf-pill--off">Slack</span>
+                    <span class="wf-pill wf-pill--paused">Ops</span>
+                  </div>
+                </div>
+
+                <div class="wf-card wf-stack wf-stack--tight">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-text"><strong>Budget</strong> — AI spend threshold</span>
+                    <span class="wf-chip wf-chip--err">critical</span>
+                  </div>
+                  <div class="wf-route">
+                    <span class="wf-pill wf-pill--on">In-app</span>
+                    <span class="wf-pill wf-pill--on">Email</span>
+                    <span class="wf-route__sep"></span>
+                    <span class="wf-pill wf-pill--off">Slack</span>
+                    <span class="wf-pill wf-pill--off">Ops</span>
+                  </div>
+                </div>
+
+                <div class="wf-card wf-stack wf-stack--tight">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-text"><strong>System</strong> — provider unavailable, backup failed, Curation Pass crashed</span>
+                    <span class="wf-chip wf-chip--err">critical</span>
+                  </div>
+                  <div class="wf-route">
+                    <span class="wf-pill wf-pill--on">In-app</span>
+                    <span class="wf-pill wf-pill--on">Email</span>
+                    <span class="wf-route__sep"></span>
+                    <span class="wf-pill wf-pill--on">Slack</span>
+                    <span class="wf-pill wf-pill--paused">Ops</span>
+                  </div>
+                </div>
+
+                <div class="wf-card wf-stack wf-stack--tight">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-text"><strong>Discovery</strong> <span class="iter v2">v2</span> — a new container outside the source scope</span>
+                    <span class="wf-chip">info</span>
+                  </div>
+                  <div class="wf-route">
+                    <span class="wf-pill wf-pill--on">In-app</span>
+                    <span class="wf-annot">6</span>
+                    <span class="wf-pill wf-pill--off">Email</span>
+                    <span class="wf-route__sep"></span>
+                    <span class="wf-pill wf-pill--off">Slack</span>
+                    <span class="wf-pill wf-pill--off">Ops</span>
+                  </div>
+                </div>
+
+                <div class="wf-alert" id="recipients">
+                  <strong>Recipients — Owner / Admin roles only.</strong> A dynamic slice by role: grant the role on the <a href="users.html" class="wf-a">Users</a> screen and the person joins the recipients; revoke it and they drop out. Individual channels (in-app · email) are each managed in one's own <a href="../../auth-security/_wireframes/profile-account.html#notifications" class="xref-module">profile</a>; an external recipient can't be created — a webhook serves a team or an on-call rotation. The matrix is about the organization's <strong>broadcast</strong> types; the personal types <code>agent</code> and <code>account</code> are addressed to a specific user (<a href="../../notifications/_workzone/dispatcher.html#addressing" class="xref-module">targeted</a>) and each person manages them only in their own profile.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              The pills are this type's channels: a filled dot means it goes here, an empty one means it doesn't, a dimmed one means the channel is paused (Ops, see the Channels block).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              The lock on the in-app pill for <code>security</code> and <code>sync</code> — this channel can't be turned off: a critical signal always reaches at least the feed. The lock is organizational and in-app only — email and webhooks for these types are free, and one can still unsubscribe individually in the profile. It isn't tied to severity: <code>system</code> is also critical, yet it can be cleared entirely. <a href="../../auth-security/_workzone/protection.html#brute-force" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              Discovery <span class="iter v2">v2</span> — “a new project X in Jira outside the allowed scope, add it?” with an action button right in the notification. It fires in the “Selected only” scope mode, when a source returns an object beyond the allow-list; in “Everything” mode there's no scope boundary — nothing to notify about. <a href="../../harvester/_workzone/sources.html#allowlist" class="xref-module">Harvester</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Add webhook (modal) ═══ -->
+      <div class="section" id="add-webhook">
+        <div class="section__title">
+          Add webhook
+          <a href="#channels" class="xref-anchor">→ Channels</a>
+        </div>
+        <div class="wf-stage wf-stage--backdrop">
+          <div class="wf-stage__caption">“+ Add webhook” dialog · form by preset</div>
+          <div class="wf-gallery">
+
+            <!-- ── Slack preset — verified ── -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">Slack preset</div>
+              <div class="wf-screen wf-screen--modal">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <span class="wf-title">New webhook <span class="wf-annot">7</span></span>
+
+                    <div class="wf-field wf-field--inline">
+                      <span class="wf-label">Format</span>
+                      <span class="wf-chip">Slack — preset</span>
+                      <span class="wf-hint">ready-made message format</span>
+                      <span class="wf-annot">8</span>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Name</span>
+                      <div class="wf-input">Team #alerts</div>
+                      <span class="wf-hint">the channel's label in the list and matrix</span>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Incoming Webhook URL</span>
+                      <div class="wf-input wf-input--focus">https://hooks.slack.com/services/T…/B…/…</div>
+                      <span class="wf-hint">from Slack → Incoming Webhooks; stored encrypted <span class="wf-annot">9</span></span>
+                    </div>
+
+                    <div class="wf-row wf-spread">
+                      <button class="wf-btn">Check</button>
+                      <span class="wf-row">
+                        <span class="wf-chip wf-chip--ok">verified</span>
+                        <span class="wf-annot">10</span>
+                      </span>
+                    </div>
+
+                    <hr class="wf-divider" />
+                    <div class="wf-row wf-spread">
+                      <button class="wf-btn wf-btn--ghost">Cancel</button>
+                      <button class="wf-btn wf-btn--primary">Add</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Generic preset — check failed ── -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">Generic preset · check failed</div>
+              <div class="wf-screen wf-screen--modal">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <span class="wf-title">New webhook</span>
+
+                    <div class="wf-field wf-field--inline">
+                      <span class="wf-label">Format</span>
+                      <span class="wf-chip">Generic — JSON</span>
+                      payload
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Name</span>
+                      <div class="wf-input">Ops on-call</div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Endpoint URL</span>
+                      <div class="wf-input">https://ops.company.com/hooks/achilles</div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Request signature (secret)</span>
+                      <div class="wf-input">••••••••••••</div>
+                      <span class="wf-hint">optional — HMAC of the body for the receiver to verify; write-only <span class="wf-annot">11</span></span>
+                    </div>
+
+                    <div class="wf-row wf-spread">
+                      <button class="wf-btn">Check</button>
+                      <span class="wf-row">
+                        <span class="wf-chip wf-chip--err">no response · 503</span>
+                      </span>
+                    </div>
+                    <span class="wf-hint wf-hint--error">the endpoint returned an error — fix the address and check again</span>
+
+                    <hr class="wf-divider" />
+                    <div class="wf-row wf-spread">
+                      <button class="wf-btn wf-btn--ghost">Cancel</button>
+                      <button class="wf-btn wf-btn--disabled">Add</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              The modal opens from “+ Add webhook” in the <a href="#channels" class="xref-anchor">Channels</a> block with the preset already selected. The channel is created disabled — once added, it's turned on with the “Active” toggle in the list.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              The preset defines both the field layout and the <a href="../../notifications/_workzone/dispatcher.html#payload" class="xref-module">payload</a> format: Slack — a ready-made message (only the Incoming Webhook URL is needed), Generic — neutral JSON to an arbitrary receiver (URL + optional signature). Only these two: we don't build a separate preset for Microsoft Teams — Teams accepts generic JSON via Power Automate Workflow (Microsoft retired the old Office 365 Connectors in May 2026).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">9</span>
+              The URL is written to <a href="../../notifications/_workzone/data-model.html#notifications-data" class="xref-module"><code>url_enc</code></a>, the optional HMAC secret to a separate <code>secret_enc</code>; both are encrypted and never returned to the UI (write-only). When editing an existing channel the fields come back empty: empty = “leave as is,” input = replace.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">10</span>
+              “Check” sends a sample event to the endpoint before saving — the same probe that later lives in the “Check” column and the “Test” menu item. A green chip means the endpoint accepted it.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">11</span>
+              A failed check shows the response code and blocks “Add”: a non-working channel won't make it into the list. The Generic secret is optional: we'll sign the body if the receiver verifies it.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">v1 boundaries: custom headers and <code>Authorization: Bearer</code> — <span class="iter v2">v2</span>; a custom payload format isn't edited through a template — for a non-standard receiver, <a href="../../notifications/_workzone/dispatcher.html#payload" class="xref-module">generic + n8n</a> serves the purpose.</li>
+            <li class="wf-legend__item wf-legend__item--note">Only the Owner creates and edits channels; the Admin sees the form read-only.</li>
+          </ol>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

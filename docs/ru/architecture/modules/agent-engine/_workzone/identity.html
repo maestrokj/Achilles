@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Agent Engine: Личность и права</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="identity.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Agent Engine</a>
+        <h1 class="header__title">Личность и права</h1>
+        <div class="header__sub">agent-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        Агент читает корпоративные знания — значит, кто-то решает,
+        <strong>под какой личностью</strong> он их видит. Это не настройка
+        пользователя и не строка промта, а <em>рамка</em>, которую движок
+        привязывает к прогону. Рамка простая: агент действует
+        <strong>под правами своего владельца</strong> — видит ровно то, что
+        видит сам сотрудник, и только на чтение.
+      </p>
+
+      <!-- ════════════════ AGENT FRAME ════════════════
+           «Под какой личностью» — инженерный слой (движок), не admin и не
+           поле промта. Рамка привязывается к прогону и определяет, чьим ACL
+           режется чтение. Рамка = личность владельца. -->
+      <div class="section" id="agent-frame">
+        <h2 class="section__title">Рамка агента — инженерный слой</h2>
+        <p class="desc">
+          «Под какой личностью агент читает базу» решает не админ и не сам промт,
+          а <strong>рамка агента</strong> — инженерный слой, который движок
+          подмешивает в <a href="runtime.html#prompt-composition" class="xref-page"
+            >композицию промта</a> и которым режет каждый запрос к знаниям. Промт
+          можно подделать словами — рамку нет: она навязана снаружи цикла.
+          Движок ставит в рамку <strong>личность владельца</strong>, и всё
+          чтение идёт под его ACL.
+        </p>
+
+        <div class="id-bind">
+          <div class="id-node id-node--owner">
+            <div class="id-node__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg></div>
+            <div class="id-node__t">Владелец</div>
+            <div class="id-node__s">сотрудник, завёл агента</div>
+          </div>
+          <div class="id-edge">
+            <span class="id-edge__arr">▸</span>
+            выдаёт<br />личность
+          </div>
+          <div class="id-frame">
+            <span class="id-frame__cap">рамка агента · движок</span>
+            <div class="id-frame__t">личность прогона</div>
+            <div class="id-frame__s">навязана снаружи, промтом не перебить</div>
+            <span class="id-frame__eq">личность = владелец</span>
+          </div>
+          <div class="id-edge">
+            <span class="id-edge__arr">▸</span>
+            читает<br />под ACL
+          </div>
+          <div class="id-node id-node--ks">
+            <div class="id-node__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6 4 14" /><path d="M12 6v14" /><path d="M8 8v12" /><path d="M4 4v16" /></svg></div>
+            <div class="id-node__t">Knowledge Store</div>
+            <div class="id-node__s">срез по правам · read-only</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ OWNER RIGHTS ════════════════
+           Права владельца: ACL создателя применяется на стороне KS
+           pre-filter'ом. Личность агента = личность владельца (мост уже есть:
+           identity.user_id). Сервисные аккаунты и разрезы scope — v2. -->
+      <div class="section" id="owner-rights">
+        <h2 class="section__title">Под правами владельца</h2>
+        <p class="desc">
+          Агент наследует <strong>ACL создателя</strong> целиком: его проекты,
+          пространства, каналы. Что закрыто для сотрудника — закрыто и для его
+          агента; права режутся на стороне
+          <a href="../../knowledge-store/_workzone/hybrid-search.html#acl-prefilter" class="xref-module"
+            >Knowledge Store</a> pre-filter'ом, тем же механизмом, что и в живом
+          поиске. Отдельной модели личности агент не имеет — он
+          <strong>и есть</strong> его владелец перед базой.
+        </p>
+
+        <div class="id-versions">
+          <div class="id-ver id-ver--now">
+            <div class="id-ver__h">Личность владельца</div>
+            <ul class="id-ver__list">
+              <li>рамка = ACL создателя, один срез на агента</li>
+              <li>права меняются вместе с правами владельца</li>
+              <li>урезали доступ → агент сужается следом, ACL живой</li>
+              <li>выбирать «чей ACL» не нужно — он один</li>
+            </ul>
+          </div>
+          <div class="id-ver id-ver--later">
+            <div class="id-ver__h"><span class="iter v2">v2</span> полная модель личности</div>
+            <ul class="id-ver__list">
+              <li>сервисные аккаунты с собственным доступом</li>
+              <li>выбор «под чьей личностью» при создании</li>
+              <li>разрезы scope: personal · team · company</li>
+              <li>агент команды под правами команды, не автора</li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="note">
+          Связать агента с владельцем дёшево: личность сотрудника уже сведена с
+          учёткой (мост <code>identity.user_id</code> в
+          <a href="../../knowledge-store/_workzone/acl-identity.html#identity" class="xref-module"
+            >модели личностей</a>), и FK прогона на владельца ведёт прямо к этому
+          ACL — см. <a href="data-model.html#agents" class="xref-page">agents</a>.
+        </p>
+        <p class="note">
+          Это про <em>живой</em> ACL активного сотрудника. Уход владельца —
+          другой механизм: деактивация гасит выключатель агента
+          (<code>enabled=false</code>), удаление учётки сносит его каскадом — см.
+          <a href="governance.html#lifecycle" class="xref-page">жизненный цикл
+            владельца</a>.
+        </p>
+      </div>
+
+      <!-- ════════════════ KS BOUNDARY ════════════════
+           Агент только читает KS. Запись в граф (entities, edges) — за
+           Harvester и Curation Pass, не за агентом. Изоляция read-only делает
+           прогон безопасным для параллельного с записями исполнения. -->
+      <div class="section" id="ks-boundary">
+        <h2 class="section__title">Граница: только чтение</h2>
+        <p class="desc">
+          Что бы агент ни «надумал», в Knowledge Store он
+          <strong>ничего не пишет</strong>. Все три инструмента —
+          <a href="runtime.html#tools" class="xref-page">search, graph, sql</a> —
+          на чтение; запись в граф (сущности, связи, векторы) принадлежит
+          <a href="../../knowledge-store/_workzone/lifecycle.html#curation-pass" class="xref-module"
+            >доводке знаний</a> и сбору, не агенту. Отсюда два следствия: прогон
+          не может испортить базу, и его чтение спокойно идёт
+          <a href="execution.html#lane" class="xref-page">параллельно записям
+            графа</a> — конкурировать не за что.
+        </p>
+        <p class="note">
+          Перед KS агент <strong>неотличим от владельца</strong>: запрос идёт под
+          его личностью, отдельного журнала доступа на стороне KS нет. След
+          автоматического прогона живёт в
+          <a href="data-model.html#agent-runs" class="xref-page">журнале
+            прогонов</a>; различать «агент или человек» в самом KS-аудите —
+          <span class="iter v2">v2</span>, вместе с журналом доступа KS.
+        </p>
+        <p class="note">
+          Запись результатов агента обратно в граф как новых инсайтов —
+          осмысленная, но отдельная ветка: <span class="iter v2">v2</span>, со
+          своим контуром прав на запись. Выход агента остаётся в
+          <a href="data-model.html#agent-runs" class="xref-page">журнале
+            прогонов</a>, вне знаний.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

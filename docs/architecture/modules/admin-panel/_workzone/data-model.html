@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Data model</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="data-model.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Data model</h1>
+        <div class="header__sub">admin panel · workzone</div>
+      </div>
+
+      <p class="desc">
+        Admin Panel holds the global
+        <a href="#data-model" class="xref-anchor">platform configuration</a> —
+        a singleton with shared settings and AI budgets. The AI-resource registry
+        (providers, models, their assignment by function, spend, tools,
+        system prompt) is factored out into the cross-cutting module
+        <a href="../../ai-foundation/_workzone/data-model.html#ai-models" class="xref-module">AI Foundation</a>,
+        and notifications (channels, routes, personal preferences, delivery feed) — into
+        <a href="../../notifications/_workzone/data-model.html#notifications-data" class="xref-module">Notifications</a>.
+        The singleton's ORM model lives in Knowledge Store
+        (<code>knowledge_store/models.py</code>); Admin is a thin facade package
+        (schemas + service + routes) on top of it. Consumers — Harvester,
+        Query Engine, Agent Engine, Auth — read the model directly; nobody
+        imports admin, and there are no cycles between modules.
+      </p>
+
+      <div class="stk-stack">
+        <!-- ── L1 · Platform configuration ── -->
+        <div class="stk-layer stk-layer--config" id="data-model">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">1</span>
+            <span class="stk-layer__name">Platform configuration</span>
+            <span class="stk-layer__role"
+              >Singleton. One row per instance.</span
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="dm-tbl">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">platform_settings</span>
+                <span class="dm-tbl__sub">global settings</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--flag">singleton · CHECK (id = 1)</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--pk">PK</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (id = 1)">CHECK</span>
+                    </td>
+                    <td class="dm-note">always <code>1</code> · → Singleton</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">org_name</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'Achilles'">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">DEFAULT <code>'Achilles'</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">org_logo_url</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">org_description</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">accent_color</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT '#6366f1'">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">hex · DEFAULT <code>'#6366f1'</code> · → Branding</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">timezone</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'UTC'">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">IANA tz · DEFAULT <code>'UTC'</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">locale</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'ru'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (ru | en)">CHECK</span>
+                    </td>
+                    <td class="dm-note">DEFAULT <code>'ru'</code> · ru · en</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">date_format</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'DD.MM.YYYY'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (DD.MM.YYYY | MM/DD/YYYY | YYYY-MM-DD)">CHECK</span>
+                    </td>
+                    <td class="dm-note">DEFAULT <code>'DD.MM.YYYY'</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">access_token_ttl</td>
+                    <td class="dm-t">Integer</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 900">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (access_token_ttl > 0)">CHECK</span>
+                    </td>
+                    <td class="dm-note">sec · DEFAULT <code>900</code> (15 min) · → Session TTLs</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">refresh_token_ttl</td>
+                    <td class="dm-t">Integer</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 2592000">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (refresh_token_ttl > 0)">CHECK</span>
+                    </td>
+                    <td class="dm-note">sec · DEFAULT <code>2592000</code> (30 days)</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">session_absolute_ttl</td>
+                    <td class="dm-t">Integer</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 7776000">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (session_absolute_ttl > 0)">CHECK</span>
+                    </td>
+                    <td class="dm-note">sec · DEFAULT <code>7776000</code> (90 days)</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">maintenance_mode</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">DEFAULT <code>false</code> · → Maintenance mode</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">mcp_enabled</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT true">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">
+                      DEFAULT <code>true</code> · kill switch for the MCP door · closed ⇒ a request to <code>/mcp</code> is rejected before the key check ·
+                      <a href="../../mcp/index.html#governance" class="xref-module">→ MCP</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">ai_monthly_budget</td>
+                    <td class="dm-t">Numeric</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      monthly spend threshold · <code>NULL</code> = not set ·
+                      <a href="#ai-budget" class="xref-anchor">→ AI budget</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">ai_budget_alert_enabled</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (NOT ai_budget_alert_enabled OR ai_monthly_budget IS NOT NULL)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      alert · DEFAULT <code>false</code> · CHECK: on ⇒ amount set
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">curation_frequency</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'daily'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (daily | weekly)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      cadence of the platform curation run · DEFAULT
+                      <code>'daily'</code> · daily · weekly ·
+                      <a href="../../knowledge-store/_workzone/lifecycle.html#curation-pass" class="xref-module">→ Curation Pass</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">curation_weekday</td>
+                    <td class="dm-t">Integer</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (curation_weekday BETWEEN 0 AND 6)">CHECK</span>
+                    </td>
+                    <td class="dm-note">0–6 (Mon–Sun) · weekly only · <code>NULL</code> for daily</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">curation_time</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT '04:00'">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">
+                      <code>'HH:MM'</code> in the organization's local time · DEFAULT
+                      <code>'04:00'</code> · heavy run during quiet hours
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">agent_weekly_token_budget</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (agent_weekly_token_budget IS NULL OR agent_weekly_token_budget > 0)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      weekly per-user token cap for agents · blocking ·
+                      <code>NULL</code> = no limit · spend = <code>SUM(tokens_used)</code> over runs ·
+                      <a href="../_wireframes/usage.html#limits" class="xref-page">→ AI usage</a> ·
+                      <a href="../../agent-engine/_workzone/governance.html#budget" class="xref-module">→ Agent Engine</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">chat_weekly_token_budget</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (chat_weekly_token_budget IS NULL OR chat_weekly_token_budget > 0)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      weekly per-user token cap for chat · informational in v1
+                      (tracked without blocking) · <code>NULL</code> = no limit · spend =
+                      <code>SUM(tokens_used)</code> over messages ·
+                      <a href="../_wireframes/usage.html#limits" class="xref-page">→ AI usage</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">agent_iteration_cap</td>
+                    <td class="dm-t">Integer</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 15">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (agent_iteration_cap > 0)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      cap on steps in a single run · DEFAULT <code>15</code> ·
+                      a safeguard against looping, not a budget ·
+                      <a href="../../agent-engine/_workzone/runtime.html#loop" class="xref-module">→ Agent Engine</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">agent_max_concurrency</td>
+                    <td class="dm-t">Integer</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 4">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (agent_max_concurrency > 0)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      cap on concurrent LLM calls on the agents' background lane ·
+                      DEFAULT <code>4</code> · isolated from live chat ·
+                      <a href="../../agent-engine/_workzone/execution.html#concurrency" class="xref-module">→ Agent Engine</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>server_default=now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="stk-dec" id="singleton">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Singleton — one row per instance</span>
+              </div>
+              <div class="stk-dec__d">
+                <code>CHECK (id = 1)</code> guarantees uniqueness. The migration
+                inserts the row with defaults right away — the application always
+                reads / updates, never creates.
+              </div>
+            </div>
+
+            <div class="stk-dec" id="session-ttl">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Session TTLs</span>
+                <a class="xref-badge" href="../../auth-security/_workzone/authentication.html#tokens-sessions"
+                  >→ Auth &amp; Security</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Override the auth defaults. Values in seconds — a single format
+                shared with the JWT library. <code>session_absolute_ttl</code> is the maximum
+                lifetime of a token family (= <code>absolute_expires_at</code> in
+                the auth module). Auth imports the model from core and reads the TTLs when
+                issuing tokens.
+              </div>
+            </div>
+
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Branding</span>
+              </div>
+              <div class="stk-dec__d">
+                <code>accent_color</code> — a hex color applied to the login screen
+                and the header via a CSS custom property. The theme (dark / light) is set
+                on the client: the first visit follows the system preference
+                (prefers-color-scheme), and the choice is stored in localStorage.
+              </div>
+            </div>
+
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Global config — model outside admin</span>
+                <a class="xref-badge" href="../../auth-security/_workzone/authentication.html#tokens-sessions"
+                  >→ Auth &amp; Security</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                The <code>PlatformSettings</code> ORM model lives in
+                <code>knowledge_store/models.py</code>, not in admin. Admin
+                provides the CRUD API (settings service / routes); auth and
+                other modules import the model to read it. Dependencies flow
+                admin → KS/auth — no cycles.
+              </div>
+            </div>
+
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">CHECK vs ENUM</span>
+              </div>
+              <div class="stk-dec__d">
+                Fields with a fixed value set (<code>locale</code>,
+                <code>date_format</code>) are Text + <code>CHECK</code>, not a
+                native PostgreSQL ENUM.
+              </div>
+              <details>
+                <summary>why</summary>
+                <div>
+                  <code>ALTER TYPE ADD VALUE</code> cannot be rolled back inside a transaction —
+                  Alembic migrations are simpler this way.
+                </div>
+              </details>
+            </div>
+
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">SMTP settings — in the Email module</span>
+                <a class="xref-badge" href="../../email/_workzone/data-model.html#data-model"
+                  >→ Email</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                The <code>smtp_settings</code> model (fields, password encryption,
+                migration) lives with the
+                <a href="../../email/index.html" class="xref-module">Email</a> transport.
+                Here — only the editing screen
+                (<a class="xref-badge xref-badge--page" href="../_wireframes/platform-settings.html#smtp">→ SMTP screen</a>),
+                which writes the settings through the API.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="ai-budget">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">AI budget — an instance setting; spend — in the registry</span>
+                <a class="xref-badge xref-badge--page" href="../_wireframes/usage.html#limits"
+                  >→ AI usage</a
+                >
+                <a class="xref-badge" href="../../ai-foundation/_workzone/data-model.html#ai-spend"
+                  >→ model_usage</a
+                >
+                <a class="xref-badge xref-badge--page" href="../_wireframes/notifications.html"
+                  >→ Notifications</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                The admin <strong>enters</strong> the monthly AI-spend threshold
+                by hand and turns it on with a toggle — not a hardcode: the amount and the flag live
+                here, in the singleton (<code>ai_monthly_budget</code> +
+                <code>ai_budget_alert_enabled</code>), next to
+                <code>maintenance_mode</code>. The CHECK prevents enabling the alert
+                without an amount set. The control sits on the
+                <a href="../_wireframes/usage.html#limits" class="xref-page">AI usage</a> screen —
+                a shared home for limits, next to the weekly token caps; the monthly
+                bill by model is accumulated by the AI-resource registry
+                (<a href="../../ai-foundation/_workzone/data-model.html#ai-spend" class="xref-module"><code>model_usage</code></a>,
+                aggregated by model · function · day) and shown as a
+                <a href="../_wireframes/usage.html#by-model" class="xref-page">breakdown by model</a> there too.
+                When the threshold is reached a Budget-type notification is raised — the channel
+                is owned by the notifications module. The models and their assignments — also in
+                <a href="../../ai-foundation/_workzone/data-model.html#ai-models" class="xref-module">AI Foundation</a>.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="user-usage">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Per-person spend — derived from journals, no counter</span>
+                <a class="xref-badge xref-badge--page" href="../_wireframes/usage.html">→ AI usage</a>
+              </div>
+              <div class="stk-dec__d">
+                The <a href="../_wireframes/usage.html" class="xref-page">AI usage</a> screen
+                computes per-user totals <strong>on the fly from journals</strong>:
+                agent spend — from
+                <a href="../../agent-engine/_workzone/data-model.html#agent-runs" class="xref-module"><code>agent_runs.tokens_used</code></a>
+                (via <code>agents.user_id</code>), chat — from
+                <a href="../../query-engine/_workzone/data-model.html#messages" class="xref-module"><code>messages.tokens_used</code></a>
+                (via <code>conversations.user_id</code>). There is no separate per-user counter
+                table — the cap is derived, like the agent budget.
+                Both weekly caps
+                (<code>agent_weekly_token_budget</code> · <code>chat_weekly_token_budget</code>)
+                live here, in the singleton; the agent one blocks runs, chat is informational in v1.
+                Indexing and RAG search are not tied to a person — their aggregate is held by
+                <a href="../../ai-foundation/_workzone/data-model.html#ai-spend" class="xref-module"><code>model_usage</code></a>
+                (by model · function · day); the same screen shows them as a
+                <a href="../_wireframes/usage.html#by-model" class="xref-page">breakdown by model</a>, not by person.
+                Monetary cost <em>per person</em>, a daily <code>user_usage</code> aggregate
+                as load grows, and chat blocking are
+                <span class="iter v2">v2</span>.
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="mod-conn">
+          <div class="mod-conn__line"></div>
+          <div class="mod-conn__arrow"></div>
+        </div>
+
+        <!-- ── L3 · Migration ── -->
+        <div class="stk-layer stk-layer--migration" id="migration">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">2</span>
+            <span class="stk-layer__name">Migration</span>
+            <span class="stk-layer__role"
+              >Creates the tables and seeds the singleton.</span
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t"><code>alembic/versions/NNN_core_platform_settings.py</code></span>
+              </div>
+              <div class="stk-dec__d">
+                Creates the <code>platform_settings</code> table and, in the same step,
+                runs an <code>INSERT</code> of the initial row with defaults —
+                the singleton exists from the first launch, and the application never
+                creates it. <code>downgrade()</code> — <code>DROP TABLE</code>.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

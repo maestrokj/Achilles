@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Harvester: Sources</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="sources.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Harvester</a>
+        <h1 class="header__title">Sources</h1>
+        <div class="header__sub">harvester · workzone</div>
+      </div>
+
+      <p class="desc">
+        What a data source is and how it connects. A connection is a
+        <a href="#source-model" class="xref-anchor">source model</a> filled in
+        by the admin: type, address, credentials, and scope. From there the
+        platform
+        <a href="#authentication" class="xref-anchor">authenticates</a>, tucks
+        secrets away in the
+        <a href="#secrets" class="xref-anchor">crypto core</a>, verifies the
+        connection via
+        <a href="#test-connection" class="xref-anchor">Test Connection</a>, and
+        begins <a href="#fetch" class="xref-anchor">fetching</a> only the
+        objects in scope. From there the source runs through its own
+        <a href="#lifecycle" class="xref-anchor">lifecycle</a> — pause,
+        disconnect, delete. The connection screen lives in
+        <a
+          href="../../admin-panel/_wireframes/data-sources.html#source-wizard"
+          class="xref-module"
+          >Admin Panel</a
+        >.
+      </p>
+
+      <!-- ════════ SOURCE MODEL ════════ -->
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--model" id="source-model">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">◆</span>
+              <span class="stk-layer__name">Source model</span>
+              <span class="stk-layer__role"
+                >Filled in by the admin at connection time.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="src-fields">
+                <div class="src-field">
+                  <span class="src-field__key"><code>connector_type</code></span>
+                  <span class="src-field__val"
+                    >The source type — Jira, Confluence, GitLab, Slack, and
+                    others. Selects a
+                    <a href="connectors.html#catalog" class="xref-page"
+                      >connector</a
+                    >
+                    from the registry; its manifest defines which fields and
+                    what kind of credentials the form asks for.</span
+                  >
+                </div>
+                <div class="src-field">
+                  <span class="src-field__key"><code>base URL</code></span>
+                  <span class="src-field__val"
+                    >The address of the source instance — where the connector
+                    sends its requests.</span
+                  >
+                </div>
+                <div class="src-field">
+                  <span class="src-field__key">credential</span>
+                  <span class="src-field__val"
+                    >How the platform presents itself to the source: as whom (a
+                    service account or a personal account) and with what (a
+                    token, or OAuth in <span class="iter v2">v2</span>). Depends
+                    on <code>connector_type</code>. Details
+                    <a href="#authentication" class="xref-anchor"
+                      >below</a
+                    >.</span
+                  >
+                </div>
+                <div class="src-field">
+                  <span class="src-field__key">scope</span>
+                  <span class="src-field__val"
+                    >Which source objects to fetch — projects, spaces, channels.
+                    A mode plus lists set by the admin. See
+                    <a href="#allowlist" class="xref-anchor">scope</a>.</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ AUTHENTICATION ════════ -->
+      <div class="section" id="authentication">
+        <div class="section__title">Authentication</div>
+        <p class="desc">
+          Signing in to a source breaks down into two independent questions:
+          <b>as whom</b> the platform accesses the source and <b>with what</b>
+          it proves that. The axes are orthogonal and combine — a service
+          account presents its own token.
+        </p>
+
+        <div class="src-axis">
+          <div class="src-axis__label">As whom — the identity</div>
+          <div class="src-auth">
+            <div class="stk-dec stk-dec--wide stk-dec--rec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Service account</span>
+              </div>
+              <div class="stk-dec__d">
+                A dedicated read-only technical account for the integration. Its
+                permissions are visible and revocable in one place, its scope
+                trimmed to what was selected. <b>The default path.</b>
+              </div>
+            </div>
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Admin's personal account</span>
+              </div>
+              <div class="stk-dec__d">
+                A fallback for instances where a service account can't be set up
+                or would be overkill. Access is tied to a person — fine for
+                small, one-off sources, not as the norm.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="src-axis">
+          <div class="src-axis__label">With what — the mechanism</div>
+          <div class="src-auth">
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Static token</span>
+              </div>
+              <div class="stk-dec__d">
+                An API token or personal access token issued for the chosen
+                identity. Long-lived, entered once — the platform tucks it away
+                in the crypto core.
+              </div>
+            </div>
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">OAuth</span>
+                <span class="iter v2">v2</span>
+              </div>
+              <div class="stk-dec__d">
+                Authorization through the source's provider, without manually
+                entering a long-lived token.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ SECRETS ════════ -->
+      <div class="section" id="secrets">
+        <div class="section__title">
+          Secrets
+          <a
+            class="xref-badge"
+            href="../../auth-security/_workzone/protection.html#crypto-core"
+            >→ Auth · Crypto core</a
+          >
+        </div>
+        <p class="desc">
+          Service-account tokens and passwords are stored
+          <b>encrypted</b> — the platform needs the original back (the connector
+          uses it to reach the source), so this is encryption, not a hash. The
+          key and algorithm aren't home-grown: the same primitive
+          (AES-256-GCM) that encrypts the SMTP password in the Email module is
+          provided by the Auth crypto core. Harvester keeps no secret store of
+          its own — it writes the secret to the
+          <code>sources.credential_enc</code> field and calls the core to
+          decrypt it at the moment it queries the source.
+        </p>
+      </div>
+
+      <!-- ════════ TEST CONNECTION ════════ -->
+      <div class="section" id="test-connection">
+        <div class="section__title">Test Connection</div>
+        <p class="desc">
+          Before the first fetch, the connection is checked step by step — so
+          that on failure it's immediately clear where the problem is: the
+          address, the credentials, or the permissions. This is the same
+          availability-check approach used by model providers and Email
+          (<code>is_available()</code>): not "works / doesn't work," but a clear
+          diagnosis. The "credentials" and "permissions" steps are the
+          connector's
+          <a href="connectors.html#contract" class="xref-page"
+            ><code>check_connection()</code> method</a
+          >; the URL-availability step is a shared layer, the same for every
+          type, not the connector's job.
+        </p>
+        <div class="src-probe">
+          <div class="src-probe__step">
+            <span class="src-probe__n">1</span>
+            <div class="src-probe__body">
+              <div class="src-probe__t">URL reachable</div>
+              <div class="src-probe__d">
+                The instance at <code>base URL</code> responds. If not — the
+                address is wrong or the source is unreachable over the network.
+              </div>
+            </div>
+          </div>
+          <div class="src-probe__link"></div>
+          <div class="src-probe__step">
+            <span class="src-probe__n">2</span>
+            <div class="src-probe__body">
+              <div class="src-probe__t">Credentials valid</div>
+              <div class="src-probe__d">
+                The source accepts the credential. If not — the token has
+                expired, been revoked, or the service account is the wrong one.
+              </div>
+            </div>
+          </div>
+          <div class="src-probe__link"></div>
+          <div class="src-probe__step">
+            <span class="src-probe__n">3</span>
+            <div class="src-probe__body">
+              <div class="src-probe__t">Permissions sufficient</div>
+              <div class="src-probe__d">
+                The account can actually see the selected objects. If not — the
+                credentials are valid, but read access to the project or channel
+                is missing.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="src-probe__verdict">
+          Each step returns its own error: the admin fixes exactly the link that
+          broke, rather than guessing from a generic "couldn't connect."
+        </div>
+        <p class="desc" id="health-check">
+          The same probe runs on two triggers.<br /><b>On demand</b> — the admin
+          hits it at connection and edit time, with all three steps.<br /><b
+            >On a schedule</b
+          >
+          — the platform runs a lightweight version itself (steps 1–2:
+          connectivity and credential validity) between syncs, separate from the
+          heavy run. On a fetch failure: the probe drops the source into a
+          <a href="#lifecycle" class="xref-anchor"
+            >health state of <code>(error)</code></a
+          >
+          and raises a notification through the same channel as a run failure
+          (<a href="reliability.html#visibility" class="xref-page"
+            >visibility</a
+          >). The triggers and the probe's outcome show up in the "Test
+          Connection" block of the
+          <a
+            href="../../admin-panel/_wireframes/data-sources.html#test-connection"
+            class="xref-module"
+            >source card</a
+          >.
+        </p>
+      </div>
+
+      <!-- ════════ SCOPE ════════ -->
+      <div class="section" id="allowlist">
+        <div class="section__title">Scope</div>
+        <p class="desc">
+          Scope is a <b>mode</b>, not a list typed in by hand. As soon as the
+          credentials are accepted
+          (<a href="#test-connection" class="xref-anchor">Test Connection</a>,
+          step 2), the connector builds a <b>catalog</b> of the source's objects
+          — projects, spaces, channels — via its
+          <a href="connectors.html#contract" class="xref-page"
+            ><code>list_catalog()</code> method</a
+          >, and the admin picks from a live list on the connection screen. No
+          typos, no guessing at keys.
+        </p>
+
+        <div class="src-axis">
+          <div class="src-axis__label">Scope mode</div>
+          <div class="src-auth">
+            <div class="stk-dec stk-dec--wide stk-dec--rec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Everything</span>
+              </div>
+              <div class="stk-dec__d">
+                Take the source whole and <b>pick up new objects</b>
+                automatically; a deny-list strips out the excess — archives,
+                sandboxes, personal spaces. For large instances, where listing
+                every object is overkill. <b>The default path.</b>
+              </div>
+            </div>
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Selected only</span>
+              </div>
+              <div class="stk-dec__d">
+                A named allow-list from the catalog, with search. New objects
+                stay outside until the admin adds them. For pilots and targeted
+                connections.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="desc">
+          Scope is stored as a <b>policy</b> — a mode plus lists, not a frozen
+          snapshot: the platform reconciles the specific objects against the
+          catalog on every sync, or else newly created and deleted spaces would
+          drift from the settings. A note on permissions: to build the catalog,
+          the account needs to <b>list</b> the instance, even when the fetch is
+          later narrowed. Scope is part of the
+          <a href="#source-model" class="xref-anchor">source model</a> and the
+          boundary within which the fetch operates.
+        </p>
+      </div>
+
+      <!-- ════════ FETCH ════════ -->
+      <div class="section" id="fetch">
+        <div class="section__title">Fetch mechanics</div>
+        <p class="desc">
+          How the
+          <a href="connectors.html#catalog" class="xref-page">connector</a>
+          pulls data from the source and turns a single loop: the listing method
+          returns a page, the connector feeds it into the
+          <a href="pipeline.html#extract" class="xref-page">pipeline</a> and goes
+          for the next one by cursor. A single failed request — a timeout or a
+          <code>429</code> from the source — doesn't break the loop: retry with
+          backoff keeps
+          <a href="reliability.html#retry" class="xref-page">reliability</a>.
+        </p>
+        <div class="src-loop">
+          <div class="src-loop__step">
+            <span class="src-loop__name">listing</span>
+            <span class="src-loop__d"
+              >The source's API method that returns objects page by page.</span
+            >
+          </div>
+          <span class="src-loop__sep">→</span>
+          <div class="src-loop__step">
+            <span class="src-loop__name">page</span>
+            <span class="src-loop__d">The next page of objects.</span>
+          </div>
+          <span class="src-loop__sep">→</span>
+          <div class="src-loop__step">
+            <span class="src-loop__name">emit</span>
+            <span class="src-loop__d"
+              >The page's objects stream into the pipeline.</span
+            >
+          </div>
+          <div class="src-loop__back">
+            next cursor exists → <b>back to listing</b>; none → fetch complete
+          </div>
+        </div>
+
+        <div class="src-levers">
+          <div class="src-lever">
+            <span class="src-lever__name"
+              >Pagination · <code>cursor</code></span
+            >
+            <span class="src-lever__d"
+              >The source returns data in pages; the cursor is a bookmark to the
+              next one. The connector pages to the end, rather than trying to
+              grab everything in one request.</span
+            >
+          </div>
+          <div class="src-lever">
+            <span class="src-lever__name"
+              >Incremental · <code>fetch(since)</code></span
+            >
+            <span class="src-lever__d"
+              >The "fetch only what changed after" boundary. On a full import
+              <code>since</code> = epoch; on an incremental it's the moment of
+              the previous sync.</span
+            >
+          </div>
+          <div class="src-lever">
+            <span class="src-lever__name">Webhooks</span>
+            <span class="src-lever__d"
+              >Near-real-time: the source itself sends an event about a change —
+              this is a trigger, not new logic (the path is below). One channel
+              per source; the admin sets up the endpoint and secret manually in
+              the source settings (auto-provisioning via the source's API is
+              <span class="iter v2">v2</span>).</span
+            >
+          </div>
+        </div>
+
+        <div class="src-trigger">
+          <span class="src-trigger__label">Webhook event path</span>
+          <div class="src-loop src-loop--trigger">
+            <div class="src-loop__step">
+              <span class="src-loop__name">event</span>
+              <span class="src-loop__d"
+                >The source sends a call to the endpoint: "an object
+                changed."</span
+              >
+            </div>
+            <span class="src-loop__sep">→</span>
+            <div class="src-loop__step">
+              <span class="src-loop__name">inbound check</span>
+              <span class="src-loop__d"
+                >Signature and anti-replay —
+                <a href="security.html#webhooks" class="xref-page">security</a>
+                rejects anything foreign.</span
+              >
+            </div>
+            <span class="src-loop__sep">→</span>
+            <div class="src-loop__step">
+              <span class="src-loop__name">incremental task</span>
+              <span class="src-loop__d"
+                >The event becomes a "pull the delta" task.</span
+              >
+            </div>
+            <span class="src-loop__sep">→</span>
+            <div class="src-loop__step">
+              <span class="src-loop__name">pipeline</span>
+              <span class="src-loop__d"
+                >The same pipeline as a scheduled run.</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <p class="desc">
+          Concurrency is between sources: their runs are independent and go in
+          parallel
+          (<a href="sync-modes.html#per-source" class="xref-page"
+            >per-source</a
+          >). Within a single source the listing is sequential — the cursor
+          keeps it from running ahead — but object processing is
+          order-independent.
+        </p>
+        <p class="desc">
+          The same source APIs also return users with their access rights — but
+          that's a separate topic: how identity and ACL move into the platform
+          is owned by
+          <a href="acl-identity.html#identity" class="xref-page"
+            >acl-identity</a
+          >.
+        </p>
+      </div>
+
+      <!-- ════════ LIFECYCLE ════════ -->
+      <div class="section" id="lifecycle">
+        <div class="section__title">Source lifecycle</div>
+        <p class="desc">
+          A connected source outlives any single run: it gets paused,
+          disconnected, deleted. Behind the screen's buttons stand states and
+          rules.
+          <a href="#authentication" class="xref-anchor">Authentication</a>
+          splits into "as whom" and "with what."
+        </p>
+
+        <div class="src-axis">
+          <div class="src-axis__label">State — what the admin decided</div>
+          <div class="src-auth">
+            <div class="stk-dec stk-dec--wide stk-dec--rec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Active</span>
+              </div>
+              <div class="stk-dec__d">
+                Connected and syncing on schedule. The working state.
+              </div>
+            </div>
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Paused</span>
+              </div>
+              <div class="stk-dec__d">
+                The schedule is paused while the source is down. Configuration
+                and collected data are intact, no new runs start; lifted with
+                <code>Resume</code>.
+              </div>
+            </div>
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Disconnected</span>
+              </div>
+              <div class="stk-dec__d">
+                Credentials removed, runs stopped, but the config shell and data
+                are preserved. The source is reconnected without setting it up
+                again — for access rotation or a temporary standdown.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="src-axis">
+          <div class="src-axis__label">
+            Health — what the platform observes
+          </div>
+          <div class="src-auth">
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">idle</span>
+              </div>
+              <div class="stk-dec__d">
+                No runs; the source is waiting for the next scheduled one.
+              </div>
+            </div>
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">syncing</span>
+              </div>
+              <div class="stk-dec__d">
+                A run is in progress; its course, progress, and outcome are held
+                by
+                <a href="reliability.html#sync-run" class="xref-page"
+                  >SyncRun</a
+                >.
+              </div>
+            </div>
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">error</span>
+              </div>
+              <div class="stk-dec__d">
+                The last run or
+                <a href="#health-check" class="xref-anchor">health check</a>
+                ended in failure. It doesn't block configuration — it's fixed by
+                a retry, the failure is visible and raises a notification.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="desc">
+          The axes are independent: an active source can be either idle or
+          syncing, and error speaks to the last run, not to the admin's intent.
+          The badges on the
+          <a
+            href="../../admin-panel/_wireframes/data-sources.html#connection-status"
+            class="xref-module"
+            >Admin Panel · Sources</a
+          >
+          and
+          <a
+            href="../../admin-panel/_wireframes/harvester.html#sync-overview"
+            class="xref-module"
+            >Admin Panel · Sync</a
+          >
+          screens are a rendering of these axes, not a separate truth.
+        </p>
+
+        <p class="desc">
+          <b>During a run the source is locked.</b> While it's
+          <code>syncing</code>, operations on it are unavailable — editing the
+          configuration, pausing, disconnecting, deleting, and re-running: one
+          source, one active run
+          (<a href="sync-modes.html#per-source" class="xref-page"
+            >single-flight per-source</a
+          >). The only available lever is <code>Cancel</code>.
+        </p>
+        <p class="desc">
+          <code>Cancel</code> is safe and therefore needs no rollback. The run
+          stops at the nearest checkpoint, what's already processed sits
+          consistently —
+          <a href="pipeline.html#load" class="xref-page">Load is idempotent</a>
+          on <code>source_id + source_type + source_entity_id</code>, and no
+          half-assembled state arises. A rollback to a snapshot would be harmful
+          and unnecessary: the data self-reconciles through idempotent upsert,
+          Incremental, and Reconciliation.
+        </p>
+        <p class="desc">
+          Pause, meanwhile, silences the <b>schedule</b>, rather than freezing a
+          live run. Resume from a checkpoint heals a worker <b>crash</b> within
+          a short window, subject to a
+          <a href="reliability.html#checkpoint" class="xref-page"
+            >freshness budget</a
+          >; a run cancelled or paused for long is terminal — the next one
+          starts fresh instead of finishing off a stale fetch.
+        </p>
+
+        <div class="src-axis">
+          <div class="src-axis__label">
+            Deletion — the choice at confirmation
+          </div>
+          <div class="src-auth">
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Configuration only</span>
+              </div>
+              <div class="stk-dec__d">
+                The source is removed, its data is orphaned but stays in
+                Knowledge Store — in case of reconnection or if it's still in
+                use.
+              </div>
+            </div>
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Configuration + data</span>
+              </div>
+              <div class="stk-dec__d">
+                Behind a type-to-confirm: cascade-cleans the source's data out
+                of the graph, vectors, and metadata. Irreversible — for full
+                decommissioning.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="desc">
+          Pause and Disconnect are reversible and don't touch data; the fate of
+          what was collected rests with Delete alone. The "configuration + data"
+          cleanup is an explicit hard teardown, unlike the soft archiving of a
+          record that vanished from the source itself (that one is kept for
+          audit). An entity fed by another source as well doesn't disappear here
+          — only the deleted source's contribution is detached; cross-source
+          stitching and its boundary are owned by
+          <a href="data-model.html#cross-source" class="xref-page"
+            >data-model</a
+          >
+          → Knowledge Store.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

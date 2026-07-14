@@ -1,0 +1,105 @@
+<!doctype html>
+<!--
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  FEATURE: mfa — подключение и управление двухфакторной аутентификацией│
+  │  (TOTP). Built from _template/.                                       │
+  │                                                                       │
+  │  OWNS mfa-setup.html (3-шаговый мастер) + mfa-manage.html (состояние  │
+  │  «включено» · управление) — оба узлы только этого потока, живут рядом.│
+  │  Orphan-тест: убери фичу — этим экранам негде жить → их дом здесь.    │
+  │  profile-account и re-auth-modal — общие экраны из _wireframes/: фича │
+  │  ССЫЛАЕТСЯ на них как на вход и sudo-гейт (.flow-stop--shared), но не  │
+  │  владеет ими — entry-point/гейт-ссылка не делает экран общим. Механику │
+  │  (TOTP, шифрование секрета, хэш кодов) НЕ дублируем — она на легендах  │
+  │  экранов и в _workzone. README → "Features".                          │
+  └─────────────────────────────────────────────────────────────────────┘
+-->
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Двухфакторная аутентификация</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · feature-flow kit (no wireframe
+         kit — screens link out) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../feature-flow.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../index.html">← Auth / Security</a>
+        <h1 class="header__title">
+          Двухфакторная аутентификация <span class="iter v2">v2</span>
+        </h1>
+        <div class="header__sub">auth / security · фичи</div>
+      </div>
+
+      <!-- ═══ Описание ═══ Только продукт: что за фича и путь пользователя.
+           Механику (TOTP, шифрование секрета, политику ролей) — НЕ здесь,
+           она на легендах экранов и в workzone. -->
+      <p class="desc">
+        Второй фактор при входе вдобавок к паролю — одноразовый TOTP-код из
+        приложения-аутентификатора. Пользователь включает MFA из карточки
+        «Безопасность» в
+        <a href="../../_wireframes/profile-account.html" class="xref-page">профиле</a
+        >; вход в настройку защищён повторным вводом пароля. Мастер из
+        трёх шагов подключает второй фактор, после чего двухфакторная
+        аутентификация активна и управляется на том же экране.
+      </p>
+
+      <!-- ═══ Поток ═══ Метро-раскадровка: общий вход и sudo-гейт из
+           _wireframes (.flow-stop--shared, двойное кольцо), затем локальные
+           узлы фичи (.flow-stop) — мастер и экран управления. -->
+      <div class="section">
+        <div class="section__title">Поток</div>
+        <div class="flow">
+          <div class="flow-stop flow-stop--shared">
+            <a
+              class="flow-stop__name"
+              href="../../_wireframes/profile-account.html"
+              >Profile / Account</a
+            >
+            <span class="flow-stop__role"
+              >общий · вход · карточка «Безопасность»</span
+            >
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">«Настроить» · защищено sudo</span>
+          </div>
+          <div class="flow-stop flow-stop--shared">
+            <a
+              class="flow-stop__name"
+              href="../../_wireframes/re-auth-modal.html"
+              >Re-auth modal</a
+            >
+            <span class="flow-stop__role">общий · повторный ввод пароля</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">пароль подтверждён</span>
+          </div>
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="mfa-setup.html">MFA Setup</a>
+            <span class="flow-stop__role">старт · мастер из 3 шагов</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">коды сохранены · MFA активна</span>
+          </div>
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="mfa-manage.html">MFA Management</a>
+            <span class="flow-stop__role"
+              >управление · перегенерация · отключение</span
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

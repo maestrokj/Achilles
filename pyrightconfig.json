@@ -1,0 +1,12 @@
+{
+  "venvPath": "backend",
+  "venv": ".venv",
+  "pythonVersion": "3.14",
+  "include": ["backend/src"],
+  "exclude": ["backend/src/alembic/versions"],
+  "typeCheckingMode": "strict",
+  "reportMissingTypeStubs": false,
+  "reportUnknownMemberType": false,
+  "reportUnknownArgumentType": false,
+  "reportUnknownVariableType": false
+}

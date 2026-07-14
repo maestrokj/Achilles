@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Harvester: Sync</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="sync-modes.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Harvester</a>
+        <h1 class="header__title">Sync</h1>
+        <div class="header__sub">harvester · workzone</div>
+      </div>
+
+      <p class="desc">
+        When and how a source's data gets refreshed. Three modes —
+        <a href="#full-sync" class="xref-anchor">Full Sync</a>,
+        <a href="#incremental" class="xref-anchor">Incremental</a>, and
+        <a href="#reconciliation" class="xref-anchor">Reconciliation</a> —
+        answer one question in different ways: take everything, take only the
+        delta, or reconcile against the source as a whole. The mode selects only
+        the fetch window (<code>since</code>) and the aggressiveness of entity
+        resolution; the
+        <a href="pipeline.html" class="xref-page">pipeline</a> itself is one and
+        the same for all three. Every mode runs on a background worker — run
+        durability (<code>SyncRun</code>, checkpoint, DLQ) is held by
+        <a href="reliability.html" class="xref-page">reliability</a>.
+      </p>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ════════ FULL SYNC ════════ -->
+          <div class="stk-layer stk-layer--full" id="full-sync">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Full Sync</span>
+              <span class="stk-layer__role"
+                >A full import from the beginning of time.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"
+                    >Take everything: <code>since = epoch</code></span
+                  >
+                  <a
+                    href="../../admin-panel/_wireframes/data-sources.html#source-wizard"
+                    class="stk-dec__ui"
+                    title="Runs automatically when a source is connected"
+                    >connection wizard</a
+                  >
+                  <a
+                    href="../../admin-panel/_wireframes/data-sources.html#sync-wizard"
+                    class="stk-dec__ui"
+                    title="Manual run from the source card"
+                    >sync wizard</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  The fetch window is open from zero — the pipeline passes every
+                  entity in the source. This mode kicks in when a new source is
+                  connected or an existing one is asked to be rebuilt from a
+                  clean slate. The run is long but safe: the output is the same
+                  idempotent upsert, so a repeat doesn't breed duplicates but
+                  updates what's already collected —
+                  <a href="pipeline.html#load" class="xref-page">Load</a>.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ INCREMENTAL ════════ -->
+          <div class="stk-layer stk-layer--incremental" id="incremental">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Incremental</span>
+              <span class="stk-layer__role"
+                >Deltas only: what changed since last time.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Webhooks + polling</span>
+                  <a
+                    href="../../admin-panel/_wireframes/data-sources.html#webhooks"
+                    class="stk-dec__ui"
+                    title="Source webhooks are enabled in its card"
+                    >source card</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  The working mode after the initial load. The source reports its
+                  own changes via webhooks; whatever it doesn't send, we pick up
+                  by polling on <code>since</code> from the previous run. The
+                  pipeline sees only the delta — that's cheap and fast. The
+                  mechanics of events and of the <code>since</code>-based
+                  increment are held by
+                  <a href="sources.html#fetch" class="xref-page">sources</a>.
+                  The two cases below — partial re-sync and dlq retry — aren't
+                  separate modes but the same incremental with a different
+                  trigger and scope; the "type" in the run history is
+                  <a href="data-model.html#sync-runs-table" class="xref-page"
+                    >derived</a
+                  >
+                  from this pair, not stored as a separate column.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full" id="partial-resync">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"
+                    >Lost events → partial re-sync</span
+                  >
+                  <span
+                    class="stk-dec__auto"
+                    title="Starts automatically via the watchdog — no manual run in the UI"
+                    >auto</span
+                  >
+                  <a
+                    href="../../admin-panel/_wireframes/data-sources.html#sync-history"
+                    class="stk-dec__ui"
+                    title="Shown by its own type in the source's run history"
+                    >run history</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  A webhook may fail to arrive, a source may sit idle; you can't
+                  rely on a single event stream. A watchdog watches each source:
+                  silence longer than the <em>quiet threshold</em>
+                  (12&nbsp;hours — the platform's global default, see
+                  <a href="#scheduling" class="xref-anchor">Scheduling</a>) is
+                  grounds for suspicion, not a verdict. First comes a cheap check
+                  by polling on <code>since</code> — no delta means it was just
+                  quiet, and the pass was for nothing; a delta found is the
+                  missing data. The watchdog then runs an ordinary incremental
+                  with <code>since = incremental_cursor</code> — there's no
+                  separate "re-sync window": the cursor only advances on success,
+                  and
+                  <a href="pipeline.html#load" class="xref-page">Load</a> is
+                  idempotent, so re-requesting the delta is safe. All without a
+                  full import and without a human. In the run history such a
+                  re-sync is tagged with its own type — a string of them in a row
+                  reads as an unhealthy webhook, not the norm.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full" id="dlq-retry">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Failed items → dlq_retry</span>
+                  <a
+                    href="../../admin-panel/_wireframes/harvester.html#sync-errors"
+                    class="stk-dec__ui"
+                    title="Manual run via the “Retry failed” button"
+                    >failed-item review</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  A targeted retry over a list, not over a window. When items
+                  pile up in the
+                  <a href="reliability.html#dlq" class="xref-page">DLQ</a>,
+                  "Retry failed" raises a run whose scope comes not from
+                  <code>since</code> but from the specific identities in the
+                  review queue. Kin to <code>partial_resync</code> — both patch
+                  in a targeted way — but launched manually, after the cause
+                  (permissions, source) is fixed, rather than by the watchdog.
+                  Processed items leave the queue; its mechanics are held by
+                  <a href="reliability.html#dlq" class="xref-page">reliability</a>
+                  and
+                  <a href="data-model.html#dead-letters-table" class="xref-page"
+                    >the data model</a
+                  >.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ RECONCILIATION ════════ -->
+          <div class="stk-layer stk-layer--reconciliation" id="reconciliation">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Reconciliation</span>
+              <span class="stk-layer__role"
+                >A scheduled reconciliation: audit and cleanup.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Comprehensive source audit</span>
+                  <span
+                    class="stk-dec__auto"
+                    title="Starts automatically on schedule — no manual run in the UI"
+                    >auto</span
+                  >
+                  <a
+                    href="../../admin-panel/_wireframes/harvester.html#reconcile-schedule"
+                    class="stk-dec__ui"
+                    title="The reconciliation frequency is set by the Admin Panel schedule"
+                    >reconciliation schedule</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Runs on a schedule — weekly by default (see
+                  <a href="#scheduling" class="xref-anchor">Scheduling</a>).
+                  Reconciles what's collected against the source as a whole:
+                  what's no longer in the source is cleaned up as stale,
+                  discrepancies are corrected. The same pipeline as Full Sync and
+                  Incremental, but with an aggressive <code>resolve</code>. The
+                  difference is the size of the visibility window, not the logic:
+                  the resolve area is always bounded by what falls into the run's
+                  fetch window. Incremental sees a narrow window by
+                  <code>since</code> → dedup is local only; reconciliation pulls
+                  the source whole in one run and collapses intra-source
+                  duplicates scattered across earlier increments — invisible to
+                  the narrow window. There's no conflict with the pipeline here:
+                  the upsert key
+                  (<code>source_id + source_type + source_entity_id</code>)
+                  covers the same <code>source_entity_id</code> across runs,
+                  while the aggressive resolve works on one entity under
+                  <em>different</em> ids within the visible full source
+                  (cross-source stitching is held by
+                  <a href="data-model.html#cross-source" class="xref-page"
+                    >Knowledge Store</a
+                  >). This is a hygiene mode, not a mode for delivering fresh
+                  data.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="workzone-divider" />
+
+      <!-- ════════ PER-SOURCE INDEPENDENCE ════════ -->
+      <div class="section" id="per-source">
+        <div class="section__title">Per-source independence</div>
+        <p class="desc">
+          A mode is always the state of one source, not of the platform. Each
+          source syncs on its own and holds its own <code>since</code>, its own
+          schedule, and its own current mode. "Sync everything" isn't a special
+          shared run but a launch of all per-source syncs at once.
+        </p>
+        <p class="note">
+          In parallel with delivery runs the <strong>platform-level</strong>
+          curation of the graph in Knowledge Store. By default the lanes don't
+          get in each other's way; only during destructive curation steps (merge,
+          retention) does the affected source's run go to <code>queued</code> —
+          mutual exclusion is held by
+          <a
+            href="../../knowledge-store/_workzone/lifecycle.html#coordination"
+            class="xref-module"
+            >Knowledge Store · Lane coordination</a
+          >.
+        </p>
+      </div>
+
+      <!-- ════════ SCHEDULING ════════ -->
+      <div class="section" id="scheduling">
+        <div class="section__title">
+          Scheduling
+          <a
+            class="xref-badge"
+            href="../../cache-workers/_workzone/scheduling.html#registry"
+            >→ Cache &amp; Workers</a
+          >
+        </div>
+        <p class="desc">
+          When to run Incremental and Reconciliation is set by the schedule: the
+          platform's global default plus a per-source override. A source without
+          its own schedule inherits the shared one; with its own, it follows
+          that.
+        </p>
+        <ul class="notes">
+          <li class="note">
+            <strong>Incremental polling</strong> — one default interval
+            (15&nbsp;min) for every source, with a per-source override. A
+            webhook-aware split (a slower ~6&nbsp;h safety-net poll for sources that
+            push their own changes) is a <span class="iter v2">v2</span> refinement —
+            v1 keeps a single cadence and leans on the per-source override where a
+            source needs a different rhythm.
+          </li>
+          <li class="note">
+            <strong>Reconciliation</strong> — weekly, in a set window (day of the
+            week and hour; for a daily cadence — hour only) in the
+            organization's timezone; by default —
+            <strong>Sunday, 03:00</strong>.
+          </li>
+          <li class="note">
+            <strong>Lightweight health probe</strong> — once a day.
+          </li>
+          <li class="note">
+            <strong>Watchdog quiet threshold</strong> — 12&nbsp;h; silence longer
+            than that launches a
+            <a href="#partial-resync" class="xref-anchor">partial re-sync</a>.
+          </li>
+          <li class="note">
+            <strong>Home of the defaults</strong> —
+            <code>platform_settings</code> (the same platform-settings table as
+            timezone; edited from Admin without a deploy). The per-source override
+            lives in the <code>sync_interval</code> /
+            <code>reconcile_interval</code> / <code>reconcile_window</code>
+            fields: <code>NULL</code> = inherit the global default. The
+            reconciliation window is stored as a minute of the week without a
+            zone — the scheduler unfolds the hour from the setting in the
+            org-timezone into a UTC launch moment.
+          </li>
+        </ul>
+        <p class="desc">
+          Managing the schedule is UI over the sync backend domain, not part of
+          the pipeline. Both schedules are held by the screens —
+          <a
+            href="../../admin-panel/_wireframes/harvester.html#sync-schedule"
+            class="xref-module"
+            >Admin Panel · incremental</a
+          >
+          and
+          <a
+            href="../../admin-panel/_wireframes/harvester.html#reconcile-schedule"
+            class="xref-module"
+            >Admin Panel · reconciliation</a
+          >.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

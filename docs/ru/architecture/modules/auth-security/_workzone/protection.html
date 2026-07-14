@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Защита и инфраструктура</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="protection.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Защита и инфраструктура</h1>
+        <div class="header__sub">auth / security · workzone</div>
+      </div>
+
+      <div class="pipe-io-wrap">
+        <div class="pipe-io pipe-io--in">
+          <span class="pipe-io__main">Входящий HTTPS-запрос</span>
+        </div>
+      </div>
+      <div class="pipe-arrow">
+        <svg width="16" height="22" viewBox="0 0 16 22" aria-hidden="true">
+          <path
+            d="M8 0 V16 M2 11 L8 18 L14 11"
+            stroke="currentColor"
+            stroke-width="2.4"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </div>
+
+      <div class="pipe">
+        <!-- ① TLS -->
+        <div class="pipe-station pipe-station--tls" id="edge-hardening">
+          <div class="pipe-rail">
+            <div class="pipe-num">1</div>
+            <div class="pipe-railline"></div>
+          </div>
+          <div>
+            <div class="pipe-card">
+              <div class="pipe-card__head">
+                <span class="pipe-card__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span>
+                <span class="pipe-card__title">TLS-терминация</span>
+              </div>
+              <div class="pipe-card__sub">
+                Запрос принимается только по шифрованному каналу — иначе
+                отклонение.
+              </div>
+              <div class="pipe-chips">
+                <span
+                  class="pipe-chip"
+                  data-tip="Предпочитаем TLS 1.3, 1.2 держим минимумом для совместимости. Версии ниже 1.2 отключены."
+                  ><b>HTTPS only</b> <code>TLS 1.3 · 1.2 min</code></span
+                >
+                <span class="pipe-chip"><b>HTTP → redirect</b></span>
+                <span
+                  class="pipe-chip"
+                  ><b>Сертификаты</b> Let's Encrypt / корп. CA</span
+                >
+              </div>
+            </div>
+            <div class="pipe-branch">
+              <b>Edge-hardening</b> → лимиты ресурса на Nginx, до приложения:
+              <code data-tip="Потолок размера тела запроса (напр. 1 МБ на API; больше — точечно на загрузочных ручках). Без него один гигантский body исчерпывает память бэкенда.">client_max_body_size</code>,
+              <code data-tip="Рвёт соединение, что тянет передачу по байту, удерживая пул, — атака slowloris. Сюда client_body_timeout, client_header_timeout, send_timeout.">client_*_timeout</code>,
+              <code data-tip="Лимит одновременных соединений с адреса — грубая сеть перед прикладным rate-limit ③⑤.">limit_conn</code>,
+              <code>large_client_header_buffers</code>. Раньше и грубее лимитов
+              ③⑤: по сырому соединению, не по опознанному клиенту.
+            </div>
+          </div>
+        </div>
+
+        <!-- ② Security headers -->
+        <div class="pipe-station pipe-station--hdr">
+          <div class="pipe-rail">
+            <div class="pipe-num">2</div>
+            <div class="pipe-railline"></div>
+          </div>
+          <div>
+            <div class="pipe-card">
+              <div class="pipe-card__head">
+                <span class="pipe-card__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M12 11h4" /><path d="M12 16h4" /><path d="M8 11h.01" /><path d="M8 16h.01" /></svg></span>
+                <span class="pipe-card__title">Security-заголовки · Nginx</span>
+              </div>
+              <div class="pipe-card__sub">
+                Каждый ответ дополняется защитными заголовками, которые задают
+                браузеру правила.
+              </div>
+              <div class="pipe-chips">
+                <span
+                  class="pipe-chip"
+                  data-tip="Браузер запоминает: с этим доменом — только HTTPS, без клика сквозь ошибку сертификата. Закрывает окно перед первым редиректом HTTP→HTTPS.&#10;&#10;Раскатывать лесенкой: короткий max-age на старте → год, когда HTTPS стабилен. includeSubDomains — только когда все поддомены на HTTPS. preload не включаем: платформа self-hosted, домен принадлежит клиенту, а откат из preload-списка браузеров занимает месяцы. Параметры — операторски настраиваемые."
+                  ><b>HSTS</b> <code>max-age=1y; includeSubDomains</code></span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Браузер грузит скрипты, стили и картинки только со своего домена — чужой код не выполнится.&#10;&#10;'self' — строгая база; поверх точечные исключения для внешних шрифтов, API, inline-стилей. Внедрять через Report-Only (отчёты без блокировки), затем в боевой режим.&#10;&#10;base-uri, form-action и object-src не наследуют default-src — задаём явно. frame-ancestors зеркалит X-Frame-Options: при встраивании дашборда в портал клиента — список его доменов, иначе запрет."
+                  ><b>CSP</b>
+                  <code
+                    >default-src 'self'; object-src 'none'; base-uri 'self';
+                    form-action 'self'</code
+                  ></span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Браузер доверяет указанному типу файла, а не угадывает его по содержимому."
+                  ><b>X-Content-Type-Options</b> <code>nosniff</code></span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Страницу нельзя встроить в чужой iframe — защита от подмены кликов (clickjacking).&#10;&#10;DENY → frame-ancestors со списком доменов клиента, если нужно встраивание дашборда в его портал."
+                  ><b>X-Frame-Options</b> <code>DENY</code></span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Изолирует вкладку от чужих окон — они не получат на неё ссылку и не подсмотрят содержимое."
+                  ><b>Cross-Origin-Opener-Policy</b> <code>same-origin</code></span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Чужие сайты не могут подгрузить ресурсы платформы к себе на страницу."
+                  ><b>Cross-Origin-Resource-Policy</b> <code>same-origin</code></span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="При переходе на внешний сайт полный адрес страницы наружу не уходит."
+                  ><b>Referrer-Policy</b> <code>strict-origin-when-cross-origin</code></span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="У страницы нет доступа к камере, микрофону и геолокации.&#10;&#10;Микрофон отключаем, только если голосовой ввод запроса не планируется; иначе разрешить для 'self'."
+                  ><b>Permissions-Policy</b></span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Чувствительные ответы не сохраняются в кэш браузера.&#10;&#10;Только на динамике под логином; статику (JS/CSS/картинки) кэшируем долго, иначе теряется ускорение."
+                  ><b>Cache-Control</b> <code>no-store</code> на
+                  чувствительных</span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="При выходе стирает у браузера cookie, localStorage и кэш сайта — на общем компьютере следов не остаётся."
+                  ><b>Clear-Site-Data</b> на logout</span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="При переходе наружу адрес страницы со ссылкой-секретом не передаётся."
+                  ><b>Токен-роуты</b> <code>no-referrer</code></span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Сервер не выдаёт свою версию и стек — меньше подсказок атакующему."
+                  ><b>Server · X-Powered-By</b> <code>off</code></span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ③ CORS -->
+        <div class="pipe-station pipe-station--cors" id="cors">
+          <div class="pipe-rail">
+            <div class="pipe-num">3</div>
+            <div class="pipe-railline"></div>
+          </div>
+          <div>
+            <div class="pipe-card">
+              <div class="pipe-card__head">
+                <span class="pipe-card__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg></span>
+                <span class="pipe-card__title">CORS · граница доверия</span>
+              </div>
+              <div class="pipe-card__sub">
+                FastAPI middleware определяет, какому origin доверять.
+              </div>
+              <div class="pipe-chips">
+                <span
+                  class="pipe-chip"
+                  data-tip="К API могут обращаться только перечисленные домены, а не любой сайт.&#10;&#10;Список задаётся в настройках окружения — для прода, стейджа и браузерного расширения (chrome-extension://…) свой. Сверка идёт точным совпадением вплоть до схемы и порта. Звёздочка несовместима с передачей cookie, поэтому домены только поимённо."
+                  ><b>Allow-Origin</b> whitelist из env</span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Браузер прикладывает cookie с сессией к запросу на другой домен."
+                  ><b>Allow-Credentials</b> <code>true</code></span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Разрешённые способы обращения к API — чтение и изменение данных."
+                  ><b>Allow-Methods</b> <code>GET/POST/PUT/DELETE/PATCH</code></span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Список заголовков, которые клиенту разрешено прислать в запросе.&#10;&#10;В v1 — токен авторизации, тип содержимого и Request-Id для сквозной трассировки. Заголовок CSRF-токена добавится в v2 вместе с cookie-authenticated endpoints (см. ④)."
+                  ><b>Allow-Headers</b>
+                  <code>Authorization, Content-Type, X-Request-Id</code> ·
+                  <code>X-CSRF-Token</code>
+                  <span class="iter v2">v2</span></span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Разрешает фронтенду прочитать нужные заголовки из ответа сервера.&#10;&#10;По умолчанию браузер прячет от кода всё, кроме короткого базового набора. Открываем счётчик лимита и Retry-After (показать «попробуйте через N секунд»), а также Request-Id для связи ошибки с логом."
+                  ><b>Expose-Headers</b> <code>Retry-After, X-RateLimit-Remaining, X-Request-Id</code></span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Браузер час помнит разрешение и не переспрашивает перед каждым запросом."
+                  ><b>Preflight Max-Age</b> <code>3600</code></span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Ограничивает, сколько запросов в минуту может сделать один пользователь.&#10;&#10;Лимит зависит от роли: у Member базовый, у Admin повышенный. Для сервисных аккаунтов (Slack, MCP) — отдельный повышенный тариф, для дорогих LLM-запросов — своя корзина. Счётчики в Redis. Базовый потолок — с v1: внешняя дверь MCP не открывается без тормоза, иначе чужая модель в цикле перегрузит базу и эмбеддер. Отличается от рубежа перебора ⑤ — там лимит по IP, до входа, только на логине."
+                  ><b>API rate limiting</b> per-user, по ролям · Redis
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ④ CSRF -->
+        <div class="pipe-station pipe-station--csrf" id="csrf">
+          <div class="pipe-rail">
+            <div class="pipe-num">4</div>
+            <div class="pipe-railline"></div>
+          </div>
+          <div>
+            <div class="pipe-card">
+              <div class="pipe-card__head">
+                <span class="pipe-card__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" /><path d="M13 5v2" /><path d="M13 17v2" /><path d="M13 11v2" /></svg></span>
+                <span class="pipe-card__title">CSRF-проверка</span>
+                <a class="xref-badge xref-badge--page" href="authentication.html#refresh-cookie"
+                  >→ Refresh cookie</a
+                >
+              </div>
+              <div class="pipe-card__sub">
+                Мутирующий запрос должен подтвердить, что отправлен со своего
+                origin.
+              </div>
+              <div class="pipe-chips">
+                <span
+                  class="pipe-chip"
+                  data-tip="Браузер прикладывает эту cookie, только когда запрос идёт с вашего же сайта."
+                  ><b>SameSite=Strict</b> на refresh cookie</span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Сервер проверяет, что изменяющий запрос пришёл с вашего домена, а не с чужого сайта.&#10;&#10;Второй эшелон поверх SameSite — на случай, если тот не сработал (старый браузер, пограничный кейс). Эти заголовки ставит сам браузер, подделать их с чужого сайта нельзя."
+                  ><b>Origin / Referer</b> на каждой мутации</span
+                >
+              </div>
+            </div>
+            <div class="pipe-branch">
+              <b>SSO</b>
+              <span class="iter v2">v2</span> → переход на
+              <b>SameSite=Lax</b> + CSRF-токен для cookie-authenticated endpoints
+              (<code>/refresh</code>).<br/>Защиту самого входа через провайдера
+              (state / PKCE / nonce) держит карточка
+              <a href="authentication.html#sso-oidc" class="xref-page">SSO / OIDC</a>.
+            </div>
+          </div>
+        </div>
+
+        <!-- ⑤ Brute-force -->
+        <div class="pipe-station pipe-station--brute" id="brute-force">
+          <div class="pipe-rail">
+            <div class="pipe-num">5</div>
+            <div class="pipe-railline"></div>
+          </div>
+          <div>
+            <div class="pipe-card">
+              <div class="pipe-card__head">
+                <span class="pipe-card__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="8" rx="1" /><path d="M17 14v7" /><path d="M7 14v7" /><path d="M17 3v3" /><path d="M7 3v3" /><path d="M10 14 2.3 6.3" /><path d="m14 6 7.7 7.7" /><path d="m8 6 8 8" /></svg></span>
+                <span class="pipe-card__title">Рубеж защиты от перебора</span>
+                <a class="xref-badge xref-badge--page" href="data-model.html#api-errors"
+                  >→ Контракт ошибок</a
+                >
+                <a
+                  class="xref-badge"
+                  href="../../admin-panel/_wireframes/notifications.html#routing"
+                  >→ Admin Panel</a
+                >
+                <a class="xref-badge" href="../../cache-workers/_workzone/rate-limit.html#consumers">→ Cache &amp; Workers</a>
+              </div>
+              <div class="pipe-card__sub">
+                Логин — все три слоя; per-account часть (слои 2–3) накрывает и
+                проверку текущего пароля на
+                <a href="authentication.html#change-password" class="xref-page"
+                  >смене пароля</a
+                >. Перебор сдерживается, не блокируя владельца.
+              </div>
+
+              <div class="pipe-layers">
+                <div class="pipe-layer">
+                  <span class="pipe-layer__tag">Слой 1</span>
+                  <span class="pipe-layer__body"
+                    ><b>Rate limit по IP</b> — 20 попыток / 15 мин на IP.
+                    <small
+                      >За reverse proxy IP берётся из X-Forwarded-For (только от
+                      trusted proxies).</small
+                    ></span
+                  >
+                </div>
+                <div class="pipe-layer">
+                  <span class="pipe-layer__tag pipe-layer__tag--2">Слой 2</span>
+                  <span class="pipe-layer__body"
+                    ><b>Задержка per-account</b> — первые 2 неудачи без задержки
+                    (запас на опечатки), с 3-й экспоненциально 1с→2с→4с→8с
+                    (предел 30с), на стороне сервера.</span
+                  >
+                </div>
+                <div class="pipe-layer">
+                  <span class="pipe-layer__tag pipe-layer__tag--3">Слой 3</span>
+                  <span class="pipe-layer__body"
+                    ><b>Alert Owner/Admin</b> после 10 неудач per-account —
+                    уведомление.</span
+                  >
+                </div>
+              </div>
+
+              <div class="pipe-chips">
+                <span
+                  class="pipe-chip"
+                  data-tip="На любую неудачу входа — один и тот же текст ответа, чтобы по нему нельзя было выяснить, есть ли такой аккаунт."
+                  ><b>Единый ответ об ошибке</b></span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Накопленный штраф за неудачи не висит на владельце вечно.&#10;&#10;Сбрасывается двумя путями: сразу при успешном входе или сам по TTL — 15 минут без попыток обнуляют счётчик и задержку. IP-окно скользящее, старые попытки выпадают сами."
+                  ><b>Сброс счётчиков</b> успех / TTL 15 мин</span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Фиксирует каждую попытку входа по паре IP+email — топливо для счётчиков перебора.&#10;&#10;Пишется до проверки личности, поэтому ловит и несуществующие аккаунты. Это оперативное состояние в Redis со своим TTL, не журнал: в аудит-лог ⑦ неудачный вход попадает отдельной записью login_failed — без актора, личность не подтверждена."
+                  ><b>Лог попыток</b> pre-auth, IP + email</span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Счётчики перебора лежат в Redis, поэтому переживают перезапуск бэкенда — окно перебора рестартом не открыть.&#10;&#10;Два ключа: brute:ip:{ip} — sorted set со скользящим окном 15 мин; brute:account:{email_hash} — счётчик с TTL. Email под хэшем, чтобы дамп Redis не раздавал список адресов."
+                  ><b>Состояние в Redis</b> <code>brute:ip</code> ·
+                  <code>brute:account</code></span
+                >
+              </div>
+            </div>
+
+            <div class="pipe-branch">
+              <b>Задержка, а не висящее соединение</b> → за порогом отдаём
+              <code>429 + Retry-After</code>, а не держим запрос открытым: иначе
+              сами висящие соединения становятся вектором нагрузки.
+            </div>
+            <div class="pipe-branch">
+              <b>Несуществующий email</b> → dummy <code>argon2 verify</code>
+              (constant-time): ответ занимает столько же, сколько для реального
+              аккаунта.
+            </div>
+            <div class="pipe-branch">
+              <b>MFA</b> → свой лимит, отдельный от пароля: 5 неудачных вводов
+              TOTP или recovery-кода сжигают промежуточный токен входа — дальше
+              заново с пароля. Перебор 6-значного кода через MFA-шаг так не
+              пройдёт.
+            </div>
+            <div class="pipe-branch">
+              <b>Код привязки мессенджера</b> → свой лимит на <code>chat_id</code>:
+              5 неудачных вводов сжигают попытку — за новым кодом в веб. Публичный
+              webhook бота — под
+              <a href="../../cache-workers/_workzone/rate-limit.html#consumers" class="xref-module">rate-limit</a>
+              по IP/источнику; истёкший и неверный код неотличимы (единый
+              <code>410 LINK_EXPIRED</code>). Бот открыт всем, поэтому рубеж жёстче,
+              чем у закрытого воркспейсом Slack.
+            </div>
+            <details class="pipe-more">
+              <summary>Пределы рубежа и отложенные меры</summary>
+              <div class="pipe-more__inner">
+                <span class="iter v2">v2</span> Платформа по инвайтам, без
+                публичной регистрации → главная угроза — <b>credential
+                stuffing</b> по конкретным аккаунтам; задержка + MFA закрывают её
+                без трения. CAPTCHA вернётся <b>адаптивной</b> (только по
+                риск-сигналам), если эксплуатационные логи покажут необходимость.
+                <br /><br />
+                <b>Распределённый перебор</b> (ботнет, password spraying — один
+                пароль по многим аккаунтам) per-IP лимит не ловит: с каждого
+                адреса всего по паре попыток. На раннем этапе — принятый предел;
+                глобальный детектор аномалий ждёт v2 по эксплуатационным логам.
+                <br /><br />
+                Тот же <b>единый ответ</b> — на восстановлении пароля: «если
+                аккаунт существует, письмо отправлено», независимо от того, есть
+                ли он.
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ⑥ Crypto core -->
+        <div class="pipe-station pipe-station--crypto" id="crypto-core">
+          <div class="pipe-rail">
+            <div class="pipe-num">6</div>
+            <div class="pipe-railline"></div>
+          </div>
+          <div>
+            <div class="pipe-card">
+              <div class="pipe-card__head">
+                <span class="pipe-card__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" /><path d="m21 2-9.6 9.6" /><circle cx="7.5" cy="15.5" r="5.5" /></svg></span>
+                <span class="pipe-card__title">Крипто-ядро</span>
+                <a class="xref-badge xref-badge--page" href="data-model.html#sessions"
+                  >→ Модель данных</a
+                >
+                <a class="xref-badge xref-badge--page" href="authentication.html#jwt-signing"
+                  >→ Аутентификация</a
+                >
+                <a class="xref-badge" href="../../email/_workzone/data-model.html#smtp-encryption"
+                  >→ Email · SMTP</a
+                >
+                <a class="xref-badge" href="../../harvester/_workzone/sources.html#secrets"
+                  >→ Harvester · Источники</a
+                >
+                <a class="xref-badge" href="../../ai-foundation/_workzone/data-model.html#ai-models"
+                  >→ Admin · AI-модели</a
+                >
+                <a class="xref-badge" href="../../notifications/_workzone/data-model.html#notifications-data"
+                  >→ Notifications</a
+                >
+              </div>
+              <div class="pipe-card__sub">
+                Сквозной рубеж: всё, что генерируется, сравнивается и хранится
+                на диске.
+              </div>
+
+              <div class="crp">
+                <div class="crp-pivot">
+                  Нужен ли серверу оригинал секрета обратно?
+                </div>
+                <div class="crp-stem"></div>
+                <div class="crp-split">
+                  <div class="crp-branch crp-branch--hash">
+                    <div class="crp-branch__head">
+                      <span class="crp-branch__ans">Нет</span>
+                      <span class="crp-branch__op">Хэш · необратимо</span>
+                    </div>
+                    <div class="crp-methods">
+                      <div class="crp-method">
+                        <div class="crp-method__top">
+                          <code>argon2id</code>
+                          <span class="crp-tag crp-tag--slow">медленный</span>
+                        </div>
+                        <ul class="crp-list">
+                          <li>Пароли</li>
+                          <li>Recovery-коды</li>
+                        </ul>
+                        <div class="crp-params">
+                          <code>memory 19 MB</code>
+                          <code>iterations 2</code>
+                          <code>parallelism 1</code>
+                        </div>
+                      </div>
+                      <div class="crp-method">
+                        <div class="crp-method__top">
+                          <code>SHA-256</code>
+                          <span class="crp-tag crp-tag--fast">быстрый</span>
+                        </div>
+                        <ul class="crp-list">
+                          <li>Refresh-токены</li>
+                          <li>Ссылки сброса</li>
+                          <li>API-ключи</li>
+                          <li>CSRF <span class="iter v2">v2</span></li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="crp-branch crp-branch--enc">
+                    <div class="crp-branch__head">
+                      <span class="crp-branch__ans">Да</span>
+                      <span class="crp-branch__op">Шифрование · обратимо</span>
+                    </div>
+                    <div class="crp-methods">
+                      <div class="crp-method">
+                        <div class="crp-method__top">
+                          <code>AES-256-GCM</code>
+                          <span class="crp-tag crp-tag--enc">по ключу</span>
+                        </div>
+                        <ul class="crp-list">
+                          <li><code>smtp_settings.password_enc</code></li>
+                          <li><code>sources.credential_enc</code></li>
+                          <li><code>sources.webhook_secret_enc</code></li>
+                          <li><code>ai_providers.api_key_enc</code></li>
+                          <li><code>tools.credential_enc</code></li>
+                          <li><code>notification_channels.url_enc</code></li>
+                          <li><code>notification_channels.secret_enc</code></li>
+                          <li><code>mfa_secret</code> <span class="iter v2">v2</span></li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pipe-chips">
+                <span
+                  class="pipe-chip"
+                  data-tip="Токен-пропуск должен быть непредсказуемым — иначе следующий можно вычислить и войти без пароля.&#10;&#10;Ключевое — криптостойкий генератор, не обычный random или uuid4: те случайны на глаз, но стойкости не гарантируют. Так выпускаются invite, ссылки сброса и API-ключи, а в v2 — CSRF-токен."
+                  ><b>CSPRNG токенов</b> <code>secrets.token_urlsafe()</code>
+                  ≥32B</span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Сравнение секрета всегда занимает одинаковое время — чтобы по задержке ответа нельзя было подобрать токен посимвольно."
+                  ><b>Constant-time</b> <code>hmac.compare_digest()</code></span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Refresh-токены, ссылки сброса и API-ключи лежат в базе не как есть, а их хэшем — дамп БД не выдаёт действующие пропуска.&#10;&#10;Хэш быстрый, SHA-256, а не argon2id: токен это 256 бит из CSPRNG, перебирать нечего. Медленный argon2id нужен только паролям с их низкой энтропией. Сверка идёт по хэшу, constant-time."
+                  ><b>Хэш токенов в БД</b> <code>SHA-256</code></span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="JWT подписывается симметрично, на общем SECRET_KEY: сервер сам и выпускает.&#10;&#10;Верификация прибивает algorithms=[&quot;HS256&quot;]: без этого подделанный header (alg=none или подмена алгоритма) проходит проверку. kid в header указывает на активный ключ — задел под ротацию без инвалидации уже выданных токенов. Анатомия токена — в Аутентификации."
+                  ><b>Подпись JWT</b> <code>HMAC-SHA256</code></span
+                >
+              </div>
+              <details class="pipe-more">
+                <summary>Encryption at rest <span class="iter v2">v2</span></summary>
+                <div class="pipe-more__inner">
+                  <code>mfa_secret</code> — <b>AES-256-GCM</b> (секрет нужен
+                  обратимо: сервер считает по нему TOTP). Ключ из env/vault, key
+                  rotation — несколько версий (key ID в данных).
+                  <b>Recovery codes не шифруются, а хэшируются</b> (argon2id),
+                  как пароли: одноразовые, сервер их только сверяет.
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <!-- ⑦ Audit log -->
+        <div class="pipe-station pipe-station--audit" id="audit-log">
+          <div class="pipe-rail">
+            <div class="pipe-num">7</div>
+            <div class="pipe-railline"></div>
+          </div>
+          <div>
+            <div class="pipe-card">
+              <div class="pipe-card__head">
+                <span class="pipe-card__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12h-5" /><path d="M15 8h-5" /><path d="M19 17V5a2 2 0 0 0-2-2H4" /><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3" /></svg></span>
+                <span class="pipe-card__title">Аудит-лог</span>
+                <a class="xref-badge xref-badge--page" href="data-model.html#audit-log"
+                  >→ Модель данных</a
+                >
+                <a
+                  class="xref-badge"
+                  href="../../admin-panel/_wireframes/audit-log.html#audit-log"
+                  >→ Admin Panel</a
+                >
+              </div>
+              <div class="pipe-card__sub">
+                На выходе каждое значимое событие фиксируется навсегда.
+              </div>
+              <div class="pipe-chips">
+                <span
+                  class="pipe-chip"
+                  data-tip="Действия, что меняют доступ, личность или состояние аккаунта, плюс сам факт входа и выхода — то, что нужно поднять при разборе инцидента.&#10;&#10;Не сплошной журнал запросов: обычные чтения данных сюда не идут, иначе аудит утонет в шуме. Под критерий попадают вход и выход, смена роли и прав, правка ACL, операции с API-ключами, админ-действия над пользователями — и подобное им.&#10;&#10;Запросы поиска и вызовы через MCP — это чтения: в аудит их телом не пишем. Учитывается факт и объём — последнее использование и счётчик на ключе (это же кормит rate limiting), а текст запроса не логируется."
+                  ><b>Что логируем</b> значимые события, не каждый запрос</span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Фиксированные поля — кто (actor), что (action), над чем (target), результат, время, ip, user-agent — это типизированные колонки с индексами: по ним аудит фильтруют при разборе инцидента.&#10;&#10;JSONB — только под переменный контекст действия (смена роли old→new, key_id у ключа), в общую схему он не лезет. Сам JSON — ещё и формат выгрузки наружу (экспорт, SIEM), но не способ хранения."
+                  ><b>Формат</b> реляционная схема + JSONB</span
+                >
+                <span
+                  class="pipe-chip"
+                  data-tip="Append-only таблица в PostgreSQL: без UPDATE и DELETE. Чтение — только Owner, с самого начала: журнал чужих действий, IP и user-agent сам по себе чувствителен."
+                  ><b>Хранение</b> append-only PostgreSQL · только Owner</span
+                >
+              </div>
+              <details class="pipe-more">
+                <summary>
+                  Своя таблица, не библиотека · и второй слой defense-in-depth
+                </summary>
+                <div class="pipe-more__inner">
+                  <b>Своя таблица.</b>
+                  Тонкая обёртка
+                  <code>audit_log(actor, action, target, result, ip, ua)</code> —
+                  фиксирует намерение актора, а не diff строк (этим заняты
+                  готовые row-версионеры). Application-дефолт: OWASP ASVS V7,
+                  NIST SP 800-92.<br /><br />
+                  <b>Единая точка записи.</b>
+                  Обёртку зовут централизованно — middleware на изменяющих ручках
+                  плюс доменные события, не россыпь ручных вызовов: забытый вызов
+                  — дыра в аудите без всякого сигнала.<br /><br />
+                  <b>Hash-chaining <span class="iter v2">v2</span>.</b> Каждая
+                  запись хранит хеш предыдущей — лог становится tamper-evident:
+                  задним числом строку не отредактировать и не удалить незаметно,
+                  цепочка хешей разойдётся. Поверх append-only прав, для высокого
+                  уровня доверия.
+                </div>
+              </details>
+            </div>
+            <div class="pipe-branch">
+              <b>Что в аудит не попадает</b> → пароли, токены и секреты —
+              никогда; чувствительное поле — идентификатором, не содержимым
+              (<code>old→new</code> только для неконфиденциального: роль, статус).
+              Лог неудаляемый и навсегда — PII, попавшее сюда, уже не вычистить.
+            </div>
+            <div class="pipe-branch">
+              <b>Запись аудита</b> → вход пишется асинхронно: отказ лога не роняет
+              сам вход. Изменения прав — запись обязательна и в своей транзакции,
+              чтобы <code>result=failure</code> не потерялся при откате основной
+              операции.
+            </div>
+            <div class="pipe-branch">
+              <b>Срок хранения и архивация</b> <span class="iter v2">v2</span> →
+              конфиг <code>audit_retention_days</code>, по
+              умолчанию «бесконечно». Сам джоб чистки и выгрузку в холодное
+              хранилище проектируем вместе с hash-chaining — удаление должно
+              дружить с неизменностью, а срок задаёт compliance (SOC 2 / ISO
+              27001).
+            </div>
+            <div class="pipe-branch">
+              <b>Least-privilege роль БД</b> → приложение ходит в Postgres
+              ролью без DDL и без чужих схем: даже пробитый инъекцией запрос
+              заперт в своих таблицах. Defense-in-depth под слоем данных, не
+              только параметризация.
+            </div>
+            <div class="pipe-branch">
+              <b>Прямой доступ к БД в обход приложения</b> → ловит
+              <code>pgaudit</code> <span class="iter v2">v2</span>: SQL-операции
+              пишутся в самой БД, application-аудит этого не видит. Форензика для
+              compliance (SOC 2 / ISO 27001).
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pipe-arrow">
+        <svg width="16" height="22" viewBox="0 0 16 22" aria-hidden="true">
+          <path
+            d="M8 0 V16 M2 11 L8 18 L14 11"
+            stroke="currentColor"
+            stroke-width="2.4"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </div>
+      <div class="pipe-io-wrap">
+        <div class="pipe-io pipe-io--out">
+          <span class="pipe-io__main">✓ Запрос прошёл защиту → обработка</span>
+          <small
+            >прошедший все рубежи запрос допущен к бизнес-логике; его след — в
+            аудит-логе</small
+          >
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

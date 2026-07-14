@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: API Keys</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">API Keys</h1>
+        <div class="header__sub">
+          admin panel · wireframes · security
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Screen renders in the shell's content area">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--keep" href="../../shared-ui/_wireframes/loading-states.html#keep-previous" title="Page or filter change — previous rows stay (keep-previous)">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">Owner / Admin oversight of the company's machine keys: every key in one place, revoke any of them, issue a key on behalf of an employee.</p>
+
+      <!-- ═══ Mockup ═══ -->
+      <div class="section" id="api-keys">
+        <div class="section__title">
+          List and key creation
+          <a href="../../auth-security/_workzone/authentication.html#api-keys" class="xref-badge">→ Auth &amp; Security</a>
+          <a href="../../mcp/index.html#governance" class="xref-badge">→ MCP</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">key list</div>
+              <div class="wf-screen wf-screen--wide">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/admin/api-keys
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/admin/api-keys · Owner / Admin</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-title">API Keys</span>
+                      <a class="wf-btn wf-btn--primary" href="../../auth-security/_features/api-keys/api-key-create-modal.html#api-key-create">Create key <span class="wf-annot wf-annot--on-accent">1</span></a>
+                    </div>
+                    <div class="wf-input wf-input--sm">
+                      <span class="wf-input__icon">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                      </span>
+                      Search by name, key prefix, or owner
+                    </div>
+                    <div class="wf-filters">
+                      <span class="wf-filter">Status <span class="wf-filter__caret">▾</span></span>
+                      <span class="wf-filter">Source <span class="wf-filter__caret">▾</span></span>
+                      <span class="wf-filter">Access <span class="wf-filter__caret">▾</span></span>
+                      <span class="wf-annot">2</span>
+                    </div>
+                    <table class="wf-table">
+                      <thead>
+                        <tr><th>Key</th><th>Owner</th><th>Access</th><th>Sources</th><th>Expires</th><th>Last used</th><th></th></tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td><span class="wf-idcell"><span class="wf-text">CI server</span><span class="wf-idcell__email">ach_7f2k…</span></span> <span class="wf-annot">7</span></td>
+                          <td><span class="wf-idcell"><a class="wf-userlink" href="user-card.html">Dmitry Sokolov</a><span class="wf-idcell__email">dmitry@company.com</span></span> <span class="wf-annot">3</span></td>
+                          <td><span class="wf-chip">read-only</span> <span class="wf-annot">4</span></td>
+                          <td><span class="wf-chip">Jira</span></td>
+                          <td>in 84 days</td>
+                          <td>5 min ago</td>
+                          <td><span class="wf-guarded"
+                              ><a class="wf-a wf-a--danger">Revoke</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#irreversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a
+                            ></span>
+                            <span class="wf-annot">5</span></td>
+                        </tr>
+                        <tr>
+                          <td>ach_x91m…</td>
+                          <td><span class="wf-idcell"><a class="wf-userlink" href="user-card.html">Anna Orlova</a><span class="wf-idcell__email">anna@company.com</span></span></td>
+                          <td><span class="wf-chip">read-only</span></td>
+                          <td><span class="wf-chip">all sources</span></td>
+                          <td>never</td>
+                          <td>yesterday</td>
+                          <td><span class="wf-guarded"
+                              ><a class="wf-a wf-a--danger">Revoke</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#irreversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a
+                            ></span>
+                          </td>
+                        </tr>
+                        <tr class="wf-table__row--muted">
+                          <td>ach_p03d…</td>
+                          <td><span class="wf-idcell"><a class="wf-userlink" href="user-card.html">Maria Kim</a><span class="wf-idcell__email">maria@company.com</span></span></td>
+                          <td><span class="wf-chip">read-only</span></td>
+                          <td>—</td>
+                          <td><span class="wf-chip wf-chip--err">revoked</span> <span class="wf-annot">6</span></td>
+                          <td>a month ago</td>
+                          <td></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div class="wf-pager">
+                      <span class="wf-pager__count">1–50 of 64</span>
+                      <div class="wf-pager__pages">
+                        <span class="wf-page wf-page--nav wf-page--off">‹</span>
+                        <span class="wf-page wf-page--active">1</span>
+                        <span class="wf-page">2</span>
+                        <span class="wf-page wf-page--nav">›</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">filter · status</div>
+              <div class="wf-pop">
+                <span class="wf-filter" tabindex="0">Status <span class="wf-filter__caret">▾</span></span>
+                <div class="wf-menu">
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> active</span>
+                  <span class="wf-opt"><span class="wf-opt__box"></span> expired</span>
+                  <span class="wf-opt"><span class="wf-opt__box"></span> revoked</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Opens the
+              <a href="../../auth-security/_features/api-keys/api-key-create-modal.html#api-key-create" class="xref-module">create dialog</a>
+              — a secondary path to issue a key on behalf of an employee; the primary path is self-issue in the
+              <a href="../../auth-security/_wireframes/profile-account.html" class="xref-module">profile</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Status · Source · Access facets. Search and filter behavior is
+              <a href="../_workzone/list-controls.html#facets" class="xref-page">the same across all lists</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              The owner links to the
+              <a href="user-card.html" class="xref-page">user card</a>
+              with their keys and access.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              “Access” and “Sources” are the key's scope. The rights ceiling —
+              <a href="../../auth-security/_workzone/authentication.html#api-keys" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Owner / Admin can revoke any key, and revocation takes effect at once. The mechanics —
+              <a href="../../auth-security/_workzone/authentication.html#api-keys" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              “revoked” — the key was cancelled by hand or when its owner was deactivated; reactivation doesn't bring it back.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              An optional name sits above the prefix, so a key reads by purpose, not just its opaque prefix; an unnamed key shows the prefix alone. The name is the owner's — set at issue, renamed by them in the <a href="../../auth-security/_wireframes/profile-account.html#api-keys" class="xref-module">profile</a>. Search matches it too.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

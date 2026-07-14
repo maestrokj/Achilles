@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Расходы AI — сотрудник</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Расходы AI — сотрудник</h1>
+        <div class="header__sub">
+          admin panel · макеты · ai
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Экран рендерится в контентной области каркаса">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Загрузка экрана — каркас (skeleton)">
+              <span class="in-load__icon"></span>загрузка
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">Расход одного сотрудника за период: две статьи, привязанные к человеку, — <strong>агенты</strong> (по агентам) и <strong>чат</strong> (по моделям), каждая против своего недельного потолка. Открывается кликом по строке списка <a href="usage.html#by-user" class="xref-page">Расходы AI</a>. Стоимость в деньгах, тренд по дням и экспорт — <span class="iter v2">v2</span>.</p>
+
+      <!-- ═══ Детализация сотрудника ═══ -->
+      <div class="section" id="detail">
+        <div class="section__title">Детализация сотрудника</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">сотрудник · эта неделя</div>
+          <div class="wf-screen">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/usage/42
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/usage/:user · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-row wf-spread">
+                  <span class="wf-idcell"><span class="wf-title">Дмитрий Соколов</span><span class="wf-idcell__email">dmitry@company.com</span></span>
+                  <span class="wf-filter wf-filter--on">Период · эта неделя <span class="wf-filter__caret">▾</span></span>
+                </div>
+
+                <div class="wf-row">
+                  <div class="wf-stat">
+                    <span class="wf-stat__num">1.20M <span class="wf-stat__cap">/ 2M</span></span>
+                    <span class="wf-stat__label">Агенты · токены недели <span class="wf-annot">1</span></span>
+                    <div class="wf-gauge"><div class="wf-gauge__fill" style="width: 60%"></div></div>
+                    <span class="wf-stat__sub">60% потолка · блокирует · все агенты</span>
+                  </div>
+                  <div class="wf-stat">
+                    <span class="wf-stat__num">340k <span class="wf-stat__cap">/ 500k</span></span>
+                    <span class="wf-stat__label">Чат · токены недели <span class="wf-annot">2</span></span>
+                    <div class="wf-gauge wf-gauge--soft"><div class="wf-gauge__fill" style="width: 68%"></div></div>
+                    <span class="wf-stat__sub">68% справочного · не блокирует</span>
+                  </div>
+                  <div class="wf-stat wf-stat--muted">
+                    <span class="wf-stat__num">1.54M</span>
+                    <span class="wf-stat__label">Всего</span>
+                    <span class="wf-stat__sub">агенты + чат</span>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <div class="wf-stack wf-stack--tight">
+                  <span class="wf-label">Агенты · по агентам <span class="wf-annot">3</span></span>
+                  <table class="wf-table">
+                    <thead>
+                      <tr><th>Агент</th><th>Модель</th><th>Прогоны</th><th>Токены</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><a href="agent-card.html" class="wf-userlink">Дайджест релизов</a></td>
+                        <td>Claude Sonnet</td>
+                        <td>28</td>
+                        <td>820k</td>
+                      </tr>
+                      <tr>
+                        <td><a href="agent-card.html" class="wf-userlink">Сводка инцидентов</a></td>
+                        <td>GPT-4o</td>
+                        <td>14</td>
+                        <td>380k</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="wf-stack wf-stack--tight">
+                  <span class="wf-label">Чат · по моделям <span class="wf-annot">4</span></span>
+                  <table class="wf-table">
+                    <thead>
+                      <tr><th>Модель</th><th>Сообщения</th><th>Токены</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>GPT-4o</td>
+                        <td>168</td>
+                        <td>250k</td>
+                      </tr>
+                      <tr>
+                        <td>Claude Sonnet</td>
+                        <td>42</td>
+                        <td>90k</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <div class="wf-row">
+                  <div class="wf-stat wf-stat--muted">
+                    <span class="wf-stat__num">—</span>
+                    <span class="wf-stat__label">Стоимость <span class="iter v2">v2</span></span>
+                    <span class="wf-stat__sub">цена входа/выхода по моделям</span>
+                  </div>
+                  <div class="wf-stat wf-stat--muted">
+                    <span class="wf-stat__num">—</span>
+                    <span class="wf-stat__label">Тренд по дням <span class="iter v2">v2</span></span>
+                    <span class="wf-stat__sub">график расхода за период</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Агенты против недельного потолка — блокирующего: сверх него прогоны ждут сброса недели.
+              <a href="../../agent-engine/_workzone/governance.html#budget" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Чат против <a href="usage.html#limits" class="xref-page">справочного потолка</a> — индикатор «израсходовано из лимита», запросы не блокирует (v1).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Разбивка агентов — <strong>по агентам</strong>, не по моделям: журнал прогонов
+              (<a href="../../agent-engine/_workzone/data-model.html#agent-runs" class="xref-module"><code>agent_runs.tokens_used</code></a>)
+              не хранит модель на прогон, поэтому колонка «Модель» — текущая модель агента; точная разбивка агентов по моделям — <span class="iter v2">v2</span>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Разбивка чата — <strong>по моделям</strong>: на каждом ответе зафиксированы модель
+              (<a href="../../query-engine/_workzone/data-model.html#messages" class="xref-module"><code>messages.model</code></a>) и токены
+              (<code>messages.tokens_used</code>), поэтому разрез точный.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              Стоимость в деньгах, тренд по дням и экспорт — <span class="iter v2">v2</span>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

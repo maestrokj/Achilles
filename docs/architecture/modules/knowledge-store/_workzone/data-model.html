@@ -1,0 +1,942 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Knowledge Store: data model</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../knowledge-store.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="data-model.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Knowledge Store</a>
+        <h1 class="header__title">Data model</h1>
+        <div class="header__sub">knowledge-store · workzone</div>
+      </div>
+
+      <p class="desc">
+        The core of Knowledge Store is the knowledge entity. One logical
+        <a
+          href="../../harvester/_workzone/data-model.html#entity"
+          class="xref-module"
+          >Entity</a
+        > contract, produced by Harvester, is persisted here and fans out into
+        <a href="#projections" class="xref-anchor">three projections</a> within one
+        Postgres database: the relational body (<a href="#entities" class="xref-anchor"
+          >entities</a
+        >), chunks with vectors and full text (<a href="#chunks" class="xref-anchor"
+          >chunks</a
+        >), and a graph of relations (<a href="#graph" class="xref-anchor">entity_edge</a>).
+        Everything else hangs off <code>entities</code>: permissions
+        (<a href="acl-identity.html#entity-acl" class="xref-page"
+          >entity_acl → entities</a
+        >), search
+        (<a href="hybrid-search.html#primitives" class="xref-page"
+          >four primitives</a
+        >), and graph curation
+        (<a href="lifecycle.html#curation-pass" class="xref-page"
+          >Curation Pass</a
+        >). How the Harvester contract lands in these tables is covered at the
+        <a href="#boundary" class="xref-anchor">boundary with the producer</a>.
+      </p>
+
+      <!-- ════════════════ THREE PROJECTIONS ════════════════ -->
+      <div class="section" id="projections">
+        <div class="section__title">Entity → three projections in one database</div>
+        <p class="desc">
+          An entity is neither a single row in one database nor three copies across
+          three DBMSs. It is <strong>one record with three projections</strong> inside a
+          single Postgres: the body is filtered and joined exactly, chunks are searched
+          by meaning, edges are traversed by relation. All three live side by side, so
+          the <a href="acl-identity.html#resolution" class="xref-page"
+            >single ACL pre-filter</a
+          >
+          and the <a href="hybrid-search.html#fusion" class="xref-page">fusion</a> of four
+          paradigms run in one SQL query, without cross-database sync.
+        </p>
+
+        <div class="ks-proj">
+          <div class="ks-proj__src">
+            entity<small>one logical contract</small>
+          </div>
+          <div class="ks-proj__stem"></div>
+          <div class="ks-proj__fan">
+            <div class="ks-proj__col ks-proj__col--rel">
+              <div class="ks-proj__h">
+                <span class="ks-proj__t">Relational body</span>
+                <span class="ks-proj__tbl">entities · structure · exact filters</span>
+              </div>
+              <p class="ks-proj__d">
+                Identity, type, status, metadata, text for retrieval — and the
+                source of truth for permissions (<code>entity_acl</code> points here).
+                Everything filtered and joined exactly.
+              </p>
+            </div>
+            <div class="ks-proj__col ks-proj__col--vec">
+              <div class="ks-proj__h">
+                <span class="ks-proj__t">Chunk text</span>
+                <span class="ks-proj__tbl">chunks · vector + lexical</span>
+              </div>
+              <p class="ks-proj__d">
+                An entity's chunks are child rows (keyed by its <code>id</code>),
+                each with two indexes: a dense embedding for semantic search and a
+                sparse <code>tsvector</code> for keyword search. The backbone of
+                text retrieval — both signals side by side.
+              </p>
+            </div>
+            <div class="ks-proj__col ks-proj__col--graph">
+              <div class="ks-proj__h">
+                <span class="ks-proj__t">Graph</span>
+                <span class="ks-proj__tbl">entity_edge · relations · traversal</span>
+              </div>
+              <p class="ks-proj__d">
+                An entity is a node, there is no separate node table; relations are
+                edges between entities. Structural ones come from Harvester; cross-source
+                ones are materialized by Curation Pass.
+              </p>
+            </div>
+          </div>
+          <div class="ks-proj__base">
+            one PostgreSQL · pgvector + recursive SQL (CTE) · one transaction,
+            one ACL pre-filter
+          </div>
+        </div>
+
+        <div class="decision-box">
+          <strong>Projection update order — body → vectors → edges.</strong>
+          Loading writes the projections in one transaction, in one order:
+          first the <code>entities</code> row (the others reference it by FK),
+          then its <code>chunks</code> (re-embedding only when
+          <code>content_hash</code> changes), then structural <code>entity_edge</code>
+          rows whose two nodes are already in the database. Cross-source edges and
+          curation are asynchronous, driven by
+          <a href="lifecycle.html#curation-pass" class="xref-page"
+            >Curation Pass</a
+          >.
+        </div>
+      </div>
+
+      <!-- ════════════════ ENTITIES ════════════════ -->
+      <div class="section" id="entities">
+        <div class="section__title">
+          Relational body: <code>entities</code>
+        </div>
+        <p class="desc">
+          The module's central table — the canonical snapshot of a source record and the
+          source of truth referenced by all the other projections and permissions.
+          Its identity matches the idempotency key of the
+          <a
+            href="../../harvester/_workzone/data-model.html#entity"
+            class="xref-module"
+            >Harvester contract</a
+          >: one row per source record, and a repeat run upserts it.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--ks">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Entity</span>
+              <span class="stk-layer__role">The record body — snapshot and source of truth.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">entities</span>
+                  <span class="dm-tbl__sub">knowledge nodes</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → sources</span>
+                    <span class="dm-badge dm-badge--fk">FK → source_principal</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (source_id, source_type, source_entity_id)</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">source_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → Harvester.sources, ON DELETE CASCADE">FK→sources</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">source · CASCADE</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_type</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">subtype · ticket · page · message</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_entity_id</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">native record id · part of the upsert key</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">title</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">title</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">body</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">text for retrieval · split into <code>chunks</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">url</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">permalink in the source</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">status</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (draft | final | archived)">CHECK</span>
+                      </td>
+                      <td class="dm-note">draft · final · archived · set by the classify step</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">author_principal_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → source_principal, ON DELETE SET NULL">FK→principal</span
+                        ><span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">author · bridge into the world of identities</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">created in the source</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">edited in the source · staleness input</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">is_deleted</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="server_default=false">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">soft-delete · a separate axis from <code>status</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">deleted_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">when it vanished from the source · set by reconciliation</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">content_hash</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">change detection · saves re-embedding</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">trust_score</td>
+                      <td class="dm-t">Real</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">ranking weight · driven by Curation Pass: source authority, reduced by age and demand (<a href="lifecycle.html#staleness" class="xref-page">decay</a>)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">meta</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">flexible attributes by entity type</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">A snapshot, not a feed · soft-delete on a separate axis</span>
+                </div>
+                <div class="stk-dec__d">
+                  We keep the record's latest state: an upsert overwrites the row, and we
+                  don't accumulate its past revisions (no field changelog — only
+                  <code>updated_at</code>). A record vanishing from the
+                  source is <code>is_deleted</code>, a separate axis from
+                  <code>status</code>: the record is hidden from retrieval but kept
+                  physically for audit and recovery. The moment of disappearance is
+                  set by the full scan of
+                  <a
+                    href="../../harvester/_workzone/sync-modes.html#reconciliation"
+                    class="xref-module"
+                    >reconciliation</a
+                  > — deletions don't arrive in the incremental stream.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ CHUNKS ════════════════ -->
+      <div class="section" id="chunks">
+        <div class="section__title">
+          Text projection: <code>chunks</code>
+        </div>
+        <p class="desc">
+          Embeddings are not one vector per record, but per chunk: a long
+          document is
+          <a
+            href="../../harvester/_workzone/pipeline.html#chunk"
+            class="xref-module"
+            >split into pieces</a
+          >, each embedded separately. That same chunk text also carries a
+          sparse full-text index (<code>tsvector</code> + GIN) —
+          lexical keyword search alongside vector search by meaning. A chunk is a
+          child row of an entity and has no ACL of its own: it inherits the
+          <a href="acl-identity.html#entity-acl" class="xref-page"
+            >parent's permissions</a
+          >
+          via <code>entity_id</code>, so the permission filter runs in the same
+          SQL query as the proximity search.
+        </p>
+
+        <div class="decision-box decision-box--warn" id="no-partition">
+          <strong>No partitioning by source — global ANN matters more.</strong>
+          The temptation to slice <code>chunks</code> by <code>source_id</code> for
+          volume is deceptive: each partition gets its own HNSW index, while semantic
+          search runs across all sources at once — a query with no predicate on the
+          partition key is forced to scan every partition's index and merge, and the ACL
+          shortfall multiplies across partitions (partition pruning won't kick in until
+          the query is narrowed to a source — a rare case). The only gain from partitions
+          is cheap source deletion (<code>DROP PARTITION</code>), but that is already
+          covered by <code>ON DELETE CASCADE</code>. So it is one global
+          store, not sharded by source. Dedicated sharding
+          (<span class="iter v2">v2</span>) only on proven volume and a
+          pattern shift toward source-scoped search: an addition, not a rewrite.
+        </div>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--ks">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Chunk</span>
+              <span class="stk-layer__role">A piece of text, its vector and full text.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">chunks</span>
+                  <span class="dm-tbl__sub">chunks and embeddings</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → entities</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (entity_id, ordinal)</span>
+                    <span class="dm-badge dm-badge--flag">HNSW (embedding) · halfvec</span>
+                    <span class="dm-badge dm-badge--flag">GIN (text_tsv)</span>
+                    <span class="dm-badge dm-badge--flag">partial · WHERE NOT is_deleted</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">entity_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → entities, ON DELETE CASCADE">FK→entities</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">parent · CASCADE · carrier of the ACL</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">is_deleted</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="server_default=false">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">mirror of <code>entities.is_deleted</code> · condition of the partial HNSW/GIN</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">ordinal</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">the chunk's position within the entity</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">text</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">chunk text</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">embedding</td>
+                      <td class="dm-t">halfvec(N)</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--vec" title="pgvector · half-precision · HNSW index">pgvector</span
+                        ><span class="dm-c dm-c--idx">HNSW</span>
+                      </td>
+                      <td class="dm-note">N — the dimensionality of the assigned embedding model (built-in ones are 1024) · half-precision · ANN by proximity (cosine)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">text_tsv</td>
+                      <td class="dm-t">tsvector</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--def" title="GENERATED ALWAYS AS to_tsvector('simple', text) STORED">GENERATED</span
+                        ><span class="dm-c dm-c--idx">GIN</span>
+                      </td>
+                      <td class="dm-note">sparse index from <code>text</code> · lexical search (<code>ts_rank</code>)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">token_count</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">chunk length in tokens</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">content_hash</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">re-embed only when the text changes</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">embedding_model</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">what it was embedded with · <a href="lifecycle.html#embedding-refresh" class="xref-page">refresh</a> key</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · updated on re-embedding</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full stk-dec--warn">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">A filter on top of an approximate index · denormalization and partial indexes</span>
+                </div>
+                <div class="stk-dec__d">
+                  pgvector applies the filter <strong>after</strong> the index scan,
+                  not inside the graph traversal: a hard
+                  <a href="acl-identity.html#resolution" class="xref-page"
+                    >ACL pre-filter</a
+                  >
+                  may undershoot — part of the approximate HNSW top-K is cut off after
+                  retrieval, without an error. This is cured by iterative scans
+                  (<code>hnsw.iterative_scan</code>, pgvector 0.8.0+) — but only
+                  for conditions on <code>chunks</code> itself; an iterative scan can't
+                  compensate for a predicate via a JOIN to
+                  <code>entities</code>. And we have two such predicates —
+                  <code>is_deleted</code> and the ACL itself — and they are solved
+                  separately. <code>is_deleted</code> is denormalized: the axis is
+                  mirrored onto <code>chunks</code>, and both text indexes (HNSW and GIN)
+                  are built <strong>partial</strong> — <code>WHERE NOT is_deleted</code>,
+                  so the deleted are outside the traversal entirely. The ACL can't be
+                  removed this way — it stays the hardest filter, arriving via a JOIN; its
+                  recall under our permissions must be measured on real data, not trusted
+                  to general estimates. See
+                  <a href="hybrid-search.html#acl-prefilter" class="xref-page"
+                    >ACL pre-filter</a
+                  >.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full" id="model-metric">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Model and metric — a single platform choice</span>
+                </div>
+                <div class="stk-dec__d">
+                  The embedding model is one global choice per platform
+                  (<a
+                    href="../../admin-panel/_wireframes/ai-models.html#model-assignment"
+                    class="xref-module"
+                    >ai-models</a
+                  >); both the dimensionality <code>N</code> of the
+                  <code>halfvec(N)</code> column and the search metric are inherited from
+                  it — Knowledge Store doesn't pick them, it consumes them
+                  (<code>N</code> = <code>meta.embedding_dim</code> of the assigned
+                  model). There is no default: the platform ships built-in models out of
+                  the box (<a href="../../ai-foundation/_workzone/data-model.html#ai-builtin" class="xref-module"
+                    >Platform</a
+                  >), but <code>N</code> is fixed on the first assignment —
+                  built-in <em>or</em> your own — before the first ingestion. The metric is
+                  <strong>cosine</strong> (embeddings are normalized, the
+                  <code>vector_cosine_ops</code> operator class on HNSW). One
+                  global choice also sets the boundary between updates: switching to
+                  a model of the <em>same</em> dimensionality is a
+                  <a href="lifecycle.html#embedding-refresh" class="xref-page"
+                    >refresh</a
+                  >
+                  (regenerating vectors in place); changing the dimensionality
+                  rebuilds the column type and index — that is a schema migration, not a
+                  refresh. In v1 the column is provisioned as
+                  <code>halfvec(1024)</code> (the dimensionality of both built-in
+                  models), and assigning a model of a different — or undeclared —
+                  dimensionality is rejected at the registry level (409); a dynamic
+                  <code>N</code> will arrive together with a dimensionality change as
+                  a schema operation.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><code>halfvec</code> by default: half the storage and index</span>
+                </div>
+                <div class="stk-dec__d">
+                  Embeddings are the dominant storage line item: across millions of
+                  chunks, both the column and the HNSW index run into tens of GB.
+                  <code>halfvec</code> (half-precision, 2 bytes per dimension vs.
+                  4 for <code>vector</code>; pgvector 0.7.0+) halves both — the
+                  index sits in memory better and search is faster. The recall loss from
+                  half-precision is practically nil, but measure the absolute value on
+                  your own data.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Dimensionality as a lever: prefer an MRL model</span>
+                </div>
+                <div class="stk-dec__d">
+                  The dimensionality <code>N</code> is set by the model — and when
+                  choosing it, prefer an MRL-compatible one (Matryoshka Representation
+                  Learning: earlier dimensions carry more meaning, so truncating the tail
+                  barely drops recall). That preserves the
+                  <span class="iter v2">v2</span> option — indexing on the truncated
+                  vector (<code>subvector</code>) while storing the full one: a smaller
+                  index without re-embedding. Truncation is valid
+                  <strong>only</strong> for MRL models — you can't cut the tail of an
+                  ordinary model, it breaks the space.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">When the index stops fitting in memory</span>
+                </div>
+                <div class="stk-dec__d">
+                  The next cap beyond <code>halfvec</code> is the RAM for
+                  HNSW; the <span class="iter v2">v2</span> escalation path:
+                  binary quantization (<code>binary_quantize</code> →
+                  <code>bit</code> + Hamming distance) as a coarse first pass,
+                  then rerank the top candidates on <code>halfvec</code>. Binary is
+                  1 bit per dimension vs. 16 for <code>halfvec</code>: ~16× on the
+                  vector <em>data</em> volume relative to our default
+                  (the full 32× is only against fp32 <code>vector</code>, which we
+                  don't keep), and that on the data, not on the HNSW index size 1:1;
+                  <code>halfvec</code> stays for rerank. An addition of a second
+                  index, not a rewrite — pointless in v1.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Full text — the <code>simple</code> configuration</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>text_tsv</code> is generated with the
+                  <code>simple</code> configuration — tokenization and lower-casing
+                  without stemming or stop words, language-agnostic. Two
+                  reasons. The content is mixed (RU + EN), and
+                  <code>GENERATED … STORED</code> requires an
+                  <strong>immutable</strong> expression — a per-row language in a
+                  generated column is impossible. And the role: in the hybrid, the lexical
+                  primitive carries <strong>exact matches</strong> — names, IDs,
+                  acronyms, code — while meaning and cross-language come from the
+                  <a href="hybrid-search.html#primitives" class="xref-page"
+                    >vector primitive</a
+                  >, so losing stemming for lexical is not critical.
+                  Per-language stemming (detection + per-language configuration) is
+                  deferred curation, not a schema rewrite.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ GRAPH ════════════════ -->
+      <div class="section" id="graph">
+        <div class="section__title">
+          Graph projection: <code>entity_edge</code>
+        </div>
+        <p class="desc">
+          The entity graph lives in the same Postgres: a node is the
+          <code>entities</code> record itself (there is no separate node table), and
+          relations are edges between entities. Traversal is recursive SQL (CTE) over
+          near context (1–3 hops), under the same ACL
+          <a href="acl-identity.html#resolution" class="xref-page"
+            >pre-filter</a
+          > as the other projections. A dedicated graph engine is
+          <a href="#graph-engine" class="xref-anchor">v2, if it's ever needed</a>.
+        </p>
+
+        <div class="decision-box decision-box--warn" id="graph-engine">
+          <strong>The graph — in the same Postgres, not in Neo4j.</strong>
+          The module's profile is connected RAG retrieval of near context (1–3 hops):
+          growth in sources widens the graph, not deepens it, and at that depth a
+          recursive CTE handles the load — a second DBMS with cross-database
+          sync isn't needed. A dedicated graph engine (Neo4j) is
+          <span class="iter v2">v2</span>, only on a sustained shift toward
+          deep (4+ hop) traversals or graph analytics: then a separate graph
+          layer is added over part of the data, while the relational store stays the
+          source of truth — an addition, not a rewrite.
+        </div>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--ks">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Edge</span>
+              <span class="stk-layer__role">A relation between two entities.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">entity_edge</span>
+                  <span class="dm-tbl__sub">graph edges</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → entities ×2</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (src, dst, rel_type)</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">src_entity_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → entities, ON DELETE CASCADE">FK→entities</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">source entity · CASCADE</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">dst_entity_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → entities, ON DELETE CASCADE">FK→entities</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">target entity · CASCADE</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">rel_type</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">relation type · mentions · replies_to · links_to · child_of · duplicate_of</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">weight</td>
+                      <td class="dm-t">Real</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">edge weight / confidence</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">origin</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (harvester | curation)">CHECK</span>
+                      </td>
+                      <td class="dm-note">harvester (structural, at load) · curation (materialized by a run: cross-source and deferred forward-references)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · weight updated during Curation Pass</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Two breeds of edge · one ACL on traversal</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>origin</code> distinguishes who drew the edge. Structural ones
+                  (<code>harvester</code>) come with the load — relations within a
+                  source that are already visible in the record (a thread, a page
+                  hierarchy). Cross-source ones (<code>curation</code>) are materialized by
+                  <a href="lifecycle.html#curation-pass" class="xref-page"
+                    >Curation Pass</a
+                  >: a mention becomes an edge once both nodes are in the graph.
+                  Since nodes are <code>entities</code>, traversal and its ACL are
+                  an ordinary JOIN of <code>entity_acl</code> on visited ids: the single
+                  pre-filter covers the graph too, without a separate permissions
+                  projection. Traversal starts from a node and follows the relation type,
+                  so edges carry a composite index <code>(src_entity_id, rel_type)</code>,
+                  not just single-column FKs — the recursive CTE takes the next hop over
+                  it. Traversal is bounded not only by depth (1–3 hops) but also by
+                  <strong>width</strong>: a cap on fanout from a node, pruning by
+                  <code>weight</code>, an explicit visited-set against cycles — otherwise a
+                  hub node (a popular author, a space's root page)
+                  fans traversal out into tens of thousands of edges before the ACL even applies.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">From refs to edges: a canonical vocabulary and deferred materialization</span>
+                  <a class="xref-badge" href="../../harvester/_workzone/data-model.html#refs-format"
+                    >→ Harvester · refs</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <code>rel_type</code> is the graph's canonical vocabulary; relation
+                  requests (<a href="#entity-ref" class="xref-anchor">entity_ref</a>)
+                  are translated into it at materialization:
+                  <code>parent → child_of</code>,
+                  <code>duplicate → duplicate_of</code>,
+                  <code>mentions → mentions</code>, … An edge is born once
+                  <strong>both</strong> nodes are in the database — otherwise the request
+                  waits in <code>entity_ref</code> and materializes later, on par with
+                  cross-source: the FKs on both ends don't tolerate a dangling target,
+                  including for a forward-reference within a single source. A request whose
+                  target is not an entity (<code>author → user</code>) resolves into the
+                  relational body (<code>author_principal_id</code>), not into an
+                  edge: <code>entity_edge</code> links entities only.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--ks" id="entity-ref">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">●</span>
+              <span class="stk-layer__name">Relation request</span>
+              <span class="stk-layer__role">A staging queue of edges before resolution.</span>
+            </div>
+            <div class="stk-layer__body">
+              <p class="desc">
+                A reference whose target can't be linked yet (the node isn't loaded or
+                lives in another source). Harvester writes the request on capture,
+                <a href="lifecycle.html#curation-pass" class="xref-page"
+                  >Curation Pass</a
+                >
+                resolves the target and clears the row, materializing the edge.
+              </p>
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">entity_ref</span>
+                  <span class="dm-tbl__sub">unresolved relation requests</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → entities</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (src_entity_id, relation, target_kind, target_ref)</span>
+                    <span class="dm-badge dm-badge--flag">snapshot of the unresolved</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">src_entity_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → entities, ON DELETE CASCADE">FK→entities</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">the entity that owns the request · CASCADE</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">relation</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">relation type in source terms · mentions · blocks · parent · author · duplicate · …</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">target_kind</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">target kind · issue · page · user · commit · mr · message · …</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">target_ref</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">the target's natural id in the source · resolution key</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_hint</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">presumed source · jira · gitlab · <code>NULL</code> if unknown</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · on repeat capture</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">A queue of the unresolved · cleared on materialization</span>
+                </div>
+                <div class="stk-dec__d">
+                  A mirror of Harvester's <code>dead_letters</code>: a row lives while the
+                  request can't be linked. Once resolution finds the target, Curation Pass
+                  writes the edge into <code>entity_edge</code> and <strong>deletes</strong>
+                  the row; provenance stays on the edge
+                  (<code>origin=curation</code>) — no point duplicating it in the request.
+                  A repeat capture of the same reference doesn't breed a duplicate — an
+                  upsert on the natural key
+                  (<code>src_entity_id + relation + target_kind + target_ref</code>).
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ BOUNDARY WITH HARVESTER ════════════════ -->
+      <div class="section" id="boundary">
+        <div class="section__title">Boundary with the producer: Harvester → Knowledge Store</div>
+        <p class="desc">
+          The contract between the modules is already fixed: Harvester
+          <a
+            href="../../harvester/_workzone/data-model.html#storage"
+            class="xref-module"
+            >produces the Entity and sketches the three projections</a
+          >, Knowledge Store gives them their exact shape and stores them. The same
+          boundary on the producer's side is in its
+          <a
+            href="../../harvester/_workzone/data-model.html#cross-source"
+            class="xref-module"
+            >cross-source</a
+          >.
+        </p>
+
+        <div class="dm-border">
+          <div class="dm-border__col dm-border__col--there">
+            <div class="dm-border__head">
+              <span class="dm-border__who">Harvester</span>
+              <span class="dm-border__act">produces</span>
+            </div>
+            <p class="dm-border__d">
+              Normalizes a record into an <code>Entity</code>, computes chunks and their
+              embeddings, draws <em>structural</em> relations within a source, and
+              captures permissions. Upserts on the idempotency key — exact-match
+              deduplication at load.
+            </p>
+          </div>
+          <div class="dm-border__seam">▸</div>
+          <div class="dm-border__col dm-border__col--here">
+            <div class="dm-border__head">
+              <span class="dm-border__who">Knowledge Store</span>
+              <span class="dm-border__act">stores and curates</span>
+            </div>
+            <p class="dm-border__d">
+              Holds the three projections and permissions as the source of truth, serves
+              <a href="hybrid-search.html#primitives" class="xref-page"
+                >ACL-filtered search</a
+              >, and curates the graph across all sources
+              (<a href="lifecycle.html#curation-pass" class="xref-page"
+                >Curation Pass</a
+              >): cross-source edges and fuzzy merging — cross-source
+              inference that Harvester can't make from a single source.
+            </p>
+          </div>
+        </div>
+
+        <p class="note">
+          The boundary: “exact within a source → Harvester, inference across
+          sources → Knowledge Store.” Applying permissions at retrieval —
+          <a
+            class="xref-badge"
+            href="../../query-engine/_workzone/retrieval.html#boundary"
+            >→ Query Engine</a
+          >.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

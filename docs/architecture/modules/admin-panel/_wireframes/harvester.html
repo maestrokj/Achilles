@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Harvester</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Harvester</h1>
+        <div class="header__sub">
+          admin panel · wireframes · data
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="The screen renders inside the shell's content area">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--keep" href="../../shared-ui/_wireframes/loading-states.html#keep-previous" title="Page change or re-sort — the previous rows stay (keep-previous)">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">
+        The data-collection hub: every source, its state and sync progress — the source model lives in
+        <a href="../../harvester/_workzone/sources.html#lifecycle" class="xref-module">Harvester</a>.
+      </p>
+
+      <!-- ═══ Global Harvester settings ═══ -->
+      <div class="section" id="global-settings">
+        <div class="section__title">Global collection settings</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">embedding model · schedule</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-stack">
+                  <span class="wf-label">Processing</span>
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-text">
+                      Embedding model<br />
+                      <span class="wf-hint">inherited from the AI models registry — changed there too</span>
+                    </span>
+                    <span class="wf-row">
+                      <a class="wf-chip" href="ai-models.html#model-assignment">text-embedding-3-large <span class="wf-chip__edit">↗</span></a>
+                      <span class="wf-annot">1</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div class="wf-stack" id="sync-schedule">
+                  <span class="wf-label">Incremental sync schedule</span>
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-text">
+                      Default interval<br />
+                      <span class="wf-hint">data freshness · a source overrides it in its own card</span>
+                    </span>
+                    <span class="wf-row">
+                      <div class="wf-input wf-input--sm">Every 6 h ▾</div>
+                      <span class="wf-annot">2</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div class="wf-stack" id="reconcile-schedule">
+                  <span class="wf-label">Reconciliation schedule</span>
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text">
+                        Default reconciliation window
+                        <span class="wf-hint">full source hygiene · a source overrides it in its card</span>
+                      </span>
+                      <span class="wf-annot">2</span>
+                    </div>
+                    <hr class="wf-divider" />
+                    <div class="wf-row">
+                      <div class="wf-field">
+                        <span class="wf-label">Frequency</span>
+                        <div class="wf-input wf-input--sm">Weekly ▾</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Day</span>
+                        <div class="wf-input wf-input--sm">Sunday ▾</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Time</span>
+                        <div class="wf-input wf-input--sm">03:00 ▾</div>
+                      </div>
+                    </div>
+                    <span class="wf-hint">↳ every Sunday at 03:00 · organization time (Europe/Moscow)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              The embedding-model chip is read-only; it is taken from the
+              <a href="ai-models.html#model-assignment" class="xref-page">AI models</a> registry, and clicking it goes to the model selection there.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Global default collection cadences, which a source overrides in its own card: incremental — the freshness interval; reconciliation — how often a full sweep runs (for weekly, the day and time). The modes live in
+              <a href="../../harvester/_workzone/sync-modes.html" class="xref-module">Harvester · sync-modes</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Sources overview ═══ -->
+      <div class="section" id="sync-overview">
+        <div class="section__title">Sources</div>
+        <p class="note">
+          Connecting sources is <strong>optional at launch</strong>. Without them
+          the knowledge base is empty
+          (<a href="../../knowledge-store/_workzone/hybrid-search.html#emptiness" class="xref-module"><code>is_empty</code></a>),
+          and the platform runs as a pure AI assistant — chat and agents answer
+          from the model's general knowledge. An assigned chat model is enough;
+          sources add grounding on company data once the company is ready for it.
+          The first accepted chunk switches grounding on by itself.
+        </p>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">source list</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/harvester
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/harvester · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-row wf-spread">
+                  <span class="wf-title">Sources</span>
+                  <span class="wf-row">
+                    <a class="wf-btn" href="../../harvester/_workzone/sync-modes.html#per-source">
+                       ⟳ Sync all <span class="wf-annot">3</span></a>
+                    <a class="wf-btn wf-btn--primary" href="data-sources.html#source-wizard">
+
+                      Add source
+                      <span class="wf-annot wf-annot--on-accent">4</span></a>
+                  </span>
+                </div>
+
+                <table class="wf-table">
+                  <thead>
+                    <tr>
+                      <th class="wf-th--sort">Source <span class="wf-th__caret">↕</span></th>
+                      <th class="wf-th--sort">State <span class="wf-th__caret">↕</span></th>
+                      <th class="wf-th--sort">Health <span class="wf-th__caret">↕</span></th>
+                      <th class="wf-th--sort wf-th--sorted">Last sync <span class="wf-th__caret">↓</span> <span class="wf-annot">5</span></th>
+                      <th class="wf-th--sort">Entities <span class="wf-th__caret">↕</span></th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="wf-rowlink">
+                      <td><a href="data-sources.html" class="wf-userlink">Jira · Acme</a> <span class="wf-annot">6</span></td>
+                      <td><span class="wf-chip wf-chip--ok">Active</span></td>
+                      <td>
+                        <span class="wf-row">
+                          <span class="wf-spinner"></span>
+                          <span class="wf-chip wf-chip--warn">syncing · 62%</span>
+                        </span>
+                      </td>
+                      <td>
+                        <div class="wf-runcell">
+                          <span class="wf-runcell__when wf-runcell__when--live">running now</span>
+                          <span class="wf-runcell__meta">8.2k of 13.1k</span>
+                        </div>
+                      </td>
+                      <td>48.1k</td>
+                      <td>⋯ <span class="wf-annot">7</span></td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><a href="data-sources.html" class="wf-userlink">Confluence · Acme</a></td>
+                      <td><span class="wf-chip wf-chip--ok">Active</span></td>
+                      <td><span class="wf-chip">idle</span></td>
+                      <td>
+                        <div class="wf-runcell">
+                          <span class="wf-runcell__when">2 h ago</span>
+                          <span class="wf-runcell__meta">
+                            in 4 min · +1.2k
+                            <span class="wf-chip wf-chip--warn">3 in DLQ</span>
+                            <span class="wf-annot">8</span>
+                          </span>
+                        </div>
+                      </td>
+                      <td>61.3k</td>
+                      <td>⋯</td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><a href="data-sources.html" class="wf-userlink">Slack · acme.slack.com</a></td>
+                      <td><span class="wf-chip">Paused</span> <span class="wf-annot">9</span></td>
+                      <td><span class="wf-chip">idle</span></td>
+                      <td>
+                        <div class="wf-runcell">
+                          <span class="wf-runcell__when">yesterday</span>
+                          <span class="wf-runcell__meta">in 11 min · +3.4k</span>
+                        </div>
+                      </td>
+                      <td>33.2k</td>
+                      <td>⋯</td>
+                    </tr>
+                    <tr class="wf-rowlink wf-table__row--muted">
+                      <td><a href="data-sources.html" class="wf-userlink">GitLab · git.acme.dev</a></td>
+                      <td><span class="wf-chip wf-chip--err">Disconnected</span></td>
+                      <td><span class="wf-chip wf-chip--err">error</span> <span class="wf-annot">10</span></td>
+                      <td>
+                        <div class="wf-runcell">
+                          <span class="wf-runcell__when">3 days ago</span>
+                          <span class="wf-runcell__meta wf-runcell__meta--err">credentials error</span>
+                        </div>
+                      </td>
+                      <td>8.4k</td>
+                      <td>⋯ <span class="wf-annot">11</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">⋯ source · idle</div>
+              <div class="wf-pop">
+                <button class="wf-btn">⋯</button>
+                <div class="wf-menu">
+                  <span class="wf-menu__item">Sync</span>
+                  <span class="wf-menu__item">Pause</span>
+                  <span class="wf-menu__item">Open card</span>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">⋯ source · syncing</div>
+              <div class="wf-pop">
+                <button class="wf-btn">⋯</button>
+                <div class="wf-menu">
+                  <span class="wf-menu__item wf-menu__item--disabled">Sync <span class="wf-menu__why">run in progress</span></span>
+                  <span class="wf-menu__item wf-menu__item--disabled">Pause <span class="wf-menu__why">run in progress</span></span>
+                  <hr class="wf-menu__sep" />
+                  <span class="wf-menu__item">Cancel run</span>
+                  <span class="wf-menu__item">Open card</span>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">⋯ source · disconnected</div>
+              <div class="wf-pop">
+                <button class="wf-btn">⋯</button>
+                <div class="wf-menu">
+                  <span class="wf-menu__item">Reconnect</span>
+                  <span class="wf-menu__item">Open card</span>
+                  <hr class="wf-menu__sep" />
+                  <span class="wf-menu__item wf-menu__item--danger"
+                    ><span class="wf-guarded"
+                      >Purge data<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#type-to-confirm" title="Action protected by confirmation"><span class="wf-guard__icon"></span></a></span
+                  ></span>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame" id="sync-errors">
+              <div class="wf-stage__caption">3 in DLQ · triage</div>
+              <div class="wf-pop">
+                <span class="wf-chip wf-chip--warn">3 in DLQ</span>
+                <div class="wf-menu">
+                  <span class="wf-menu__item">No permission <span class="wf-menu__why">2</span></span>
+                  <span class="wf-menu__item">Malformed object <span class="wf-menu__why">1</span></span>
+                  <hr class="wf-menu__sep" />
+                  <span class="wf-menu__item">↻ Retry failed</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              “Sync all” runs an incremental over every Active source at once; Paused and Disconnected are skipped, and with nothing to run the button is disabled. The mechanics live in
+              <a href="../../harvester/_workzone/sync-modes.html#per-source" class="xref-module">Harvester</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              “Add source” opens the
+              <a href="data-sources.html#source-wizard" class="xref-page">connection wizard</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Sorting — click a header; a second click flips the direction, and the active column is highlighted.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              Clicking a row opens the
+              <a href="data-sources.html" class="xref-page">source card</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              The row's ⋯ menu: its contents depend on the state. During a run only “Cancel run” is available; the rest is disabled with the reason in the tooltip.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              The run finished with errors: some items failed to load and went to the
+              <a href="../../harvester/_workzone/reliability.html#dlq" class="xref-module">DLQ</a>. The chip opens a breakdown by cause; “Retry failed” runs only those.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">9</span>
+              Two axes per source. <b>State</b> — the admin's decision: Active · Paused · Disconnected. <b>Health</b> — the platform's observation: idle · syncing · error. The full axes live in <a href="../../harvester/_workzone/sources.html#lifecycle" class="xref-module">Harvester</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">10</span>
+              error refers to the last run and does not block the configuration — it is fixed with a retry; a failure raises a
+              <a href="notifications.html" class="xref-page">notification</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">11</span>
+              A Disconnected source's data is orphaned but stays in the
+              <a href="../../knowledge-store/_workzone/data-model.html#projections" class="xref-module">Knowledge Store</a>. “Purge data” irreversibly removes the source's entire contribution, behind type-to-confirm.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

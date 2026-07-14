@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Cache &amp; Workers: rate-limit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="rate-limit.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Cache &amp; Workers</a>
+        <h1 class="header__title">Rate-limit</h1>
+        <div class="header__sub">cache-workers · workzone</div>
+      </div>
+
+      <p class="desc">
+        Один примитив ограничения темпа на всю платформу: модули не считают
+        лимиты сами, а спрашивают общий счётчик. Сам счётчик и его потребители —
+        разные заботы; ниже первый, затем второй.
+      </p>
+
+      <!-- ═══ Примитив ═══ Общий token-bucket в Redis: атомарный, переживает
+           рестарт; потребители только настраивают пороги. -->
+      <div class="section" id="primitive">
+        <h2 class="section__title">Общий примитив</h2>
+
+        <p class="desc">
+          Общий сервис ограничения темпа на всю платформу. Атомарность —
+          Lua-скрипт в Redis считает и списывает за один заход, без гонок между
+          воркерами. Сервис даёт две стратегии под разную задачу:
+          <b>token-bucket</b> (всплеск плюс средний темп) и <b>скользящее
+          окно</b> (точный счёт событий за интервал) — потребитель выбирает,
+          инфраструктура счётчика общая. Порог задаётся статически
+          (платформенный дефолт плюс override через конфиг, без хардкода) и
+          динамически — потребитель вправе менять темп в рантайме, что нужно
+          адаптивным (см. Harvester ниже). Счётчик живёт в
+          <a href="redis-keys.html#instances" class="xref-page">redis-durable</a>:
+          переживает рестарт и не вытесняется под памятью. Грубый сетевой
+          rate-limit на Nginx —
+          <a href="../../auth-security/_workzone/protection.html#edge-hardening" class="xref-module">Auth &amp; Security</a>
+          — стоит внешним рубежом <b>перед</b> прикладным: режет шторм пакетов до
+          того, как тот дойдёт до приложения. Этот примитив — дом правила «лимит
+          частоты» свода
+          <a href="../../api/index.html#conventions" class="xref-module">HTTP API</a>.
+        </p>
+
+        <div class="rl-bucket">
+          <div class="rl-jar" aria-hidden="true">
+            <span class="rl-token"></span>
+            <span class="rl-token"></span>
+            <span class="rl-token"></span>
+            <span class="rl-token--spent"></span>
+            <span class="rl-token--spent"></span>
+          </div>
+          <div class="rl-flow">
+            <div class="rl-step">
+              <span class="rl-step__n">1</span>
+              <span><b>Ёмкость</b> — максимум токенов в корзине (пиковый всплеск).</span>
+            </div>
+            <div class="rl-step">
+              <span class="rl-step__n">2</span>
+              <span><b>Пополнение</b> — токены капают по времени до ёмкости (средний темп).</span>
+            </div>
+            <div class="rl-step">
+              <span class="rl-step__n">3</span>
+              <span><b>Запрос берёт токен</b> — есть свободный → пропуск, токен списан.</span>
+            </div>
+            <div class="rl-step">
+              <span class="rl-step__n">4</span>
+              <span><b>Корзина пуста</b> → отказ; ждать пополнения.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Потребители ═══ Кто ограничивает темп через общий примитив: что
+           режет, какой стратегией, в каком окне. -->
+      <div class="section" id="consumers">
+        <h2 class="section__title">Потребители</h2>
+
+        <table class="rl-tbl">
+          <thead>
+            <tr>
+              <th>Потребитель</th>
+              <th>Что ограничивает</th>
+              <th>Природа порога</th>
+              <th>Стратегия</th>
+              <th>Окно / TTL</th>
+              <th>Режим отказа</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="rl-tbl__c">
+                <a href="../../harvester/_workzone/security.html#rate-limiting" class="xref-module">Harvester</a>
+              </td>
+              <td>темп запросов к внешним источникам</td>
+              <td><b>адаптивная</b> — задаёт чужой источник</td>
+              <td>token-bucket с AIMD — плавный разгон, резкий сброс на отказе</td>
+              <td>часами, по области (аккаунт / площадка)</td>
+              <td><b>fail-open</b></td>
+            </tr>
+            <tr>
+              <td class="rl-tbl__c">
+                <a href="../../auth-security/_workzone/protection.html#brute-force" class="xref-module">Auth &amp; Security</a>
+              </td>
+              <td>перебор логина</td>
+              <td><b>фиксированная</b> — задаёт безопасность</td>
+              <td>скользящее окно по IP + задержка per-account (email)</td>
+              <td>15 мин (скольз.)</td>
+              <td><b>fail-closed</b></td>
+            </tr>
+            <tr>
+              <td class="rl-tbl__c">
+                <a href="../../auth-security/_workzone/authentication.html#api-keys" class="xref-module">Auth &amp; Security</a>
+              </td>
+              <td>прикладной API (ключи)</td>
+              <td><b>фиксированная</b> — задаёт политика ключа</td>
+              <td>token-bucket, единый потолок на ключ (квоты по роли — <span class="iter v2">v2</span>)</td>
+              <td>минута</td>
+              <td><b>fail-open</b></td>
+            </tr>
+            <tr>
+              <td class="rl-tbl__c">Входящее мессенджера (Slack · Telegram · Mattermost)</td>
+              <td>объём входящих событий — публичный webhook-эндпоинт; у Mattermost вебхука нет, поток его слушателя ограничен по каналу</td>
+              <td><b>фиксированная</b> — задаёт безопасность</td>
+              <td>скользящее окно по IP / источнику / каналу</td>
+              <td>минута (скольз.)</td>
+              <td><b>fail-closed</b></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="note">
+          <b>Режим отказа — свойство потребителя, не примитива.</b> При
+          недоступности redis-durable троттлинг пропускает запрос (лимит — лишь
+          оптимизация темпа), а защита блокирует: для brute-force fail-open
+          открыл бы окно перебора, поэтому fail-closed. Дефолт безопасный —
+          fail-closed; послабление до fail-open потребитель объявляет осознанно.
+        </div>
+
+        <div class="note">
+          Отказ прикладному вызову возвращается как <b>HTTP 429</b> с
+          <code>Retry-After</code> — клиент узнаёт, когда повторить; внутреннему
+          потребителю (Harvester) тот же отказ — сигнал притормозить.
+        </div>
+
+        <div class="note">
+          Отдельная корзина под дорогие LLM-вызовы — <span class="iter v2">v2</span>:
+          темп инференса режется не наравне с обычным API, а своим лимитом по
+          стоимости.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

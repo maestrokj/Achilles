@@ -1,0 +1,249 @@
+/* Agent Engine — data-model workzone diagram (dm-*).
+   Same trimmed dm-* subset as query-engine/email data-model pages: the shared
+   stk-* layered-stack bands carry one DB-table sub-block per table (field · type ·
+   constraint chips · note) plus .stk-dec design notes, and a here/neighbours
+   boundary block (dm-border) at the foot. Agent Engine owns agent definitions
+   and the run journal — two tables, agents · agent_runs — and references users /
+   platform_settings / KS without copying them; the weekly budget is derived from
+   agent_runs.tokens_used, not a stored counter.
+   Static — no hover affordance (README §Hover).
+   Loaded by _workzone/data-model.html on top of ../../module.css
+   + ../../layered-stack.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Layer accent presets ── */
+.stk-layer--ae {
+  --stk-lc: var(--accent);
+  --stk-lc-pale: var(--tint-8);
+}
+.stk-layer--run {
+  --stk-lc: var(--s2-glow);
+  --stk-lc-pale: var(--s2-pale);
+}
+
+/* ── Constraint chips ── */
+.dm-c {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 0.12rem 0.4rem;
+  border-radius: var(--pill-radius);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.dm-c--pk {
+  background: var(--s1);
+  color: #fff;
+}
+.dm-c--fk {
+  background: var(--s2);
+  color: #fff;
+}
+.dm-c--nn {
+  background: var(--s3);
+  color: #fff;
+}
+.dm-c--idx {
+  background: var(--s4);
+  color: #fff;
+}
+.dm-c--null {
+  background: var(--paper);
+  color: var(--text-muted);
+  border: 1px solid var(--accent-muted);
+}
+.dm-c--chk {
+  background: var(--tint-15);
+  color: var(--accent);
+  border: 1px solid var(--tint-25);
+}
+.dm-c--def {
+  background: var(--s2-pale);
+  color: var(--s2);
+  border: 1px solid var(--tint-15);
+}
+.dm-c--ref {
+  background: var(--tint-15);
+  color: var(--accent);
+  border: 1px solid var(--tint-25);
+}
+
+/* ── DB-table sub-block (lives inside a .stk-layer__body) ── */
+.dm-tbl {
+  flex: 1 1 100%;
+  min-width: 280px;
+  align-self: stretch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  overflow: hidden;
+}
+.dm-tbl__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.75rem;
+  background: var(--tint-6);
+  border-bottom: 1px solid var(--border);
+}
+.dm-tbl__name {
+  font-family: var(--mono);
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.dm-tbl__sub {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.dm-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-left: auto;
+}
+.dm-badge {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.16rem 0.4rem;
+  border-radius: var(--tag-radius);
+  border: 1px solid var(--tint-25);
+  color: var(--text-dim);
+  background: var(--tint-6);
+  white-space: nowrap;
+}
+.dm-badge--fk {
+  color: var(--s2);
+  border-color: rgba(136, 96, 64, 0.4);
+  background: rgba(136, 96, 64, 0.08);
+}
+.dm-badge--fk::before {
+  content: "⛓ ";
+}
+.dm-badge--uniq {
+  color: var(--s3);
+  border-color: rgba(106, 128, 72, 0.4);
+  background: var(--s3-pale);
+}
+.dm-badge--flag {
+  color: var(--s4);
+  border-color: rgba(160, 88, 56, 0.35);
+  background: var(--s4-pale);
+}
+
+/* ── Matrix-style field rows: field · type · constraint chips · note ── */
+.dm-fields {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.dm-fields td {
+  padding: 0.32rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+.dm-fields tr:last-child td {
+  border-bottom: none;
+}
+.dm-fields .dm-f {
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+.dm-fields .dm-t {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.dm-fields .dm-cons {
+  white-space: nowrap;
+}
+.dm-fields .dm-cons .dm-c {
+  margin: 1px 2px 1px 0;
+}
+.dm-fields .dm-note {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+.dm-fields tr.is-pk td:first-child {
+  box-shadow: inset 3px 0 0 var(--s1);
+}
+.dm-fields tr.is-fk td:first-child {
+  box-shadow: inset 3px 0 0 var(--s2);
+}
+
+/* ════════════════ HERE / NEIGHBOURS BOUNDARY ════════════════ Agent Engine
+   stores agent definitions and the run journal; the ids it holds (user_id, the
+   budget ceiling it reads) are references into Auth / Admin / Knowledge Store,
+   not copies. Two-column block: what Agent Engine keeps · what its neighbours own. */
+.dm-border {
+  display: flex;
+  gap: 0.75rem;
+  margin: 0.9rem 0 0.3rem;
+}
+.dm-border__col {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+}
+.dm-border__col--here {
+  border-left: 4px solid var(--accent);
+  background: var(--tint-6);
+}
+.dm-border__col--there {
+  border-left: 4px solid var(--s2);
+}
+.dm-border__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+.dm-border__who {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.dm-border__act {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.dm-border__col--here .dm-border__act {
+  color: var(--accent);
+}
+.dm-border__d {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+.dm-border__seam {
+  align-self: center;
+  font-size: 1rem;
+  color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .dm-border {
+    flex-direction: column;
+  }
+}

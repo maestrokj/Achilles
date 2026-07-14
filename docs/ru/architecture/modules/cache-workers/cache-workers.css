@@ -1,0 +1,165 @@
+/* Cache & Workers — module-bespoke diagrams.
+   Loaded by cache-workers/index.html on top of module.css.
+   Placement convention: a single module's diagrams live here, see README §Styling.
+   Holds the architecture flow poster and the водораздел two-column split. */
+
+/* ═══════════ ARCHITECTURE POSTER ═══════════ */
+
+/* ── Diptych «два лица» — the module's two faces side by side (request path ·
+      background), each a vertical mini-flow, both resting on a shared
+      three-store foundation ── */
+.cw-dip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-top: 0.9rem;
+}
+.cw-dip__faces {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--grid-gap);
+}
+.cw-dface {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.cw-dface--sync {
+  border-top: var(--border-w) solid var(--s1-glow);
+}
+.cw-dface--bg {
+  border-top: var(--border-w) solid var(--accent);
+}
+.cw-dface__cap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-bottom: 0.2rem;
+}
+.cw-dface__t {
+  font-weight: 700;
+  font-size: 1rem;
+  letter-spacing: var(--heading-spacing);
+}
+.cw-dface__s {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* ── Step — one node in a face's vertical flow; the ↓ connector sits in the
+      gap below each step except the last ── */
+.cw-step {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.55rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  position: relative;
+}
+a.cw-step:hover {
+  border-color: var(--accent);
+}
+.cw-step small {
+  font-weight: 400;
+  font-size: 0.73rem;
+  color: var(--text-muted);
+}
+.cw-step::after {
+  content: "↓";
+  position: absolute;
+  left: 50%;
+  bottom: -0.78rem;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.cw-step:last-child::after {
+  content: none;
+}
+.cw-laneset {
+  display: flex;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+}
+.cw-laneset .cw-lane {
+  flex: 1;
+  text-align: center;
+}
+.cw-lane {
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.12rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--pill-radius);
+  color: var(--text-dim);
+}
+.cw-lane--i {
+  border-left: 3px solid var(--s2);
+}
+.cw-lane--b {
+  border-left: 3px solid var(--s3);
+}
+.cw-lane--a {
+  border-left: 3px solid var(--s4);
+}
+
+/* ── Foundation — the three stores both faces rest on ── */
+.cw-foundlabel {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: var(--heading-spacing);
+  color: var(--text-muted);
+  text-align: center;
+}
+.cw-base {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--grid-gap);
+}
+.cw-store {
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  text-decoration: none;
+}
+a.cw-store:hover {
+  border-color: var(--accent);
+}
+.cw-store__t {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+.cw-store__d {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+.cw-store--rd {
+  border-top: 2px solid var(--s1);
+}
+.cw-store--rc {
+  border-top: 2px solid var(--s1-glow);
+}
+.cw-store--pg {
+  border-top: 2px solid var(--s3);
+}
+
+@media (max-width: 720px) {
+  .cw-dip__faces,
+  .cw-base {
+    grid-template-columns: 1fr;
+  }
+}

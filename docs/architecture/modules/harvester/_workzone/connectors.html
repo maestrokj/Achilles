@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Harvester: Connectors</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="connectors.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Harvester</a>
+        <h1 class="header__title">Connectors</h1>
+        <div class="header__sub">harvester · workzone</div>
+      </div>
+
+      <p class="desc">
+        A connector is a plugin per source <b>type</b> (Jira, GitLab, Slack…),
+        not per specific connection. It covers the
+        <a href="#contract" class="xref-anchor">source-specific surface of the
+        contract</a> — what's unique to each source; everything downstream is
+        shared. Each connector declares a
+        <a href="#manifest" class="xref-anchor">manifest</a>, from which the
+        connection form grows, and self-registers in the
+        <a href="#registry" class="xref-anchor">registry</a> — the single list
+        of supported types. The built-in connectors are gathered in the
+        <a href="#catalog" class="xref-anchor">catalog</a>; how to write
+        <a href="#custom" class="xref-anchor">your own</a> is at the end. A
+        configured connector instance is already a
+        <a href="sources.html#source-model" class="xref-page">source</a>.
+      </p>
+
+      <!-- ════════ CONTRACT ════════ -->
+      <div class="section" id="contract">
+        <div class="section__title">What a connector is</div>
+        <p class="desc">
+          Behind a single interface, a connector covers only what's unique to
+          each source. The contract surface is four source-specific
+          capabilities: <b>fetch the raw material</b> and <b>bring it to the
+          shared model</b> (the pipeline core), plus two operational
+          capabilities without which a connection can't be set up — a
+          <b>catalog of scope objects</b> and a <b>staged probe</b>. Everything
+          after <code>normalize</code> is written once and works for any source.
+        </p>
+        <div class="cn-contract">
+          <div class="mod-card cn-method">
+            <div class="cn-method__tag">extract</div>
+            <div class="cn-method__sig"><code>fetch(since) → RawItem</code></div>
+            <div class="cn-method__d">
+              The pipeline's inlet: connection, authentication, pagination, and
+              the increment on <code>since</code> — and a stream of
+              <code>RawItem</code> out. The fetch mechanics themselves are held
+              by
+              <a href="sources.html#fetch" class="xref-page">sources</a>.
+            </div>
+          </div>
+          <div class="mod-card cn-method">
+            <div class="cn-method__tag">transform</div>
+            <div class="cn-method__sig"><code>normalize(RawItem) → Entity</code></div>
+            <div class="cn-method__d">
+              The source's raw material <span class="cn-arrow">→</span> the
+              unified <code>Entity</code> model. The one transformation step
+              written per specific source.
+            </div>
+          </div>
+          <div class="mod-card cn-method">
+            <div class="cn-method__tag">catalog</div>
+            <div class="cn-method__sig"><code>list_catalog() → [ScopeObject]</code></div>
+            <div class="cn-method__d">
+              The source's catalog of scope objects — projects, spaces,
+              channels. Feeds the live selection on the connection screen and
+              the scope reconciliation on every sync (objects that appeared and
+              were removed). The list's home is
+              <a href="sources.html#allowlist" class="xref-page">sources</a>.
+            </div>
+          </div>
+          <div class="mod-card cn-method">
+            <div class="cn-method__tag">probe</div>
+            <div class="cn-method__sig"><code>check_connection() → Diagnosis</code></div>
+            <div class="cn-method__d">
+              A staged probe of the setup: credentials accepted + rights
+              sufficient, step by step, with a clear diagnosis. Reachability of
+              the <code>base URL</code> is a shared layer, not the connector's
+              concern. The step layout is held by
+              <a href="sources.html#test-connection" class="xref-page">sources</a>.
+            </div>
+          </div>
+          <div class="cn-handoff">
+            <span class="cn-arrow">→</span> everything after
+            <code>normalize</code> is the shared
+            <a href="pipeline.html#transform" class="xref-page">pipeline</a>
+            (filter → classify → resolve → enrich → clean → chunk → embed → load),
+            identical for any source
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ MANIFEST ════════ -->
+      <div class="section" id="manifest">
+        <div class="section__title">
+          Manifest
+          <a
+            class="xref-badge"
+            href="../../admin-panel/_wireframes/data-sources.html#source-wizard"
+            >→ Admin Panel</a
+          >
+        </div>
+        <p class="desc">
+          A connector doesn't just know how to reach a source — it
+          <b>declares</b> what type it is and what it needs to connect. The
+          registry serves the manifest over the API, and the add-source wizard
+          in Admin builds a form from it: not a line of frontend per specific
+          connector, the fields appear on their own. The backend is the source
+          of truth, the form is its projection.
+        </p>
+        <div class="cn-map">
+          <div class="cn-map__head">
+            <span class="cn-map__decl-h">The connector declares</span>
+            <span class="cn-map__ui-h">In the UI this grows</span>
+          </div>
+          <div class="cn-map__row">
+            <span class="cn-map__decl"><code>type</code>, name, icon</span>
+            <span class="cn-map__ui">a card in the type-selection step</span>
+          </div>
+          <div class="cn-map__row">
+            <span class="cn-map__decl">credential kinds</span>
+            <span class="cn-map__ui">credential fields in the wizard</span>
+          </div>
+          <div class="cn-map__row">
+            <span class="cn-map__decl">config fields (<code>base URL</code>, special params)</span>
+            <span class="cn-map__ui">the connection form</span>
+          </div>
+          <div class="cn-map__row">
+            <span class="cn-map__decl">scope object kinds</span>
+            <span class="cn-map__ui">the Scope step — what can be selected</span>
+          </div>
+          <div class="cn-map__row">
+            <span class="cn-map__decl">capabilities (incremental, webhooks)</span>
+            <span class="cn-map__ui">the available sync modes</span>
+          </div>
+          <div class="cn-map__row">
+            <span class="cn-map__decl">toggles for collecting beyond the rules</span>
+            <span class="cn-map__ui">the “Content filtering” block on the card</span>
+          </div>
+        </div>
+        <p class="desc">
+          The remaining manifest fields don't go into the form — they're
+          <b>declarative extensibility hooks</b>: the connector describes its
+          behavior with data, and the core applies a single mechanism. That's
+          how a diverse source slots in without core edits — the limiter,
+          webhook intake, retry/DLQ.
+        </p>
+        <ul class="notes">
+          <li class="note">
+            <code>rate_limit</code> (requests/sec) sets a safe
+            <b>starting rate</b> — the rate collection begins with on a cold
+            start, while the real plan limit is still unknown. From there,
+            <a href="security.html#rate-limiting" class="xref-page"
+              >adaptive throttling</a
+            >
+            ramps higher while the source responds calmly and backs off on a
+            sign of overload. There's no hard ceiling here — the real boundary
+            is dictated by the source's own responses, not this number.
+          </li>
+          <li class="note">
+            <code>rate_limit_scope</code> — what the limiter key is built on:
+            <code>tenant</code> · <code>account_token</code> ·
+            <code>workspace_method</code> · <code>site</code>. Providers cap the
+            limit per account, token, or workspace, not per “source”, so two
+            sources on one token share one budget — the key must reflect this,
+            or the limiter miscounts.
+          </li>
+          <li class="note">
+            <code>request_cost</code> (default <code>1</code>) — the limiter
+            counts <b>cost units</b>, not requests: one heavy call spends the
+            budget of a dozen light ones. At Atlassian these are points (search
+            = 51), at Slack it's a per-method weight. The connector assigns a
+            cost to its calls, the core deducts it from the key's shared budget.
+          </li>
+          <li class="note">
+            <code>webhook</code> — the incoming-call verifier as a
+            <b>declaration</b>: the signature scheme (HMAC over the body at
+            GitHub and Slack, a static token in the header at GitLab, and where
+            the source doesn't sign — a fallback to a secret unguessable
+            endpoint), extraction of the dedup key, and the presence of a
+            timestamp for anti-replay. The connector declares a ready verifier
+            or overrides for the exotic; the core applies a single intake
+            mechanism. This is behavior, not a value — it doesn't go into the
+            UI; the only UI-facing field here is the secret itself. The intake
+            policy (authenticity + once) is held by
+            <a href="security.html#webhooks" class="xref-page">security</a>.
+          </li>
+          <li class="note">
+            <code>error_class</code> — the connector's error classifier
+            <code>transient</code> / <code>permanent</code> with a default HTTP
+            mapping (<code>429</code>/<code>5xx</code> → transient,
+            <code>4xx</code> → permanent). Non-HTTP sources (S3, DB, files)
+            override the mapping for their own error codes — and slot into the
+            shared
+            <a href="reliability.html#retry" class="xref-page">retry/DLQ</a>
+            without reworking the core: whether to retry or drop to the DLQ, the
+            core decides by class, not by source type.
+          </li>
+          <li class="note">
+            <code>default_authority</code> — the <b>starting trust level</b> by
+            source type from a closed set of
+            <code>low</code> · <code>normal</code> · <code>high</code>: policy
+            and wiki bases — <code>high</code>, tickets — <code>normal</code>,
+            chat and bots — <code>low</code>. The connector declares a sensible
+            default, the admin overrides it on the source card
+            (<code>sources.authority_tier</code>), and
+            <a href="../../knowledge-store/_workzone/lifecycle.html#staleness" class="xref-module"
+              >KS decay</a
+            >
+            unfolds the level into a numeric ranking multiplier — the
+            <code>level → weight</code> mapping itself lives in code in one
+            place, not in the source row. The closed set is the very limit: the
+            admin doesn't enter a “raw” number and doesn't miss the scale. A
+            value, not behavior — unlike the rest of this list, it is UI-facing.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ════════ REGISTRY ════════ -->
+      <div class="section" id="registry">
+        <div class="section__title">
+          Registry
+        </div>
+        <p class="desc">
+          A connector self-registers on import — by a decorator or via discovery
+          at startup: from the built-in package and from external packages that
+          declare a Python entry point. The registry is the <b>single</b> source
+          of truth about supported types: the type selection in the wizard, the
+          connection form, and the dispatcher that spins up the right connector
+          by <code>connector_type</code> all read the same registry.
+        </p>
+        <ul class="notes">
+          <li class="note">
+            Adding a source type = adding a connector class; removing =
+            removing the class. No edits in the wizard, in the frontend, or in
+            the dispatcher. The class lives in the built-in package or arrives
+            as an external library — the registry doesn't tell them apart.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ════════ CATALOG ════════ -->
+      <div class="section" id="catalog">
+        <div class="section__title">Connector catalog</div>
+        <p class="desc">
+          The built-in connectors. Each is a thin async client (httpx) over the
+          source's REST API: the official SDKs are synchronous and carry their
+          own retry layers, whereas platform reliability (AIMD, Retry-After,
+          error_class) lives on the raw HTTP response. The scope objects define
+          what the admin selects at the Scope step.
+        </p>
+        <ul class="notes">
+          <li class="note">
+            <b>Starting rate</b> — a conservative req/s that collection begins
+            with on a typical (not top-tier) plan; from there
+            <a href="security.html#rate-limiting" class="xref-page"
+              >adaptive throttling</a
+            >
+            ramps higher while the source responds calmly and backs off on a
+            <code>429</code>. This is a <b>manifest field of the specific
+            connector</b>
+            (<code>rate_limit</code>), not a global constant — each type has its
+            own ceiling and its own counting unit.
+          </li>
+          <li class="note">
+            Atlassian (Jira, Confluence) counts not in requests but in
+            <b>points</b> (<code>request_cost</code>): a search costs ~51 units,
+            so the starting rate here is a points/s budget, not req/s.
+          </li>
+          <li class="note">
+            Slack is special: the limit is per method
+            (<code>rate_limit_scope = workspace_method</code>), so there's no
+            single req/s — the rate is <b>per-method</b>. The sharp edge is
+            reading channel history: for non-Marketplace apps the provider caps
+            it down to <b>1 request/min for 15 messages</b>. That's why the
+            install model is <b>internal-app</b>: the client registers an app in
+            their own workspace, and internal apps aren't subject to the cap —
+            history is collected without the Tier-1 ceiling.
+          </li>
+          <li class="note">
+            <b>Starting authority</b> — the type's default trust level
+            (<code>default_authority</code>): wikis and knowledge bases higher,
+            trackers mid, chat lower. It's a <b>starting label</b>, not a
+            verdict —
+            <a href="../../admin-panel/_wireframes/data-sources.html#sources-list" class="xref-module"
+              >the admin overrides</a
+            >
+            it per specific source, and
+            <a href="../../knowledge-store/_workzone/lifecycle.html#staleness" class="xref-module"
+              >KS decay</a
+            >
+            takes the level as a ranking baseline.
+          </li>
+        </ul>
+        <div class="cn-catalog">
+          <div class="mod-card cn-card" id="jira">
+            <div class="cn-card__head">
+              <span class="cn-card__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24 12.483V1.005A1.001 1.001 0 0 0 23.013 0Z"/></svg></span>
+              <div class="cn-card__id">
+                <span class="cn-card__name">Jira</span>
+                <code class="cn-card__lib">httpx · REST API</code>
+              </div>
+            </div>
+            <div class="cn-card__fields">
+              <div class="cn-card__field">
+                <span class="cn-card__label">Scope objects</span>
+                <span class="cn-card__val">projects</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Starting authority</span>
+                <span class="cn-card__val">Medium (normal)</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Starting rate</span>
+                <span class="cn-card__val">2.0 points/s</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Collect beyond rules</span>
+                <span class="cn-card__val">attachments · comments</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Credential</span>
+                <span class="cn-card__val">token · service account</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Capabilities</span>
+                <span class="cn-card__val">incremental · webhooks</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-card cn-card" id="confluence">
+            <div class="cn-card__head">
+              <span class="cn-card__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M.87 18.257c-.248.382-.53.875-.763 1.245a.764.764 0 0 0 .255 1.04l4.965 3.054a.764.764 0 0 0 1.058-.26c.199-.332.454-.763.733-1.221 1.967-3.247 3.945-2.853 7.508-1.146l4.957 2.337a.764.764 0 0 0 1.028-.382l2.364-5.346a.764.764 0 0 0-.382-1 599.851 599.851 0 0 1-4.965-2.361C10.911 10.97 5.224 11.185.87 18.257zM23.131 5.743c.249-.405.531-.875.764-1.25a.764.764 0 0 0-.256-1.034L18.675.404a.764.764 0 0 0-1.058.26c-.195.335-.451.763-.734 1.225-1.966 3.246-3.945 2.85-7.508 1.146L4.437.694a.764.764 0 0 0-1.027.382L1.046 6.422a.764.764 0 0 0 .382 1c1.039.49 3.105 1.467 4.965 2.361 6.698 3.246 12.392 3.029 16.738-4.04z"/></svg></span>
+              <div class="cn-card__id">
+                <span class="cn-card__name">Confluence</span>
+                <code class="cn-card__lib">httpx · REST API</code>
+              </div>
+            </div>
+            <div class="cn-card__fields">
+              <div class="cn-card__field">
+                <span class="cn-card__label">Scope objects</span>
+                <span class="cn-card__val">spaces</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Starting authority</span>
+                <span class="cn-card__val">High (high)</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Starting rate</span>
+                <span class="cn-card__val">2.0 points/s</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Collect beyond rules</span>
+                <span class="cn-card__val">attachments · comments</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Credential</span>
+                <span class="cn-card__val">token · service account</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Capabilities</span>
+                <span class="cn-card__val">incremental</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-card cn-card" id="gitlab">
+            <div class="cn-card__head">
+              <span class="cn-card__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="currentColor"><path d="m23.6004 9.5927-.0337-.0862L20.3.9814a.851.851 0 0 0-.3362-.405.8748.8748 0 0 0-.9997.0539.8748.8748 0 0 0-.29.4399l-2.2055 6.748H7.5375l-2.2057-6.748a.8573.8573 0 0 0-.29-.4412.8748.8748 0 0 0-.9997-.0537.8585.8585 0 0 0-.3362.4049L.4332 9.5015l-.0325.0862a6.0657 6.0657 0 0 0 2.0119 7.0105l.0113.0087.03.0213 4.976 3.7264 2.462 1.8633 1.4995 1.1321a1.0085 1.0085 0 0 0 1.2197 0l1.4995-1.1321 2.4619-1.8633 5.006-3.7489.0125-.01a6.0682 6.0682 0 0 0 2.0094-7.003z"/></svg></span>
+              <div class="cn-card__id">
+                <span class="cn-card__name">GitLab</span>
+                <code class="cn-card__lib">httpx · REST API v4</code>
+              </div>
+            </div>
+            <div class="cn-card__fields">
+              <div class="cn-card__field">
+                <span class="cn-card__label">Scope objects</span>
+                <span class="cn-card__val">groups · repositories</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Starting authority</span>
+                <span class="cn-card__val">Medium (normal)</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Starting rate</span>
+                <span class="cn-card__val">1.5 req/s</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Collect beyond rules</span>
+                <span class="cn-card__val">attachments · comments</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Credential</span>
+                <span class="cn-card__val">PAT</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Capabilities</span>
+                <span class="cn-card__val">incremental · webhooks</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-card cn-card" id="slack">
+            <div class="cn-card__head">
+              <span class="cn-card__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg></span>
+              <div class="cn-card__id">
+                <span class="cn-card__name">Slack</span>
+                <code class="cn-card__lib">httpx · Web API</code>
+              </div>
+            </div>
+            <div class="cn-card__fields">
+              <div class="cn-card__field">
+                <span class="cn-card__label">Scope objects</span>
+                <span class="cn-card__val">channels</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Starting authority</span>
+                <span class="cn-card__val">Low (low)</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Starting rate</span>
+                <span class="cn-card__val">per-method · history ↓ 1/min</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Collect beyond rules</span>
+                <span class="cn-card__val">bots · attachments · private channels and DMs</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Credential</span>
+                <span class="cn-card__val">bot token</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Capabilities</span>
+                <span class="cn-card__val">incremental · webhooks</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Don't confuse</span>
+                <span class="cn-card__val">this is collecting history into the store; the conversational <a href="../../slack/index.html#three-slacks" class="xref-module">Slack bot</a> is a separate integration</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-card cn-card" id="s3">
+            <span class="iter v2">v2</span>
+            <div class="cn-card__head">
+              <span class="cn-card__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M20.913 13.147l.12-.895c.947.576 1.258.922 1.354 1.071-.16.031-.562.046-1.474-.176zm-2.174 7.988a.547.547 0 0 0-.005.073c0 .084-.207.405-1.124.768a10.28 10.28 0 0 1-1.438.432c-1.405.325-3.128.504-4.853.504-4.612 0-7.412-1.184-7.412-1.704a.547.547 0 0 0-.005-.073L1.81 5.602c.135.078.28.154.432.227.042.02.086.038.128.057.134.062.272.122.417.18l.179.069c.154.058.314.114.478.168.043.013.084.029.13.043.207.065.423.127.646.187l.176.044c.175.044.353.087.534.127a23.414 23.414 0 0 0 .843.17l.121.023c.252.045.508.085.768.122.071.011.144.02.216.03.2.027.4.053.604.077l.24.027c.245.026.49.05.74.07l.081.009c.275.022.552.04.83.056l.233.012c.21.01.422.018.633.025a33.088 33.088 0 0 0 2.795-.026l.232-.011c.278-.016.555-.034.83-.056l.08-.008c.25-.02.497-.045.742-.072l.238-.026c.205-.024.408-.05.609-.077.07-.01.141-.019.211-.03.261-.037.519-.078.772-.122l.111-.02c.215-.04.427-.082.634-.125l.212-.047c.186-.041.368-.085.546-.13l.166-.042c.225-.06.444-.122.654-.189.04-.012.077-.026.115-.038a10.6 10.6 0 0 0 .493-.173c.058-.021.114-.044.17-.066.15-.06.293-.12.43-.185.038-.017.079-.034.116-.052.153-.073.3-.15.436-.228l-.976 7.245c-2.488-.78-5.805-2.292-7.311-3a1.09 1.09 0 0 0-1.088-1.085c-.6 0-1.088.489-1.088 1.088 0 .6.488 1.089 1.088 1.089.196 0 .378-.056.537-.148 1.72.812 5.144 2.367 7.715 3.15zm-7.42-20.047c5.677 0 9.676 1.759 9.75 2.736l-.014.113c-.01.033-.031.067-.048.101-.015.028-.026.057-.047.087-.024.033-.058.068-.09.102-.028.03-.051.06-.084.09-.038.035-.087.07-.133.105-.04.03-.074.06-.119.091-.053.036-.116.071-.177.107-.05.03-.095.06-.15.09-.068.036-.147.073-.222.11-.059.028-.114.057-.177.085-.084.038-.177.074-.268.111-.068.027-.13.054-.203.082-.097.036-.205.072-.31.107-.075.026-.148.053-.228.079-.111.035-.233.069-.35.103-.085.024-.165.05-.253.073-.124.034-.258.065-.389.098-.093.022-.181.046-.278.068-.139.032-.287.061-.433.091-.098.02-.191.041-.293.06-.155.03-.32.057-.482.084-.1.018-.198.036-.302.052-.166.026-.342.048-.515.072-.11.014-.213.03-.325.044-.181.023-.372.041-.56.06-.11.012-.218.025-.332.036-.188.016-.386.029-.58.043-.122.009-.24.02-.364.028-.207.012-.422.02-.635.028-.12.005-.234.012-.354.016a35.605 35.605 0 0 1-2.069 0c-.12-.004-.234-.011-.352-.016-.214-.008-.43-.016-.637-.028-.122-.008-.238-.02-.36-.027-.195-.015-.394-.028-.584-.044-.11-.01-.215-.024-.324-.035-.19-.02-.384-.038-.568-.06l-.315-.044c-.176-.024-.355-.046-.525-.073-.1-.015-.192-.033-.29-.05-.167-.028-.335-.055-.494-.086-.096-.018-.183-.038-.276-.056-.151-.032-.305-.062-.45-.095-.09-.02-.173-.043-.26-.064-.138-.034-.277-.067-.407-.102-.082-.022-.157-.046-.235-.069a11.75 11.75 0 0 1-.368-.108c-.075-.024-.141-.049-.213-.073-.11-.037-.223-.075-.325-.113-.067-.025-.125-.051-.188-.077-.096-.038-.195-.076-.282-.115-.06-.027-.11-.054-.166-.08-.08-.039-.162-.077-.233-.116-.052-.028-.094-.055-.142-.084-.063-.038-.13-.075-.185-.113-.043-.029-.075-.058-.113-.086-.048-.037-.098-.073-.139-.11-.032-.029-.054-.057-.08-.087-.033-.035-.069-.07-.093-.104-.02-.03-.031-.058-.046-.086-.018-.035-.039-.068-.049-.102l-.015-.113c.076-.977 4.074-2.736 9.748-2.736zm12.182 12.124c-.118-.628-.84-1.291-2.31-2.128l.963-7.16a.531.531 0 0 0 .005-.073C22.16 1.581 16.447 0 11.32 0 6.194 0 .482 1.581.482 3.851a.58.58 0 0 0 .005.072L2.819 21.25c.071 2.002 5.236 2.75 8.5 2.75 1.805 0 3.615-.188 5.098-.531.598-.138 1.133-.3 1.592-.48 1.18-.467 1.789-1.053 1.813-1.739l.945-7.018c.557.131 1.016.197 1.389.197.54 0 .902-.137 1.134-.413a.956.956 0 0 0 .21-.804Z"/></svg></span>
+              <div class="cn-card__id">
+                <span class="cn-card__name">S3</span>
+                <code class="cn-card__lib">boto3</code>
+              </div>
+            </div>
+            <div class="cn-card__fields">
+              <div class="cn-card__field">
+                <span class="cn-card__label">Scope objects</span>
+                <span class="cn-card__val">buckets · prefixes</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Starting authority</span>
+                <span class="cn-card__val">Medium (normal)</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Starting rate</span>
+                <span class="cn-card__val">50 req/s · per prefix</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Collect beyond rules</span>
+                <span class="cn-card__val">—</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Credential</span>
+                <span class="cn-card__val">access key · IAM role</span>
+              </div>
+              <div class="cn-card__field">
+                <span class="cn-card__label">Capabilities</span>
+                <span class="cn-card__val">polling</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ CUSTOM CONNECTOR ════════ -->
+      <div class="section" id="custom">
+        <div class="section__title">Custom connector</div>
+        <p class="desc">
+          The source isn't in the catalog — write your own: one class on the
+          same contract. Three steps — and the whole skeleton below; from there
+          the connector slots into the type selection and the connection form on
+          its own.
+        </p>
+        <div class="cn-ide">
+          <div class="cn-ide__pane">
+            <div class="cn-ide__tab"># where to put your class — two paths</div>
+<pre class="cn-code"><span class="kw">✦ canonical</span>
+  pip package <span class="cm">→</span> entry point  achilles.connectors
+  <span class="cm">core untouched · platform upgrade stays clean</span>
+
+<span class="kw">○ quick dev</span>
+  in-tree <span class="cm">→</span> achilles/harvester/connectors/custom/
+  <span class="cm">own folder · doesn't touch the built-ins</span>
+</pre>
+          </div>
+        </div>
+        <div class="cn-custom">
+          <ol class="cn-recipe">
+            <li class="cn-recipe__step"><b>1</b> subclass · 4 methods</li>
+            <li class="cn-recipe__step">
+              <b>2</b> <a href="#manifest" class="xref-anchor">manifest</a>
+            </li>
+            <li class="cn-recipe__step"><b>3</b> @register</li>
+          </ol>
+          <div class="cn-ide">
+            <div class="cn-ide__pane">
+              <div class="cn-ide__tab">github.py</div>
+<pre class="cn-code"><span class="cm"># 3 · discovery picks it up on its own</span>
+<span class="kw">@register</span>
+<span class="kw">class</span> GitHubConnector(BaseConnector):   <span class="cm"># contract: 4 methods</span>
+
+    manifest = Manifest(                  <span class="cm"># defines the form and the card</span>
+        type         = "github",
+        credentials  = [PersonalToken],
+        config       = [BaseURL],
+        scope        = [Repository],      <span class="cm"># the Scope step</span>
+        collect      = [Comments, Attachments],
+        capabilities = [Incremental, Webhooks],
+        rate_limit   = 1.0,               <span class="cm"># starting req/sec (GitHub: 5000/hour)</span>
+        rate_limit_scope = AccountToken,  <span class="cm"># limit per token, not per source</span>
+        request_cost = 1,                 <span class="cm"># cost units per call (default)</span>
+        webhook      = Hmac("X-Hub-Signature-256", dedup="X-GitHub-Delivery"),
+        error_class  = HttpErrors,        <span class="cm"># 429/5xx → transient, 4xx → permanent</span>
+        default_authority = Normal,       <span class="cm"># starting trust level: Low · Normal · High</span>
+    )
+
+    <span class="kw">def</span> fetch(self, since):              <span class="cm"># extract → stream of RawItem</span>
+        ...                               <span class="cm"># httpx or any SDK — the contract doesn't mandate HTTP</span>
+
+    <span class="kw">def</span> normalize(self, raw):            <span class="cm"># transform → Entity</span>
+        <span class="kw">return</span> Entity(...)               <span class="cm"># then — the shared pipeline</span>
+
+    <span class="kw">def</span> list_catalog(self):              <span class="cm"># catalog of scope objects</span>
+        ...                               <span class="cm"># live selection + scope reconciliation</span>
+
+    <span class="kw">def</span> check_connection(self):          <span class="cm"># staged probe: credentials + rights</span>
+        ...                               <span class="cm"># URL reachability — shared layer</span>
+<span class="cn-warn"># <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg> either way below — in-tree or as a pip package — the connector is visible
+#   only after the image is rebuilt and the container redeployed:
+#   discovery reads classes at process startup, not from Admin</span>
+</pre>
+            </div>
+            <div class="cn-ide__pane cn-ide__pane--tree">
+              <div class="cn-ide__tab">achilles/harvester/connectors/ · in-tree</div>
+<pre class="cn-tree">├── base.py        <span class="cm">BaseConnector — the 4-method contract</span>
+├── registry.py    <span class="cm">discovery: package + entry points</span>
+├── jira.py        <span class="cm">┐</span>
+├── confluence.py  <span class="cm">│ built-in</span>
+├── gitlab.py      <span class="cm">┤ connectors</span>
+├── slack.py       <span class="cm">┘</span>
+└── custom/        <span class="cm">← the platform doesn't touch this folder</span>
+<span class="cn-tree__new">    └── github.py  ← your class goes here</span>
+</pre>
+            </div>
+            <div class="cn-ide__pane cn-ide__pane--tree">
+              <div class="cn-ide__tab">achilles-github/ · separate pip package</div>
+<pre class="cn-tree"><span class="cm"># core untouched — discovery finds it via the entry point</span>
+<span class="cn-tree__new">├── connector.py   ← the same class</span>
+└── pyproject.toml <span class="cm">[project.entry-points."achilles.connectors"]</span>
+</pre>
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          The code is your own and trusted — <b>the operator decides what to
+          install</b>: a shared process, no sandbox, a bespoke integration, not
+          a marketplace. The <code>&lt; 1.0</code> contract isn't frozen — the
+          package is rebuilt for the platform version.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

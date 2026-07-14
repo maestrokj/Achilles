@@ -1,0 +1,325 @@
+/* Harvester — reliability workzone diagrams.
+   The resilience path: a sync run survives crashes and volume — SyncRun →
+   checkpoint/resume → retries → DLQ → visibility. Reuses the stk-* kit for the
+   five stage bands; adds per-band accent presets and the page-only primitives:
+   the SyncRun meter strip, the per-state run timelines (resume / restart /
+   cancel), and the ok/DLQ split lanes. Accent reads warm→alarm at the DLQ
+   band, green at success.
+   Loaded by _workzone/reliability.html on top of ../../module.css
+   + ../../layered-stack.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* Shared inline arrow, echoing pipeline's pl-arrow. */
+.rl-arrow {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Closing note follows the solo stage: the stack is centered and capped at
+   920px, but the anchored .section wrapper (it carries id="worker") is a child
+   of .page--wide and would span the full 1200px canvas and touch the last band.
+   Match the stack's width, center it, and give it air below the stage. */
+.stk-stage--solo + .section {
+  width: 100%;
+  max-width: 920px;
+  margin: 1.4rem auto 0;
+}
+
+/* ── Band accent presets — run → checkpoint → retry → DLQ(alarm) → ok ── */
+.stk-layer--run {
+  --stk-lc: var(--s4);
+  --stk-lc-pale: var(--s4-pale);
+}
+.stk-layer--checkpoint {
+  --stk-lc: var(--s2);
+  --stk-lc-pale: var(--s2-pale);
+}
+.stk-layer--retry {
+  --stk-lc: var(--accent);
+  --stk-lc-pale: var(--tint-8);
+}
+.stk-layer--dlq {
+  --stk-lc: var(--s1);
+  --stk-lc-pale: rgba(184, 78, 48, 0.09);
+}
+.stk-layer--visibility {
+  --stk-lc: var(--s3);
+  --stk-lc-pale: var(--s3-pale);
+}
+
+/* ── SyncRun meter strip — the four things one run tracks ── */
+.rl-meters {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rl-meter {
+  flex: 1 1 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--s4);
+  border-radius: var(--radius-md);
+}
+
+.rl-meter--err {
+  border-left-color: var(--s1);
+}
+
+.rl-meter__k {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+
+.rl-meter__v {
+  font-family: var(--mono);
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.rl-meter--err .rl-meter__v {
+  color: var(--s1);
+}
+
+/* Backoff-constant strip reuses the meter cards but is its own row of deltas:
+   five narrower numeric chips for the backoff parameters. */
+.rl-meters--bo .rl-meter {
+  flex: 1 1 110px;
+  border-left-color: var(--accent);
+}
+
+/* ── Error-class split — transient retries vs permanent straight to DLQ ── */
+.rl-class {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rl-class__col {
+  flex: 1 1 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.55rem 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.rl-class__col--retry {
+  border-left: 4px solid var(--s3);
+}
+
+.rl-class__col--dlq {
+  border-left: 4px solid var(--s1);
+}
+
+.rl-class__hd {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+
+.rl-class__col--retry .rl-class__hd {
+  color: var(--s3);
+}
+
+.rl-class__col--dlq .rl-class__hd {
+  color: var(--s1);
+}
+
+.rl-class__codes {
+  font-size: 0.8rem;
+  line-height: 1.7;
+  color: var(--text-dim);
+}
+
+/* ── State scenarios — what a crash / expiry / cancel does to one run ── */
+.rl-scenarios {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-top: 0.1rem;
+}
+
+.rl-scenario {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--s2);
+  border-radius: var(--radius-md);
+}
+
+.rl-scenario--resume {
+  border-left-color: var(--s3);
+}
+.rl-scenario--expired {
+  border-left-color: var(--s4);
+}
+.rl-scenario--cancelled {
+  border-left-color: var(--s1);
+}
+
+/* Caption — a colored state badge plus the one-line outcome. */
+.rl-scenario__cap {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rl-scenario__badge {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--paper);
+  background: var(--s2);
+  padding: 0.12rem 0.45rem;
+  border-radius: 5px;
+}
+.rl-scenario--resume .rl-scenario__badge {
+  background: var(--s3);
+}
+.rl-scenario--expired .rl-scenario__badge {
+  background: var(--s4);
+}
+.rl-scenario--cancelled .rl-scenario__badge {
+  background: var(--s1);
+}
+
+.rl-scenario__lbl {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+/* ── Run timeline — pages flow; markers cut, resume, restart, or stop it ── */
+.rl-tl {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.rl-tl__step {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  padding: 0.25rem 0.55rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.rl-tl__step:not(:last-child)::after {
+  content: "→";
+  margin-left: 0.4rem;
+  color: var(--dot);
+}
+
+/* crash — the run breaks off */
+.rl-tl__step--cut {
+  color: var(--s1);
+  border-color: var(--s1);
+  border-style: dashed;
+}
+
+/* resume — picks up from the last checkpoint */
+.rl-tl__step--from {
+  color: var(--s3);
+  border-color: var(--s3);
+}
+
+/* checkpoint freshness budget spent — the checkpoint can no longer be trusted */
+.rl-tl__step--wait {
+  color: var(--s4);
+  border-color: var(--s4);
+  border-style: dashed;
+}
+
+/* restart — the run is redone from zero */
+.rl-tl__step--restart {
+  color: var(--s4);
+  border-color: var(--s4);
+}
+
+/* cancelled — terminal, no resume; the outgoing arrow is dropped */
+.rl-tl__step--stop {
+  color: var(--paper);
+  background: var(--s1);
+  border-color: var(--s1);
+}
+.rl-tl__step--stop:not(:last-child)::after {
+  content: none;
+}
+
+/* break before a fresh, independent run */
+.rl-tl__brk {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.rl-tl__brk::before {
+  content: "┊";
+  margin-right: 0.4rem;
+  color: var(--dot);
+}
+.rl-tl__brk::after {
+  content: "→";
+  margin-left: 0.4rem;
+  color: var(--dot);
+}
+
+/* ── Split lanes — processed go to store, failed peel off to DLQ ── */
+.rl-split {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rl-split__lane {
+  flex: 1 1 220px;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.rl-split__lane--ok {
+  border-left: 4px solid var(--s3);
+}
+
+.rl-split__lane--dlq {
+  border-left: 4px solid var(--s1);
+}

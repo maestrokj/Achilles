@@ -1,0 +1,105 @@
+<!doctype html>
+<!--
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  WIREFRAME TEMPLATE — copy to _wireframes/<screen>.html per screen.   │
+  │  Underscore-prefixed (_template) so it's not mistaken for a screen.   │
+  │                                                                       │
+  │  Each screen page = (1) description — the screen's purpose and role,  │
+  │  in prose (route + access live in the mockup URL, not here); +        │
+  │  (2) the mockup, composed from the wf-* kit in modules/wireframe.css. │
+  │  Mockup = schematic, not pixel design.                                │
+  │                                                                       │
+  │  The wireframes nav in index.html is the screen catalog — add a       │
+  │  <a class="wz-link"> there for each new screen.                       │
+  │  Conventions: docs/architecture/README.md → "Wireframes".             │
+  └─────────────────────────────────────────────────────────────────────┘
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Wireframe (template)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <!-- TODO: screen name + .iter status (v1 / v2) -->
+        <h1 class="header__title">Screen name</h1>
+        <div class="header__sub">
+          auth / security · wireframes · group
+          <!-- load marker: default skeleton — swap the mechanism when designing the screen -->
+          <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Screen loading — skeleton">
+            <span class="in-load__icon"></span>loading
+          </a>
+        </div>
+      </div>
+
+      <!-- ═══ Screen description ═══
+           Purpose and role — in prose. Don't duplicate route and access: they
+           live in the mockup address bar (wf-chrome__url) and the nav group. -->
+      <p class="desc">Brief statement of the screen's purpose.</p>
+
+      <!-- ═══ Wireframe ═══ -->
+      <div class="section">
+        <div class="section__title">Wireframe</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">screen name</div>
+
+          <!-- Compose the screen from wf-* primitives. The skeleton below —
+               uncomment and fill in. The full kit and its inventory are in
+               modules/wireframe.css. -->
+          <div class="wf-screen wf-screen--narrow">
+            <!--
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url">achilles.local/route</div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-center wf-stack wf-stack--tight">
+                  <h2 class="wf-title">Heading</h2>
+                  <p class="wf-subtitle">Explanatory subheading</p>
+                </div>
+                <div class="wf-field">
+                  <span class="wf-label">Email</span>
+                  <div class="wf-input"><span class="wf-input__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" /></svg></span>you@company.com</div>
+                </div>
+                <div class="wf-field">
+                  <span class="wf-label">Password</span>
+                  <div class="wf-input wf-input--focus"><span class="wf-input__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span>••••••••</div>
+                </div>
+                <button class="wf-btn wf-btn--primary wf-btn--block">Sign in</button>
+                <div class="wf-center"><a class="wf-a">Forgot your password?</a></div>
+              </div>
+            </div>
+            -->
+          </div>
+        </div>
+
+        <!-- Annotations (optional): numbered .wf-annot pins on the mockup +
+             a legend here. Uncomment when needed.
+        <ol class="wf-legend">
+          <li class="wf-legend__item">
+            <span class="wf-annot wf-legend__num">1</span>
+            Note on a mockup element.
+          </li>
+        </ol>
+        -->
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Vision</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../shared.css" />
+    <link rel="stylesheet" href="presentation.css" />
+    <link rel="stylesheet" href="vision.css" />
+  </head>
+
+  <body>
+    <a class="home-link" href="../index.html" title="Home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 10.5 12 3l9 7.5" />
+        <path d="M5 9.5V21h14V9.5" />
+      </svg>
+      Home
+    </a>
+    <div class="page">
+      <!-- ══════════════════════════════════════ -->
+      <!-- HERO                                  -->
+      <!-- ══════════════════════════════════════ -->
+      <header class="hero">
+        <h1 class="hero__title">Achilles</h1>
+        <p class="hero__subtitle">Vision</p>
+        <p class="hero__desc">
+          Where Achilles is headed: from a knowledge base toward corporate
+          memory, from passive answers toward proactive help.
+        </p>
+      </header>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- TODAY                                 -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section">
+        <div class="section__label section__label--today">Today</div>
+        <h2 class="section__title">Enterprise AI Platform</h2>
+        <p class="section__text">
+          Today, Achilles is a company's single AI platform: a hub of
+          providers, models, agents, and spend. The platform connects to the
+          company's tools and builds a single knowledge graph — people,
+          projects, tasks, and decisions linked in one place, with answers
+          grounded on them.
+        </p>
+
+        <svg viewBox="0 0 480 150" class="graph-vis">
+          <!-- Lines: sources → Achilles -->
+          <g stroke="#d2c6b6" stroke-width="1.5">
+            <line x1="100" y1="115" x2="210" y2="72" opacity="0.4" />
+            <line x1="240" y1="115" x2="240" y2="78" opacity="0.4" />
+            <line x1="380" y1="115" x2="270" y2="72" opacity="0.4" />
+          </g>
+          <!-- Lines: Achilles → outputs -->
+          <g stroke="#6a8048" stroke-width="1.5">
+            <line x1="220" y1="52" x2="140" y2="24" opacity="0.4" />
+            <line x1="260" y1="52" x2="340" y2="24" opacity="0.4" />
+          </g>
+          <!-- Output pills -->
+          <rect x="90" y="8" width="100" height="24" rx="12" fill="#6a8048" />
+          <rect x="290" y="8" width="100" height="24" rx="12" fill="#886040" />
+          <g font-size="9.5" fill="#fff" text-anchor="middle" font-weight="600">
+            <text x="140" y="25">Knowledge graph</text>
+            <text x="340" y="25">Agents</text>
+          </g>
+          <!-- Achilles hub -->
+          <rect x="195" y="46" width="90" height="30" rx="15" fill="#b84e30" />
+          <text x="240" y="66" font-size="11" fill="#fff"
+                text-anchor="middle" font-weight="700">Achilles</text>
+          <!-- Source pills -->
+          <rect x="62" y="108" width="76" height="24" rx="12" fill="#baa898" />
+          <rect x="202" y="108" width="76" height="24" rx="12" fill="#baa898" />
+          <rect x="340" y="108" width="80" height="24" rx="12" fill="#baa898" />
+          <g font-size="9.5" fill="#fff" text-anchor="middle" font-weight="600">
+            <text x="100" y="125">Jira</text>
+            <text x="240" y="125">Slack</text>
+            <text x="380" y="125">Confluence</text>
+          </g>
+        </svg>
+        <div class="graph-vis__caption">
+          Sources connected — the platform builds the graph and manages the
+          agents
+        </div>
+      </section>
+
+      <div class="bridge">
+        <p>
+          A knowledge graph finds documents and links. But what if the platform
+          didn't just find things — but understood why decisions were made?
+        </p>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- THREE LEVELS                          -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section">
+        <div class="section__label section__label--evolution">
+          Evolution
+        </div>
+        <h2 class="section__title">
+          Three levels of corporate knowledge
+        </h2>
+        <p class="section__text">
+          Each level adds depth. Search finds documents. The graph links them.
+          Context explains why everything is the way it is.
+        </p>
+
+        <!-- Three levels progression -->
+        <svg viewBox="0 0 480 96" class="graph-vis">
+          <!-- Stage labels -->
+          <g font-size="7" fill="#a09080" text-anchor="middle"
+             font-weight="700" letter-spacing="0.06em">
+            <text x="75" y="12">OTHERS</text>
+            <text x="240" y="12">ACHILLES NOW</text>
+            <text x="410" y="12">WHERE WE'RE GOING</text>
+          </g>
+          <!-- Level 1: Search -->
+          <rect x="15" y="24" width="120" height="32" rx="16"
+                fill="#baa898" />
+          <text x="75" y="45" font-size="10" fill="#fff"
+                text-anchor="middle" font-weight="600">
+            Search
+          </text>
+          <!-- Arrow 1→2 -->
+          <line x1="135" y1="40" x2="160" y2="40"
+                stroke="#d2c6b6" stroke-width="1.5" />
+          <polygon points="160,36 168,40 160,44" fill="#d2c6b6" />
+          <!-- Level 2: Knowledge Graph (current, prominent) -->
+          <rect x="168" y="20" width="144" height="40" rx="20"
+                fill="#b84e30" />
+          <text x="240" y="45" font-size="11" fill="#fff"
+                text-anchor="middle" font-weight="700">
+            Knowledge graph
+          </text>
+          <!-- Arrow 2→3 -->
+          <line x1="312" y1="40" x2="340" y2="40"
+                stroke="#d2c6b6" stroke-width="1.5" />
+          <polygon points="340,36 348,40 340,44" fill="#d2c6b6" />
+          <!-- Level 3: Context -->
+          <rect x="348" y="24" width="120" height="32" rx="16"
+                fill="#6a8048" />
+          <text x="408" y="45" font-size="10" fill="#fff"
+                text-anchor="middle" font-weight="600">
+            Context
+          </text>
+          <!-- Bottom labels -->
+          <g font-size="7.5" fill="#a09080" text-anchor="middle">
+            <text x="75" y="74">what exists</text>
+            <text x="240" y="74">what's linked</text>
+            <text x="408" y="74">why it's so</text>
+          </g>
+        </svg>
+        <div class="graph-vis__caption">
+          Achilles is already at the knowledge-graph level. The next step is
+          context
+        </div>
+
+        <!-- Three level cards -->
+        <div class="levels">
+          <div class="level level--muted">
+            <span class="level__icon">●</span>
+            <div class="level__body">
+              <div class="level__title">
+                Enterprise search
+              </div>
+              <div class="level__text">
+                Indexes documents. Finds by keyword and semantics. Doesn't know
+                the links between entities.
+                <br />
+                <strong>"ADR-015 exists"</strong>
+              </div>
+            </div>
+          </div>
+          <div class="level level--current">
+            <span class="level__icon">●</span>
+            <div class="level__body">
+              <div class="level__title">
+                Knowledge graph — Achilles today
+              </div>
+              <div class="level__text">
+                Links people, projects, tasks, documents, and channels. Knows
+                who created what and how it's connected.
+                <br />
+                <strong>
+                  "@alex created ADR-015, linked to INFRA-891, discussed in
+                  #backend"
+                </strong>
+              </div>
+            </div>
+          </div>
+          <div class="level level--future">
+            <span class="level__icon">●</span>
+            <div class="level__body">
+              <div class="level__title">
+                Context — the next step
+              </div>
+              <div class="level__text">
+                Understands the reasons, the history of decisions, the arguments
+                on each side, the alternatives considered, and how projects
+                evolved.
+                <br />
+                <strong>
+                  "PostgreSQL was chosen for ACID + write load. @alex proposed
+                  it, @john objected. 3 days of discussion, 2 alternatives"
+                </strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Compare: Graph vs Context -->
+        <div class="compare">
+          <div class="compare__item compare__item--old">
+            <div class="compare__tag">Knowledge graph</div>
+            <div class="compare__title">Knows what's linked</div>
+            <div class="compare__steps">
+              <div class="step step--ok">
+                @alex created ADR-015
+              </div>
+              <div class="step step--ok">
+                ADR-015 is linked to INFRA-891
+              </div>
+              <div class="step step--ok">
+                The discussion was in #backend
+              </div>
+              <div class="step step--fail">
+                Doesn't know why the decision was made
+              </div>
+              <div class="step step--fail">
+                Doesn't know what the alternatives were
+              </div>
+            </div>
+          </div>
+          <div class="compare__item compare__item--new">
+            <div class="compare__tag">Context</div>
+            <div class="compare__title">Knows why</div>
+            <div class="compare__steps">
+              <div class="step step--ok">
+                Everything the graph knows
+              </div>
+              <div class="step step--ok">
+                Why PostgreSQL: ACID + write load
+              </div>
+              <div class="step step--ok">
+                @alex proposed it, @john objected
+              </div>
+              <div class="step step--ok">
+                2 alternatives weighed over 3 days
+              </div>
+              <div class="step step--ok">
+                INFRA-891 is a consequence of the decision
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Key insight -->
+        <div class="insight">
+          <div class="insight__text">
+            The graph knows what's linked.<br />
+            Context knows why.
+          </div>
+          <div class="insight__sub">
+            Corporate memory is a knowledge graph
+            + an understanding of the reasons.
+          </div>
+        </div>
+      </section>
+
+      <div class="bridge">
+        <p>
+          When the platform understands not just what happened, but why and what
+          it led to — it unlocks possibilities beyond an ordinary graph.
+        </p>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PROACTIVE AGENTS                      -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section">
+        <div class="section__label section__label--next">
+          Next level
+        </div>
+        <h2 class="section__title">
+          Agents that act ahead of the curve
+        </h2>
+        <p class="section__text">
+          Today, agents answer queries. Tomorrow, a personal assistant agent
+          with the company's full context will flag risks on its own, point you
+          to the relevant experience, and save you time — before you ever hit
+          the problem.
+        </p>
+
+        <!-- Agent flow visualization -->
+        <svg viewBox="0 0 480 120" class="graph-vis">
+          <!-- Context → Agent -->
+          <line x1="145" y1="50" x2="170" y2="50"
+                stroke="#d2c6b6" stroke-width="1.5" />
+          <polygon points="170,46 178,50 170,54" fill="#d2c6b6" />
+          <!-- Agent → Employee -->
+          <line x1="322" y1="50" x2="350" y2="50"
+                stroke="#6a8048" stroke-width="1.5" />
+          <polygon points="350,46 358,50 350,54" fill="#6a8048" />
+          <!-- Context pill -->
+          <rect x="15" y="34" width="130" height="32" rx="16"
+                fill="#886040" />
+          <text x="80" y="55" font-size="10" fill="#fff"
+                text-anchor="middle" font-weight="600">
+            Context
+          </text>
+          <!-- Agent pill (larger, prominent) -->
+          <rect x="178" y="28" width="144" height="44" rx="22"
+                fill="#b84e30" />
+          <text x="250" y="46" font-size="7" fill="#fff"
+                text-anchor="middle" font-weight="700"
+                letter-spacing="0.04em" opacity="0.75">
+            PROACTIVE
+          </text>
+          <text x="250" y="62" font-size="12" fill="#fff"
+                text-anchor="middle" font-weight="700">
+            AI agent
+          </text>
+          <!-- Employee pill -->
+          <rect x="358" y="34" width="108" height="32" rx="16"
+                fill="#6a8048" />
+          <text x="412" y="55" font-size="10" fill="#fff"
+                text-anchor="middle" font-weight="600">
+            Employee
+          </text>
+          <!-- Flow labels -->
+          <g font-size="7.5" fill="#a09080" text-anchor="middle">
+            <text x="80" y="86">decisions, history,</text>
+            <text x="80" y="97">links, reasons</text>
+            <text x="412" y="86">proactive</text>
+            <text x="412" y="97">suggestions</text>
+          </g>
+        </svg>
+        <div class="graph-vis__caption">
+          The agent takes in the company's context and proactively helps the
+          employee
+        </div>
+
+        <!-- Agent example scenarios -->
+        <div class="agent-examples">
+          <div class="agent-example">
+            <span class="agent-example__icon">→</span>
+            <div class="agent-example__text">
+              <strong>You pick up task X</strong> — team Y tried a similar
+              approach six months ago. Here's what they learned and why they
+              changed direction.
+            </div>
+          </div>
+          <div class="agent-example">
+            <span class="agent-example__icon">→</span>
+            <div class="agent-example__text">
+              <strong>Your sprint depends</strong> on team Z, which is in a
+              feature freeze until Friday. Worth replanning PROJ-142.
+            </div>
+          </div>
+          <div class="agent-example">
+            <span class="agent-example__icon">→</span>
+            <div class="agent-example__text">
+              <strong>You're writing an RFC</strong> — here are three decisions
+              in neighboring teams that could conflict with your proposal.
+            </div>
+          </div>
+          <div class="agent-example">
+            <span class="agent-example__icon">→</span>
+            <div class="agent-example__text">
+              <strong>A new customer ticket</strong> — a similar problem was
+              solved in Q3; here's the context and the fix.
+            </div>
+          </div>
+        </div>
+
+        <!-- Reactive vs Proactive -->
+        <div class="compare">
+          <div class="compare__item compare__item--old">
+            <div class="compare__tag">Today</div>
+            <div class="compare__title">Reactive agent</div>
+            <div class="compare__steps">
+              <div class="step step--fail">
+                Only responds to a query
+              </div>
+              <div class="step step--fail">
+                Knows what it found for the query
+              </div>
+              <div class="step step--fail">
+                Doesn't see the context of current work
+              </div>
+            </div>
+          </div>
+          <div class="compare__item compare__item--new">
+            <div class="compare__tag">Tomorrow</div>
+            <div class="compare__title">Proactive assistant</div>
+            <div class="compare__steps">
+              <div class="step step--ok">
+                Notices relevant context on its own
+              </div>
+              <div class="step step--ok">
+                Knows the history of decisions and the reasons
+              </div>
+              <div class="step step--ok">
+                Understands what the employee is working on
+              </div>
+              <div class="step step--ok">
+                Suggests before being asked
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- BUSINESS CONTINUITY                   -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section">
+        <div class="section__label section__label--perspective">
+          Perspective
+        </div>
+        <h2 class="section__title">
+          Knowledge stays — people change
+        </h2>
+        <p class="section__text">
+          When an employee leaves, the context leaves with them: why decisions
+          were made, how processes work, what's already been tried and didn't
+          work. Corporate memory solves this — knowledge isn't tied to people.
+        </p>
+
+        <!-- Continuity flow visualization -->
+        <svg viewBox="0 0 480 110" class="graph-vis">
+          <!-- Stage 1: Working -->
+          <rect x="6" y="22" width="96" height="32" rx="16"
+                fill="#6a8048" />
+          <text x="54" y="43" font-size="9" fill="#fff"
+                text-anchor="middle" font-weight="600">
+            Working
+          </text>
+          <!-- Arrow -->
+          <line x1="102" y1="38" x2="120" y2="38"
+                stroke="#d2c6b6" stroke-width="1.5" />
+          <polygon points="120,34 128,38 120,42" fill="#d2c6b6" />
+          <!-- Stage 2: Leaves -->
+          <rect x="128" y="22" width="84" height="32" rx="16"
+                fill="#b84e30" />
+          <text x="170" y="43" font-size="9" fill="#fff"
+                text-anchor="middle" font-weight="600">
+            Leaves
+          </text>
+          <!-- Arrow -->
+          <line x1="212" y1="38" x2="240" y2="38"
+                stroke="#d2c6b6" stroke-width="1.5" />
+          <polygon points="240,34 248,38 240,42" fill="#d2c6b6" />
+          <!-- Stage 3: AI covers -->
+          <rect x="248" y="22" width="100" height="32" rx="16"
+                fill="#886040" />
+          <text x="298" y="43" font-size="9" fill="#fff"
+                text-anchor="middle" font-weight="600">
+            AI stand-in
+          </text>
+          <!-- Arrow -->
+          <line x1="348" y1="38" x2="370" y2="38"
+                stroke="#d2c6b6" stroke-width="1.5" />
+          <polygon points="370,34 378,38 370,42" fill="#d2c6b6" />
+          <!-- Stage 4: New person -->
+          <rect x="378" y="22" width="96" height="32" rx="16"
+                fill="#6a8048" />
+          <text x="426" y="43" font-size="9" fill="#fff"
+                text-anchor="middle" font-weight="600">
+            New hire
+          </text>
+          <!-- Stage labels -->
+          <g font-size="7" text-anchor="middle" font-weight="600">
+            <text x="54" y="72" fill="#6a8048">
+              context accrues
+            </text>
+            <text x="170" y="72" fill="#b84e30">
+              context preserved
+            </text>
+            <text x="298" y="72" fill="#886040">
+              covers the role
+            </text>
+            <text x="426" y="72" fill="#6a8048">
+              inherits context
+            </text>
+          </g>
+          <!-- Continuous context bar -->
+          <rect x="6" y="88" width="468" height="4" rx="2"
+                fill="#6a8048" opacity="0.2" />
+          <text x="240" y="106" font-size="7.5" fill="#a09080"
+                text-anchor="middle" font-style="italic">
+            context is continuous — knowledge isn't lost when people change
+          </text>
+        </svg>
+        <div class="graph-vis__caption">
+          The lifecycle of a role: context stays with the company at every stage
+        </div>
+
+        <!-- Compare: with/without context -->
+        <div class="compare">
+          <div class="compare__item compare__item--old">
+            <div class="compare__tag">Without context</div>
+            <div class="compare__title">Knowledge loss</div>
+            <div class="compare__steps">
+              <div class="step step--fail">
+                A key employee leaves
+              </div>
+              <div class="step step--fail">
+                The decision context leaves with them
+              </div>
+              <div class="step step--fail">
+                The team repeats old mistakes
+              </div>
+              <div class="step step--fail">
+                A new hire takes months to get up to speed
+              </div>
+            </div>
+          </div>
+          <div class="compare__item compare__item--new">
+            <div class="compare__tag">With context</div>
+            <div class="compare__title">Seamless rotation</div>
+            <div class="compare__steps">
+              <div class="step step--ok">
+                The role's context is preserved in the system
+              </div>
+              <div class="step step--ok">
+                An AI stand-in covers the routine
+                during the transition
+              </div>
+              <div class="step step--ok">
+                The history of decisions is available —
+                mistakes aren't repeated
+              </div>
+              <div class="step step--ok">
+                A new hire gets the role's context
+                in hours
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="benefits">
+          <div class="benefit">
+            <div class="benefit__title">Zero bus factor</div>
+            <div class="benefit__text">
+              Knowledge doesn't depend on one person — the context is available
+              to the whole company.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">An AI stand-in during the search</div>
+            <div class="benefit__text">
+              While a replacement is being found, AI covers the routine
+              functions of the role based on context.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Onboarding in hours</div>
+            <div class="benefit__text">
+              A new hire gets the full context of the role: decisions, reasons,
+              processes, connections.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Institutional memory</div>
+            <div class="benefit__text">
+              The company remembers not only what was done, but why — even years
+              later.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- CTA                                   -->
+      <!-- ══════════════════════════════════════ -->
+      <footer class="cta">
+        <h2 class="cta__title">Building the future</h2>
+        <p class="cta__text">
+          Achilles is in active development. The current state and architecture
+          are in the main presentation.
+        </p>
+        <div class="cta__actions">
+          <a href="presentation.html"
+             class="cta__btn cta__btn--primary">
+            Presentation →
+          </a>
+          <a href="https://github.com/maestrokj/Achilles" class="cta__btn cta__btn--secondary">
+            GitHub
+          </a>
+        </div>
+      </footer>
+    </div>
+    <script defer src="../architecture/doc-nav.js"></script>
+  </body>
+</html>

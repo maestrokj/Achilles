@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Маршруты и редиректы</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="routing.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page rt-page">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Маршруты и редиректы</h1>
+        <div class="header__sub">auth / security · workzone</div>
+      </div>
+
+      <p class="desc">
+        Маршруты и редиректы: куда ведёт базовый URL и как распределяются роли.
+        Механику входа (токены, хэширование, смена пароля) держит
+        <a href="authentication.html#login" class="xref-page">аутентификация</a> —
+        здесь только карта.
+      </p>
+
+      <!-- ═══ Гейт входа ═══
+           Единый вход для всех. Роль — свойство аккаунта, а не выбор на
+           входе: «экрана выбора админ/пользователь» нет, разводит редирект.
+           Подача — дерево решений: корень GET / падает через три развилки,
+           каждая отщепляет терминальный маршрут вбок. -->
+      <div class="section" id="entry-gate">
+        <div class="section__title">Гейт входа</div>
+
+        <div class="rt-tree">
+          <!-- root -->
+          <div class="rt-root">
+            <span class="rt-root__r">GET /</span>
+            <span class="rt-root__s">единый вход · базовый URL</span>
+          </div>
+          <div class="rt-stem"></div>
+
+          <!-- Q1: База пустая? -->
+          <div class="rt-q"><span class="rt-q__num">1</span>База пустая?</div>
+          <div class="rt-stem"></div>
+
+          <div class="rt-branches">
+            <!-- да → /setup -->
+            <div class="rt-branch rt-branch--narrow">
+              <div class="rt-limb">
+                <div class="rt-edge rt-edge--leaf"></div>
+                <span class="rt-blabel rt-blabel--yes">да · нет пользователей</span>
+                <div class="rt-edge rt-edge--leaf"></div>
+              </div>
+              <a class="rt-leaf-link" href="../_wireframes/setup-wizard.html">
+                <div class="rt-leaf">
+                  <span class="rt-leaf__route">/setup</span>
+                  <span class="rt-leaf__what">создание первого Owner</span>
+                </div>
+              </a>
+            </div>
+
+            <!-- нет → продолжаем вниз -->
+            <div class="rt-branch">
+              <div class="rt-limb">
+                <div class="rt-edge rt-edge--cont"></div>
+                <span class="rt-blabel rt-blabel--no">нет · есть пользователи</span>
+                <div class="rt-edge rt-edge--cont"></div>
+              </div>
+
+              <!-- Q2: Есть сессия? -->
+              <div class="rt-q"><span class="rt-q__num">2</span>Есть сессия?</div>
+              <div class="rt-stem"></div>
+
+              <div class="rt-branches">
+                <!-- гость → /login -->
+                <div class="rt-branch rt-branch--narrow">
+                  <div class="rt-limb">
+                    <div class="rt-edge rt-edge--leaf"></div>
+                    <span class="rt-blabel rt-blabel--no">нет · гость</span>
+                    <div class="rt-edge rt-edge--leaf"></div>
+                  </div>
+                  <a class="rt-leaf-link" href="../_wireframes/login.html">
+                    <div class="rt-leaf">
+                      <span class="rt-leaf__route">/login</span>
+                      <span class="rt-leaf__what">форма входа</span>
+                    </div>
+                  </a>
+                </div>
+
+                <!-- вошёл → Q3 -->
+                <div class="rt-branch">
+                  <div class="rt-limb">
+                    <div class="rt-edge rt-edge--cont"></div>
+                    <span class="rt-blabel rt-blabel--yes">да · вошёл</span>
+                    <div class="rt-edge rt-edge--cont"></div>
+                  </div>
+
+                  <!-- Q3: Роль аккаунта? -->
+                  <div class="rt-q">
+                    <span class="rt-q__num">3</span>Роль аккаунта?
+                  </div>
+                  <div class="rt-stem"></div>
+
+                  <div class="rt-branches">
+                    <!-- Owner/Admin → /admin -->
+                    <div class="rt-branch rt-branch--narrow">
+                      <div class="rt-limb">
+                        <div class="rt-edge rt-edge--admin"></div>
+                        <span class="rt-blabel rt-blabel--role">
+                          <span class="mod-role mod-role--owner">Owner</span>
+                          <span class="mod-role mod-role--admin">Admin</span>
+                        </span>
+                        <div class="rt-edge rt-edge--admin"></div>
+                      </div>
+<a class="rt-leaf-link" href="../../admin-panel/_wireframes/dashboard.html">
+                        <div class="rt-leaf rt-leaf--admin">
+                          <span class="rt-leaf__route">/admin</span>
+                          <span class="rt-leaf__what"
+                            >дашборд · home админки
+                            <span class="rt-shell">lazy-чанк</span></span
+                          >
+                        </div>
+                      </a>
+                    </div>
+
+                    <!-- Member → /chat -->
+                    <div class="rt-branch rt-branch--narrow">
+                      <div class="rt-limb">
+                        <div class="rt-edge rt-edge--member"></div>
+                        <span class="rt-blabel rt-blabel--role">
+                          <span class="mod-role mod-role--member">Member</span>
+                        </span>
+                        <div class="rt-edge rt-edge--member"></div>
+                      </div>
+                      <a class="rt-leaf-link" href="../../web-app/_wireframes/layout.html">
+                        <div class="rt-leaf rt-leaf--member">
+                          <span class="rt-leaf__route">/chat</span>
+                          <span class="rt-leaf__what">user shell · чат</span>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="decision-box">
+          <strong>Единый SPA, роутинг по роли:</strong> обе оболочки —
+          <code>/admin</code> и <code>/chat</code> — одно React-приложение.
+          Админ-зона — отдельный lazy-чанк. Общий слой: auth / токены,
+          дизайн-система, i18n. Гейт — клиентский редирект роутером.
+        </div>
+      </div>
+
+      <!-- ═══ Переходы с условиями-гардами ═══
+           Схема выше — happy-path по `/`. Здесь — правила, которых на ней
+           нет: защищённые маршруты, выход, как Member находит свой дом.
+           Каждый гард — переход с условием и явным узлом отказа. -->
+      <div class="section" id="routes">
+        <div class="section__title">Переходы с условиями-гардами</div>
+
+        <div class="rt-guards">
+          <!-- Гард: deep-link гостем -->
+          <div class="rt-guard">
+            <div class="rt-guard__head">
+              <span class="rt-guard__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg> GUARD</span>
+              <span class="rt-guard__title">Deep-link гостем</span>
+            </div>
+            <div class="rt-guard__flow">
+              <span class="rt-chip">защищённый маршрут</span>
+              <span class="rt-arrow">→</span>
+              <span class="rt-chip rt-chip--bad"
+                ><code>/login?returnTo=&lt;route&gt;</code></span
+              >
+              <span class="rt-arrow">→</span>
+              <span class="rt-chip rt-chip--ok">возврат на исходный</span>
+            </div>
+            <div class="rt-guard__note">
+              Запрос защищённого маршрута <strong>без сессии</strong> → редирект
+              на форму входа с сохранением цели → после входа возврат на исходный
+              маршрут. <strong>Приоритет у <code>?returnTo</code></strong
+              >, если он разрешён роли. <code>?returnTo</code> принимается только
+              как <strong>локальный путь</strong> (начинается с одного
+              <code>/</code>, но не <code>//</code> и не <code>/\</code>, без
+              схемы и хоста) — иначе игнорируется, редирект идёт на дом по роли.
+              Защита от open-redirect: внешний <code>?returnTo</code> увёл бы
+              после входа на
+              фишинговый клон.
+            </div>
+          </div>
+
+          <!-- Гард: временный пароль -->
+          <div class="rt-guard">
+            <div class="rt-guard__head">
+              <span class="rt-guard__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg> GUARD</span>
+              <span class="rt-guard__title">Временный пароль</span>
+            </div>
+            <div class="rt-guard__flow">
+              <span class="rt-chip"><code>must_change_password</code></span>
+              <span class="rt-arrow">→</span>
+              <span class="rt-chip rt-chip--bad"><code>/change-password</code></span>
+              <span class="rt-arrow">→</span>
+              <span class="rt-chip rt-chip--ok">дальше по роли</span>
+            </div>
+            <div class="rt-guard__note">
+              Сразу после входа: если у аккаунта поднят
+              <code>must_change_password</code> (выдан временный пароль) →
+              принудительный редирект на <code>/change-password</code>, выход
+              заблокирован, пока не задан постоянный пароль. Редирект —
+              клиентский; настоящую границу держит сервер, прямой вызов API в
+              обход экрана отклоняется — механика в
+              <a href="data-model.html#temp-password-gate" class="xref-page">модели данных</a>.
+              Флаг снят →
+              распределение по роли (Q3 выше). Фича —
+              <a href="../_features/forced-password-change/index.html" class="xref-page">Принудительная смена пароля</a>.
+            </div>
+          </div>
+
+          <!-- Гард: /admin/* -->
+          <div class="rt-guard">
+            <div class="rt-guard__head">
+              <span class="rt-guard__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg> GUARD</span>
+              <span class="rt-guard__title">Гард <code>/admin/*</code></span>
+            </div>
+            <div class="rt-guard__flow">
+              <span class="rt-chip"
+                ><span class="mod-role mod-role--member">Member</span> на
+                <code>/admin/*</code></span
+              >
+              <span class="rt-arrow">→</span>
+              <span class="rt-chip rt-chip--bad">403 Forbidden</span>
+              <span class="rt-arrow">→</span>
+              <span class="rt-chip rt-chip--ok"><code>/chat</code></span>
+            </div>
+            <div class="rt-guard__note">
+              <code>/admin/*</code> — только <strong>Owner / Admin</strong>.
+              Member на admin-маршруте → редирект на свой <code>/chat</code>:
+              для известного дома роли тупика не создаём. Общий экран
+              <a href="../../shared-ui/_wireframes/system-screens.html#forbidden" class="xref-module">403 «Доступ запрещён»</a>
+              — для прочих запрещённых deep-link'ов, где очевидного
+              редиректа нет.
+            </div>
+            <div class="rt-err">
+              <span class="rt-err__label">терминал отказа</span>
+              <span class="rt-err__name">403 Forbidden</span>
+              <span class="rt-err__sub"
+                >вошёл, но без прав → редирект на /chat</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

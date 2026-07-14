@@ -1,0 +1,27 @@
+/* Auth & Security — authorization workzone presets.
+   Loaded by _workzone/authorization.html on top of ../../module.css
+   + ../../layered-stack.css (stk-* kit); this sheet only sets the
+   per-layer accent variables (--stk-lc / --stk-lc-pale).
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Layer accent presets — descend warm→muted as the request goes deeper ── */
+.stk-layer--roles {
+  --stk-lc: var(--s1);
+  --stk-lc-pale: var(--s4-pale);
+}
+.stk-layer--perms {
+  --stk-lc: var(--s2-glow);
+  --stk-lc-pale: var(--s2-pale);
+}
+.stk-layer--ident {
+  --stk-lc: var(--s3-glow);
+  --stk-lc-pale: var(--s3-pale);
+}
+.stk-layer--acl {
+  --stk-lc: var(--s4);
+  --stk-lc-pale: var(--s4-pale);
+}
+.stk-layer--store {
+  --stk-lc: var(--text-dim);
+  --stk-lc-pale: var(--tint-6);
+}

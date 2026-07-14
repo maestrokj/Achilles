@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Notifications</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="notifications.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← К схеме</a>
+        <h1 class="header__title">Notifications</h1>
+        <div class="header__sub">cross-cutting · dispatcher · in-app · email · webhook</div>
+      </div>
+
+      <!-- ═══ Описание ═══ Сквозной слой: один диспетчер в core, две модели
+           адресации (broadcast по роли · targeted конкретному пользователю),
+           витрины-ленты живут в surface'ах. -->
+      <p class="desc">
+        Сквозной слой <strong>уведомлений</strong>: один диспетчер в
+        <code>core</code> собирает события всех модулей, разводит по двум моделям
+        адресации и каналам, журналирует доставку. Своего экрана у модуля нет —
+        ленту и настройку рендерят surface'ы (указатель ниже).
+      </p>
+
+      <!-- ═══ Поток ═══ Метро-карта пути события: источники-притоки → диспетчер
+           (core) → станция-развилка адресации, где линия ветвится на broadcast
+           и targeted, каждая ветка прямо вниз через свои станции-каналы к своему
+           терминалу-ленте. Якорь #flow — обзорный постер модуля. Геометрия в
+           notifications.css. -->
+      <div class="section" id="flow">
+        <h2 class="section__title">Архитектура</h2>
+
+        <div class="nf-map">
+          <div class="nf-legend">
+            <span class="nf-leg-main"><i></i>главная линия события</span>
+            <span class="nf-leg-bc"><i></i>ветка broadcast</span>
+            <span class="nf-leg-tg"><i></i>ветка targeted</span>
+          </div>
+
+          <div class="nf-canvas">
+            <!-- Rails. viewBox 640×945. Trunk x=320: Вход (y=120) → Диспетчер
+                 (y=260) → Адресация (y=420). At the fork it splits LEFT to
+                 broadcast (x=185) and RIGHT to targeted (x=455); each runs
+                 straight down to its own terminus on its own line, both on one
+                 baseline (y=910). xMidYMid meet keeps the circles round. -->
+            <svg viewBox="0 0 640 945" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+              <path class="nf-rail--feed" d="M 320 120 L 90 55" />
+              <path class="nf-rail--feed" d="M 320 120 L 90 95" />
+              <path class="nf-rail--feed" d="M 320 120 L 90 135" />
+              <path class="nf-rail--feed" d="M 320 120 L 90 175" />
+              <path class="nf-rail--feed" d="M 320 120 L 90 215" />
+
+              <path class="nf-rail nf-rail--main" d="M 320 120 L 320 260 L 320 420" />
+
+              <path class="nf-rail nf-rail--bc"
+                    d="M 320 420 C 320 470, 185 460, 185 505 L 185 910" />
+              <path class="nf-rail nf-rail--tg"
+                    d="M 320 420 C 320 470, 455 460, 455 505 L 455 910" />
+
+              <circle class="nf-pin" cx="90" cy="55" r="6" />
+              <circle class="nf-pin" cx="90" cy="95" r="6" />
+              <circle class="nf-pin" cx="90" cy="135" r="6" />
+              <circle class="nf-pin" cx="90" cy="175" r="6" />
+              <circle class="nf-pin" cx="90" cy="215" r="6" />
+
+              <circle class="nf-stop nf-stop--main" cx="320" cy="120" r="10" />
+              <circle class="nf-hub" cx="320" cy="260" r="16" />
+              <circle class="nf-stop nf-stop--main" cx="320" cy="420" r="12" />
+
+              <circle class="nf-stop nf-stop--bc" cx="185" cy="650" r="9" />
+              <circle class="nf-stop nf-stop--bc" cx="185" cy="715" r="9" />
+              <circle class="nf-stop nf-stop--bc" cx="185" cy="780" r="9" />
+
+              <circle class="nf-stop nf-stop--tg" cx="455" cy="650" r="9" />
+              <circle class="nf-stop nf-stop--tg" cx="455" cy="715" r="9" />
+
+              <circle class="nf-hub" cx="185" cy="910" r="14" />
+              <circle class="nf-hub" cx="455" cy="910" r="14" />
+            </svg>
+
+            <!-- Источники -->
+            <span class="nf-lbl nf-src nf-src--1"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12" /><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /></svg> Harvester</span>
+            <span class="nf-lbl nf-src nf-src--2"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="16" r="1" /><rect x="3" y="10" width="18" height="12" rx="2" /><path d="M7 10V7a5 5 0 0 1 10 0v3" /></svg> Auth</span>
+            <span class="nf-lbl nf-src nf-src--3"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8" /><rect width="16" height="12" x="4" y="8" rx="2" /><path d="M2 14h2" /><path d="M20 14h2" /><path d="M15 13v2" /><path d="M9 13v2" /></svg> Agent Engine</span>
+            <span class="nf-lbl nf-src nf-src--4"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5V19A9 3 0 0 0 21 19V5" /><path d="M3 12A9 3 0 0 0 21 12" /></svg> Knowledge Store</span>
+            <span class="nf-lbl nf-src nf-src--5"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg> Admin</span>
+            <span class="nf-lbl nf-note nf-note--sources">источники поднимают<br />событие, не шлют сами</span>
+
+            <!-- Вход -->
+            <span class="nf-lbl nf-pos--inflow">
+              <span class="nf-station__name">Вход</span>
+              <span class="nf-station__sub">вызов диспетчера в core</span>
+            </span>
+
+            <!-- Диспетчер -->
+            <a class="nf-lbl nf-hubcard nf-pos--dispatch" href="_workzone/dispatcher.html#dispatch">
+              <span class="nf-hubcard__cap">диспетчер · core</span>
+              <span class="nf-hubcard__name">Пишет событие · дедуп · веер</span>
+              <span class="nf-hubcard__sub">строка <span class="nf-tag">notifications</span><br />тип · severity · i18n-ключ</span>
+            </a>
+
+            <!-- Адресация -->
+            <a class="nf-lbl nf-pos--addr" href="_workzone/dispatcher.html#addressing">
+              <span class="nf-station__name">Адресация</span>
+              <span class="nf-station__sub">одна колонка <span class="nf-tag">target_user_id</span><br />разводит две модели</span>
+            </a>
+
+            <!-- Ветки -->
+            <span class="nf-lbl nf-branch nf-branch--bc nf-pos--bc">
+              <span class="nf-branch__h">Broadcast</span>
+              <span class="nf-branch__cond">target_user_id IS NULL</span>
+              <span class="nf-types">
+                <span class="nf-type">sync</span>
+                <span class="nf-type">security</span>
+                <span class="nf-type">budget</span>
+                <span class="nf-type">system</span>
+                <span class="nf-type">discovery</span>
+              </span>
+            </span>
+            <span class="nf-lbl nf-branch nf-branch--tg nf-pos--tg">
+              <span class="nf-branch__h">Targeted</span>
+              <span class="nf-branch__cond">target_user_id = X</span>
+              <span class="nf-types">
+                <span class="nf-type">agent</span>
+                <span class="nf-type">account</span>
+              </span>
+            </span>
+
+            <!-- Каналы -->
+            <span class="nf-lbl nf-pos--bc-ch1"><span class="nf-chan">in_app <span class="nf-lock"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span></span></span>
+            <span class="nf-lbl nf-pos--bc-ch2"><span class="nf-chan">email <small>SAQ</small></span></span>
+            <span class="nf-lbl nf-pos--bc-ch3"><span class="nf-chan">webhook</span></span>
+            <span class="nf-lbl nf-pos--tg-ch1"><span class="nf-chan">in_app <span class="nf-lock"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span></span></span>
+            <span class="nf-lbl nf-pos--tg-ch2"><span class="nf-chan">email <small>SAQ</small></span></span>
+            <span class="nf-lbl nf-note nf-note--channels">каналы<br />веер по<br />маршрутам<br />opt-out</span>
+            <span class="nf-lbl nf-note nf-note--lock"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg> in_app × security / sync — не выключить</span>
+
+            <!-- Витрины -->
+            <a class="nf-lbl nf-surf nf-pos--surf-admin" href="../admin-panel/_wireframes/notification-feed.html">
+              <span class="nf-surf__h">Admin Panel · лента</span>
+              <span class="nf-surf__d">broadcast + личные</span>
+            </a>
+            <a class="nf-lbl nf-surf nf-pos--surf-web" href="../web-app/_wireframes/notification-feed.html#inbox">
+              <span class="nf-surf__h">Web App · лента</span>
+              <span class="nf-surf__d">личные targeted</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ API ═══ Полные пути контракта модуля под версией. -->
+      <section class="section" id="api">
+        <div class="section__title">API</div>
+        <ul class="api-list">
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/notifications</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/notifications/unread</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/notifications/{id}/read</span></li>
+        </ul>
+      </section>
+
+      <!-- ═══ Workzone ═══ Две страницы проработки: диспетчер (механика +
+           адресация + каталог) и модель данных (пять таблиц + миграция). -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Проектирование</span>
+        </div>
+        <p class="workzone-hint">
+          Детальные решения по проектированию модуля.
+        </p>
+
+        <div class="wz-nav">
+          <a class="wz-link" href="_workzone/dispatcher.html">
+            <span>Диспетчер</span>
+          </a>
+          <a class="wz-link" href="_workzone/data-model.html">
+            <span>Модель данных</span>
+          </a>
+          <a class="wz-link" href="_workzone/tests.html">
+            <span>Тест-кейсы</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ═══ Макеты (surface'ы) ═══ Своего фронтенда у модуля нет — ленту и
+           настройку рендерят surface'ы как тонкие клиенты единого API
+           (прецедент: Agent Engine). Здесь указатель. -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Макеты</span>
+          <span class="workzone-title">Surface'ы</span>
+        </div>
+        <p class="workzone-hint">
+          Своего фронтенда у модуля нет: ленту читает каждый surface своим экраном —
+          <a href="../web-app/_wireframes/notification-feed.html" class="xref-badge">→ Web App</a>
+          у сотрудника,
+          <a href="../admin-panel/_wireframes/notification-feed.html" class="xref-badge">→ Admin Panel</a>
+          у администратора; настройку каналов и маршрутов держит
+          <a href="../admin-panel/_wireframes/notifications.html" class="xref-badge">→ экран уведомлений</a>
+          Admin Panel.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,242 @@
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-backend-env: &backend-env
+  - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-achilles}:${POSTGRES_PASSWORD:-achilles_dev}@postgres:5432/${POSTGRES_DB:-achilles}
+  - REDIS_DURABLE_URL=redis://:${REDIS_PASSWORD:-achilles_dev}@redis-durable:6379/0
+  - REDIS_CACHE_URL=redis://:${REDIS_PASSWORD:-achilles_dev}@redis-cache:6379/0
+  - SECRET_KEY=${SECRET_KEY}
+  - CRYPTO_KEY=${CRYPTO_KEY:-}
+  - LOG_LEVEL=${LOG_LEVEL:-debug}
+  - CORS_ORIGINS=${CORS_ORIGINS:-["http://localhost:3000"]}
+  - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-http://localhost:3000}
+  # SAQ slots per lane process — tune to the host; defaults live in config.py.
+  - WORKER_CONCURRENCY_INTERACTIVE=${WORKER_CONCURRENCY_INTERACTIVE:-10}
+  - WORKER_CONCURRENCY_BACKGROUND=${WORKER_CONCURRENCY_BACKGROUND:-4}
+  - WORKER_CONCURRENCY_AGENTS=${WORKER_CONCURRENCY_AGENTS:-8}
+
+services:
+  postgres:
+    # pg16 → pg17 (matches postgresql-client 17 in the backend images).
+    # A volume initialized by pg16 will not boot: recreate it once with
+    # `docker compose down -v` (pre-production, no data to keep).
+    image: pgvector/pgvector:pg17
+    container_name: achilles_postgres_dev
+    logging: *default-logging
+    shm_size: 256mb
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 8192
+        hard: 8192
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-achilles}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-achilles_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-achilles}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-achilles}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis-durable:
+    image: redis:7-alpine
+    container_name: achilles_redis_durable_dev
+    logging: *default-logging
+    stop_grace_period: 10s
+    command: redis-server --requirepass ${REDIS_PASSWORD:-achilles_dev} --appendonly yes --maxmemory ${REDIS_MAXMEMORY:-256mb} --maxmemory-policy noeviction
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis_durable_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$${REDIS_PASSWORD:-achilles_dev} redis-cli ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  redis-cache:
+    image: redis:7-alpine
+    container_name: achilles_redis_cache_dev
+    logging: *default-logging
+    stop_grace_period: 10s
+    command: redis-server --requirepass ${REDIS_PASSWORD:-achilles_dev} --save "" --appendonly no --maxmemory ${REDIS_MAXMEMORY:-256mb} --maxmemory-policy allkeys-lru
+    ports:
+      - "127.0.0.1:6380:6379"
+    # The image declares VOLUME /data; tmpfs stops Docker from creating an
+    # anonymous volume for a cache that is ephemeral by design.
+    tmpfs:
+      - /data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$${REDIS_PASSWORD:-achilles_dev} redis-cli ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  backend:
+    build: ./backend
+    # Shared tag: worker and scheduler run the same image with a different
+    # command — one build instead of three identical ones.
+    image: achilles-backend:dev
+    container_name: achilles_backend_dev
+    logging: *default-logging
+    init: true
+    stop_grace_period: 30s
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment: *backend-env
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/alembic:/app/alembic
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis-durable:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    # --timeout-graceful-shutdown: on every --reload (WatchFiles) uvicorn drains
+    # open connections before restarting; long-lived SSE (notification bell, chat
+    # stream) never close on their own, so without a cap the reload hangs forever
+    # and the container goes unhealthy. Force-close lingering conns after 5s.
+    command: sh -c "alembic upgrade head && exec uvicorn achilles.main:app --host 0.0.0.0 --port 8000 --reload --no-server-header --timeout-graceful-shutdown 5"
+    restart: unless-stopped
+
+  embeddings:
+    # Built-in embeddings runtime (Platform provider). Weightless until an
+    # Admin assigns a model — weights land in the cache volume lazily.
+    build: ./embeddings
+    container_name: achilles_embeddings_dev
+    logging: *default-logging
+    init: true
+    stop_grace_period: 30s
+    # Dev runs half-precision: fp32 load peaks ~5.2G (weights transiently
+    # double) and does not fit a laptop Docker VM next to the other services.
+    environment:
+      - EMBEDDINGS_DTYPE=${EMBEDDINGS_DTYPE:-float16}
+    # A single fp16 model idles ~2.9G and peaks ~3.5G while torch loads it
+    # (weights double transiently) — 4G left almost no headroom and the runtime
+    # got reaped under a long-document batch on top of a warm model. The runtime
+    # keeps only one model resident (evicts the previous on a switch, see
+    # app/main.py), so 6G is one model's peak plus comfortable slack, still far
+    # under the dev VM budget alongside postgres/redis/backend.
+    mem_limit: 6g
+    volumes:
+      - embeddings_cache:/cache
+    # No published port on purpose: only backend/worker talk to it in-network.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:80/healthz')",
+        ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+
+  worker:
+    build: ./backend
+    image: achilles-backend:dev
+    container_name: achilles_worker_dev
+    logging: *default-logging
+    init: true
+    stop_grace_period: 30s
+    environment: *backend-env
+    volumes:
+      - ./backend/src:/app/src
+    # Dev hot-reload: watchfiles restarts the worker process (in-container) on any
+    # .py change under src — the same engine uvicorn --reload uses. Prod runs the
+    # bare `saq …` command per lane (docker-compose.prod.yml), no watcher.
+    command: ["watchfiles", "--filter", "python", "python -m achilles.infra.worker.dev", "/app/src"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis-durable:
+        condition: service_healthy
+    restart: unless-stopped
+
+  scheduler:
+    build: ./backend
+    image: achilles-backend:dev
+    container_name: achilles_scheduler_dev
+    logging: *default-logging
+    init: true
+    stop_grace_period: 30s
+    environment: *backend-env
+    volumes:
+      - ./backend/src:/app/src
+    # Dev hot-reload (see worker): watchfiles restarts SAQ cron on any .py change.
+    command: ["watchfiles", "--filter", "python", "saq achilles.infra.scheduler.settings.settings --verbose", "/app/src"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis-durable:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mailpit:
+    # Dev-only SMTP sink (email/_workzone/stack.html): point smtp_settings at
+    # host=mailpit port=1025 security=none; the UI at :8025 shows the letters.
+    image: axllent/mailpit
+    container_name: achilles_mailpit_dev
+    logging: *default-logging
+    stop_grace_period: 5s
+    ports:
+      - "127.0.0.1:8025:8025"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    container_name: achilles_frontend_dev
+    logging: *default-logging
+    init: true
+    stop_grace_period: 10s
+    environment:
+      API_PROXY_TARGET: ${API_PROXY_TARGET:-http://backend:8000}
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/index.html:/app/index.html
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO /dev/null http://localhost:3000 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_durable_data:
+  embeddings_cache:

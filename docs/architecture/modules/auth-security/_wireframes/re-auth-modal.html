@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Re-auth modal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Re-auth modal <span class="iter v2">v2</span></h1>
+        <div class="header__sub">
+          auth / security · wireframes · user-facing
+          <a class="in-load in-load--spinner" href="../../shared-ui/_wireframes/loading-states.html#spinner" title="Waiting for an action — spinner">
+            <span class="in-load__icon"></span>loading
+          </a>
+        </div>
+      </div>
+
+      <p class="desc">
+        Re-confirming with a password before critical actions (sudo mode). Policy —
+        <a href="../_workzone/authentication.html#re-auth" class="xref-page">Re-authentication</a>.
+      </p>
+
+      <!-- Modal on a dimmed backdrop: two states of one dialog — password prompt and input error. -->
+      <div class="section">
+        <div class="section__title">Wireframe</div>
+        <div class="wf-stage wf-stage--backdrop">
+          <div class="wf-gallery">
+            <!-- State: password prompt -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">confirmation</div>
+              <div class="wf-screen wf-screen--modal">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <span class="wf-ico wf-center">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                      </span>
+                      <h2 class="wf-title">
+                        Confirm it's you <span class="wf-annot">1</span>
+                      </h2>
+                      <p class="wf-subtitle">
+                        Ending a session is a protected action. Enter your password
+                        again to continue.
+                      </p>
+                    </div>
+
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-avatar">DS</span>
+                        <span class="wf-text">
+                          Dmitry Sokolov<br />
+                          <span class="wf-hint">dmitry@company.com</span>
+                        </span>
+                      </span>
+                      <span class="wf-annot">2</span>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Password</span>
+                      <div class="wf-input wf-input--focus">
+                        ••••••••••••
+                        <span class="wf-input__action" title="Show password">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                        <span class="wf-annot">3</span>
+                      </div>
+                      <div class="wf-row wf-spread">
+                        <span class="wf-hint">The same password you sign in with</span>
+                        <a class="wf-a" href="../_features/password-recovery/forgot-password.html">
+                           Forgot password? <span class="wf-annot">4</span></a>
+                      </div>
+                    </div>
+
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Confirm</button>
+                    <button class="wf-btn wf-btn--block">Cancel</button>
+
+                    <hr class="wf-divider" />
+
+                    <div class="wf-row wf-center">
+                      <span class="wf-hint"> After confirming, the password isn't asked for again for a few minutes. </span>
+                      <span class="wf-annot">5</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- State: wrong password -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">wrong password</div>
+              <div class="wf-screen wf-screen--modal">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <span class="wf-ico wf-center">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                      </span>
+                      <h2 class="wf-title">Confirm it's you</h2>
+                      <p class="wf-subtitle">
+                        Ending a session is a protected action. Enter your password
+                        again to continue.
+                      </p>
+                    </div>
+
+                    <div class="wf-alert wf-alert--error wf-row">
+
+                      Wrong password. Try again — repeated failed attempts are slowed down.
+                      <span class="wf-annot">6</span></div>
+
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-avatar">DS</span>
+                        <span class="wf-text">
+                          Dmitry Sokolov<br />
+                          <span class="wf-hint">dmitry@company.com</span>
+                        </span>
+                      </span>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Password</span>
+                      <div class="wf-input wf-input--focus">
+                        •••••••
+                        <span class="wf-input__action" title="Show password">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                      </div>
+                      <div class="wf-row wf-spread">
+                        <span class="wf-hint wf-hint--error">Check your keyboard layout and Caps Lock</span>
+                        <a class="wf-a" href="../_features/password-recovery/forgot-password.html">Forgot password?</a>
+                      </div>
+                    </div>
+
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Confirm</button>
+                    <button class="wf-btn wf-btn--block">Cancel</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              The heading names the very action being confirmed — the user sees exactly what they're confirming before entering a password.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Account context — the name and email of the already signed-in user, read-only. This is a confirmation, not a fresh sign-in.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              The same password as at
+              <a href="login.html" class="xref-page">sign-in</a>. With TOTP enabled, the gate accepts a code from the app (<a href="../_features/mfa/index.html" class="xref-page">MFA</a>).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              "Forgot password?" leads to
+              <a href="../_features/password-recovery/forgot-password.html" class="xref-page">password reset</a>
+              — leaving the sudo flow; the critical action isn't performed in that case.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              After success, critical actions don't re-prompt for the password for a few minutes (the sudo window), tied to the current session.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              A wrong password is slowed as attempts mount — the same
+              <a href="../_workzone/protection.html#brute-force" class="xref-page">brute-force defense line</a> shared with sign-in.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

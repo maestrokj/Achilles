@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Bulk Invite Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit (feature-local screen,
+         one level deeper than _wireframes/ — see README → Styling) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../wireframe.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="index.html">← Онбординг пользователей</a>
+        <h1 class="header__title">Bulk Invite · Preview</h1>
+        <div class="header__sub">
+          auth / security · фичи · онбординг
+          <div class="header__markers">
+            <a class="in-shell" href="../../../admin-panel/_wireframes/layout.html" title="Экран рендерится в контентной области каркаса Admin Panel">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--skeleton" href="../../../shared-ui/_wireframes/loading-states.html#skeleton" title="Загрузка экрана — каркас (skeleton)">
+              <span class="in-load__icon"></span>загрузка
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">Шаг 2 массового импорта: проверка разобранного списка перед отправкой приглашений.</p>
+
+      <!-- Макет -->
+      <div class="section">
+        <div class="section__title">Макет</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">шаг 2 · проверка и отправка</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/users/import
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/users/import · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-steps">
+                  <span class="wf-step wf-step--done">1</span>
+                  <span class="wf-step__bar"></span>
+                  <span class="wf-step wf-step--current">2</span>
+                </div>
+
+                <div class="wf-row wf-spread">
+                  <span class="wf-title">Проверка списка</span>
+                  <div class="wf-field wf-field--inline">
+                    <span class="wf-label">Роль по умолчанию</span>
+                    <div class="wf-input wf-input--sm">
+                      Member
+                      <span class="wf-input__action">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                      </span>
+                    </div>
+                    <span class="wf-annot">1</span>
+                  </div>
+                </div>
+
+                <div class="wf-filters">
+                  <span class="wf-filter wf-filter--on">Все <span class="wf-chip">260</span></span>
+                  <span class="wf-filter">новые <span class="wf-chip wf-chip--ok">240</span></span>
+                  <span class="wf-filter">уже есть <span class="wf-chip">12</span></span>
+                  <span class="wf-filter">дубли <span class="wf-chip wf-chip--warn">3</span></span>
+                  <span class="wf-filter">ошибки <span class="wf-chip wf-chip--err">5</span></span>
+                  <span class="wf-annot">2</span>
+                </div>
+
+                <table class="wf-table">
+                  <thead>
+                    <tr><th>Email</th><th>Имя</th><th>Роль</th><th>Статус</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>anna@company.com</td>
+                      <td>Анна Орлова</td>
+                      <td><span class="wf-chip">Member</span></td>
+                      <td><span class="wf-chip wf-chip--ok">новый</span></td>
+                    </tr>
+                    <tr>
+                      <td>dmitry@company.com</td>
+                      <td>Дмитрий Соколов</td>
+                      <td><span class="wf-chip">Admin</span></td>
+                      <td><span class="wf-chip wf-chip--ok">новый</span></td>
+                    </tr>
+                    <tr class="wf-table__row--muted">
+                      <td>igor@company.com</td>
+                      <td>Игорь Лебедев</td>
+                      <td><span class="wf-chip">Member</span></td>
+                      <td><span class="wf-chip">уже есть</span> <span class="wf-annot">3</span></td>
+                    </tr>
+                    <tr class="wf-table__row--muted">
+                      <td>anna@company.com</td>
+                      <td>—</td>
+                      <td><span class="wf-chip">Member</span></td>
+                      <td><span class="wf-chip wf-chip--warn">дубль</span></td>
+                    </tr>
+                    <tr class="wf-table__row--muted">
+                      <td>maria@company</td>
+                      <td>Мария Ким</td>
+                      <td><span class="wf-chip">Member</span></td>
+                      <td><span class="wf-chip wf-chip--err">неверный email</span> <span class="wf-annot">4</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div class="wf-row wf-spread">
+                  <span class="wf-hint">Пропущенные строки не блокируют отправку</span>
+                  <button class="wf-btn wf-btn--primary">Отправить 240 приглашений</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Состояния экрана: фильтр по статусу и результат отправки -->
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">фильтр · ошибки</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-filters">
+                      <span class="wf-filter wf-filter--clear">← Все</span>
+                      <span class="wf-filter wf-filter--on">ошибки <span class="wf-chip wf-chip--err">5</span></span>
+                    </div>
+                    <table class="wf-table">
+                      <thead>
+                        <tr><th>Email</th><th>Имя</th><th>Статус</th></tr>
+                      </thead>
+                      <tbody>
+                        <tr><td>maria@company</td><td>Мария Ким</td><td><span class="wf-chip wf-chip--err">неверный email</span></td></tr>
+                        <tr><td>p.orlov@</td><td>Павел Орлов</td><td><span class="wf-chip wf-chip--err">неверный email</span></td></tr>
+                      </tbody>
+                    </table>
+                    </div>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">состояние · отправлено</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-body">
+                  <div class="wf-stack wf-center">
+                    <div class="wf-check">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    </div>
+                    <h2 class="wf-title">Приглашения уходят</h2>
+                    <p class="wf-subtitle">
+                      Поставлено в очередь 240 · пропущено 15 · ошибок 5
+                      <span class="wf-annot">5</span>
+                    </p>
+                    <div class="wf-row">
+                      <a class="wf-btn">Скачать отчёт</a>
+                      <a class="wf-btn wf-btn--primary" href="../../../admin-panel/_wireframes/users.html#invites">К приглашениям</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Роль для строк без своей в файле; заданная в строке сохраняется. Правила те же, что у точечного
+              <a href="../../_workzone/authentication.html#invite-flow" class="xref-page">приглашения</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Счётчики по статусу — клик фильтрует таблицу до этих строк, «Все» возвращает полный список.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              «Уже есть» — адрес уже в системе или ждёт принятия; повторно не приглашается.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Ошибочные строки и дубли в файле пропускаются и попадают в отчёт — отправку не блокируют.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Итог отправки. Приглашения попадают в таб
+              <a href="../../../admin-panel/_wireframes/users.html#invites" class="xref-module">приглашений</a>
+              со статусом pending.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — HTTP API: Live updates</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="live-updates.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← HTTP API</a>
+        <h1 class="header__title">Live updates</h1>
+        <div class="header__sub">http api · push channel · workzone</div>
+      </div>
+
+      <p class="desc">
+        Status boards show state that <em>background workers</em> mutate — sync runs,
+        curation runs, backups, agent runs. The screen never mutates what it shows, so
+        cache invalidation tied to user actions can't refresh it, and per-screen polling
+        timers don't scale. One platform push channel replaces them all.
+      </p>
+
+      <!-- ════════════════ CONCEPT ════════════════ -->
+      <section class="section" id="concept">
+        <div class="section__title">Push the fact of change, not the data</div>
+        <div class="decision-box">
+          <strong>SSE as an invalidation signal</strong>
+          The stream carries a tiny nudge — “board X changed” — and nothing else. The
+          client reacts by refetching the affected queries over the ordinary REST
+          endpoints it already uses. Data, auth and ACL stay on REST: the stream can
+          never leak a payload, never drifts from the REST schema, and backend load is
+          proportional to real state changes — not to the number of open screens.
+        </div>
+        <div class="lu-flow">
+          <div class="lu-flow__step">
+            <span class="lu-flow__t">Worker</span>
+            <span class="lu-flow__d">run transition or progress commit</span>
+          </div>
+          <div class="lu-flow__step">
+            <span class="lu-flow__t">Publish</span>
+            <span class="lu-flow__d">nudge → cache Redis pub/sub, after commit</span>
+          </div>
+          <div class="lu-flow__step">
+            <span class="lu-flow__t">Stream</span>
+            <span class="lu-flow__d"><code>/events/stream</code> — one SSE per tab</span>
+          </div>
+          <div class="lu-flow__step">
+            <span class="lu-flow__t">Client</span>
+            <span class="lu-flow__d">invalidates the board's query keys</span>
+          </div>
+          <div class="lu-flow__step">
+            <span class="lu-flow__t">REST</span>
+            <span class="lu-flow__d">normal refetch — auth, ACL, schema</span>
+          </div>
+        </div>
+        <p class="note">
+          The channel rides the
+          <a href="../../cache-workers/_workzone/redis-keys.html#instances" class="xref-module">cache Redis</a>
+          pub/sub — a lost nudge costs one delayed refresh, never data. Publishing is
+          best-effort: a broken bus must not fail the worker's own transaction.
+        </p>
+      </section>
+
+      <!-- ════════════════ CONTRACT ════════════════ -->
+      <section class="section" id="contract">
+        <div class="section__title">Event contract — <code>GET /api/v1/events/stream</code></div>
+        <p class="note">
+          One multiplexed stream per tab carries every push concern; the notification
+          bell rides it too, so the platform holds a single persistent connection. The
+          <a href="../../notifications/_workzone/dispatcher.html#fanout" class="xref-module">dispatcher</a>
+          keeps publishing bell nudges exactly as before — only the transport is shared.
+        </p>
+        <table class="lu-tbl">
+          <thead>
+            <tr><th>Event</th><th>Payload</th><th>Meaning</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>hello</code></td>
+              <td><code>{boards: […]}</code></td>
+              <td>opens the stream: the boards this caller is subscribed to. The client
+                invalidates them all — a reconnect catches up on everything missed.</td>
+            </tr>
+            <tr>
+              <td><code>board</code></td>
+              <td><code>{board}</code></td>
+              <td>the named board changed; the client invalidates its mapped query keys.</td>
+            </tr>
+            <tr>
+              <td><code>unread</code></td>
+              <td><code>{count}</code></td>
+              <td>the bell counter, refetched server-side on the bell nudge — unchanged
+                behavior, new transport.</td>
+            </tr>
+            <tr>
+              <td><code>ping</code></td>
+              <td><code>{}</code></td>
+              <td>heartbeat every 25 s of silence — a real event frame, not an SSE
+                comment, so the client watchdog sees liveness.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ════════════════ BOARDS ════════════════ -->
+      <section class="section" id="boards">
+        <div class="section__title">Boards and who receives them</div>
+        <p class="note">
+          Access is decided <strong>at subscription time</strong>: when the stream opens,
+          the caller's role picks the channel set — admin boards for admins, an agents
+          channel per owner for everyone. No per-message filtering, no per-user fan-out
+          for admin boards.
+        </p>
+        <table class="lu-tbl">
+          <thead>
+            <tr><th>Board</th><th>Fed by</th><th>Audience</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>harvester</code></td>
+              <td><a href="../../harvester/index.html#api" class="xref-module">Harvester</a>
+                sync-run journal + page-level progress counters</td>
+              <td>admins</td>
+            </tr>
+            <tr>
+              <td><code>knowledge</code></td>
+              <td><a href="../../knowledge-store/index.html#api" class="xref-module">Knowledge&nbsp;Store</a>
+                curation runs · re-embed progress · backups</td>
+              <td>admins</td>
+            </tr>
+            <tr>
+              <td><code>agents</code></td>
+              <td><a href="../../agent-engine/index.html#api" class="xref-module">Agent&nbsp;Engine</a>
+                run journal, steps included</td>
+              <td>the agent's owner — own channel; admins — the all-agents channel</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ════════════════ PUBLISHING ════════════════ -->
+      <section class="section" id="publishing">
+        <div class="section__title">Publish points and coalescing</div>
+        <div class="notes">
+          <p class="note">
+            <strong>What publishes.</strong> Every committed run transition
+            (queued → running → terminal, cancel) and every committed mid-run progress
+            write — a sync page boundary, a re-embed batch, an agent step. Publish
+            follows the commit, so a nudge never announces state a refetch can't see yet.
+          </p>
+          <p class="note">
+            <strong>What doesn't.</strong> Pure heartbeat touches — liveness bookkeeping
+            is not a state change and must not wake every open screen.
+          </p>
+          <p class="note">
+            <strong>Coalescing is the subscriber's job.</strong> Workers publish freely —
+            a Redis publish is near-free; each stream connection coalesces per board with
+            a minimum emit gap of 1.5 s, trailing-edge (a burst emits one frame now and
+            one when the gap expires). A hot worker loop can never make a client refetch
+            faster than the gap, and the last state always lands.
+          </p>
+        </div>
+      </section>
+
+      <!-- ════════════════ CLIENT ════════════════ -->
+      <section class="section" id="client">
+        <div class="section__title">Client — one connection, one registry</div>
+        <p class="note">
+          The shell mounts a single stream consumer holding a declarative registry
+          <em>board → query-key prefixes</em>. A <code>board</code> frame invalidates
+          that board's prefixes; only queries actually mounted refetch. Screens carry no
+          live-update code at all — no timers, no intervals: a screen is live because its
+          keys are in the registry, not because it polls.
+        </p>
+      </section>
+
+      <section class="section" id="fallback">
+        <div class="section__title">Fallback — silent degradation</div>
+        <ul class="checklist">
+          <li class="check">
+            <span class="check__rule"><span class="check__name">Reconnect</span>
+              <span class="check__desc">exponential backoff 1 s → 30 s, reset on any live
+                frame; the <code>hello</code> on reopen invalidates all boards — the gap
+                is caught up wholesale.</span></span>
+          </li>
+          <li class="check">
+            <span class="check__rule"><span class="check__name">Watchdog</span>
+              <span class="check__desc">no frame (ping included) within twice the
+                heartbeat → the connection is presumed dead, abort and reconnect.</span></span>
+          </li>
+          <li class="check">
+            <span class="check__rule"><span class="check__name">Revisit safety net</span>
+              <span class="check__desc">live-board queries keep <code>staleTime 0</code> —
+                every screen visit refetches even with the stream down, plus the standard
+                refetch on window focus and network reconnect.</span></span>
+          </li>
+          <li class="check">
+            <span class="check__rule"><span class="check__name">No staleness UI</span>
+              <span class="check__desc">degradation is silent — the board simply updates
+                on the next visit or focus instead of instantly.</span></span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ════════════════ EXCEPTION ════════════════ -->
+      <section class="section" id="embedder-exception">
+        <div class="section__title">The one exception — embedder weights</div>
+        <p class="note">
+          The built-in embedder's weight loading is the single live status that lives
+          outside the platform's database — inside the
+          <a href="../../knowledge-store/_workzone/embedding-runtime.html" class="xref-module">embeddings runtime</a>,
+          which the backend only proxies. There is no transition of ours to publish
+          from, so the embedder card keeps a narrow poll <em>only while weights load</em>.
+          Everything else on every board is push. A second status of this kind would
+          justify a server-side watcher; one does not.
+        </p>
+      </section>
+    </div>
+  </body>
+</html>

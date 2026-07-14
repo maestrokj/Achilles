@@ -1,0 +1,101 @@
+<!doctype html>
+<!--
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  WIREFRAME TEMPLATE — copy to _wireframes/<screen>.html per screen.   │
+  │  Underscore-prefixed (_template) so it's not mistaken for a screen.   │
+  │                                                                       │
+  │  Each screen page = (1) description — the screen's purpose and role,  │
+  │  in prose (route + access live in the mockup URL, not here); +        │
+  │  (2) the mockup, composed from the wf-* kit in modules/wireframe.css. │
+  │  Mockup = schematic, not pixel design.                                │
+  │                                                                       │
+  │  The wireframes nav in index.html is the screen catalog — add a       │
+  │  <a class="wz-link"> there for each new screen.                       │
+  │  Conventions: docs/architecture/README.md → "Wireframes".             │
+  └─────────────────────────────────────────────────────────────────────┘
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Screen (template)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <!-- TODO: screen name + .iter status (v1 / v2) -->
+        <h1 class="header__title">Screen name</h1>
+        <div class="header__sub">
+          admin panel · wireframes · group
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Screen renders in the shell's content area">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <!-- load marker: default skeleton — swap the mechanism when designing the screen -->
+            <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Screen loading — skeleton">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Screen description ═══
+           Purpose and role, in prose. Don't duplicate route and access: they
+           live in the mockup URL (wf-chrome__url) and the nav group. -->
+      <p class="desc">Brief screen purpose.</p>
+
+      <!-- ═══ Mockup ═══ -->
+      <div class="section">
+        <div class="section__title">Mockup</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">screen name</div>
+
+          <!-- Compose the screen from wf-* primitives. The skeleton below —
+               uncomment and fill in. Full kit and its registry — modules/wireframe.css.
+               Admin screens are wide (wf-screen by default), inside AdminLayout:
+               sidebar + content area. -->
+          <div class="wf-screen">
+            <!--
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url">achilles.local/admin/route</div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-appbar">
+                <span class="wf-appbar__title">Section</span>
+              </div>
+              <div class="wf-stack">
+                ...
+              </div>
+            </div>
+            -->
+          </div>
+        </div>
+
+        <!-- Annotations (optional): numbered .wf-annot pins on the mockup +
+             a legend here. Uncomment as needed.
+        <ol class="wf-legend">
+          <li class="wf-legend__item">
+            <span class="wf-annot wf-legend__num">1</span>
+            Explanation of a mockup element.
+          </li>
+        </ol>
+        -->
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — AI Foundation: Тест-кейсы</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← AI Foundation</a>
+        <h1 class="header__title">Тест-кейсы</h1>
+        <div class="header__sub">ai-foundation · workzone</div>
+      </div>
+
+      <!-- ── Overview band: решения + стек ── Только слой БД: констрейнты,
+           каскады, upsert, засев. Логику модуля (коннективити-чек, discovery
+           моделей) не покрываем — отдельной итерацией. -->
+      <div class="test-overview">
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Принятые решения</div>
+          <div class="decision-box">
+            <strong>Реестр в core, читатели только читают</strong>
+            Строки заводят Admin (провайдеры / модели) и рантайм (расход);
+            потребители — Harvester, Query Engine, Agent Engine — из реестра лишь
+            читают, строк не создают. Констрейнты бьём через ORM прямо в тест-БД:
+            testcontainers PostgreSQL, реальная схема из миграции, per-test
+            rollback.
+          </div>
+          <div class="decision-box">
+            <strong>RESTRICT — источник истины целостности назначений</strong>
+            Занятую модель нельзя удалить или переназначить, пока на неё
+            ссылаются <code>model_assignments</code> / <code>chat_models</code> /
+            <code>agent_models</code>. Замок держит БД (<code>FK RESTRICT</code>),
+            не только проверка в коде — тест обходит сервисный слой и бьёт прямо в
+            базу.
+          </div>
+          <div class="decision-box">
+            <strong>Границы охвата — только БД</strong>
+            Здесь контрольный слой: констрейнты, каскады, upsert-агрегат, засев и
+            обратимость. Коннективити-чек провайдера и discovery моделей — логика
+            модуля, её покрывает отдельная итерация; тут не трогаем.
+          </div>
+        </div>
+
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Стек и инфраструктура</div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Имеется <span class="iter done">done</span></span>
+            <span>pytest, pytest-asyncio</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Тест-БД</span>
+            <span
+              >testcontainers (PostgreSQL) — реальная схема, per-test rollback;
+              констрейнты проверяются в живой базе, не в моках</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Засев</span>
+            <span
+              >проверяется прогоном самой миграции — <code>Platform</code>-провайдер,
+              встроенные модели, tool-пресеты; не хардкод-фикстурой</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Маркеры</span>
+            <span
+              ><code>@pytest.mark.integration</code> — весь слой требует БД;
+              приоритет (<code>p0</code> / <code>p1</code>) ортогонально типу</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P0 ═══ Сердце целостности — замок RESTRICT. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p0">Integration · P0</span>
+        <span class="test-sec__title">Замок занятой модели — RESTRICT</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span><span class="name">test_model_lifecycle_lock.py</span></div>
+            <div class="test-card__sub">Модель занята — удаление / переназначение отбито БД</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#t-model-assignments">→ Назначения</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">занята назначением</span><span class="test-case__e">модель в <code>model_assignments</code> → DELETE <code>ai_models</code> отбит (<code>FK RESTRICT</code> → IntegrityError)</span></div>
+              <div class="test-case"><span class="test-case__k">занята чатом</span><span class="test-case__e">модель в <code>chat_models</code> → удаление / выключение отбито RESTRICT</span></div>
+              <div class="test-case"><span class="test-case__k">занята агентами</span><span class="test-case__e">модель в <code>agent_models</code> → отбито тем же RESTRICT</span></div>
+              <div class="test-case"><span class="test-case__k">свободная удаляется</span><span class="test-case__e">нигде не ссылаются → DELETE проходит штатно</span></div>
+              <div class="test-case"><span class="test-case__k">замок в БД</span><span class="test-case__e">обход сервисного слоя — прямой DELETE в базу тоже отбит; не только проверка в коде</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P1 ═══ Default, каскады, upsert-расход, каталог, засев. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">Integration · P1</span>
+        <span class="test-sec__title">Дефолт, каскады, upsert-расход, каталог, засев</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" /></svg></span><span class="name">test_default_model.py</span></div>
+            <div class="test-card__sub">Ровно один default — partial UNIQUE WHERE is_default</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#t-chat-models">→ chat_models / agent_models</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">два default → отбой</span><span class="test-case__e">второй <code>is_default=true</code> в <code>chat_models</code> отбит partial unique</span></div>
+              <div class="test-case"><span class="test-case__k">смена default атомарна</span><span class="test-case__e">назначение нового default одной транзакцией снимает старый</span></div>
+              <div class="test-case"><span class="test-case__k">нельзя остаться без default</span><span class="test-case__e">снять единственный <code>is_default</code>, не назначив новый → запрет (инвариант «ровно один» доводит приложение)</span></div>
+              <div class="test-case"><span class="test-case__k">то же для агентов</span><span class="test-case__e">те же три кейса на <code>agent_models</code> — форма списка общая</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5V19A9 3 0 0 0 21 19V5" /><path d="M3 12A9 3 0 0 0 21 12" /></svg></span><span class="name">test_provider_cascade.py</span></div>
+            <div class="test-card__sub">Провайдер / модель: каскад, CHECK, дубль, маска ключа</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#t-ai-providers">→ ai_providers / ai_models</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">каскад провайдера</span><span class="test-case__e">DELETE <code>ai_providers</code> → его <code>ai_models</code> уходят по <code>ON DELETE CASCADE</code></span></div>
+              <div class="test-case"><span class="test-case__k">local без base_url → отбой</span><span class="test-case__e"><code>CHECK (kind='cloud' OR base_url IS NOT NULL)</code> — local без endpoint отвергается БД</span></div>
+              <div class="test-case"><span class="test-case__k">дубль модели → отбой</span><span class="test-case__e"><code>UNIQUE(provider_id, model_id)</code> — тот же <code>model_id</code> у провайдера дважды отбит</span></div>
+              <div class="test-case"><span class="test-case__k">ключ write-only</span><span class="test-case__e">наружу (сериализация / API) уходит маска <code>••••xxxx</code>, не <code>api_key_enc</code> и не открытый ключ</span></div>
+              <div class="test-case"><span class="test-case__k">assignment CHECK — системное подмножество</span><span class="test-case__e"><code>model_assignments.function</code> CHECK-ается словарём {<code>harvester_embedding</code> · <code>query_rag</code>}; INSERT с <code>function='chat'</code> / <code>'agent_engine'</code> → отбит БД (назначение возможно лишь на системные функции)</span></div>
+              <div class="test-case"><span class="test-case__k">usage — полный словарь функций</span><span class="test-case__e"><code>model_usage.function='chat'</code> проходит: расход учитывается по всем четырём функциям, включая <code>chat</code> / <code>agent_engine</code>; два разных словаря на одну колонку <a class="xref-badge xref-badge--page" href="data-model.html#ai-functions">→ Словарь функций</a></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg></span><span class="name">test_model_usage_upsert.py</span></div>
+            <div class="test-card__sub">Расход: upsert по бакету, SET NULL, вывод cost</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#t-model-usage">→ model_usage</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">upsert в тот же бакет</span><span class="test-case__e">повтор по <code>UNIQUE(model_id, function, bucket_date)</code> → одна строка, счётчики (<code>request_count</code> · <code>input_tokens</code> · <code>output_tokens</code>) растут</span></div>
+              <div class="test-case"><span class="test-case__k">разный срез → своя строка</span><span class="test-case__e">иная <code>function</code> / <code>bucket_date</code> → отдельная строка агрегата</span></div>
+              <div class="test-case"><span class="test-case__k">удаление модели → SET NULL</span><span class="test-case__e"><code>model_id</code> обнуляется по <code>ON DELETE SET NULL</code>, строка расхода живёт — <code>cost</code> переживает</span></div>
+              <div class="test-case"><span class="test-case__k">вывод cost</span><span class="test-case__e"><code>cost</code> = input·price_input + output·price_output; хоть одна цена <code>NULL</code> → <code>cost</code> <code>NULL</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z" /></svg></span><span class="name">test_tools_registry.py</span></div>
+            <div class="test-card__sub">Каталог инструментов: UNIQUE, секрет, CHECK'и</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#tools">→ tools</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">имя уникально</span><span class="test-case__e"><code>UNIQUE(name)</code> — дубль ключа инструмента отбит</span></div>
+              <div class="test-case"><span class="test-case__k">секрет write-only</span><span class="test-case__e"><code>credential_enc</code> наружу не уходит — только флаг <code>is_set</code>; <code>config</code> (JSONB) несекретный, отдаётся как есть</span></div>
+              <div class="test-case"><span class="test-case__k">CHECK source</span><span class="test-case__e"><code>source</code> ∈ (<code>preset</code> · <code>custom</code> · <code>mcp</code> · <code>openapi</code>) — иное отвергается БД</span></div>
+              <div class="test-case"><span class="test-case__k">CHECK access</span><span class="test-case__e"><code>access</code> ∈ (<code>read_only</code> · <code>write</code>) — иное отвергается</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14" /><path d="M5 2h14" /><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" /><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" /></svg></span><span class="name">test_seed_migration.py</span></div>
+            <div class="test-card__sub">Засев Platform + встроенных, обратимость downgrade</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#migration">→ Миграция</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">Platform-провайдер</span><span class="test-case__e">миграция засевает <code>is_system</code>-провайдера <code>Platform</code> — неудаляем</span></div>
+              <div class="test-case"><span class="test-case__k">прямой DELETE отбит</span><span class="test-case__e">удаление <code>is_system</code>-провайдера <code>Platform</code> в обход сервисного слоя — прямой DELETE в базу отбит замком БД, не только проверкой в коде</span></div>
+              <div class="test-case"><span class="test-case__k">встроенные + интринсики</span><span class="test-case__e">embedding-модели засеяны с <code>meta</code>: <code>bge-m3</code> <code>{embedding_dim:1024, max_input_tokens:8192}</code>, <code>Qwen3-Embedding-0.6B</code> <code>{1024, 32768}</code></span></div>
+              <div class="test-case"><span class="test-case__k">tool-пресеты выключены</span><span class="test-case__e">два пресета (<code>web_search</code> · <code>fetch_url</code>), оба <code>chat_enabled=false</code> и <code>agents_allowed=false</code></span></div>
+              <div class="test-case"><span class="test-case__k">downgrade зеркалит</span><span class="test-case__e">DROP в обратном порядке; после отката таблицы пусты</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ API P1 ═══ HTTP-обёртка над реестром. Целостность БД (CHECK,
+           каскады, маска ключа) покрыта Integration-тестами выше; здесь — контракт
+           HTTP: CRUD-коды, назначение функции, discovery, доступ. Свод — HTTP API. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">API · P1</span>
+        <span class="test-sec__title">Реестр — HTTP-контракт</span>
+        <span class="test-sec__meta">httpx · ASGI-приложение · <a href="../../api/index.html#conventions" class="xref-badge">→ HTTP API</a> <a class="xref-badge" href="../../api/_workzone/tests.html#conformance">→ Conformance</a></span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M3 9h18" /><path d="M9 21V9" /></svg></span><span class="name">test_api_registry.py</span></div>
+            <div class="test-card__sub">CRUD провайдеров / моделей / инструментов и назначения</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#t-ai-providers">→ ai_providers / ai_models</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">CRUD реестра</span><span class="test-case__e">создание / правка / удаление провайдера, модели, инструмента по HTTP → коды; в ответе маска <code>••••xxxx</code> / флаг <code>is_set</code>, не секрет</span></div>
+              <div class="test-case"><span class="test-case__k">назначение функции</span><span class="test-case__e">смена default чата / агента / эмбеддинга через assignment → <code>200</code>, старый снят атомарно</span></div>
+              <div class="test-case"><span class="test-case__k">занятое под RESTRICT → 409</span><span class="test-case__e">удаление провайдера / модели, назначенной функции → <code>409</code>, не <code>500</code> (замок занятой модели)</span></div>
+              <div class="test-case"><span class="test-case__k">CHECK наружу как 422</span><span class="test-case__e">local без <code>base_url</code>, дубль <code>model_id</code>, кривой <code>source</code>/<code>access</code> инструмента → <code>422</code>, не <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">тип решает назначение → 422</span><span class="test-case__e"><code>model_type</code> гейтит: embedding-модель в <code>chat_models</code>/<code>agent_models</code> или на <code>query_rag</code> → <code>422</code>; chat-модель на embedding-функцию → <code>422</code> — назначение по чужому типу отбито, не <code>500</code> <a class="xref-badge xref-badge--page" href="data-model.html#t-ai-models">→ Тип решает назначение</a></span></div>
+              <div class="test-case"><span class="test-case__k">неизвестный {id} → 404</span><span class="test-case__e"><code>GET</code>/<code>PATCH</code>/<code>DELETE</code> провайдера / модели / инструмента по несуществующему <code>{id}</code> → <code>404</code>, не <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">CRUD — только Owner/Admin</span><span class="test-case__e"><code>Member</code> на <code>POST</code>/<code>PATCH</code>/<code>DELETE</code> реестра (провайдеры · модели · инструменты · назначения) → <code>403</code>; аноним → <code>401</code>; параметризовано по всем write-роутам, не только discovery</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg></span><span class="name">test_api_discovery.py</span></div>
+            <div class="test-card__sub">Опрос каталога моделей у провайдера · доступ</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#t-ai-providers">→ adapter провайдера</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">discovery по adapter</span><span class="test-case__e">запрос каталога → список моделей от облачного (OpenAI-совм. <code>/v1/models</code>) или local (Ollama <code>/api/tags</code>) провайдера; discovery — конфиг, не инференс</span></div>
+              <div class="test-case"><span class="test-case__k">провайдер недоступен</span><span class="test-case__e">кривой ключ / недостижимый endpoint → аккуратная ошибка апстрима наружу, не <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">только Owner/Admin</span><span class="test-case__e">CRUD и discovery — Owner/Admin → <code>200</code>; Member → <code>403</code>; аноним → <code>401</code> (параметризовано по роутам реестра)</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Вне охвата ═══ Singleton prompt_settings проверяется со стороны
+           Admin — здесь не дублируется. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Вне охвата</span>
+        <span class="test-sec__title">Где покрыто рядом</span>
+      </div>
+      <div class="test-struct">
+        <div class="test-stack-row">
+          <span class="test-stack-row__lbl">prompt_settings</span>
+          <span
+            >singleton и его <code>CHECK (id = 1)</code>, override / reset / кап
+            токенов — покрыты со стороны Admin
+            (<a class="xref-module" href="../../admin-panel/_workzone/tests.html"><code>test_prompt_settings.py</code></a>);
+            здесь не дублируется</span
+          >
+        </div>
+      </div>
+
+      <!-- ═══ Структура ═══ Каталог модуля: весь слой требует БД, приоритет
+           задаётся маркерами, не папками. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Structure</span>
+        <span class="test-sec__title">Файловая структура тестов</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          Весь слой — integration с БД. Приоритет (P0–P1) ортогонален каталогам и
+          задаётся маркерами (<code>pytest -m p0</code>), а не отдельными папками.
+        </p>
+        <div class="test-tree">
+          <ul>
+            <li>
+              <span class="test-tree__row"><code>tests/ai_foundation/</code><span class="d">каталог модуля</span></span>
+              <ul>
+                <li><span class="test-tree__row"><code>conftest.py</code><span class="d">testcontainers PG, фабрики провайдер / модель</span></span></li>
+                <li>
+                  <span class="test-tree__row"><code>integration/</code><span class="d">с БД, per-test rollback</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>model-lifecycle-lock</code><span class="d">замок RESTRICT занятой модели</span></span></li>
+                    <li><span class="test-tree__row"><code>default-model · provider-cascade</code><span class="d">ровно один default, каскад / CHECK / маска</span></span></li>
+                    <li><span class="test-tree__row"><code>model-usage-upsert · tools-registry</code><span class="d">upsert-расход, каталог инструментов</span></span></li>
+                    <li><span class="test-tree__row"><code>seed-migration</code><span class="d">засев + обратимость downgrade</span></span></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

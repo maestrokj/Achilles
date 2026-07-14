@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Cache &amp; Workers: планировщик</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="scheduling.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Cache &amp; Workers</a>
+        <h1 class="header__title">Планировщик</h1>
+        <div class="header__sub">cache-workers · workzone</div>
+      </div>
+
+      <p class="desc">
+        Кто запускает задачи по времени. Триггеры по расписанию рождаются здесь;
+        событийные триггеры (модуль зовёт очередь напрямую) — мимо планировщика.
+        Куда задача попадает и кто её разгребает —
+        <a href="queues.html#lanes" class="xref-page">в трёх лейнах</a>; что гасит
+        двойной запуск — <a href="lifecycle.html#uniqueness" class="xref-page">единственность</a>.
+      </p>
+
+      <!-- ═══ Планировщик ═══ Встроенный cron SAQ на выделенной singleton-реплике;
+           публикует в лейн, не исполняет. Контраст singleton vs пул воркеров. -->
+      <div class="section" id="cron">
+        <h2 class="section__title">Планировщик</h2>
+
+        <div class="decision-box">
+          <strong>Встроенный cron SAQ.</strong>
+          SAQ умеет <code>CronJob</code> из коробки — второй планировщик не нужен.
+          Он живёт на <strong>выделенном singleton-сервисе</strong> (одна реплика),
+          отдельном от горизонтально масштабируемого пула воркеров: будь cron на
+          каждом воркере, при <code>N</code> репликах он сработал бы <code>N</code> раз.
+          Планировщик лишь <strong>публикует</strong> задачу в лейн — исполняют воркеры.
+        </div>
+
+        <div class="sch-topo">
+          <div class="sch-topo__col sch-topo__col--singleton">
+            <div class="mod-label sch-topo__cap">Singleton · 1 реплика</div>
+            <div class="sch-node sch-node--cron">
+              <div class="sch-node__t">Планировщик</div>
+              <div class="sch-node__d">cron SAQ · тикает по расписанию</div>
+            </div>
+            <div class="sch-topo__note">публикует, не исполняет</div>
+          </div>
+
+          <div class="sch-topo__arrow" aria-hidden="true">
+            <span class="sch-topo__arrow-l">публикует в лейн</span>
+            <span class="sch-topo__arrow-g">──&gt;</span>
+          </div>
+
+          <div class="sch-topo__col sch-topo__col--pool">
+            <div class="mod-label sch-topo__cap">Пул · N реплик (горизонтально)</div>
+            <div class="sch-pool">
+              <div class="sch-node sch-node--worker">Воркер</div>
+              <div class="sch-node sch-node--worker">Воркер</div>
+              <div class="sch-node sch-node--worker">Воркер</div>
+            </div>
+            <div class="sch-topo__note">разгребают лейны параллельно</div>
+          </div>
+        </div>
+
+        <p class="note">
+          Планировщик питают <strong>два источника триггера</strong> — оба
+          публикуют в лейн, дальше путь у задачи общий:
+        </p>
+        <div class="sch-trig">
+          <div class="sch-trig__item">
+            <div class="sch-trig__h">фиксированный cron</div>
+            <div class="sch-trig__d">
+              <code>CronJob</code> по календарю — один тик публикует одну задачу:
+              sync, reconcile, health-проба, доводка, бэкап.
+            </div>
+          </div>
+          <div class="sch-trig__item">
+            <div class="sch-trig__h">скан <code>next_run_at</code></div>
+            <div class="sch-trig__d">
+              Периодический проход по расписаниям агентов — один скан публикует
+              <em>все</em> прогоны, чей <code>next_run_at</code> уже наступил.
+              Время задаёт владелец, планировщик лишь будит.
+            </div>
+          </div>
+        </div>
+
+        <div class="decision-box">
+          <strong>Идеальная надёжность не требуется — в обе стороны.</strong>
+          Двойной тик (рестарт, гонка) безопасен: его гасит замок единственности
+          в Postgres — первый прогон стартует, второй ловит конфликт и уходит в
+          <code>skipped</code>. Пропущенный тик (singleton лежал в плановое окно)
+          тоже допустим — backfill не делаем, ждём следующего окна: каденсы грубые,
+          один пропуск навёрстывает следующий прогон. Планировщик отвечает за
+          «когда», корректность одного экземпляра — за
+          <a href="lifecycle.html#uniqueness" class="xref-page">единственностью</a>.
+        </div>
+
+        <div class="decision-box">
+          <strong>Окна — в таймзоне организации, тик — в UTC.</strong>
+          Расписания хранятся naive, без зоны (<code>HH:MM</code>, минута недели).
+          В момент запуска планировщик разворачивает окно к UTC через
+          <code>platform_settings.timezone</code> (IANA); расписания агентов —
+          через <code>timezone</code> владельца (<code>NULL</code> → пояс
+          организации). Единый контракт платформы: задаём и показываем в локальном
+          времени, храним и тикаем в UTC — как в Harvester и Agent Engine.
+        </div>
+
+        <div class="note">
+          <strong>Расписания v1 — простые:</strong> «каждые <code>N</code> часов»,
+          «еженедельно в <code>HH:MM</code>». Богатый / динамический cron
+          (per-источник окна, правка из UI) — <span class="iter v2">v2</span>.
+        </div>
+      </div>
+
+      <!-- ═══ Реестр расписаний ═══ Что планировщик публикует и куда: расписание →
+           каденс → лейн → потребитель. Переэмбеддинг — событийный, не cron. -->
+      <div class="section" id="registry">
+        <h2 class="section__title">Реестр расписаний</h2>
+
+        <table class="sch-reg">
+          <thead>
+            <tr>
+              <th>Расписание</th>
+              <th>Каденс</th>
+              <th>Лейн</th>
+              <th>Потребитель</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="sch-reg__name">Incremental sync</td>
+              <td>6&nbsp;ч (webhooks) / 15&nbsp;мин (polling-only)</td>
+              <td><span class="sch-lane">background</span></td>
+              <td><a href="../../harvester/_workzone/sync-modes.html#incremental" class="xref-module">→ Harvester</a></td>
+            </tr>
+            <tr>
+              <td class="sch-reg__name">Reconcile</td>
+              <td>еженедельно</td>
+              <td><span class="sch-lane">background</span></td>
+              <td><a href="../../harvester/_workzone/sync-modes.html#reconciliation" class="xref-module">→ Harvester</a></td>
+            </tr>
+            <tr>
+              <td class="sch-reg__name">Health-проба источников</td>
+              <td>раз в сутки</td>
+              <td><span class="sch-lane">background</span></td>
+              <td><a href="../../harvester/_workzone/sources.html#health-check" class="xref-module">→ Harvester</a></td>
+            </tr>
+            <tr>
+              <td class="sch-reg__name">Curation pass</td>
+              <td>одно платформенное расписание</td>
+              <td><span class="sch-lane">background</span></td>
+              <td><a href="../../knowledge-store/_workzone/lifecycle.html#curation-pass" class="xref-module">→ Knowledge Store</a></td>
+            </tr>
+            <tr>
+              <td class="sch-reg__name">Backup</td>
+              <td>своё расписание</td>
+              <td><span class="sch-lane">background</span></td>
+              <td><a href="../../knowledge-store/_workzone/lifecycle.html#backup" class="xref-module">→ Knowledge Store</a></td>
+            </tr>
+            <tr>
+              <td class="sch-reg__name">Скан агентов</td>
+              <td>планировщик сканирует <code>next_run_at</code></td>
+              <td><span class="sch-lane">agents</span></td>
+              <td><a href="../../agent-engine/_workzone/execution.html#schedule" class="xref-module">→ Agent Engine</a></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="note">
+          <strong>Переэмбеддинг KS ставится событием</strong> — сменой модели, а не
+          только по cron: смена дёргает прогон сразу, расписание здесь его не держит.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

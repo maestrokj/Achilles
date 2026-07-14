@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Authorization and ACL</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="authorization.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Authorization and ACL</h1>
+        <div class="header__sub">auth / security · workzone</div>
+      </div>
+
+      <div class="stk-stage">
+        <!-- ═══════════ MAIN STACK ═══════════ -->
+        <div class="stk-stack">
+          <!-- ── L1 · Roles ── -->
+          <div class="stk-layer stk-layer--roles" id="roles-permissions">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Roles</span>
+              <a
+                class="xref-badge"
+                href="../../admin-panel/_wireframes/layout.html#sidebar"
+                >→ Admin Panel</a
+              >
+              <span class="stk-layer__role"
+                >Who the user is on the platform.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Owner</span>
+                </div>
+                <ul class="stk-dec__d stk-dec__list">
+                  <li>Full access</li>
+                  <li>Manage admins</li>
+                  <li>Critical settings</li>
+                </ul>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Admin</span>
+                </div>
+                <ul class="stk-dec__d stk-dec__list">
+                  <li>Users</li>
+                  <li>Data sources</li>
+                  <li>Company agents</li>
+                  <li>Monitoring</li>
+                </ul>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Member</span>
+                </div>
+                <ul class="stk-dec__d stk-dec__list">
+                  <li>Queries</li>
+                  <li>Personal agents</li>
+                  <li>Data within ACL</li>
+                </ul>
+              </div>
+              <div class="stk-dec stk-dec--wide">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Team Lead — a capability, not a role</span>
+                  <span class="iter v2">v2</span>
+                  <a
+                    class="xref-badge"
+                    href="../../agent-engine/_workzone/horizon-identity.html#scope"
+                    >→ Agent Engine</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  A Member gains rights over their team: managing its
+                  agents and settings.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ── L2 · Permission check ── -->
+          <div class="stk-layer stk-layer--perms">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Permission check</span>
+              <span class="stk-layer__role"
+                >Whether this action is allowed.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">The require() abstraction</span>
+                </div>
+                <div class="stk-dec__d">
+                  An endpoint checks for the required <i>permission</i>, not
+                  a specific role.
+                </div>
+                <details>
+                  <summary>how</summary>
+                  <div>
+                    In v1, <code>require()</code> maps a permission to a role
+                    via the static <code>ROLE_PERMISSIONS</code> table. The
+                    fine-grained permissions from v2 plug in here too.
+                  </div>
+                </details>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">RBAC middleware</span>
+                </div>
+                <div class="stk-dec__d">
+                  A FastAPI dependency — the single check point: it takes the
+                  required <i>permission</i>, not a role. Roles are never
+                  checked directly on endpoints.
+                </div>
+                <details>
+                  <summary>role change</summary>
+                  <div>
+                    The role is taken from the access token's claim — its
+                    freshness and DB reads for critical checks are described in
+                    <a class="xref-page" href="authentication.html#jwt-claims"
+                      >JWT claims</a
+                    >.
+                  </div>
+                </details>
+              </div>
+              <div class="stk-dec stk-dec--wide" id="resource-ownership">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Resource ownership check</span>
+                </div>
+                <div class="stk-dec__d">
+                  RBAC answers “is this action allowed at all”, ownership —
+                  “is it over your own object”. Personal agents and API keys
+                  are accessible only to their owner: the endpoint checks the
+                  resource's <code>owner_id</code> against the current
+                  <code>user_id</code> on top of the permission.
+                  IDOR protection.
+                </div>
+                <div class="stk-dec__d">
+                  <span class="iter v2">v2</span> Team ownership — members'
+                  access to their team's resources — arrives with the
+                  Team Lead capability.
+                </div>
+                <details>
+                  <summary>why on top of RBAC</summary>
+                  <div>
+                    Without an ownership check, one Member could
+                    edit another's agent — a classic IDOR. Owner /
+                    Admin bypass the ownership check only where it is their
+                    normal remit (user management), never to access
+                    source data.
+                  </div>
+                </details>
+              </div>
+              <div class="stk-dec stk-dec--wide">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Boundary of admin rights</span>
+                </div>
+                <div class="stk-dec__d">
+                  Owner and Admin see data
+                  strictly within source ACL, just like a Member. There is no
+                  role-based blanket ACL bypass.
+                </div>
+                <details>
+                  <summary>break-glass and audit</summary>
+                  <div>
+                    Emergency access that bypasses source ACL is
+                    a separate, explicit setting with a mandatory
+                    log entry.
+                    <a
+                      class="xref-module"
+                      href="../../admin-panel/_wireframes/audit-log.html#audit-log"
+                      >Admin Panel</a
+                    >.
+                  </div>
+                </details>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Granular permissions</span
+                  ><span class="iter v2">v2</span>
+                </div>
+                <div class="stk-dec__d">
+                  The <code>permissions</code> and
+                  <code>user_permissions</code> tables provide fine-grained
+                  rights on top of roles.
+                </div>
+                <details>
+                  <summary>details and precedence</summary>
+                  <div>
+                    They let an individual user's rights be extended or
+                    trimmed. Assigned via
+                    <a
+                      class="xref-module"
+                      href="../../admin-panel/_wireframes/user-card.html#user-card"
+                      >Admin Panel</a
+                    >. Precedence is unambiguous: <b>an explicit deny outweighs
+                    any grant</b> — whether from a role or a targeted grant.
+                    Grants (role + extensions) are summed first, then deny is
+                    subtracted.
+                  </div>
+                </details>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ── L3 · Identity ── -->
+          <div class="stk-layer stk-layer--ident" id="identity">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Identity</span>
+              <span class="stk-layer__role"
+                >A user's external identities.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">The identity_mapping table</span>
+                  <a class="xref-badge xref-badge--page" href="data-model.html#federation"
+                    >→ Data model</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Links a platform user to their external
+                  <b>login identities</b> — a universal sign-in bridge:
+                  messenger bots (<code>source='slack'</code> · <code>'telegram'</code> · <code>'mattermost'</code>,
+                  <span class="iter v1">v1</span>),
+                  SSO providers (Okta, Azure AD, <span class="iter v2">v2</span>).
+                  Fields and constraints — in the data model.
+                </div>
+                <details>
+                  <summary>population</summary>
+                  <div>Empty at start — populated on sign-in through any source: in v1 that's the Slack, Telegram and Mattermost bots.</div>
+                </details>
+              </div>
+              <div class="stk-dec stk-dec--wide">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Identities from content sources — in Knowledge Store</span>
+                  <a class="xref-badge" href="../../knowledge-store/_workzone/acl-identity.html#identity"
+                    >→ Knowledge Store</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Who the user is in Jira / Slack / Confluence is a
+                  <code>source_principal</code> → <code>identity</code> in
+                  Knowledge Store, not here. The bridge to the platform account is
+                  <code>identity.user_id → users</code>: this keeps login
+                  federation and content identities from mixing in one table.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--wide">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Consolidating identities by email</span>
+                  <a class="xref-badge" href="../../knowledge-store/_workzone/acl-identity.html#source-principal"
+                    >→ Knowledge Store</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Source principals are consolidated into a single
+                  <code>identity</code> only by exact <b>email</b>;
+                  <a class="xref-module"
+                    href="../../harvester/_workzone/acl-identity.html#identity"
+                    >Harvester</a
+                  >
+                  produces it. Fuzzy “different emails, same person” is v2 (deep
+                  entity resolution).
+                </div>
+                <details>
+                  <summary>unmatched</summary>
+                  <div>
+                    No email, a collision, or ambiguity — the record stays
+                    unmatched and goes to manual linking by an admin via
+                    <a
+                      class="xref-module"
+                      href="../../admin-panel/_wireframes/users.html#identity-mapping"
+                      >Admin Panel</a
+                    >.
+                  </div>
+                </details>
+              </div>
+              <div class="stk-dec stk-dec--wide">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Bridge to the account — auto-link by email</span>
+                  <a class="xref-badge" href="../../knowledge-store/_workzone/acl-identity.html#identity"
+                    >→ Knowledge Store</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  When a person is created on the platform — invite accepted,
+                  setup, or an email change by an admin — their
+                  <code>users</code> row is linked to an already
+                  existing <code>identity</code> in the same
+                  <a class="xref-module"
+                    href="../../knowledge-store/_workzone/acl-identity.html#identity"
+                    >Knowledge Store consolidation</a
+                  >
+                  by exact <b>email</b> (<code>identity.user_id</code>). That
+                  way the newly signed-in user immediately sees their source
+                  accounts. The rule and storage live in Knowledge Store; here
+                  — the trigger moment from the sign-in side.
+                </div>
+                <details>
+                  <summary>address didn't match</summary>
+                  <div>
+                    Sign-in email ≠ source email — the identity stays without a
+                    bridge and is linked manually in
+                    <a
+                      class="xref-module"
+                      href="../../admin-panel/_wireframes/users.html#identity-mapping"
+                      >Admin Panel</a
+                    >; fuzzy auto-consolidation across different addresses is v2.
+                  </div>
+                </details>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ── L4 · Data ACL ── -->
+          <div class="stk-layer stk-layer--acl" id="data-acl">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">4</span>
+              <span class="stk-layer__name">Data ACL</span>
+              <a class="xref-badge" href="../../knowledge-store/_workzone/acl-identity.html#acl"
+                >→ Knowledge Store</a
+              >
+              <a class="xref-badge" href="../../harvester/_workzone/acl-identity.html#acl"
+                >→ Harvester</a
+              >
+              <a class="xref-badge" href="../../query-engine/_workzone/retrieval.html#identity"
+                >→ Query Engine</a
+              >
+              <span class="stk-layer__role"
+                >What is available to the user.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--wide">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"
+                    >Approach — Hybrid, mapping at query time</span>
+                </div>
+                <div class="stk-dec__d">
+                  Source ACL is stored in the source's original terms in
+                  <a class="xref-module"
+                    href="../../knowledge-store/_workzone/acl-identity.html#resolution"
+                    >Knowledge Store</a
+                  >. At query time the platform resolves the user's accounts and
+                  pre-filters the results: the query is driven by Query Engine,
+                  the filter runs in the store in a single SQL statement.
+                </div>
+                <details>
+                  <summary>principle</summary>
+                  <div>Who sees what is decided solely by the source itself.</div>
+                </details>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Container-level ACL</span>
+                </div>
+                <div class="stk-dec__d">
+                  Permissions are set on containers (a Jira project, a
+                  Confluence space, a Slack channel), and nested entities
+                  inherit them.
+                </div>
+                <details>
+                  <summary>override</summary>
+                  <div>
+                    Restrictions on an individual document outweigh container
+                    ones and override them.
+                  </div>
+                </details>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Double filter</span
+                  ><span class="iter v2">v2</span>
+                </div>
+                <div class="stk-dec__d">
+                  Access is checked twice: against source ACL and against
+                  platform restrictions <a
+                    class="xref-module"
+                    href="../../admin-panel/_wireframes/platform-acl.html#platform-acl"
+                    >Admin Panel</a
+                  >. Both must clear it.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Fail-safe</span>
+                </div>
+                <div class="stk-dec__d">
+                  The overarching principle of the whole layer: access is
+                  closed by default. Any ambiguity, check error, or missing
+                  permission data resolves in favor of denial — better to hide
+                  something available than to show something forbidden.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ── L5 · Storage ── -->
+          <div class="stk-layer stk-layer--store">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">5</span>
+              <span class="stk-layer__name">Storage</span>
+              <a class="xref-badge" href="../../knowledge-store/_workzone/acl-identity.html#entity-acl"
+                >→ Knowledge Store</a
+              >
+              <span class="stk-layer__role"
+                >Where the ACL physically lives.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">ACL storage</span>
+                </div>
+                <ul class="stk-dec__d stk-dec__list">
+                  <li>
+                    <b>PostgreSQL</b> — the <code>entity_acl</code> table (source
+                    of truth)
+                  </li>
+                  <li>
+                    <b>Postgres graph</b> — node/edge tables in the same database;
+                    a single ACL JOIN covers traversal too, with no separate rights projection
+                  </li>
+                  <li>
+                    <b>pgvector</b> — the ACL filter <code>SQL WHERE/JOIN</code>
+                    narrows the set <i>before</i> the search → vector search top-N
+                    already runs over the permitted set (pre-filter, not post-hoc culling)
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══════════ SIDE ENTRANCE ═══════════ -->
+        <div class="stk-side">
+          <div class="stk-side__chan">
+            <div class="stk-side__head">
+              <span class="stk-side__name"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" /><path d="m21 2-9.6 9.6" /><circle cx="7.5" cy="15.5" r="5.5" /></svg> Side entrance</span>
+            </div>
+            <span class="stk-side__tag">API key · OAuth</span>
+            <div class="stk-side__flow">
+              <b>key / token</b> → user_id → role / ACL
+            </div>
+
+            <div class="stk-side__decs">
+              <div class="stk-dec">
+                <div class="stk-dec__d">
+                  <a class="xref-page" href="authentication.html#api-keys"
+                    >API keys</a
+                  >
+                  and
+                  <a class="xref-page" href="authentication.html#oauth">OAuth</a>
+                  — described in Authentication.<br />One thing matters here: any
+                  such sign-in resolves to a
+                  <code>user_id</code> and then follows the usual path.
+                </div>
+              </div>
+            </div>
+
+            <div class="stk-side__into">folds into layer 2</div>
+            <div class="stk-side__merge">
+              key / token resolves to user_id → permission check → ACL
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

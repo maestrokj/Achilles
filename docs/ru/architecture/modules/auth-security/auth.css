@@ -1,0 +1,555 @@
+/* Auth & Security — bespoke diagrams of index.html (module overview).
+   Workzone pages carry their own sheets next to themselves
+   (_workzone/<page>.css — proximity principle).
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ═══════════════════════════════════════════
+   Architecture overview
+   ═══════════════════════════════════════════ */
+.arch-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  text-align: center;
+  margin-bottom: 0.4rem;
+}
+
+.arch-entries {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.arch-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  padding: 0.4rem 0.65rem 0.45rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.arch-entry__icon {
+  font-size: 1rem;
+  margin-bottom: 0.1rem;
+}
+
+.arch-entry__sub {
+  font-weight: 400;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  margin-top: 0.1rem;
+}
+
+a.arch-entry {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+a.arch-entry:hover {
+  border-color: var(--accent-muted);
+  transform: translateY(-1px);
+}
+
+/* ═══════════════════════════════════════════
+   Nested perimeters
+   Concentric rings: identity (outer) wraps authorization wraps
+   data-level ACL (core). Entry points sit on top as .arch-entry cards.
+   ═══════════════════════════════════════════ */
+.perimeters {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.4rem;
+}
+
+.perimeters .arch-entries {
+  margin-bottom: 0.9rem;
+  flex-wrap: nowrap;
+}
+
+.perimeters .arch-entry {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0.4rem 0.4rem 0.45rem;
+}
+
+.perim {
+  border-radius: 16px;
+  padding: 1.1rem 1.2rem 1.2rem;
+  border: 2px solid var(--s1);
+  background: rgba(184, 78, 48, 0.04);
+}
+
+.perim--authn {
+  border-color: var(--s1);
+  background: rgba(184, 78, 48, 0.04);
+}
+
+.perim--authz {
+  border-color: var(--s2);
+  background: rgba(136, 96, 64, 0.05);
+  margin-top: 0.9rem;
+}
+
+.perim--acl {
+  border-color: var(--s3);
+  background: rgba(106, 128, 72, 0.06);
+  margin-top: 0.9rem;
+}
+
+.perim__label {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.55rem;
+}
+
+.perim__name {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.perim__q {
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+.perim__desc {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-bottom: 0.55rem;
+}
+
+.perim__roles {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+/* ═══════════════════════════════════════════
+   Token rotation loop
+   Access + Refresh as a rotating pair; the connector spins (↻) on
+   every refresh. A flowline above states the request→refresh cycle.
+   ═══════════════════════════════════════════ */
+.tok-loop {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.1rem 1.2rem;
+}
+
+.tok-flow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.tok-flow__arrow {
+  color: var(--accent-muted);
+  font-size: 0.85rem;
+}
+
+.tok-flow__node {
+  color: var(--text-dim);
+  background: var(--tint-8);
+  border: 1px solid var(--border);
+  padding: 0.12rem 0.45rem;
+  border-radius: 5px;
+}
+
+.tok-pair {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.tok-card {
+  flex: 1;
+  background: var(--paper);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.8rem 0.95rem;
+}
+
+.tok-card--access {
+  border-color: var(--s1);
+}
+
+.tok-card--refresh {
+  border-color: var(--s3);
+}
+
+.tok-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.tok-card__icon {
+  font-size: 0.95rem;
+}
+
+.tok-card__life {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background: var(--tint-8);
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+}
+
+.tok-card__row {
+  display: flex;
+  gap: 0.4rem;
+  font-size: 0.71rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  padding: 0.05rem 0;
+}
+
+.tok-card__row b {
+  flex: 0 0 62px;
+  font-size: 0.58rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  padding-top: 0.1rem;
+}
+
+.tok-rotate {
+  flex: 0 0 64px;
+  position: relative;
+  align-self: center;
+  height: 40px;
+}
+
+.tok-rotate::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 8px;
+  height: 2px;
+  background: repeating-linear-gradient(
+    to right,
+    var(--accent-muted) 0 5px,
+    transparent 5px 10px
+  );
+}
+
+.tok-rotate::after {
+  content: "↻";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--surface);
+  padding: 0 0.15rem;
+}
+
+.tok-rotate__cap {
+  position: absolute;
+  top: -0.7rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.tok-note {
+  margin-top: 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+  padding: 0.7rem 1rem;
+}
+
+.tok-note__title {
+  font-size: 0.74rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.tok-note__text {
+  font-size: 0.73rem;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+
+/* ═══════════════════════════════════════════
+   Protection conveyor + escalation scale
+   A compact strip of the seven defense stations (mirrors
+   _workzone/protection.html; the highlighted node is detailed below),
+   then a threat meter (gradient + ticks) over horizontal steps; each
+   step's left rail + threshold heat up as the response gets harsher.
+   ═══════════════════════════════════════════ */
+.prot-pipe {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.prot-pipe__arrow {
+  color: var(--accent-muted);
+  font-size: 0.85rem;
+}
+
+.prot-pipe__node {
+  color: var(--text-dim);
+  background: var(--tint-8);
+  border: 1px solid var(--border);
+  padding: 0.12rem 0.45rem;
+  border-radius: 5px;
+}
+
+.prot-pipe__node--focus {
+  color: var(--text);
+  border-color: var(--accent-muted);
+}
+
+.esc-cap {
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.esc-meter {
+  margin-bottom: 1rem;
+}
+
+.esc-meter__bar {
+  height: 20px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--s3),
+    var(--accent) 40%,
+    var(--s4) 70%,
+    var(--s1)
+  );
+}
+
+.esc-meter__ticks {
+  display: flex;
+  margin-top: 0.35rem;
+}
+
+.esc-meter__tick {
+  flex: 1;
+  position: relative;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.54rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+  padding-top: 0.5rem;
+}
+
+.esc-meter__tick::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 6px;
+  background: var(--border);
+}
+
+.esc-meter__tick--1 {
+  color: var(--s3);
+}
+
+.esc-meter__tick--2 {
+  color: var(--accent);
+}
+
+.esc-meter__tick--3 {
+  color: var(--s1);
+}
+
+.esc-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.esc-step {
+  display: flex;
+  align-items: stretch;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.esc-step__bar {
+  flex: 0 0 6px;
+}
+
+.esc-step--1 .esc-step__bar {
+  background: var(--s3);
+}
+
+.esc-step--2 .esc-step__bar {
+  background: var(--accent);
+}
+
+.esc-step--3 .esc-step__bar {
+  background: var(--s1);
+}
+
+.esc-step__thr {
+  flex: 0 0 96px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.1rem;
+  padding: 0.5rem 0.6rem;
+  border-right: 1px solid var(--border);
+}
+
+.esc-step__thr-cap {
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.esc-step__thr-n {
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.esc-step--1 .esc-step__thr-n {
+  color: var(--s3);
+}
+
+.esc-step--2 .esc-step__thr-n {
+  color: var(--accent);
+}
+
+.esc-step--3 .esc-step__thr-n {
+  color: var(--s1);
+}
+
+.esc-step__body {
+  flex: 1;
+  padding: 0.55rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.esc-step__title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-bottom: 0.1rem;
+}
+
+.esc-step__desc {
+  font-size: 0.73rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+/* ═══════════════════════════════════════════
+   Responsive
+   ═══════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .tok-pair {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .tok-rotate {
+    flex-basis: 36px;
+    width: 100%;
+    height: 36px;
+  }
+  .tok-rotate::before {
+    top: auto;
+    bottom: 0;
+    left: 50%;
+    right: auto;
+    width: 2px;
+    height: 100%;
+    background: repeating-linear-gradient(
+      to bottom,
+      var(--accent-muted) 0 5px,
+      transparent 5px 10px
+    );
+  }
+  .esc-step__thr {
+    flex-basis: 80px;
+  }
+  .esc-meter__tick {
+    font-size: 0.5rem;
+  }
+  .arch-entry {
+    padding: 0.35rem 0.5rem;
+  }
+  .perimeters .arch-entries {
+    flex-wrap: wrap;
+  }
+  .perimeters .arch-entry {
+    flex: 0 1 auto;
+  }
+}

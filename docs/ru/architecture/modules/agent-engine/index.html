@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Agent Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="agent-engine.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← К схеме</a>
+        <h1 class="header__title">Agent Engine</h1>
+        <div class="header__sub">analytics · autonomous · configurable</div>
+      </div>
+
+      <!-- ═══ Описание ═══ v1: личный агент сотрудника поверх Knowledge Store,
+           под правами владельца. Библиотека аналитиков и командные агенты — v2. -->
+      <p class="desc">
+        Единый модуль <strong>автономных агентов</strong> поверх
+        <a href="../knowledge-store/_workzone/hybrid-search.html#fusion" class="xref-module">Knowledge Store</a>.
+        Сотрудник заводит <strong>личного агента</strong> — промт, расписание,
+        инструменты к знаниям — и тот работает сам, под правами владельца.
+        Библиотека аналитиков и командные агенты — следующий горизонт.
+      </p>
+
+      <!-- ═══ Суть ═══ Инвариантное ядро, не зависит от версии. Якорь
+           #agent-prompt — обзорный постер модуля; цель screen-бейджа
+           Web App · my-agents. id НЕ менять. -->
+      <div class="section" id="agent-prompt">
+        <h2 class="section__title">Архитектура</h2>
+        <div class="ae-tl">
+          <!-- ═══ t0 — триггер + сборка промта ═══ -->
+          <div class="ae-tl__ev">
+            <div class="ae-tl__ev-dot"></div>
+            <div class="ae-tl__ev-card">
+              <div class="ae-tl__ev-t"><span class="ae-tl__ev-ts">t0</span> Триггер</div>
+              <div class="ae-tl__ev-d">владелец инициирует прогон или срабатывает расписание</div>
+              <a class="ae-tl__ev-link" href="_workzone/identity.html#owner-rights">Агент = владелец перед KS · ACL целиком, pre-filter на стороне KS</a>
+            </div>
+          </div>
+
+          <div class="ae-tl__seg"></div>
+
+          <div class="ae-tl__ev">
+            <div class="ae-tl__ev-dot"></div>
+            <div class="ae-tl__ev-card">
+              <div class="ae-tl__ev-t"><span class="ae-tl__ev-ts">t0</span> Сборка промта · 3 слоя</div>
+              <div class="ae-tl__layers">
+                <a class="ae-tl__layer ae-tl__layer--lock" href="_workzone/runtime.html#prompt-composition">
+                  <span class="ae-tl__layer-n">1</span>
+                  <span class="ae-tl__layer-b"><b>платформенный</b><span class="ae-tl__layer-d">safety + организация</span></span>
+                  <svg class="ae-tl__layer-lk" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 8V7a3 3 0 0 1 6 0v3H9z"/></svg>
+                </a>
+                <a class="ae-tl__layer" href="_workzone/runtime.html#prompt-composition">
+                  <span class="ae-tl__layer-n">2</span>
+                  <span class="ae-tl__layer-b"><b>промт агента</b><span class="ae-tl__layer-d">задаёт владелец</span></span>
+                </a>
+                <a class="ae-tl__layer" href="_workzone/runtime.html#prompt-composition">
+                  <span class="ae-tl__layer-n">3</span>
+                  <span class="ae-tl__layer-b"><b>инженерный</b><span class="ae-tl__layer-d">личность + tools</span></span>
+                </a>
+              </div>
+              <div class="ae-tl__ev-note">платформу промтом агента не перебить</div>
+            </div>
+          </div>
+
+          <div class="ae-tl__seg"></div>
+
+          <!-- ═══ t1 — гейт старта ═══ -->
+          <div class="ae-tl__ev ae-tl__ev--gate">
+            <div class="ae-tl__ev-dot ae-tl__ev-dot--gate"></div>
+            <div class="ae-tl__ev-card ae-tl__ev-card--gate">
+              <div class="ae-tl__ev-t"><span class="ae-tl__ev-ts">t1</span> Гейт старта</div>
+              <a class="ae-tl__gate" href="_workzone/governance.html#gate">
+                <span class="ae-tl__cond">enabled</span>
+                <span class="ae-tl__and">∧</span>
+                <span class="ae-tl__cond">¬admin_paused</span>
+                <span class="ae-tl__and">∧</span>
+                <span class="ae-tl__cond">бюджет</span>
+                <span class="ae-tl__and">∧</span>
+                <span class="ae-tl__cond">model_id≠NULL</span>
+                <span class="ae-tl__gate-arr">→ старт</span>
+              </a>
+              <div class="ae-tl__guards">
+                <a class="ae-tl__guard" href="_workzone/governance.html#admin-pause"><b>enabled</b> · замок владельца</a>
+                <a class="ae-tl__guard" href="_workzone/governance.html#admin-pause"><b>admin_paused</b> · липкий замок, админ</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="ae-tl__seg"></div>
+
+          <!-- ═══ t2 — цикл (повторяющийся участок) + боковая рейка бюджета ═══ -->
+          <div class="ae-tl__ev ae-tl__ev--loop">
+            <div class="ae-tl__ev-dot ae-tl__ev-dot--loop"></div>
+            <div class="ae-tl__ev-card ae-tl__ev-card--loop">
+              <div class="ae-tl__brace">
+                <div class="ae-tl__ev-t"><span class="ae-tl__ev-ts">t2</span> Агентный цикл · ход ведёт модель</div>
+                <div class="ae-tl__cyc">
+                  <span class="ae-tl__cyc-step"><a href="_workzone/runtime.html#loop">думает</a></span>
+                  <span class="ae-tl__cyc-arr">▸</span>
+                  <span class="ae-tl__cyc-step">зовёт tool</span>
+                  <span class="ae-tl__cyc-arr">▸</span>
+                  <span class="ae-tl__cyc-step">наблюдает</span>
+                  <span class="ae-tl__cyc-back">↻ снова</span>
+                </div>
+                <div class="ae-tl__brace-label">повторяется участком, не разовое событие</div>
+              </div>
+              <div class="ae-tl__ev-note">
+                крутится <b>до ответа</b> или до <b>потолка итераций</b> ·
+                <code>agent_iteration_cap</code>
+              </div>
+              <div class="ae-tl__tools">
+                <small>ядро · 3 read-only примитива KS:</small>
+                <a class="ae-tl__tool" href="_workzone/runtime.html#tools">search</a>
+                <a class="ae-tl__tool" href="_workzone/runtime.html#tools">graph</a>
+                <a class="ae-tl__tool" href="_workzone/runtime.html#tools">sql</a>
+                <small>+ выбор владельца из каталога</small>
+              </div>
+              <div class="ae-tl__ks">
+                <span class="ae-tl__ks-h">Knowledge Store · read-only</span>
+                <span class="ae-tl__ks-d">инструменты тянут из знаний — в KS агент не пишет</span>
+              </div>
+            </div>
+
+            <!-- боковая рейка — фон, не момент времени -->
+            <div class="ae-tl__rail">
+              <a class="ae-tl__rail-bar" href="_workzone/governance.html#budget">
+                <span class="ae-tl__rail-t">Недельный бюджет</span>
+                <span class="ae-tl__rail-d">токен-потолок на пользователя · расходуется по ходу цикла, живёт дольше одного прогона</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="ae-tl__seg"></div>
+
+          <!-- ═══ t3 — остановка ═══ -->
+          <div class="ae-tl__ev ae-tl__ev--stop">
+            <div class="ae-tl__ev-dot"></div>
+            <div class="ae-tl__ev-card">
+              <div class="ae-tl__ev-t"><span class="ae-tl__ev-ts">t3</span> Остановка</div>
+              <div class="ae-tl__ev-d">ответ получен <b>или</b> достигнут потолок итераций</div>
+            </div>
+          </div>
+
+          <div class="ae-tl__seg"></div>
+
+          <!-- ═══ t4 — журнал ═══ -->
+          <div class="ae-tl__ev ae-tl__ev--end">
+            <div class="ae-tl__ev-dot ae-tl__ev-dot--end"></div>
+            <div class="ae-tl__ev-card">
+              <div class="ae-tl__ev-t"><span class="ae-tl__ev-ts">t4</span> Запись журнала</div>
+              <a class="ae-tl__ev-link" href="_workzone/runtime.html#output">Журнал прогонов</a>
+              <div class="ae-tl__ev-d"><code>agent_runs.output</code> · <code>tokens_used</code></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ae-tl__foot">
+          <span><b>Не workflow-конструктор</b> — модель комбинирует инструменты по намерению, не граф узлов</span>
+          <span
+            >перед промтом агента —
+            <a href="../admin-panel/_wireframes/ai-behavior.html#composition" class="xref-module">платформенный prompt</a>:
+            safety и правила организации,
+            <a href="../ai-foundation/_workzone/prompt-library.html#identity-binding" class="xref-module">единые с чатом</a></span
+          >
+        </div>
+      </div>
+
+      <!-- ═══ API ═══ Полные пути контракта модуля под версией. -->
+      <section class="section" id="api">
+        <div class="section__title">API</div>
+        <ul class="api-list">
+          <li><span class="api-list__m">POST · GET</span><span class="api-list__p">/api/v1/agents</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/agents/options</span></li>
+          <li><span class="api-list__m">GET · PATCH · DELETE</span><span class="api-list__p">/api/v1/agents/{id}</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/agents/{id}/run</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/agents/{id}/runs</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/admin/agents</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/admin/agents/{id}</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/admin/agents/{id}/runs</span></li>
+          <li><span class="api-list__m">PATCH</span><span class="api-list__p">/api/v1/admin/agents/{id}/pause</span></li>
+          <li><span class="api-list__m">GET · PATCH</span><span class="api-list__p">/api/v1/admin/agent-limits</span></li>
+        </ul>
+        <p class="note">
+          Изменения журнала прогонов доезжают до открытых экранов push-сигналами по
+          платформенному
+          <a href="../api/_workzone/live-updates.html#boards" class="xref-module">потоку живых обновлений</a>
+          — владелец видит своих агентов, админы всех; эндпоинты выше остаются
+          единственным источником, который клиент рефетчит.
+        </p>
+      </section>
+
+      <!-- ═══ Workzone ═══ Семь страниц проработки + серая горизонт-группа:
+           четыре v2-тизера (аналитики, оркестрация, рой, масштаб). -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Проектирование</span>
+        </div>
+        <p class="workzone-hint">
+          Детальные решения по проектированию модуля.
+        </p>
+
+        <div class="wz-nav">
+          <a class="wz-link" href="_workzone/runtime.html">
+            <span>Рантайм агента</span>
+          </a>
+          <a class="wz-link" href="_workzone/harness.html">
+            <span>Tool-calling харнесс</span>
+          </a>
+          <a class="wz-link" href="_workzone/identity.html">
+            <span>Личность и права</span>
+          </a>
+          <a class="wz-link" href="_workzone/execution.html">
+            <span>Запуск и полосы</span>
+          </a>
+          <a class="wz-link" href="_workzone/governance.html">
+            <span>Бюджет и контроль</span>
+          </a>
+          <a class="wz-link" href="_workzone/data-model.html">
+            <span>Модель данных</span>
+          </a>
+          <a class="wz-link" href="_workzone/stack.html">
+            <span>Стек и структура</span>
+          </a>
+          <a class="wz-link" href="_workzone/tests.html">
+            <span>Тесты</span>
+          </a>
+
+          <div class="wz-nav__group wz-nav__group--horizon">За горизонтом</div>
+          <a class="wz-link wz-link--horizon" href="_workzone/horizon-analytics.html">
+            <span>Библиотека аналитиков</span>
+            <span class="iter v2">v2</span>
+          </a>
+          <a class="wz-link wz-link--horizon" href="_workzone/horizon-orchestration.html">
+            <span>Внешняя оркестрация</span>
+            <span class="iter v2">v2</span>
+          </a>
+          <a class="wz-link wz-link--horizon" href="_workzone/horizon-swarm.html">
+            <span>Рой агентов</span>
+            <span class="iter v2">v2</span>
+          </a>
+          <a class="wz-link wz-link--horizon" href="_workzone/horizon-identity.html">
+            <span>Командные агенты</span>
+            <span class="iter v2">v2</span>
+          </a>
+          <a class="wz-link wz-link--horizon" href="_workzone/horizon-launch.html">
+            <span>Запуск и расход</span>
+            <span class="iter v2">v2</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ═══ Макеты (surface'ы) ═══ Своего фронтенда у модуля нет — экраны
+           рендерят surface'ы как тонкие клиенты единого API (прецедент: чат-
+           экраны Query Engine живут в Web App). Здесь указатель; раскладка по
+           дорожкам — в workzone (stack). -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Макеты</span>
+          <span class="workzone-title">Surface'ы</span>
+        </div>
+        <p class="workzone-hint">
+          Своего фронтенда у модуля нет: экраны сотрудника и админские рендерят surface'ы как тонкие клиенты единого
+          API — <a href="../web-app/_wireframes/my-agents.html#my-agents" class="xref-badge">→ Web App</a>
+          у сотрудника,
+          <a href="../admin-panel/_wireframes/agents.html" class="xref-badge">→ Admin Panel</a>
+          у администратора.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

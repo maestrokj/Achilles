@@ -1,0 +1,51 @@
+# syntax=docker/dockerfile:1
+
+# ---- Builder ----
+FROM python:3.14-slim AS builder
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv \
+    PATH="/opt/venv/bin:$PATH" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /build
+
+# Dependencies (cached layer — only rebuilds when pyproject.toml or uv.lock change)
+COPY pyproject.toml uv.lock ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --no-install-project --compile-bytecode
+
+# Package itself (fast — deps already installed)
+COPY src ./src
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --no-editable --compile-bytecode
+
+# ---- Runtime (no uv, no build tools, minimal image) ----
+FROM python:3.14-slim
+
+# pg_dump/pg_restore — Knowledge Store backups run on the worker image
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client
+RUN adduser --disabled-password --gecos "" appuser
+
+ENV VIRTUAL_ENV=/opt/venv \
+    PATH="/opt/venv/bin:$PATH" \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+COPY --from=builder /opt/venv /opt/venv
+
+WORKDIR /app
+# Alembic stays in runtime — the migrate service shares this image
+COPY alembic ./alembic
+COPY alembic.ini ./
+
+USER appuser
+EXPOSE 8000
+ENV WEB_CONCURRENCY=2
+# --timeout-graceful-shutdown caps how long each worker waits for long-lived SSE
+# connections (bell, chat stream) to drain on SIGTERM before force-closing, so a
+# deploy/restart does not stall the full stop_grace_period (30s) on open streams.
+CMD ["sh", "-c", "exec uvicorn achilles.main:app --host 0.0.0.0 --port 8000 --workers ${WEB_CONCURRENCY} --no-server-header --proxy-headers --forwarded-allow-ips '*' --timeout-graceful-shutdown 10"]

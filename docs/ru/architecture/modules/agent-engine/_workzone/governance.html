@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Agent Engine: Бюджет и контроль</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="governance.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Agent Engine</a>
+        <h1 class="header__title">Бюджет и контроль</h1>
+        <div class="header__sub">agent-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        Автономный агент тратит токены сам, без человека за плечом — значит, нужны
+        тормоза. Недельный <strong>токен-бюджет</strong> бережёт кошелёк.
+        <strong>Два замка</strong> — выключатель владельца и липкий замок
+        администратора — гасят агента целиком: оба должны быть открыты, чтобы
+        прогон стартовал. А <strong>жизненный цикл владельца</strong> не даёт
+        уволенному оставить фоновых агентов жечь бюджет. Минимум рычагов — но
+        закрывающий главные риски.
+      </p>
+
+      <!-- ════════════════ GATE ════════════════
+           Единая формула запуска: рычаги страницы сходятся в один предикат.
+           owner-active схлопывается в enabled (деактивация пишет тот же флаг),
+           поэтому осей контроля эффективно три. Замки гейтят старт; идущий
+           прогон дорабатывает (мгновенный обрыв — kill switch, v2). -->
+      <div class="section" id="gate">
+        <h2 class="section__title">Когда агент стартует</h2>
+        <p class="desc">
+          Все рычаги этой страницы сходятся в <strong>одно условие</strong>.
+          Прогон стартует — по расписанию или вручную — только если открыты
+          все четыре; закрытое любое гасит запуск целиком.
+        </p>
+
+        <div class="gv-gate">
+          <span class="gv-gate__lead">прогон стартует</span>
+          <span class="gv-gate__iff">⟺</span>
+          <a href="#admin-pause" class="gv-cond">
+            <span class="gv-cond__k">enabled</span>
+            <span class="gv-cond__d">включён владельцем</span>
+          </a>
+          <span class="gv-gate__and">∧</span>
+          <a href="#admin-pause" class="gv-cond">
+            <span class="gv-cond__k">¬ admin_paused</span>
+            <span class="gv-cond__d">не заперт админом</span>
+          </a>
+          <span class="gv-gate__and">∧</span>
+          <a href="#budget" class="gv-cond">
+            <span class="gv-cond__k">бюджет в пределах</span>
+            <span class="gv-cond__d">недельный потолок не выбран</span>
+          </a>
+          <span class="gv-gate__and">∧</span>
+          <a href="#model" class="gv-cond">
+            <span class="gv-cond__k">model_id ≠ NULL</span>
+            <span class="gv-cond__d">модель выбрана и доступна</span>
+          </a>
+        </div>
+
+        <p class="note">
+          Пятое условие — <strong>владелец активен</strong> — не отдельная
+          ось: деактивация пишет тот же <code>enabled=false</code>
+          (<a href="#lifecycle" class="xref-anchor">жизненный цикл</a>), поэтому
+          эффективно осей контроля четыре. Любой замок гейтит <em>старт</em>; уже
+          идущий прогон дорабатывает до конца — мгновенный обрыв
+          (<code>kill switch</code>) — <span class="iter v2">v2</span>.
+        </p>
+        <p class="note">
+          <strong>Пустая база — не пятое условие.</strong> Когда искать нечем
+          (<a href="../../knowledge-store/_workzone/hybrid-search.html#emptiness" class="xref-module"
+            ><code>is_empty</code></a>), агент всё равно стартует: ядро KS
+          производно не подаётся
+          (<a href="runtime.html#tools" class="xref-page">инструменты</a>), и он
+          деградирует на внешних инструментах либо честно выходит. Это состояние
+          данных, не замок управления — наполнится база, ядро вернётся без
+          вмешательства.
+        </p>
+      </div>
+
+      <!-- ════════════════ BUDGET ════════════════
+           Недельный токен-лимит на пользователя — предохранитель. Лимит живёт
+           в platform_settings (Admin), расход суммируется из agent_runs.tokens_used
+           за неделю. Превышение → прогоны не стартуют (skipped, reason budget_exceeded),
+           ждут сброса недели (календарной, воскресенье 00:00 org-tz). Деньги,
+           алерты, kill switch — v2. -->
+      <div class="section" id="budget">
+        <h2 class="section__title">Недельный токен-бюджет</h2>
+        <p class="desc">
+          Админ задаёт <strong>недельный потолок токенов на пользователя</strong>
+          — один на всех его агентов сразу. Расход
+          <strong>суммируется из журнала прогонов</strong> за текущую неделю
+          (<a href="data-model.html#agent-runs" class="xref-page"
+            ><code>agent_runs.tokens_used</code></a>); отдельной таблицы-счётчика
+          нет — потолок производный. Перед стартом прогона движок сверяет сумму с
+          лимитом: уложился — поехали, перебрал — прогон не стартует.
+        </p>
+
+        <div class="gv-meter">
+          <div class="gv-meter__cap">
+            <span>расход недели · все агенты сотрудника</span>
+            <span>потолок</span>
+          </div>
+          <div class="gv-meter__bar">
+            <span class="gv-meter__fill gv-meter__fill--used">израсходовано</span>
+            <span class="gv-meter__fill gv-meter__fill--free">запас</span>
+            <span class="gv-meter__fill gv-meter__fill--over">отказ</span>
+            <span class="gv-meter__mark"><span>лимит</span></span>
+          </div>
+          <p class="gv-meter__note">
+            За потолком прогоны помечаются <code>skipped</code> с причиной
+            «лимит превышён» и ждут сброса недели: расход обнуляется в
+            <strong>воскресенье 00:00 в зоне организации</strong> (неделя
+            календарная, не скользящая), агенты оживают сами. Потолок
+            предохраняет от <em>разорения</em>;
+            <a href="runtime.html#loop" class="xref-page">потолок итераций</a>
+            страхует <em>один</em> прогон от зацикливания — разные тормоза.
+          </p>
+        </div>
+
+        <p class="note">
+          Лимит — платформенная настройка на экране
+          <a href="../../admin-panel/_wireframes/usage.html#limits" class="xref-module">Расходы AI</a>
+          (<code>platform_settings.agent_weekly_token_budget</code>), единая на организацию;
+          там же расход по людям и справочный бюджет чата. Денежные бюджеты, алерты на
+          подходе к потолку и мгновенный kill switch — <span class="iter v2">v2</span>.
+        </p>
+      </div>
+
+      <!-- ════════════════ MODEL ════════════════
+           Агент работает на chat-модели из списка, что admin разрешил агентам
+           (agent_models). Владелец выбирает её; agents.model_id ссылается на
+           строку списка. Снял admin модель из списка → SET NULL обнуляет ссылку
+           → агент встаёт (баннер). Какую модель берёт цикл — runtime. -->
+      <div class="section" id="model">
+        <h2 class="section__title">Модель агента</h2>
+        <p class="desc">
+          Прогон ведёт <a href="runtime.html#loop" class="xref-page">chat-модель</a>,
+          выбранная владельцем из списка, что admin разрешил агентам
+          (<a href="../../ai-foundation/_workzone/data-model.html#ai-models" class="xref-module"
+            >agent_models</a>). Выбор хранит
+          <a href="data-model.html#agents" class="xref-page"><code>model_id</code></a> —
+          ссылка на строку списка. Пока модель в списке, агент стартует; снял её
+          admin — <code>SET NULL</code> обнуляет ссылку, и
+          <code>model_id IS NOT NULL</code> в гейте становится ложным.
+        </p>
+        <p class="note">
+          Снятая модель гасит агента, как замок: <code>next_run_at</code>
+          обнулён, планировщик строку не сканирует,
+          запись <code>skipped</code> не плодится. На экране агента — баннер
+          «модель не поддерживается, выберите другую»; владелец возвращает агента
+          в строй, выбрав модель из актуального списка. Неявного отката на дефолт
+          нет — <code>NULL</code> значит «модели нет», а не «взять дефолт».
+        </p>
+      </div>
+
+      <!-- ════════════════ TWO LOCKS ════════════════
+           Старт прогона требует двух открытых замков: выключатель владельца
+           (enabled — полный стоп, и расписание, и ручной) и липкий замок
+           админа (admin_paused — владелец снять не может). Любой закрытый
+           гасит агента целиком. -->
+      <div class="section" id="admin-pause">
+        <h2 class="section__title">Два замка</h2>
+        <p class="desc">
+          Чтобы прогон стартовал, открытыми должны быть <strong>оба замка</strong>:
+          выключатель владельца и замок администратора. Любой закрытый гасит
+          агента <em>целиком</em> — ни по расписанию, ни вручную. Первый — рычаг
+          хозяина агента, второй — рычаг надзора над чужим.
+        </p>
+        <p class="note">
+          Закрытый замок гасит агента <em>тихо</em>: его
+          <a href="data-model.html#agents" class="xref-page"><code>next_run_at</code></a>
+          обнулён, планировщик строку не сканирует, кнопка ручного запуска
+          недоступна — durable-стоп не плодит записей <code>skipped</code>, он
+          виден статусом агента. Журналируется лишь рантайм-отказ, незаметный из
+          настройки агента: выбранный <a href="#budget" class="xref-anchor">бюджет</a>
+          и наложение на ещё идущий прогон. Чтобы стоп не был немым, владелец
+          узнаёт о паузе и снятой модели личным
+          <a href="../../notifications/_workzone/dispatcher.html#catalog" class="xref-module">уведомлением</a>
+          (targeted на него) — обработчик, ставящий флаг, поднимает событие.
+        </p>
+
+        <div class="gv-lock gv-lock--owner">
+          <span class="gv-lock__icon">⏻</span>
+          <div>
+            <strong>Выключатель владельца</strong> — <code>enabled</code>.
+            Включён — агент рабочий: идёт по расписанию, доступна кнопка
+            «Запустить сейчас». Выключен — нерабочий: расписание молчит, ручной
+            запуск недоступен. Хозяин волен щёлкать им как угодно.
+            <div class="gv-lock__who">
+              <span class="gv-who gv-who--yes">снимает: владелец</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="gv-lock">
+          <span class="gv-lock__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span>
+          <div>
+            <strong>Замок администратора</strong> — <code>admin_paused</code>,
+            <strong>липкий</strong>: админ останавливает конкретного агента, не
+            дожидаясь владельца и не удаляя его. Владелец снять его не может — на
+            экране агента висит баннер «приостановлен администратором». Это
+            <em>единственный</em> рычаг админа над чужим агентом.
+            <div class="gv-lock__who">
+              <span class="gv-who gv-who--yes">снимает: админ</span>
+              <span class="gv-who gv-who--no">владелец</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="note">
+          Полноценный надзор над чужими агентами — массовые действия, правка,
+          тонкие политики — это <span class="iter v2">v2</span>. У админа
+          ровно замок: грубо, но достаточно, чтобы погасить проблему.
+        </p>
+      </div>
+
+      <!-- ════════════════ LIFECYCLE ════════════════
+           Жизненный цикл владельца → судьба агентов. Удаление учётки —
+           каскад (агенты + прогоны). Деактивация (строка цела) — система
+           гасит выключатель владельца (enabled=false); реактивация его не
+           возвращает, владелец включает агентов сам. -->
+      <div class="section" id="lifecycle">
+        <h2 class="section__title">Жизненный цикл владельца</h2>
+        <p class="desc">
+          Агент живёт правами и кошельком владельца — значит, его судьба привязана
+          к учётке. Два события решают всё: <strong>удаление</strong> учётки и
+          <a href="../../auth-security/_workzone/authentication.html#user-lifecycle" class="xref-module"
+            ><strong>деактивация</strong></a> (строка учётки остаётся). Главный риск,
+          который оба закрывают: уволенный сотрудник не должен оставить позади
+          фоновых агентов, что молча жгут бюджет и читают базу под его правами.
+        </p>
+
+        <div class="gv-life">
+          <div class="gv-row gv-row--delete">
+            <div class="gv-row__ev">
+              Удаление учётки
+              <small>строка users исчезает</small>
+            </div>
+            <span class="gv-row__arr">▸</span>
+            <div class="gv-row__fate">
+              <b>каскад</b> — личные агенты и весь их журнал прогонов уходят
+              следом (<code>ON DELETE CASCADE</code>), ничего не осиротевает.
+            </div>
+          </div>
+          <div class="gv-row gv-row--deactivate">
+            <div class="gv-row__ev">
+              Деактивация
+              <small>строка цела</small>
+            </div>
+            <span class="gv-row__arr">▸</span>
+            <div class="gv-row__fate">
+              <b>агенты выключаются</b> — система гасит выключатель владельца
+              (<code>enabled=false</code>) у всех его агентов: учётка и история
+              целы, но прогоны замирают. Планировщик их не будит и журнала
+              <code>skipped</code> не копит — выключенный агент дремлет молча.
+              Реактивация выключатель <em>не</em> возвращает — вернувшийся
+              сотрудник включает агентов сам.
+            </div>
+          </div>
+        </div>
+
+        <p class="note">
+          Каскад описан в <a href="data-model.html#agents" class="xref-page"
+            >модели данных</a>: FK прогонов на агента и агента на владельца несут
+          <code>ON DELETE CASCADE</code>. Деактивация же отдельного состояния не
+          заводит — она пишет тот самый выключатель <code>enabled</code>, и
+          вернуть его вправе только владелец.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

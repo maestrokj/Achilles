@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Agent profile</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Agent profile</h1>
+        <div class="header__sub">
+          admin panel · wireframes · ai
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Screen renders in the shell's content area">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Screen loading — skeleton">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">Someone else's agent through the administrator's eyes: configuration and runs are read-only, the one action is to pause it or lift the pause.</p>
+
+      <!-- ═══ Mockup ═══ -->
+      <div class="section" id="agent-card">
+        <div class="section__title">
+          Profile and pause
+          <a href="../../agent-engine/_workzone/governance.html#admin-pause" class="xref-badge">→ Agent Engine</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">profile</div>
+              <div class="wf-screen">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/admin/agents/12
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/admin/agents/:id · Owner / Admin</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack wf-stack--loose">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-title">Release digest</span>
+                        <span class="wf-chip wf-chip--ok">active</span>
+                      </span>
+                    </div>
+
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">Owner</span>
+                      <span class="wf-row">
+                        <span class="wf-avatar">DS</span>
+                        <a href="user-card.html" class="wf-userlink">Dmitry Sokolov</a>
+                        <span class="wf-annot">1</span>
+                      </span>
+                    </div>
+
+                    <div class="wf-stack">
+                      <span class="wf-label">Configuration <span class="wf-annot">2</span></span>
+                      <div class="wf-field">
+                        <span class="wf-label">Name</span>
+                        <div class="wf-input wf-input--locked">Release digest</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Description</span>
+                        <div class="wf-input wf-input--locked">A summary of task statuses on the Ajax project and open blockers.</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Prompt</span>
+                        <div class="wf-input wf-input--area wf-input--locked">On every run, assemble a short digest of the Ajax project: what's closed, what's in progress, which blockers are open. Answer as a list, with a link to the source for each item.</div>
+                      </div>
+                      <div class="wf-row">
+                        <div class="wf-field">
+                          <span class="wf-label">Model</span>
+                          <div class="wf-input wf-input--sm wf-input--locked">Claude Sonnet</div>
+                        </div>
+                        <div class="wf-field">
+                          <span class="wf-label">Schedule</span>
+                          <div class="wf-input wf-input--sm wf-input--locked">every 6 hours</div>
+                        </div>
+                        <div class="wf-field">
+                          <span class="wf-label">Tools <span class="wf-annot">6</span></span>
+                          <div class="wf-route">
+                            <span class="wf-pill wf-pill--locked"><span class="wf-lock"></span>search</span>
+                            <span class="wf-pill wf-pill--locked"><span class="wf-lock"></span>graph</span>
+                            <span class="wf-pill wf-pill--locked"><span class="wf-lock"></span>sql</span>
+                            <span class="wf-route__sep"></span>
+                            <span class="wf-pill wf-pill--on">web_search</span>
+                          </div>
+                          <span class="wf-hint">KS core · external ones chosen by the owner from the allowed set</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="wf-stack">
+                      <span class="wf-label">Owner's weekly budget</span>
+                      <div class="wf-row">
+                        <div class="wf-stat">
+                          <span class="wf-stat__num">1.2M / 2M</span>
+                          <span class="wf-stat__label">Weekly tokens</span>
+                          <span class="wf-stat__sub">across all of the owner's agents</span>
+                        </div>
+                        <span class="wf-annot">3</span>
+                      </div>
+                    </div>
+
+                    <hr class="wf-divider" />
+
+                    <div class="wf-stack">
+                      <span class="wf-label">Run log <span class="wf-annot">4</span></span>
+                      <div class="wf-fold" id="run-output">
+                        <button class="wf-fold__head">
+                          <span class="wf-runcell">
+                            <span>Today 14:00</span>
+                            <span class="wf-runcell__meta">scheduled · succeeded · 14 s · 38k</span>
+                          </span>
+                          <span class="wf-fold__caret">Output
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                          </span>
+                        </button>
+                        <div class="wf-fold__body">
+                          <span class="wf-text">7 tasks closed this period; 3 in progress. Open blocker: architecture review for AJX-218. Deadline moved to June 30.</span>
+                        </div>
+                      </div>
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-runcell">
+                          <span>Yesterday 14:00</span>
+                          <span class="wf-runcell__meta">scheduled · succeeded · 11 s · 31k</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <hr class="wf-divider" />
+
+                    <div class="wf-stack">
+                      <span class="wf-label">Administrator lock <span class="wf-annot">5</span></span>
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-text">
+                          Administrator pause<br />
+                          <span class="wf-hint">stops the agent; the owner can't lift it</span>
+                        </span>
+                        <span class="wf-guarded"
+                          ><span class="wf-toggle"></span><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a
+                        ></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wf-frame">
+              <div class="wf-stage__caption">state · paused</div>
+              <div class="wf-screen">
+                <div class="wf-body">
+                  <div class="wf-stack wf-stack--loose">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-title">Incident summary</span>
+                        <span class="wf-chip wf-chip--warn">paused · admin</span>
+                      </span>
+                    </div>
+                    <div class="wf-alert">
+                      Agent paused by the administrator. Runs don't start; the owner sees a “paused by administrator” banner.
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">
+                        Administrator pause<br />
+                        <span class="wf-hint">on · lifted with the same toggle</span>
+                      </span>
+                      <span class="wf-guarded"
+                        ><span class="wf-toggle wf-toggle--on"></span><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a
+                      ></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              The agent's identity is the owner's identity: the agent reads the Knowledge Store strictly under the owner's rights, with no write access to the graph. The link leads to the
+              <a href="user-card.html" class="xref-page">owner's card</a>.
+              <a href="../../agent-engine/_workzone/identity.html#ks-boundary" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Configuration — name, description, prompt, schedule, tools — is read-only: the owner edits it in
+              <a href="../../web-app/_wireframes/agent-editor.html#editor" class="xref-module">Web App</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              The owner's weekly spend against the shared cap — for reference. The cap itself is set on the
+              <a href="usage.html#limits" class="xref-page">AI usage</a> screen.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              The run log — the same entries the owner sees: time, outcome, duration, tokens, expandable output.
+              <a href="../../agent-engine/_workzone/data-model.html#agent-runs" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              The administrator's only lever over someone else's agent in v1 is a sticky pause with confirmation; the owner can't lift it. Bulk actions and a kill switch — <span class="iter v2">v2</span>.
+              <a href="../../agent-engine/_workzone/governance.html#admin-pause" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              Tools — the KS core (search, graph, SQL) plus external ones the owner picks from what the administrator allows; read-only, all under the owner's identity. External-tool access is set in the
+              <a href="tools.html" class="xref-page">AI tools</a> section.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

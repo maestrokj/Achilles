@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: AI usage</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">AI usage</h1>
+        <div class="header__sub">
+          admin panel · wireframes · ai
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="The screen renders inside the shell's content area">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--keep" href="../../shared-ui/_wireframes/loading-states.html#keep-previous" title="Page or filter change — previous rows stay in place (keep-previous)">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">The single home for AI spend. At the top, the <strong>company total</strong>: total token spend for the week, month and year (all functions). Below, three breakdowns: <strong>limits</strong> — weekly per-employee token caps and a monthly alert on the organization's budget; <strong>by person</strong> — agents and chat in tokens (who spends how much); <strong>by model</strong> — the bill in dollars, including indexing and search (where it goes). The panorama and the by-model breakdown come from the AI resource registry (<a href="../../ai-foundation/_workzone/data-model.html#ai-spend" class="xref-module"><code>model_usage</code></a>); per-person spend comes from run and message journals. How accounting works — <a href="../../ai-foundation/_workzone/cost-accounting.html" class="xref-module">cost-accounting logic</a>. Per-user cost in dollars, trends and export — <span class="iter v2">v2</span>.</p>
+
+      <!-- ═══ Company total ═══
+           A panorama of the platform's entire token spend for the week/month/year.
+           Source — model_usage (daily aggregate, all functions: indexing,
+           search, chat, agents), summed over the calendar period.
+           Derived, with no dedicated counter table (like the derived budget).
+           Broader than the "by person" breakdown below — there it's only agents+chat
+           attributable to people; here it's the company's full spend. -->
+      <div class="section" id="total">
+        <div class="section__title">
+          Company total
+          <a href="../../ai-foundation/_workzone/cost-accounting.html" class="xref-badge">→ AI Foundation</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">panorama · all functions · model_usage</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/usage
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/usage · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <span class="wf-label">Token spend · entire organization</span>
+                <div class="wf-row">
+                  <div class="wf-stat">
+                    <span class="wf-stat__num">22.4M</span>
+                    <span class="wf-stat__label">This week</span>
+                    <span class="wf-stat__sub">$42 · all functions</span>
+                  </div>
+                  <div class="wf-stat">
+                    <span class="wf-stat__num">96.2M</span>
+                    <span class="wf-stat__label">This month</span>
+                    <span class="wf-stat__sub">$168 · $200 of it under alert</span>
+                  </div>
+                  <div class="wf-stat">
+                    <span class="wf-stat__num">1.04B</span>
+                    <span class="wf-stat__label">This year</span>
+                    <span class="wf-stat__sub">$1,860 · all functions</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item wf-legend__item--note">
+              The platform's full spend for the calendar window — all functions: indexing, RAG search, chat, agents. A derived <code>SUM</code> over the period from <a href="../../ai-foundation/_workzone/data-model.html#ai-spend" class="xref-module"><code>model_usage</code></a>, with no dedicated counter table. Broader than the <a href="#by-user" class="xref-anchor">by person</a> breakdown — there it's only agents and chat attributable to people.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              The monthly tile is checked against the <a href="#limits" class="xref-anchor">budget alert</a> threshold. Trends, charts and export — <span class="iter v2">v2</span>.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Spend limits ═══
+           The home for all budget controls. Two tiers:
+           · per employee — weekly token caps: agents (blocking, moved here
+             from the AI agents screen) and chat (informational, no blocking in v1);
+           · per organization — a monthly budget alert in dollars (moved here
+             from the AI models view; a signal, not a block).
+           id=limits — referenced by Agent Engine, Web App, the agent card, AI Foundation. -->
+      <div class="section" id="limits">
+        <div class="section__title">
+          Spend limits
+          <a href="../../agent-engine/_workzone/governance.html#budget" class="xref-badge">→ Agent Engine</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">platform_settings · spend limits</div>
+          <div class="wf-screen">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/usage
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/usage · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <span class="wf-label">Per employee · weekly tokens</span>
+                <div class="wf-card">
+                  <div class="wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text"><b>Token budget · agents</b> <span class="wf-annot">1</span></span>
+                      <div class="wf-input wf-input--sm">2,000,000</div>
+                    </div>
+                    <span class="wf-hint">Per employee — shared across all their agents. Spend is summed from the run journal; once past the cap, runs wait for the reset on <strong>Sunday 00:00</strong>. Empty means no limit.</span>
+                  </div>
+                </div>
+                <div class="wf-card">
+                  <div class="wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text"><b>Token budget · chat</b> <span class="wf-annot">2</span></span>
+                      <div class="wf-input wf-input--sm">500,000</div>
+                    </div>
+                    <span class="wf-hint">Per employee — the week's spend on personal conversations. In v1 it is <strong>informational</strong>: it shows "used against the limit" but does not block requests — a hard rejection past the cap arrives in <span class="iter v2">v2</span>. Empty means no limit.</span>
+                  </div>
+                </div>
+                <span class="wf-label">Per organization · monthly bill</span>
+                <div class="wf-card">
+                  <div class="wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text"><b>Budget alert</b> <span class="wf-annot">3</span></span>
+                      <span class="wf-row">
+                        <div class="wf-input wf-input--sm">$200 / mo</div>
+                        <span class="wf-toggle wf-toggle--on"></span>
+                      </span>
+                    </div>
+                    <span class="wf-hint">The monthly AI bill for the whole organization. Once the threshold is reached, a notification is raised; requests are <strong>not blocked</strong>. The toggle can't be turned on until an amount is set. The spend itself, by model, is in the <a href="#by-model" class="xref-anchor">by model</a> breakdown below.</span>
+                  </div>
+                </div>
+                <div class="wf-row wf-spread">
+                  <span class="wf-hint">Token caps apply to every employee; the alert applies to the whole organization</span>
+                  <button class="wf-btn wf-btn--primary">Save</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              The weekly <a href="../../agent-engine/_workzone/governance.html#budget" class="xref-module">agent budget</a> is blocking: past the cap, runs are marked <code>skipped</code> and wait for the week to reset. It used to live on the <a href="agents.html#agents" class="xref-page">AI agents</a> screen and moved here with spend.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              The weekly chat budget is informational: tracking and an indicator, no blocking. Both amounts are weekly, the window is calendar-based, and the reset is Sunday 00:00 in the organization's zone — shared with the agent budget.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              The budget alert is the only monetary control in v1: the amount and toggle live in a singleton (<a href="../_workzone/data-model.html#ai-budget" class="xref-page"><code>ai_monthly_budget</code> · <code>ai_budget_alert_enabled</code></a>), and a CHECK prevents enabling it without an amount. On reaching the threshold, a Budget-type notification is raised — the channel is owned by the <a href="notifications.html" class="xref-page">notifications module</a>. The monthly bill by model is in the <a href="#by-model" class="xref-anchor">by model</a> breakdown below.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              Per-user cost in dollars, caps as a limit is approached, and chat blocking — <span class="iter v2">v2</span>.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Spend by person ═══ -->
+      <div class="section" id="by-user">
+        <div class="section__title">Spend by person</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">list · all employees · this week</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/usage
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/usage · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <span class="wf-title">Spend by person</span>
+                <div class="wf-input wf-input--sm">
+                  <span class="wf-input__icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                  </span>
+                  Search by name or email
+                </div>
+                <div class="wf-filters">
+                  <span class="wf-filter wf-filter--on">Period · this week <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Role <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-annot">4</span>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr>
+                      <th>Employee</th><th>Agents</th><th>Chat</th><th>Total <span class="wf-filter__caret">▾</span> <span class="wf-annot">5</span></th><th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="wf-rowlink">
+                      <td><span class="wf-idcell"><a href="usage-detail.html" class="wf-userlink">Dmitry Sokolov</a><span class="wf-idcell__email">dmitry@company.com</span></span> <span class="wf-annot">7</span></td>
+                      <td>1.20M</td>
+                      <td>340k</td>
+                      <td><b>1.54M</b></td>
+                      <td>›</td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><span class="wf-idcell"><a href="usage-detail.html" class="wf-userlink">Igor Lebedev</a><span class="wf-idcell__email">igor@company.com</span></span></td>
+                      <td>2.00M <span class="wf-chip wf-chip--warn">weekly cap</span> <span class="wf-annot">6</span></td>
+                      <td>120k</td>
+                      <td><b>2.12M</b></td>
+                      <td>›</td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><span class="wf-idcell"><a href="usage-detail.html" class="wf-userlink">Anna Orlova</a><span class="wf-idcell__email">anna@company.com</span></span></td>
+                      <td>640k</td>
+                      <td>610k <span class="wf-chip">over reference</span></td>
+                      <td><b>1.25M</b></td>
+                      <td>›</td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><span class="wf-idcell"><a href="usage-detail.html" class="wf-userlink">Pavel Zaitsev</a><span class="wf-idcell__email">pavel@company.com</span></span></td>
+                      <td>410k</td>
+                      <td>300k</td>
+                      <td><b>710k</b></td>
+                      <td>›</td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><span class="wf-idcell"><a href="usage-detail.html" class="wf-userlink">Maria Kim</a><span class="wf-idcell__email">maria@company.com</span></span></td>
+                      <td>0</td>
+                      <td>180k</td>
+                      <td><b>180k</b></td>
+                      <td>›</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="wf-pager">
+                  <span class="wf-pager__count">1–50 of 128</span>
+                  <div class="wf-pager__pages">
+                    <span class="wf-page wf-page--nav wf-page--off">‹</span>
+                    <span class="wf-page wf-page--active">1</span>
+                    <span class="wf-page">2</span>
+                    <span class="wf-page wf-page--nav">›</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Filters — the Period · Role facets. Period defaults to "this week" (the window checked against the caps); past weeks and the month are available. Search and filter behavior is
+              <a href="../_workzone/list-controls.html#facets" class="xref-page">shared across all lists</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              The <b>Agents</b> and <b>Chat</b> columns are the two line items attributable to a person; <b>Total</b> is their sum, and it is the default sort (descending). Indexing and RAG search are excluded here — that is the platform's system spend, visible in the <a href="#by-model" class="xref-anchor">by model</a> breakdown below.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              A pill on agent spend means the gate is exceeded: new runs wait for the week to reset. On chat over the informational cap, a gray marker with no blocking.
+              <a href="../../agent-engine/_workzone/governance.html#budget" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              Clicking a row opens the
+              <a href="usage-detail.html" class="xref-page">employee detail</a>: agents by agent, chat by model.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Spend by model ═══
+           A view of $-spend from model_usage (the AI Foundation registry), moved
+           here from the AI models screen. Org level: by model · function, in dollars,
+           including indexing and search — system spend, not tied to a person. -->
+      <div class="section" id="by-model">
+        <div class="section__title">
+          Spend by model
+          <a href="../../ai-foundation/_workzone/data-model.html#ai-spend" class="xref-badge">→ AI Foundation</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">by model · model_usage · in dollars</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/usage
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/usage · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-row wf-spread">
+                  <span class="wf-label">Spend · entire organization</span>
+                  <div class="wf-input wf-input--sm">30 days ▾</div>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr><th>Model</th><th>Function</th><th>Requests</th><th>Input <span class="wf-annot">8</span></th><th>Output</th><th>Cost</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><span class="wf-text">Embedding 3 Large</span> <span class="wf-chip">OpenAI</span></td>
+                      <td>Embedding</td>
+                      <td>128,400</td>
+                      <td>41.2M</td>
+                      <td>—</td>
+                      <td>$54.30</td>
+                    </tr>
+                    <tr>
+                      <td><span class="wf-text">GPT-4o</span> <span class="wf-chip">OpenAI</span></td>
+                      <td>User chat</td>
+                      <td>84,200</td>
+                      <td>12.1M</td>
+                      <td>3.4M</td>
+                      <td>$48.20</td>
+                    </tr>
+                    <tr>
+                      <td><span class="wf-text">Claude Sonnet</span> <span class="wf-chip">Anthropic</span></td>
+                      <td>User chat</td>
+                      <td>41,050</td>
+                      <td>8.9M</td>
+                      <td>2.1M</td>
+                      <td>$31.40</td>
+                    </tr>
+                    <tr>
+                      <td><span class="wf-text">Claude Haiku</span> <span class="wf-chip">Anthropic</span></td>
+                      <td>User chat</td>
+                      <td>30,200</td>
+                      <td>6.1M</td>
+                      <td>1.5M</td>
+                      <td>$9.80</td>
+                    </tr>
+                    <tr>
+                      <td><span class="wf-text">GPT-4o mini</span> <span class="wf-chip">OpenAI</span></td>
+                      <td>User chat</td>
+                      <td>22,010</td>
+                      <td>3.2M</td>
+                      <td>0.8M</td>
+                      <td>$4.10</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="wf-row">
+                  <button class="wf-btn wf-btn--ghost">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                    Show all · 9 <span class="wf-annot">9</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              Input and output are counted separately: for cloud chat an output token costs several times more (<a href="../../ai-foundation/_workzone/data-model.html#ai-pricing" class="xref-module">data model</a>). Embedding has no output. This is <b>org level</b>: a sum across the whole organization, not tied to a person — unlike the by-person breakdown above.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">9</span>
+              By default the top 5 by cost are shown; "Show all" expands the rest. Models without a price settle at the tail. Source — <a href="../../ai-foundation/_workzone/data-model.html#ai-spend" class="xref-module"><code>model_usage</code></a> (aggregate by model · function · day).
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              The monthly threshold for this bill and the alert are in <a href="#limits" class="xref-anchor">limits</a> above.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

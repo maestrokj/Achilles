@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Dashboard</h1>
+        <div class="header__sub">
+          admin panel · wireframes · overview
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="The screen renders inside the shell's content area">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Screen load — skeleton">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">
+        The home screen after sign-in: the platform's control panel. What needs
+        attention, a system summary and recent events — all pulled together from
+        the admin sections, each tile linking into its own section for the
+        details.
+      </p>
+
+      <!-- ═══ Wireframe ═══
+           The dashboard computes nothing on its own — it aggregates screens
+           that are already designed. Home of each fact: issues → notification
+           feed + users; metrics → harvester / knowledge-store / agents / usage;
+           journal → audit-log. The tiles only link to those homes; they never
+           duplicate the values. Numbers are illustrative placeholders (Acme
+           Corp), not a contract. -->
+      <div class="section">
+        <div class="section__title">Wireframe</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">dashboard · /admin</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin · Owner / Admin</span>
+                  <span class="wf-urltip__body">Admin index route · home screen after sign-in</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+
+                <!-- ── Header ── -->
+                <div class="wf-row wf-spread">
+                  <span class="wf-row">
+                    <span class="wf-title">Overview</span>
+                    <span class="wf-chip">Acme Corp</span>
+                  </span>
+                  <span class="wf-hint">Europe/Moscow · updated just now</span>
+                </div>
+
+                <!-- ── Platform summary ── -->
+                <div class="wf-stack">
+                  <span class="wf-label">Platform <span class="wf-annot">1</span></span>
+                  <div class="wf-row">
+                    <div class="wf-stat">
+                      <span class="wf-stat__num">118</span>
+                      <span class="wf-stat__label">Users</span>
+                      <span class="wf-stat__sub">+3 invites · 6 deactivated</span>
+                    </div>
+                    <div class="wf-stat">
+                      <span class="wf-stat__num">4</span>
+                      <span class="wf-stat__label">Sources</span>
+                      <span class="wf-stat__sub">2 active · 1 paused · 1 error</span>
+                    </div>
+                    <div class="wf-stat">
+                      <span class="wf-stat__num">1.24M</span>
+                      <span class="wf-stat__label">Entities in graph</span>
+                      <span class="wf-stat__sub">4.81M chunks · 918k edges</span>
+                    </div>
+                    <div class="wf-stat">
+                      <span class="wf-stat__num">86</span>
+                      <span class="wf-stat__label">Agents</span>
+                      <span class="wf-stat__sub">79 active · 4 paused · 3 <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg></span>
+                    </div>
+                    <div class="wf-stat">
+                      <span class="wf-stat__num">$168 <span class="wf-stat__cap">/ $200</span></span>
+                      <span class="wf-stat__label">AI spend · June</span>
+                      <div class="wf-gauge wf-gauge--soft"><div class="wf-gauge__fill" style="width: 84%"></div></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ── Knowledge graph: curation and backup ── -->
+                <div class="wf-stack">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-label">Knowledge graph <span class="wf-annot">2</span></span>
+                    <a class="wf-a" href="knowledge-store.html#storage-metrics">Knowledge Store →</a>
+                  </div>
+                  <div class="wf-grid2">
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">
+                        Graph curation<br />
+                        <span class="wf-hint">re-embedding · Embedding 3 Large → Small</span>
+                      </span>
+                      <span class="wf-row">
+                        <span class="wf-spinner"></span>
+                        <a class="wf-chip wf-chip--warn" href="knowledge-store.html#knowledge-store">running · 62%</a>
+                      </span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">
+                        Latest backup<br />
+                        <span class="wf-hint">snapshot · daily 02:00</span>
+                      </span>
+                      <span class="wf-row">
+                        <a class="wf-chip wf-chip--ok" href="knowledge-store.html#backups">ready</a>
+                        <span class="wf-hint">today 02:00 · 12.4 GB</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <!-- ── Recent activity · Quick actions ── -->
+                <div class="wf-grid2">
+                  <!-- Recent Activity -->
+                  <div class="wf-stack">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-label">Recent activity <span class="wf-annot">3</span></span>
+                      <a class="wf-a" href="audit-log.html#audit-log">Audit Log →</a>
+                    </div>
+                    <table class="wf-table">
+                      <tbody>
+                        <tr>
+                          <td>14:02</td>
+                          <td><b>anna@…</b> changed <b>dmitry@…</b>'s role → Admin</td>
+                          <td><span class="wf-chip wf-chip--ok">ok</span></td>
+                        </tr>
+                        <tr>
+                          <td>13:47</td>
+                          <td>Failed sign-in <b>igor@…</b></td>
+                          <td><span class="wf-chip wf-chip--err">fail</span></td>
+                        </tr>
+                        <tr>
+                          <td>13:30</td>
+                          <td><b>dmitry@…</b> revoked API key <code>ach_p03d…</code></td>
+                          <td><span class="wf-chip wf-chip--ok">ok</span></td>
+                        </tr>
+                        <tr>
+                          <td>12:58</td>
+                          <td><b>anna@…</b> invited <b>colleague@…</b></td>
+                          <td><span class="wf-chip wf-chip--ok">ok</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Quick Actions -->
+                  <div class="wf-stack">
+                    <span class="wf-label">Quick actions</span>
+                    <a class="wf-btn wf-btn--primary" href="users.html#invites">＋ Invite user</a>
+                    <a class="wf-btn" href="data-sources.html#source-wizard">＋ Add source</a>
+                    <a class="wf-btn" href="harvester.html#sync-overview">⟳ Refresh data from sources</a>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <!-- ── System Health (v2) ── -->
+                <div class="wf-stack" id="system-health">
+                  <span class="wf-label">System Health <span class="iter v2">v2</span> <span class="wf-annot">4</span></span>
+                  <div class="wf-row">
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">PostgreSQL</span>
+                      <span class="wf-chip wf-chip--ok">healthy</span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">Redis</span>
+                      <span class="wf-chip wf-chip--ok">healthy</span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <a class="wf-text" href="../../cache-workers/_workzone/queues.html#registry">Workers · SAQ</a>
+                      <span class="wf-chip wf-chip--ok">healthy</span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <a class="wf-text" href="../../knowledge-store/_workzone/embedding-runtime.html#scaling">Embeddings</a>
+                      <span class="wf-chip wf-chip--warn">queued</span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">n8n</span>
+                      <span class="wf-chip wf-chip--ok">healthy</span>
+                    </div>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <!-- ── Needs attention ── -->
+                <div class="wf-stack">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-row">
+                      <span class="wf-label">Needs attention</span>
+                      <span class="wf-chip wf-chip--err">3 critical</span>
+                      <span class="wf-annot">5</span>
+                    </span>
+                    <a class="wf-a" href="notification-feed.html#inbox">Full feed →</a>
+                  </div>
+
+                  <!-- Sync · critical -->
+                  <div class="wf-noti wf-noti--unread">
+                    <span class="wf-noti__dot"></span>
+                    <div class="wf-noti__main">
+                      <div class="wf-row wf-spread">
+                        <span class="wf-row">
+                          <span class="wf-label">Sync</span>
+                          <span class="wf-chip wf-chip--err">critical</span>
+                          <span class="wf-chip">series ×5</span>
+                        </span>
+                        <span class="wf-noti__time">5 min</span>
+                      </div>
+                      <span class="wf-noti__title">Jira source: 5 failed runs in a row</span>
+                      <a class="wf-a" href="data-sources.html#connection-status">harvester · source/42</a>
+                    </div>
+                  </div>
+
+                  <!-- Security · critical -->
+                  <div class="wf-noti wf-noti--unread">
+                    <span class="wf-noti__dot"></span>
+                    <div class="wf-noti__main">
+                      <div class="wf-row wf-spread">
+                        <span class="wf-row">
+                          <span class="wf-label">Security</span>
+                          <span class="wf-chip wf-chip--err">critical</span>
+                        </span>
+                        <span class="wf-noti__time">20 min</span>
+                      </div>
+                      <span class="wf-noti__title">Password brute-force: anna@…, 12 failed sign-ins in 15 min</span>
+                      <a class="wf-a" href="user-card.html">auth · user/anna</a>
+                    </div>
+                  </div>
+
+                  <!-- System · critical -->
+                  <div class="wf-noti wf-noti--unread">
+                    <span class="wf-noti__dot"></span>
+                    <div class="wf-noti__main">
+                      <div class="wf-row wf-spread">
+                        <span class="wf-row">
+                          <span class="wf-label">System</span>
+                          <span class="wf-chip wf-chip--err">critical</span>
+                        </span>
+                        <span class="wf-noti__time">1 h</span>
+                      </div>
+                      <span class="wf-noti__title">vLLM provider unavailable — some models not responding</span>
+                      <a class="wf-a" href="ai-models.html#providers">ai · provider/vllm</a>
+                    </div>
+                  </div>
+
+                  <!-- Budget · warning -->
+                  <div class="wf-noti">
+                    <span class="wf-noti__dot"></span>
+                    <div class="wf-noti__main">
+                      <div class="wf-row wf-spread">
+                        <span class="wf-row">
+                          <span class="wf-label">Budget</span>
+                          <span class="wf-chip wf-chip--warn">warning</span>
+                        </span>
+                        <span class="wf-noti__time">today</span>
+                      </div>
+                      <span class="wf-noti__title">AI spend for June: $168 of $200 — near the alert threshold</span>
+                      <a class="wf-a" href="usage.html#limits">admin · budget</a>
+                    </div>
+                  </div>
+
+                  <!-- Sync · warning · DLQ -->
+                  <div class="wf-noti">
+                    <span class="wf-noti__dot"></span>
+                    <div class="wf-noti__main">
+                      <div class="wf-row wf-spread">
+                        <span class="wf-row">
+                          <span class="wf-label">Sync</span>
+                          <span class="wf-chip wf-chip--warn">warning</span>
+                        </span>
+                        <span class="wf-noti__time">yesterday</span>
+                      </div>
+                      <span class="wf-noti__title">Confluence run: 8 documents in the DLQ</span>
+                      <a class="wf-a" href="harvester.html#sync-overview">harvester · source/17</a>
+                    </div>
+                  </div>
+
+                  <!-- Rolled-up tail: admin tasks -->
+                  <div class="wf-row wf-spread">
+                    <span class="wf-hint">Still awaiting action <span class="wf-annot">6</span></span>
+                    <span class="wf-row">
+                      <a class="wf-a" href="users.html#invites">3 invitations</a>
+                      <span class="wf-route__sep"></span>
+                      <a class="wf-a" href="users.html#identity-mapping">1 unmatched identity</a>
+                    </span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          <!-- Alternate state: knowledge base is empty -->
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">state · no sources</div>
+              <div class="wf-screen">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <span class="wf-label">Platform</span>
+                    <div class="wf-alert">
+                      <strong>The knowledge base is empty <span class="wf-annot">7</span></strong> — no source
+                      is connected, so the platform runs as a pure AI assistant:
+                      chat and agents answer from the model's general knowledge, grounding is dormant.
+                      This is a valid state, not an error.
+                    </div>
+                    <a class="wf-btn wf-btn--primary" href="harvester.html#sync-overview">＋ Connect sources</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              At-a-glance summary: counts from <a href="users.html#users-tabs" class="xref-page">users</a>, <a href="harvester.html#sync-overview" class="xref-page">sources</a> (Active · Paused · Disconnected), the <a href="knowledge-store.html#storage-metrics" class="xref-page">graph</a>, <a href="agents.html#agents" class="xref-page">agents</a> and <a href="usage.html#total" class="xref-page">AI usage</a>. Monthly spend is checked against the alert threshold; the gauge is soft (a signal, not a block).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              State of the <a href="../../knowledge-store/index.html" class="xref-module">Knowledge Store</a> background runs: whether <a href="knowledge-store.html#knowledge-store" class="xref-page">graph curation</a> is running (and with it re-embedding — which blocks a change of embedding model) and how fresh the latest <a href="knowledge-store.html#backups" class="xref-page">backup</a> is.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              “Recent activity” — the top of the <a href="audit-log.html#audit-log" class="xref-page">audit log</a>: sign-ins, role changes, API keys, ACL. This is a security journal — its home is <a href="../../auth-security/_workzone/protection.html#audit-log" class="xref-module">Auth &amp; Security</a>. Sync and agent events are not written here — their activity surfaces in “Needs attention” below, via the feed.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              <strong>System Health <span class="iter v2">v2</span></strong> — live service status (PostgreSQL · Redis · <a href="../../cache-workers/_workzone/queues.html#registry" class="xref-module">workers</a> · <a href="../../knowledge-store/_workzone/embedding-runtime.html#scaling" class="xref-module">embeddings</a> · n8n), queue depth and storage volume. It awaits health endpoints and monitoring — not yet in the design, so the block is deferred; the rest of the dashboard runs on data that already exists.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              “Needs attention” — a critical / warning slice of the <a href="notification-feed.html#inbox" class="xref-page">notification feed</a>, sorted by severity: critical first, then warning. Each row deep-links to where it gets fixed (source, user, provider, budget). It draws signals from every subsystem: failed runs and DLQ (Sync), brute-force and role changes (Security), an unavailable provider and a failed backup (System), the spend threshold (Budget). Until the feed arrives (the Notifications module), the block runs on derived signals — the same classes computed on the fly from the journals; the feed will add ×N series, unread state and Security types.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              Light admin tasks, not from the feed: <a href="users.html#invites" class="xref-page">invitations</a> in status <code>pending</code> / <code>expired</code> and <a href="users.html#identity-mapping" class="xref-page">identities</a> with status <code>unmatched</code>. The Discovery signal “new container out of scope” with a “Add to scope” action is <span class="iter v2">v2</span>, arriving here together with the Discovery type in the feed.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              While no source is connected, the knowledge base is empty
+              (<a href="../../knowledge-store/_workzone/hybrid-search.html#emptiness" class="xref-module"><code>is_empty</code></a>):
+              the “Needs attention” block shows an invitation to connect sources instead of alerts. Grounding switches on by itself with the first accepted chunk — the end user never sees the signal.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Public API</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="public-api.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <!-- ═══ Header ═══ -->
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← К схеме</a>
+        <h1 class="header__title">Public API</h1>
+        <div class="header__sub">контракт · построй свою поверхность</div>
+      </div>
+
+      <!-- ════════════════ HERO ════════════════
+           Главная мысль — конвергенция: платформа API-first, всякая поверхность
+           (наша и заказчика) сходится на ОДНОМ публичном контракте, под которым
+           один движок. Поэтому hero — диаграмма-воронка: ряд клиентов сверху →
+           контракт-планка → ядро. Своя поверхность подключается тем же входом. -->
+      <header class="pa-hero">
+        <p class="pa-title">Любая поверхность — клиент одного&nbsp;контракта</p>
+        <p class="pa-lede">
+          Web&nbsp;App, MCP, Slack, Telegram, Mattermost, расширение — все они лишь клиенты одного
+          публичного API. Развернули Achilles и хотите свою поверхность —
+          Teams-бот, CLI, корпоративный портал — подключаете её тем же входом.
+        </p>
+      </header>
+
+      <!-- ── Воронка: ряд поверхностей → контракт → ядро ── -->
+      <div
+        class="pa-fan"
+        role="img"
+        aria-label="Поверхности Web App, MCP, Slack, Telegram, Mattermost, расширение и ваша собственная сходятся на одном публичном контракте Public API по HTTPS с ключом или OAuth; под контрактом — ядро: Query Engine, Auth и Knowledge Store"
+      >
+        <div class="pa-clients">
+          <span class="pa-client">Web&nbsp;App</span>
+          <span class="pa-client">MCP</span>
+          <span class="pa-client">Slack</span>
+          <span class="pa-client">Telegram</span>
+          <span class="pa-client">Mattermost</span>
+          <span class="pa-client">Extension</span>
+          <span class="pa-client pa-client--yours">＋ ваша</span>
+        </div>
+
+        <div class="pa-funnel">
+          <span class="pa-funnel__rail"></span>
+          <span class="pa-funnel__lbl">HTTPS · ключ / OAuth · один контракт</span>
+        </div>
+
+        <div class="pa-contract">
+          <span class="pa-contract__tag">контракт</span>
+          <span class="pa-contract__name">Public API · <code>/public/v1</code></span>
+          <span class="pa-contract__desc">
+            <code>search</code> · версионирован · OpenAPI · ACL pre-filter
+          </span>
+          <span class="pa-contract__only">Всё, что нужно, — вызывать контракт по HTTP</span>
+        </div>
+
+        <div class="pa-drop"><span class="pa-drop__rail"></span></div>
+
+        <div class="pa-core">
+          <span class="pa-core__lbl">за контрактом</span>
+          <span class="pa-core__nodes">
+            <span class="pa-core__node">Query Engine</span>
+            <span class="pa-core__node">Auth</span>
+            <span class="pa-core__node">Knowledge Store</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- ── Сердце концепта одной строкой ── -->
+      <p class="pa-thesis" id="model">
+        Achilles — <strong>API-first</strong>: каждая поверхность, наша и ваша, —
+        клиент одного публичного контракта. Контракт — это
+        <strong>курируемый стабильный срез</strong> (<code>/public/v1</code>). Наши MCP, Slack,
+        Telegram, Mattermost и расширение — <strong>референс-реализации</strong>: стройте так же.
+        <a href="../query-engine/_workzone/conversation.html#surface-api" class="xref-module"
+          >Один движок диалога за контрактом →</a
+        >
+      </p>
+
+      <!-- ════════════════ КАРТОЧКИ ════════════════ -->
+      <div class="pa-cards">
+        <!-- Контракт -->
+        <section class="pa-card" id="contract-card">
+          <span class="pa-card__num">01</span>
+          <h2 class="pa-card__title">Контракт</h2>
+          <p class="pa-card__sub">
+            Наружу — узкий набор операций под версией в пути: старая версия живёт
+            до объявленного вывода новой.
+          </p>
+          <ul class="pa-list">
+            <li class="pa-list__item pa-list__item--now">
+              <span class="pa-list__op"><code>search</code></span>
+              <span class="pa-list__note">находки + источники, read-only</span>
+            </li>
+            <li class="pa-list__item">
+              <span class="pa-list__op"><code>ask</code> <span class="iter v2">v2</span></span>
+              <span class="pa-list__note">полный ход чата — готовый ответ с источниками</span>
+            </li>
+          </ul>
+          <p class="pa-card__foot">
+            OpenAPI отдаётся из коробки (FastAPI) — клиент генерится по схеме.
+            Транспорт — обычный REST/JSON; MCP&nbsp;— тот же контракт в обёртке для AI-клиентов.
+          </p>
+        </section>
+
+        <!-- Авторизация -->
+        <section class="pa-card" id="auth">
+          <span class="pa-card__num">02</span>
+          <h2 class="pa-card__title">Авторизация</h2>
+          <p class="pa-card__sub">
+            Свой механизм не изобретаем — тот же вход, что у двери MCP.
+          </p>
+          <ul class="pa-list">
+            <li class="pa-list__item pa-list__item--now">
+              <span class="pa-list__op"
+                ><a href="../auth-security/_workzone/authentication.html#api-keys" class="pa-list__link"
+                  >API-ключ <code>ach_…</code></a
+                ></span
+              >
+              <span class="pa-list__note">в заголовке · headless</span>
+            </li>
+            <li class="pa-list__item">
+              <span class="pa-list__op"
+                ><a href="../auth-security/_workzone/authentication.html#oauth" class="pa-list__link"
+                  >OAuth 2.1</a
+                >
+                <span class="iter v2">v2</span></span
+              >
+              <span class="pa-list__note">браузерное согласие, без переноса ключа</span>
+            </li>
+          </ul>
+          <p class="pa-card__foot">
+            Ключ сводится к <code>user_id</code> → роль → ACL. Область ключа лишь
+            <strong>сужает</strong> права — ACL поверх, в обход не пройти.
+          </p>
+        </section>
+
+        <!-- Личность -->
+        <section class="pa-card" id="identity">
+          <span class="pa-card__num">03</span>
+          <h2 class="pa-card__title">Личность</h2>
+          <p class="pa-card__sub">
+            Единственный по-настоящему новый кусок — как пользователи вашей
+            поверхности становятся личностями Achilles. Мост —
+            <a href="../auth-security/_workzone/data-model.html#identity-mapping" class="xref-module"
+              >identity_mapping</a
+            >
+            со своим <code>source</code> — как <code>'slack'</code> у Slack или
+            <code>'telegram'</code> у Telegram.
+          </p>
+          <p class="pa-card__foot">
+            Каков мост — зависит от того, кого поверхность представляет:
+            <a href="#surface-classes" class="xref-anchor">два класса ниже</a>.
+            Учётку всё равно заводит админ приглашением — членство в вашей системе
+            доступа не даёт.
+          </p>
+        </section>
+
+        <!-- Управление -->
+        <section class="pa-card" id="governance">
+          <span class="pa-card__num">04</span>
+          <h2 class="pa-card__title">Управление</h2>
+          <p class="pa-card__sub">
+            Кастомная поверхность под тем же надзором, что родные — отдельного
+            режима нет.
+          </p>
+          <ul class="pa-gov">
+            <li class="pa-gov__item">
+              <span class="pa-gov__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M12 3v9" /><path d="M7.5 6.5a7 7 0 1 0 9 0" />
+                </svg>
+              </span>
+              <span
+                ><strong>Рубильник и ключи.</strong> Доступ закрывается разом
+                деактивацией ключа; владелец заводит и гасит ключи в профиле,
+                надзор Owner/Admin — на экране ключей.</span
+              >
+            </li>
+            <li class="pa-gov__item">
+              <span class="pa-gov__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 12h4l2 6 4-14 2 8h6" />
+                </svg>
+              </span>
+              <span
+                ><strong>Лимит и метка.</strong> Каждый вызов под лимитом частоты
+                и метится на ключ — использование видно на экране ключей; текст
+                запроса не логируется.</span
+              >
+            </li>
+          </ul>
+        </section>
+      </div>
+
+      <!-- ════════════════ ДВА КЛАССА ПОВЕРХНОСТЕЙ ════════════════
+           Главное практическое различие — кого поверхность представляет.
+           От этого зависит модель личности; всё остальное общее. -->
+      <section class="section" id="surface-classes">
+        <h2 class="section__title">Два класса поверхностей</h2>
+        <table class="pa-classes">
+          <thead>
+            <tr>
+              <th class="pa-classes__rk"></th>
+              <th class="pa-classes__col">Персональная</th>
+              <th class="pa-classes__col">Сервисная</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="pa-classes__rk">Принцип</td>
+              <td>ключ = один сотрудник</td>
+              <td>поверхность отвечает за многих</td>
+            </tr>
+            <tr>
+              <td class="pa-classes__rk">Личность</td>
+              <td>ключ → его <code>user_id</code></td>
+              <td>свой <code>source</code> в <code>identity_mapping</code>, каждый внешний → <code>user_id</code></td>
+            </tr>
+            <tr>
+              <td class="pa-classes__rk">Доступ</td>
+              <td>личный ключ владельца</td>
+              <td>сервисный ключ + резолв личности на каждый запрос</td>
+            </tr>
+            <tr>
+              <td class="pa-classes__rk">Референс</td>
+              <td>MCP · Extension</td>
+              <td>Slack · Telegram · Mattermost</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="pa-classes__foot">
+          Сервисная поверхность ходит через <strong>общий путь «действую от имени»</strong>
+          — сервисный ключ со своим <code>source</code> и предъявление личности на
+          каждом запросе. Slack, Telegram и Mattermost — лишь <strong>референсы</strong> этого
+          механизма, не код для форка: ваша поверхность пользуется тем же путём, не
+          трогая платформу.
+        </p>
+      </section>
+
+      <!-- ════════════════ НАШИ ПОВЕРХНОСТИ — РЕФЕРЕНС ════════════════ -->
+      <section class="section" id="reference">
+        <h2 class="section__title">Наши поверхности — референс</h2>
+        <p class="pa-refs__lead">
+          Рабочие примеры контракта — стройте свою, глядя на ближайшую по задаче.
+        </p>
+        <div class="pa-refs">
+          <a class="pa-ref" href="../mcp/index.html#model">
+            <span class="pa-ref__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5" /><path d="M15 8V2" /><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" /><path d="M9 8V2" /></svg></span>
+            <span class="pa-ref__name">MCP</span>
+            <span class="pa-ref__desc">персональная дверь с одним инструментом для AI-клиента</span>
+          </a>
+          <a class="pa-ref" href="../slack/index.html#model">
+            <span class="pa-ref__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg></span>
+            <span class="pa-ref__name">Slack</span>
+            <span class="pa-ref__desc">поверхность за многих: мост личности + отложенная доставка</span>
+          </a>
+          <a class="pa-ref" href="../telegram/index.html#model">
+            <span class="pa-ref__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg></span>
+            <span class="pa-ref__name">Telegram</span>
+            <span class="pa-ref__desc">тот же класс: мост личности, граница беседы по <code>/new</code></span>
+          </a>
+          <a class="pa-ref" href="../mattermost/index.html#model">
+            <span class="pa-ref__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg></span>
+            <span class="pa-ref__name">Mattermost</span>
+            <span class="pa-ref__desc">тот же класс на self-hosted сервере: мост личности, тред = беседа</span>
+          </a>
+          <a class="pa-ref" href="../extension/index.html">
+            <span class="pa-ref__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z" /></svg></span>
+            <span class="pa-ref__name">Extension</span>
+            <span class="pa-ref__desc">персональный клиент в браузере поверх любой страницы</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- ════════════════ КОНТРАКТ ВЫЗОВА ════════════════
+           Литеральный набросок одного вызова — форма, не замороженная схема:
+           запрос с ключом → находки с источниками, синтез на стороне клиента. -->
+      <section class="section" id="contract">
+        <h2 class="section__title">Контракт вызова</h2>
+        <div class="pa-call">
+          <div class="pa-call__side pa-call__side--req">
+            <span class="pa-call__tag">запрос</span>
+            <pre class="pa-call__body"><span class="pa-call__verb">POST</span> /public/v1/search
+<span class="pa-call__hdr">Authorization:</span> Bearer ach_…
+
+{
+  <span class="pa-call__key">"query"</span>: <span class="pa-call__str">"статус релиза 4.2"</span>,
+  <span class="pa-call__key">"limit"</span>: 8
+}</pre>
+          </div>
+          <div class="pa-call__side pa-call__side--res">
+            <span class="pa-call__tag pa-call__tag--ok">ответ</span>
+            <pre class="pa-call__body"><span class="pa-call__ok">200 OK</span>
+
+{
+  <span class="pa-call__key">"results"</span>: [
+    {
+      <span class="pa-call__key">"title"</span>: <span class="pa-call__str">"RELEASE-482"</span>,
+      <span class="pa-call__key">"snippet"</span>: <span class="pa-call__str">"Релиз 4.2 в регресс-тестах…"</span>,
+      <span class="pa-call__key">"source"</span>: <span class="pa-call__str">"ticket"</span>,
+      <span class="pa-call__key">"url"</span>: <span class="pa-call__str">"https://jira…/RELEASE-482"</span>,
+      <span class="pa-call__key">"score"</span>: 0.82
+    }
+  ],
+  <span class="pa-call__key">"degraded"</span>: false
+}</pre>
+          </div>
+        </div>
+        <p class="pa-call__note">
+          Поиск идёт <strong>под ACL владельца ключа</strong> — что ему не видно,
+          в выдачу не попадёт. Синтез ответа — на стороне клиента;
+          <code>degraded</code> отмечает выдачу без векторной ноги (эмбеддер молчал). <span class="iter v2">v2</span> добавит
+          <code>POST /public/v1/ask</code> — готовый ответ с источниками одним вызовом.
+        </p>
+      </section>
+
+      <!-- ════════════════ СВЯЗИ ════════════════ -->
+      <section class="section" id="api">
+        <h2 class="section__title">API</h2>
+        <ul class="api-list">
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/public/v1/search</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/public/v1/ask <span class="iter v2">v2</span></span></li>
+        </ul>
+      </section>
+
+      <section class="section" id="links">
+        <h2 class="section__title">Связанные модули</h2>
+        <ul class="notes">
+          <li class="note">
+            <strong>Auth / Security</strong> — ключи, OAuth и мост
+            <code>identity_mapping</code> → <code>user_id</code>.
+            <a href="../auth-security/_workzone/authentication.html#api-keys" class="xref-badge"
+              >→ Auth / Security</a
+            >
+          </li>
+          <li class="note">
+            <strong>Query Engine</strong> — движок диалога и поиск под ACL за
+            контрактом.
+            <a href="../query-engine/_workzone/conversation.html#surface-api" class="xref-badge"
+              >→ Query Engine</a
+            >
+          </li>
+          <li class="note">
+            <strong>HTTP API</strong> — свод контракта: этот публичный срез —
+            внешний ярус того же движка, под общими правилами версий, ошибок и
+            личности.
+            <a href="../api/index.html#surface-map" class="xref-badge">→ HTTP API</a>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </body>
+</html>

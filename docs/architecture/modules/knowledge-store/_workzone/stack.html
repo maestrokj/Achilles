@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Knowledge Store: Stack & structure</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../swimlane.css" />
+    <link rel="stylesheet" href="stack.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Knowledge Store</a>
+        <h1 class="header__title">Stack & structure</h1>
+        <div class="header__sub">knowledge-store · workzone</div>
+      </div>
+
+      <!-- ════════════ LANE: BACKEND ════════════ -->
+      <div class="swl-lane swl-lane--be">
+        <div class="swl-lane__rail">
+          <span class="swl-lane__tag">Backend</span>
+        </div>
+        <div class="swl-lane__body">
+          <!-- col: stack -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg> stack — libraries</div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Framework / DB</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="ASGI web framework — retrieval endpoints">FastAPI</span>
+                <span class="swl-pill" data-tip="request / response schemas, validation">Pydantic v2</span>
+                <span class="swl-pill" data-tip="ORM, async mode">SQLAlchemy 2.0 · async</span>
+                <span class="swl-pill" data-tip="async PostgreSQL driver">asyncpg</span>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Storage</span>
+                <a
+                  class="xref-badge xref-badge--page"
+                  href="data-model.html#projections"
+                  >→ Three projections</a
+                >
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="one database for all three projections">PostgreSQL</span>
+                <span class="swl-pill" data-tip="vector extension — HNSW · ANN similarity search">pgvector · HNSW</span>
+                <span class="swl-pill" data-tip="Postgres full-text — sparse lexical search, ts_rank ranking">tsvector · GIN</span>
+                <span class="swl-pill" data-tip="recursive SQL (CTE) — entity_edge graph traversal">recursive SQL · CTE</span>
+                <span class="swl-pill" data-tip="schema migrations">Alembic</span>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Background curation</span>
+                <a
+                  class="xref-badge xref-badge--page"
+                  href="lifecycle.html#curation-pass"
+                  >→ Curation Pass</a
+                >
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="periodic-run scheduler — cron inside SAQ">SAQ cron</span>
+                <span class="swl-pill" data-tip="task queue — via the Cache &amp; Workers module">Redis · queue</span>
+                <a class="xref-badge" href="../../cache-workers/_workzone/queues.html#lanes">→ Cache &amp; Workers</a>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Embeddings</span>
+                <a
+                  class="xref-badge xref-badge--page"
+                  href="embedding-runtime.html"
+                  >→ Embeddings runtime</a
+                >
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="a separate network service (OpenAI-compatible) — KS calls it for the query vector during search and during re-embedding; not an in-process library">embeddings · external service</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- col: structure -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head">
+              <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.55l-.42-.85a1 1 0 0 0-.92-.6H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M3 5a2 2 0 0 0 2 2h3" /><path d="M3 3v13a2 2 0 0 0 2 2h3" /></svg> structure — files · <code>achilles/knowledge_store/</code>
+            </div>
+<pre class="file-tree">
+knowledge_store/   <span class="dim">module = its own package</span>
+├── *.py           <span class="dim">constants · models · schemas</span>
+├── services/      <span class="dim">business logic — folder from the start</span>
+├── repositories/  <span class="dim">data access — folder from the start</span>
+└── retrieval/     <span class="dim">four search primitives + fusion</span>
+</pre>
+
+            <details class="swl-note">
+              <summary>Why <code>retrieval/</code> is its own folder</summary>
+              <div class="swl-note__body">
+                Four search paradigms (exact · vector · lexical · graph) and their
+                <a href="hybrid-search.html#fusion" class="xref-page">fusion</a>
+                form a distinct layer on top of the repositories: each primitive
+                sits in its own module, and fusion assembles them into a single response.
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── cross-cutting: deferred engines (decision, not blacklist) ── -->
+      <div class="swl-defer">
+        <span class="swl-defer__ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 14 4 4-4 4" /><path d="m18 2 4 4-4 4" /><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22" /><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2" /><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45" /></svg></span>
+        <div>
+          <b>Dedicated engines — not in v1.</b>
+          <span class="pkg">Qdrant</span> (vectors) and
+          <span class="pkg">Neo4j</span> (graph) are unused in v1: vectors and
+          the graph live in a single PostgreSQL for a unified ACL query — a load-bearing
+          <a href="data-model.html#graph-engine" class="xref-page">module decision</a>.
+          A dedicated graph engine (<span class="pkg">Neo4j</span>) is
+          <span class="iter v2">v2</span>, should recursive SQL prove insufficient.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

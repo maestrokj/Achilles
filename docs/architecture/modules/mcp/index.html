@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — MCP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="mcp.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <!-- ═══ Header ═══ -->
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← Back to architecture</a>
+        <h1 class="header__title">MCP</h1>
+        <div class="header__sub">Model Context Protocol · knowledge inside someone else's AI</div>
+      </div>
+
+      <!-- ════════════════ HERO ════════════════
+           The core idea is an inversion: someone else's model does the thinking,
+           we are merely a door with a single tool. So the hero carries meaning,
+           not decoration: the left-to-right flow shows who thinks and what we hand back. -->
+      <header class="mcp-hero">
+        <p class="mcp-title">Company knowledge — inside&nbsp;Claude&nbsp;Code</p>
+        <p class="mcp-lede">
+          Someone else's AI assistant queries your knowledge base on its own and weaves the answer
+          into the work — without leaving the editor.
+        </p>
+      </header>
+
+      <!-- ── Flow: client → port → knowledge base, with return lanes ── -->
+      <div class="mcp-flow" role="img"
+        aria-label="Flow: Claude Code calls the search_knowledge tool on the Achilles MCP server, which searches the knowledge base under the owner's ACL and returns findings">
+        <div class="mcp-station mcp-station--client">
+          <span class="mcp-station__tag">external AI</span>
+          <span class="mcp-station__glyph">▍</span>
+          <span class="mcp-station__name">Claude Code</span>
+          <span class="mcp-station__desc">thinks · calls the tool</span>
+        </div>
+
+        <div class="mcp-link">
+          <span class="mcp-link__rail mcp-link__rail--fwd">
+            <span class="mcp-link__lbl"><code>search_knowledge</code></span>
+            <span class="mcp-link__wire"></span>
+          </span>
+          <span class="mcp-link__rail mcp-link__rail--back">
+            <span class="mcp-link__wire"></span>
+            <span class="mcp-link__lbl">findings + sources</span>
+          </span>
+        </div>
+
+        <div class="mcp-station mcp-station--port">
+          <span class="mcp-station__tag mcp-station__tag--on">door</span>
+          <span class="mcp-station__glyph"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5" /><path d="M15 8V2" /><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" /><path d="M9 8V2" /></svg></span>
+          <span class="mcp-station__name">Achilles MCP</span>
+          <span class="mcp-station__desc"><code>/mcp</code> · key → user_id → ACL</span>
+        </div>
+
+        <div class="mcp-link mcp-link--single">
+          <span class="mcp-link__rail mcp-link__rail--fwd">
+            <span class="mcp-link__lbl">search under ACL</span>
+            <span class="mcp-link__wire"></span>
+          </span>
+        </div>
+
+        <div class="mcp-station mcp-station--data">
+          <span class="ai-tag" title="This stage uses a neural network — model inference"
+            ><span class="ai-tag__icon"></span>AI</span
+          >
+          <span class="mcp-station__glyph mcp-station__glyph--graph" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none">
+              <line x1="11" y1="14" x2="24" y2="9" /><line x1="11" y1="14" x2="13" y2="28" />
+              <line x1="24" y1="9" x2="30" y2="22" /><line x1="13" y1="28" x2="30" y2="22" />
+              <circle cx="11" cy="14" r="3.4" /><circle cx="24" cy="9" r="2.8" />
+              <circle class="mcp-graph__hub" cx="30" cy="22" r="4" /><circle cx="13" cy="28" r="3" />
+            </svg>
+          </span>
+          <span class="mcp-station__name">Knowledge base</span>
+          <span class="mcp-station__desc">hybrid search, ACL pre-filter</span>
+        </div>
+      </div>
+
+      <!-- ── The heart of the concept in one line ── -->
+      <p class="mcp-thesis" id="model">
+        The <strong>client's model</strong> does the thinking, not ours. MCP hands it
+        <strong>one tool</strong> — <code>search_knowledge</code> returns
+        <strong>findings, not a finished answer</strong>; the assistant synthesizes on its own.
+        <a href="../query-engine/_workzone/retrieval.html#identity" class="xref-module"
+          >Search runs under the owner's identity →</a
+        >
+      </p>
+
+      <!-- ════════════════ CARDS ════════════════ -->
+      <div class="mcp-cards">
+        <!-- Setup -->
+        <section class="mcp-card">
+          <span class="mcp-card__num">01</span>
+          <h2 class="mcp-card__title">Setup</h2>
+          <p class="mcp-card__sub">The server is networked — the client just remembers an address and a key. One command.</p>
+          <pre class="mcp-cmd"><span class="mcp-cmd__cmd">claude mcp add</span> --transport http achilles <span class="mcp-cmd__url">https://achilles.local/mcp</span> \
+  --header <span class="mcp-cmd__str">"Authorization: Bearer ach_…"</span></pre>
+          <p class="mcp-card__foot">With OAuth (<span class="iter v2">v2</span>) the key drops out — the command becomes a single step.
+            MCP is a reference surface of <a href="../public-api/index.html#reference" class="xref-module">Public API</a> for AI clients;
+            the <code>/mcp</code> path is on the shared <a href="../api/index.html#surface-map" class="xref-module">HTTP API map</a>.</p>
+        </section>
+
+        <!-- Authorization -->
+        <section class="mcp-card" id="auth">
+          <span class="mcp-card__num">02</span>
+          <h2 class="mcp-card__title">Authorization</h2>
+          <p class="mcp-card__sub">No login of its own — the client resolves to a <code>user_id</code>, then the owner's role and ACL.</p>
+          <ol class="mcp-steps">
+            <li class="mcp-steps__item mcp-steps__item--now">
+              <a href="../auth-security/_workzone/authentication.html#api-keys" class="mcp-steps__link"
+                >API key <code>ach_…</code></a
+              >
+              <span class="mcp-steps__note">in the header · headless · read-only</span>
+            </li>
+            <li class="mcp-steps__item">
+              <span class="iter v2">v2</span>
+              <a href="../auth-security/_workzone/authentication.html#oauth" class="mcp-steps__link"
+                >OAuth 2.1</a
+              >
+              <span class="mcp-steps__note">browser consent, no key to carry</span>
+            </li>
+          </ol>
+          <p class="mcp-card__foot">ACL sits <strong>on top</strong>: the key's scope only narrows the rights.</p>
+        </section>
+
+        <!-- Governance -->
+        <section class="mcp-card" id="governance">
+          <span class="mcp-card__num">03</span>
+          <h2 class="mcp-card__title">Governing the door</h2>
+          <p class="mcp-card__sub">Entry from outside in — control at two levels.</p>
+          <ul class="mcp-gov">
+            <li class="mcp-gov__item">
+              <span class="mcp-gov__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M12 3v9" /><path d="M7.5 6.5a7 7 0 1 0 9 0" />
+                </svg>
+              </span>
+              <span
+                ><strong>Platform kill switch.</strong> A single toggle in
+                <a href="../admin-panel/_wireframes/platform-settings.html#integrations-maintenance" class="xref-module"
+                  >platform settings</a
+                >
+                closes MCP for everyone at once — the door is locked, the keys stay alive.</span
+              >
+            </li>
+            <li class="mcp-gov__item">
+              <span class="mcp-gov__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="8" cy="8" r="4" /><path d="M11 11l8 8" /><path d="M16 16l2-2" /><path d="M19 19l2-2" />
+                </svg>
+              </span>
+              <span
+                ><strong>Keys are self-service.</strong> An employee creates their own — in their
+                <a href="../auth-security/_wireframes/profile-account.html#api-keys" class="xref-module">profile</a>;
+                Owner/Admin oversight on the
+                <a href="../admin-panel/_wireframes/api-keys.html#api-keys" class="xref-module">keys screen</a>.
+                Deactivation — the keys go dark.</span
+              >
+            </li>
+          </ul>
+          <p class="mcp-card__foot">Every call is rate-limited and tagged to a key — the
+            <a href="../admin-panel/_wireframes/api-keys.html#api-keys" class="xref-module">keys screen</a>
+            shows usage; request text is not logged.</p>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>

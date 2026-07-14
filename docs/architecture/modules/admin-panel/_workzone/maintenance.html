@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Maintenance mode</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Maintenance mode</h1>
+        <div class="header__sub">admin panel · workzone</div>
+      </div>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ── How the mode turns on and where the state lives ── -->
+          <div class="stk-layer stk-layer--config" id="maintenance">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Maintenance mode</span>
+              <span class="stk-layer__role">planned work on a live platform</span>
+            </div>
+            <div class="stk-layer__body">
+              <!-- Trigger and storage: a manual toggle, not auto-deploy. -->
+              <div class="stk-dec" id="trigger">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Trigger — manual, deliberate</span>
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_wireframes/platform-settings.html#integrations-maintenance"
+                    >→ Platform Settings</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <b>Only the Owner</b> turns the mode on — with a toggle in the platform
+                  settings, with confirmation. The state is
+                  <a class="xref-page" href="data-model.html#data-model"
+                    ><code>platform_settings.maintenance_mode</code></a
+                  >
+                  (<code>boolean</code>, singleton). It is not part of the deploy:
+                  a rolling backend update proceeds without downtime. The toggle is for
+                  rare work with deliberate downtime (a heavy DB migration,
+                  an incompatible schema change); when it is on, <code>sync</code>
+                  and agents are paused.
+                </div>
+              </div>
+
+              <!-- What the user sees: 503 + full screen. -->
+              <div class="stk-dec" id="user-facing">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">For users — a full-screen stub</span>
+                  <a
+                    class="xref-badge"
+                    href="../../shared-ui/_wireframes/system-screens.html#maintenance"
+                    >→ System Screens</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  When the flag is on, the backend responds <code>HTTP 503</code> with
+                  <code>Retry-After</code> (the unavailability is temporary, not “page
+                  removed”), and the frontend renders the full-screen
+                  <a
+                    class="xref-module"
+                    href="../../shared-ui/_wireframes/system-screens.html#maintenance"
+                    >maintenance</a
+                  > stub. A <b>full screen</b> was chosen, not read-only.
+                </div>
+              </div>
+
+              <!-- The admin must not lock themselves out. -->
+              <div class="stk-dec" id="admin-allowlist">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Administrator access bypassing the mode</span>
+                </div>
+                <div class="stk-dec__d">
+                  Owner and Admin keep access while the mode is on — otherwise the
+                  operator would lock themselves out and couldn't check the platform before
+                  lifting it. They are not served <code>503</code>; ordinary
+                  users see the stub.
+                </div>
+              </div>
+
+              <!-- Out of scope for the first iteration: hard mode at the proxy level. -->
+              <div class="stk-dec stk-dec--wide" id="hard-mode">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Hard mode — at the proxy level</span
+                  ><span class="iter v2">v2</span>
+                </div>
+                <div class="stk-dec__d">
+                  The toggle above works while the application is alive. If the
+                  backend itself is down (a restart, a container update), the flag is unavailable
+                  along with it — a static stub is then served by the reverse proxy
+                  (Nginx). This is a separate “hard” mode at the
+                  infrastructure level; it is not implemented in the first iteration.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

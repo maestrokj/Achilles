@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Status Screen</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Status Screen</h1>
+        <div class="header__sub">auth / security · wireframes · public</div>
+      </div>
+
+      <p class="desc">A shared result screen for auth dead-end states: a link is invalid, expired, or already used.</p>
+
+      <!-- ═══ Wireframe ═══ A catalog of variants of one template. -->
+      <div class="section">
+        <div class="section__title">Wireframe · catalog of variants</div>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <!-- ── Variant: setup-done (info) ─────────────────────────── -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">setup-done · info</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/setup
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/setup · in-place</span>
+                      </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                      <h2 class="wf-title">
+                        Platform already set up <span class="wf-annot">1</span></h2>
+                    </div>
+
+                    <div class="wf-alert wf-row">
+
+                      Initial setup has already been completed: the owner account is created. This screen only opens on first run.
+                      <span class="wf-annot">2</span></div>
+
+                    <p class="wf-subtitle wf-center">
+
+                      Sign in with your account to continue.
+                      <span class="wf-annot">3</span></p>
+
+                    <a class="wf-btn wf-btn--primary wf-btn--block" href="login.html">
+
+                      Go to sign-in
+                      <span class="wf-annot wf-annot--on-accent">4</span></a>
+                  </div>
+                </div>
+              </div>
+              </div>
+
+            <!-- ── Variant: invite-invalid (error) ────────────────────── -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">invite-invalid · error</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/invite/9c2f4e…7a
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/invite/&lt;token&gt; · in-place</span>
+                      </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                      <h2 class="wf-title">Invitation invalid</h2>
+                    </div>
+
+                    <div class="wf-alert wf-alert--error">
+                      The invitation has expired or has already been used. Links
+                      are valid for 48 hours and work once — ask an administrator
+                      to send a new one.
+                    </div>
+
+                    <p class="wf-subtitle wf-center">
+                      An Owner or Admin on your team can send a new invitation.
+                    </p>
+
+                    <div class="wf-center">
+                      <a class="wf-a" href="login.html">← Back to sign-in</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              </div>
+
+            <!-- ── Variant: reset-expired (error) ─────────────────────── -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">reset-expired · error</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/reset-password/a8f3c9…2b
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/reset-password/&lt;token&gt; · in-place</span>
+                      </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                      <h2 class="wf-title">Link invalid</h2>
+                    </div>
+
+                    <div class="wf-alert wf-alert--error">
+                      The reset link has expired or has already been used. Request
+                      a new one — the old link no longer works.
+                    </div>
+
+                    <p class="wf-subtitle wf-center">
+                      Links are valid for 1 hour and work once.
+                    </p>
+
+                    <a class="wf-btn wf-btn--primary wf-btn--block" href="../_features/password-recovery/forgot-password.html">
+                      Request a new link
+                    </a>
+
+                    <div class="wf-center">
+                      <a class="wf-a" href="login.html">← Back to sign-in</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              <strong>Heading</strong> — the gist of the state in one line.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              <strong>Message</strong> — what happened and what to do; the tone is set by <code>info</code> · <code>--error</code> · <code>--ok</code>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              <strong>Caption</strong> — a clarification or who
+              can help (optional).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              <strong>Actions</strong> — a primary CTA (optional) + an exit.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

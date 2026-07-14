@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Cache &amp; Workers: кэш</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="caching.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Cache &amp; Workers</a>
+        <h1 class="header__title">Кэш</h1>
+        <div class="header__sub">cache-workers · workzone</div>
+      </div>
+
+      <p class="desc">
+        Эфемерный слой ускорения частых чтений: что класть в кэш, на чём строить
+        ключ, когда содержимое протухает. Кэш — быстрый производный,
+        пересоберётся при потере (<a href="redis-keys.html#principle" class="xref-page">водораздел Redis ⟂ Postgres</a>).
+      </p>
+
+      <!-- ═══ Политика ═══ Один потребитель — кандидаты поиска Query Engine.
+           Кэшируем дорогой retrieval, не финальный ответ LLM. TTL-only. -->
+      <div class="section" id="policy">
+        <h2 class="section__title">Политика кэша</h2>
+        <p class="note">
+          Единственный потребитель сейчас — кандидаты поиска
+          <a href="../../query-engine/index.html" class="xref-module">Query Engine</a>
+          (exact-match по запросу). Кэшируем <strong>дорогой retrieval-слой</strong>
+          (старт ~10 мин), а не финальный ответ модели — он персонализирован и
+          фильтруется по правам, общего значения для кэша не имеет.
+        </p>
+        <div class="cch-grid">
+          <div class="cch-cell cch-cell--yes">
+            <div class="cch-cell__h">Кэшируем</div>
+            <p class="cch-cell__d">retrieval-кандидаты — общий дорогой слой</p>
+          </div>
+          <div class="cch-cell cch-cell--no">
+            <div class="cch-cell__h">Не кэшируем</div>
+            <p class="cch-cell__d">финальный ответ LLM — персонализация · ACL</p>
+          </div>
+        </div>
+        <ul class="cch-rules">
+          <li>
+            <b>TTL-only.</b> Истечение по времени, без событийной инвалидации —
+            устаревшие кандидаты дёшевы, цена ошибки низкая. Точный TTL — тюнинг.
+          </li>
+          <li>
+            <b>ACL на кэше не держится.</b> Права досверяет late-binding trim на
+            стороне retrieval, уже после выдачи кандидатов — поэтому строгая
+            ACL-инвалидация кэшу не нужна, корректность доступа от него не зависит.
+          </li>
+          <li>
+            <b>Дом — <code>redis-cache</code></b> (вытесняемый, политика LRU): при
+            нехватке памяти старые ключи уходят, кэш восстановится темпом
+            (<a href="redis-keys.html#instances" class="xref-page">два инстанса</a>).
+          </li>
+          <li>
+            <b>Значение несёт тела чанков, не только id + score.</b> Попадание
+            возвращает кандидатов целиком, минуя выборку строк из Postgres — проще и
+            быстрее, пока рабочий набор скромен. Тощая альтернатива (кэшировать
+            только id + score, тела дочитывать из Postgres на попадании) вмещает на
+            порядок больше запросов в ту же память
+            (<a href="redis-keys.html#registry" class="xref-page">память кэша</a>) —
+            рычаг <span class="iter v2">v2</span>, когда рост числа пользователей или
+            давление на память Redis начнут бить по hit-rate.
+          </li>
+          <li>
+            <b>Single-flight-замка нет — пер-юзерный ключ делает его излишним.</b>
+            Запись кэша ключуется <a href="#key" class="xref-anchor">запрос + личность</a>,
+            поэтому «горячий ключ» — это точный запрос одного пользователя: два
+            конкурентных промаха по нему требовали бы, чтобы один и тот же
+            пользователь выстрелил идентичным запросом в одно мгновение. Общего
+            между пользователями ключа нет — нет и стада промахов: промах просто
+            считает и пишет, без rebuild-замка. Общий межпользовательский слой
+            выборки под single-flight-замком
+            (<a href="redis-keys.html#registry" class="xref-page"><code>lock:</code></a>)
+            — рычаг <span class="iter v2">v2</span>, если такой слой появится.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ═══ Ключ ═══ Состав ключа + hit/miss-поток. Гейт стоит до выбора
+           модели/промпта — они на кандидатов не влияют, в ключ не входят. -->
+      <div class="section" id="key">
+        <h2 class="section__title">Состав ключа</h2>
+        <p class="note">
+          Кэш-гейт стоит на входе retrieval, <strong>до выбора модели и
+          промпта</strong> — на состав кандидатов они не влияют и в ключ не
+          входят. Результат определяют только сам запрос и identity; устаревшие
+          кандидаты протухают по TTL, отдельной инвалидации не требуется
+          (<a href="../../query-engine/_workzone/rag-pipeline.html#cache" class="xref-module">кэш-гейт в RAG-конвейере</a>).
+        </p>
+
+        <div class="cch-key">
+          <span class="cch-seg">самостоятельный запрос</span>
+          <span class="cch-key__op">+</span>
+          <span class="cch-seg">identity</span>
+        </div>
+
+        <div class="cch-flow">
+          <div class="cch-flow__step">
+            <span class="cch-flow__t">Запрос</span>
+            <span class="cch-flow__d">самостоятельный запрос + identity</span>
+          </div>
+          <div class="cch-flow__arr">→</div>
+          <div class="cch-flow__step">
+            <span class="cch-flow__t">Ключ</span>
+            <span class="cch-flow__d">сборка из сегментов</span>
+          </div>
+          <div class="cch-flow__arr">→</div>
+          <div class="cch-flow__fork">
+            <div class="cch-flow__path cch-flow__path--hit">
+              <span class="cch-flow__tag">hit</span>
+              <span class="cch-flow__d">готовые кандидаты из <code>redis-cache</code></span>
+            </div>
+            <div class="cch-flow__path cch-flow__path--miss">
+              <span class="cch-flow__tag">miss</span>
+              <span class="cch-flow__d">дорогой retrieval → запись с TTL</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

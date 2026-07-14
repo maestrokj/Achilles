@@ -1,0 +1,85 @@
+/* HTTP API — the contract-layer page (surface list + shared rules).
+   A minimal reference: a surface-ownership table (which resource family, which
+   tier, whose module) and one compact strip of cross-cutting rules. Concrete
+   request/response lives in each owner's tests.html.
+   Loaded by modules/api/index.html on top of shared.css + module.css.
+   Placement convention: a single module's bespoke diagrams — §Styling. */
+
+/* ── Surface-ownership table — the resource index ── */
+.api-map {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin-top: 0.2rem;
+}
+.api-map th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1.5px solid var(--border);
+}
+.api-map td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  line-height: 1.4;
+}
+.api-map tr:last-child td {
+  border-bottom: none;
+}
+.api-map__fam {
+  color: var(--text);
+  font-weight: 600;
+}
+.api-map__fam code {
+  font-size: 0.72rem;
+  font-weight: 400;
+}
+.api-map__tier {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ── Shared-rules strip ── */
+.api-rules {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.35rem 1.1rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+.api-rules li {
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  padding-left: 0.9rem;
+  position: relative;
+}
+.api-rules li::before {
+  content: "·";
+  position: absolute;
+  left: 0.2rem;
+  color: var(--accent);
+  font-weight: 700;
+}
+.api-rules b {
+  color: var(--text);
+  font-weight: 600;
+}
+.api-rules code {
+  font-size: 0.72rem;
+}
+
+@media (max-width: 640px) {
+  .api-rules {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,446 @@
+/* Query Engine — grounding workzone diagrams.
+   Four page-bespoke pieces for the trust contract of an answer: the modes
+   comparison (gr-modes — two answer modes side by side, conversational vs
+   grounded, with the differing trust contract of each), the grounding fork
+   (gr-fork — within the grounded mode, the tool call splits three ways: found →
+   answer-from-context, empty → honest "not found", withheld → answer from
+   accessible + hint), and the chat bubbles (gr-chat/gr-msg/gr-bubble — the
+   grounded answer and the access hint drawn as real chat messages: an assistant
+   bubble carrying an inline marker with the source card attached (gr-src — the
+   cited record backed by the best chunk as evidence), and an info-toned
+   access-hint bubble for the optional "relevant data exists, you lack access"
+   message — v1 names only the source system, the grantor + request-access
+   deferred to v2). Who picks the mode lives on conversation#route; the
+   ACL-filtering mechanics on the retrieval boundary page — this sheet only draws
+   the product contract.
+   Static — no hover affordance for non-clickable blocks (README §Hover).
+   Loaded by _workzone/grounding.html on top of ../../module.css
+   + ../query-engine.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ════════════════ MODES COMPARISON ════════════════ two answer modes side by
+   side — conversational (model's general knowledge, no citations) vs grounded
+   (strictly from KS + citation). Conditional grounding made legible. */
+.gr-modes {
+  display: flex;
+  gap: 0.7rem;
+  margin: 1.1rem 0 0.4rem;
+}
+.gr-mode {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--dot);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.8rem;
+}
+/* Conversational — answered from the model itself, no trust contract. */
+.gr-mode--talk {
+  border-top-color: var(--text-muted);
+}
+/* Grounded — the trust contract: strictly from context, cited. */
+.gr-mode--ground {
+  border-top-color: var(--accent);
+  background: var(--tint-6);
+}
+.gr-mode__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.gr-mode__tag {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.gr-mode--ground .gr-mode__tag {
+  color: var(--accent);
+}
+.gr-mode__h {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.gr-mode__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.gr-mode__row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+.gr-mode__k {
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+.gr-mode__v {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* ════════════════ GROUNDING FORK ════════════════ one query splits three ways
+   on what the search returned — found → answer from context, empty → honest
+   "not found", withheld → answer from accessible + access hint. Empty (nothing
+   exists) and withheld (hidden by ACL) are told apart, never collapsed; the
+   empty branch is the deliberate trade: silence over a fabricated answer. */
+.gr-fork {
+  display: flex;
+  align-items: stretch;
+  gap: 0.6rem;
+  margin: 1.1rem 0 0.4rem;
+}
+.gr-fork__in {
+  flex: 0 0 auto;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--s2);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.75rem;
+}
+.gr-fork__in-h {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.gr-fork__in-sub {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+.gr-fork__split {
+  flex: 0 0 auto;
+  align-self: center;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+}
+.gr-fork__split::before {
+  content: "──▶";
+  margin-right: 0.3rem;
+  letter-spacing: -0.05em;
+}
+.gr-fork__paths {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.gr-fork__path {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--dot);
+  border-radius: var(--radius-md);
+  padding: 0.55rem 0.75rem;
+}
+/* Happy path — context found, answer synthesized from it. */
+.gr-fork__path--found {
+  border-left-color: var(--s3);
+  background: var(--tint-6);
+}
+/* Honest empty — nothing relevant exists; no guessing. */
+.gr-fork__path--empty {
+  border-left-color: var(--s1);
+  border-style: dashed;
+}
+/* Withheld — relevant exists but ACL hid it; answer from accessible + a hint. */
+.gr-fork__path--hidden {
+  border-left-color: var(--s2);
+  background: var(--s2-pale);
+}
+.gr-fork__cond {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.gr-fork__path--found .gr-fork__cond {
+  color: var(--s3);
+}
+.gr-fork__path--empty .gr-fork__cond {
+  color: var(--s1);
+}
+.gr-fork__path--hidden .gr-fork__cond {
+  color: var(--s2);
+}
+.gr-fork__out {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.gr-fork__note {
+  font-size: 0.71rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+/* ════════════════ CHAT BUBBLES ════════════════ the two answer examples drawn
+   as real chat bubbles — Query Engine is a conversational product, so the
+   grounded answer and the access hint read best as messages, not abstract
+   cards. The grounded answer is an assistant bubble carrying an inline marker
+   with the source card attached (gr-src — the cited record backed by the best
+   chunk, sourced from the KS chunks projection); the access hint is an
+   info-toned plashka attached under the answer (gr-hint — relevant data exists
+   but ACL hid it; the fact of existence + safe coordinates, never content). */
+.gr-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin: 1.1rem 0 0.4rem;
+}
+.gr-msg {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+  max-width: 90%;
+}
+/* User turn — right-aligned, no avatar. */
+.gr-msg--user {
+  align-self: flex-end;
+}
+/* Assistant turn — left-aligned, avatar beside the name + bubble column. */
+.gr-msg--ai {
+  align-self: flex-start;
+}
+.gr-msg__avatar {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--tint-8);
+  border: 1px solid var(--accent-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.gr-msg__col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  min-width: 0;
+}
+.gr-msg__who {
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+/* The bubble — one squared corner toward its speaker, chat-style. */
+.gr-bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+.gr-bubble--user {
+  background: var(--tint-8);
+  border: 1px solid var(--tint-25);
+  border-bottom-right-radius: 4px;
+}
+.gr-bubble--ai {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-bottom-left-radius: 4px;
+}
+/* The inline citation marker — a small superscript-style reference chip. */
+.gr-bubble__marker {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--accent);
+  vertical-align: super;
+  margin-left: 0.1rem;
+}
+
+/* Attached source card — the cited record backed by the best chunk. */
+.gr-src {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  background: var(--tint-6);
+  border: 1px solid var(--accent-muted);
+  border-radius: var(--radius-md);
+  padding: 0.55rem 0.7rem;
+}
+.gr-src__marker {
+  flex: 0 0 auto;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.gr-src__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.gr-src__rec {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.gr-src__kind {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  border: 1px solid var(--accent-muted);
+  border-radius: var(--tag-radius);
+  padding: 0.05rem 0.35rem;
+}
+.gr-src__title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.gr-src__chunk {
+  font-size: 0.73rem;
+  font-style: italic;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+/* Access-hint plashka — mirrors the Web App's wf-kbnote so the design crosses
+   surfaces. Our layer attaches it under the model's own words to mark that the
+   reply came through a KB search and that part is withheld. Info-toned (never
+   an error — the user still got a reply); carries safe coordinates only —
+   source system + who to ask (the record's author, resolved to email) — never
+   the closed title or content. */
+.gr-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.1rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--s2-glow);
+  background: var(--s2-pale);
+}
+.gr-hint__icon {
+  flex: 0 0 auto;
+  margin-top: 0.08rem;
+  width: 0.78rem;
+  height: 0.78rem;
+  position: relative;
+}
+.gr-hint__icon::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0.6rem;
+  height: 0.6rem;
+  border: 1.5px solid var(--s2);
+  border-radius: 50%;
+}
+.gr-hint__icon::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 0.32rem;
+  height: 1.5px;
+  background: var(--s2);
+  border-radius: 1px;
+  transform: rotate(45deg);
+  transform-origin: right bottom;
+}
+.gr-hint__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.gr-hint__head {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--s2);
+  line-height: 1.4;
+}
+/* Safe coordinates — source-system chip + who to ask. No title, no content. */
+.gr-hint__coords {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.gr-hint__ask {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.gr-hint__contact {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+/* Deferred v2 — the automated request-access action. The contact email itself
+   is v1 (the record's author); only the one-tap request flow waits. */
+.gr-hint__req {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--s2);
+  border: 1px dashed var(--s2-glow);
+  border-radius: var(--tag-radius);
+  padding: 0.12rem 0.45rem;
+  opacity: 0.75;
+}
+
+@media (max-width: 640px) {
+  .gr-fork {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .gr-fork__split {
+    align-self: flex-start;
+  }
+  .gr-modes {
+    flex-direction: column;
+  }
+}

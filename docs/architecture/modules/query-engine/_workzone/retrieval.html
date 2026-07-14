@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Query Engine: boundary with Knowledge Store</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../query-engine.css" />
+    <link rel="stylesheet" href="retrieval.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Query Engine</a>
+        <h1 class="header__title">Boundary with Knowledge Store</h1>
+        <div class="header__sub">query-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        Retrieval (search and access rights) belongs to
+        <a href="../../knowledge-store/_workzone/hybrid-search.html#boundary" class="xref-module"
+          >Knowledge Store</a
+        >; Query Engine is the RAG layer on top. This page holds the seam: where
+        the store ends and RAG begins —
+        <a href="#boundary" class="xref-anchor">the call boundary</a>; how
+        <a href="#identity" class="xref-anchor">identity</a> goes down as the
+        filter's input; which <a href="#access-signal" class="xref-anchor">access
+        signal</a> the store reads for staleness; and where the
+        <a href="#live-check" class="xref-anchor">live rights check</a>
+        augments the pre-filter in v2. The module's reciprocity node: this is where
+        the inbound links from KS, Auth, and Harvester converge.
+      </p>
+
+      <!-- ════════════════ BOUNDARY ════════════════ -->
+      <div class="section" id="boundary">
+        <div class="section__title">The call boundary: query down, candidates up</div>
+        <p class="desc">
+          When the chat model calls <code>search_knowledge</code>, Query Engine
+          calls Knowledge Store's
+          <a
+            href="../../knowledge-store/_workzone/hybrid-search.html#boundary"
+            class="xref-module"
+            >assembled hybrid result</a
+          >
+          in a single query — this is the body of the tool. The four search
+          primitives (vector · lexical · graph · sql), their fusion (RRF), and the
+          ACL pre-filter live entirely in KS; QE neither repeats them nor assembles
+          across stores. The contract is narrow: a query with an identity goes
+          down, a ready list of candidates under access rights comes up — and from
+          there RAG begins.
+        </p>
+        <p class="note">
+          The boundary is not crossed on an empty base. If Knowledge Store is empty
+          (<a href="../../knowledge-store/_workzone/hybrid-search.html#emptiness" class="xref-module"
+            ><code>is_empty</code></a>), <code>search_knowledge</code> is not
+          offered to the model — there is nothing to call, no downward call is
+          made, and QE simply returns the model's answer from general knowledge.
+        </p>
+
+        <div class="rt-bound">
+          <div class="rt-bound__col rt-bound__col--ks">
+            <div class="rt-bound__head">
+              <span class="rt-bound__who">Knowledge Store</span>
+              <span class="rt-bound__act">retrieval</span>
+            </div>
+            <ul class="rt-bound__list">
+              <li>Four primitives: vector · lexical · graph · sql.</li>
+              <li>Fusing the lists — RRF into a single result.</li>
+              <li>ACL pre-filter — rights as a query condition, before ranking.</li>
+              <li>Returns candidates: fragments and entities, under access rights.</li>
+            </ul>
+          </div>
+          <div class="rt-bound__seam">
+            <span class="rt-bound__seam-down">query + identity&nbsp;▾</span>
+            <span class="rt-bound__seam-up">▴&nbsp;candidates under access rights</span>
+          </div>
+          <div class="rt-bound__col rt-bound__col--qe">
+            <div class="rt-bound__head">
+              <span class="rt-bound__who">Query Engine</span>
+              <span class="rt-bound__act">RAG</span>
+            </div>
+            <ul class="rt-bound__list">
+              <li>One hybrid-result call — no assembling search of its own.</li>
+              <li>Rerank of candidates — the RRF order from KS.</li>
+              <li>Packing context from the best fragments.</li>
+              <li>
+                LLM answer
+                <span class="ai-tag" title="This stage uses a neural network — model inference"
+                  ><span class="ai-tag__icon"></span>AI</span
+                >
+                generation.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ IDENTITY — INPUT ════════════════ -->
+      <div class="section" id="identity">
+        <div class="section__title">Identity — the filter's input, not a rights scheme at QE</div>
+        <p class="desc">
+          Query Engine passes the user's identity down — the email and its mapping
+          to source accounts. Knowledge Store expands it into a
+          <a href="../../knowledge-store/_workzone/acl-identity.html#resolution" class="xref-module"
+            >resolution join</a
+          >
+          and filters candidates in a single SQL <em>before</em> ranking.
+        </p>
+
+        <div class="rt-flow">
+          <div class="rt-flow__node rt-flow__node--qe">
+            <span class="rt-flow__t">Query Engine</span>
+            <span class="rt-flow__s">passes identity</span>
+          </div>
+          <div class="rt-flow__arr">
+            <span class="rt-flow__arr-line">──▶</span>
+            <span class="rt-flow__arr-cap">email → source accounts</span>
+          </div>
+          <div class="rt-flow__node rt-flow__node--ks">
+            <span class="rt-flow__t">Knowledge Store</span>
+            <span class="rt-flow__s">resolution join + pre-filter</span>
+          </div>
+          <div class="rt-flow__arr">
+            <span class="rt-flow__arr-line">──▶</span>
+            <span class="rt-flow__arr-cap">single SQL · before ranking</span>
+          </div>
+          <div class="rt-flow__node rt-flow__node--out">
+            <span class="rt-flow__t">candidates under access rights</span>
+            <span class="rt-flow__s">RAG input</span>
+          </div>
+        </div>
+
+        <p class="note">
+          The source of the rights is with other modules; QE only presents them.
+          <a href="../../harvester/_workzone/acl-identity.html#acl" class="xref-module"
+            >Harvester</a
+          >
+          captures rights and identities from the sources and writes them into KS;
+          expanding them into accessible entities is KS's resolution. The platform
+          side of access is held by
+          <a href="../../auth-security/_workzone/authorization.html#data-acl" class="xref-module"
+            >Auth&nbsp;&amp;&nbsp;Security</a
+          >
+          — the “data ACL” layer: in v1, Hybrid, where the source itself determines
+          access; a platform interpretation on top of source rights is
+          <span class="iter v2">v2</span>.
+        </p>
+
+        <p class="note">
+          <strong>The hidden-item marker is content-free.</strong> The pre-filter
+          removes the forbidden entirely: in the list under rights there is nothing
+          hidden, and “how many were removed” is not visible from it. So alongside
+          the candidates the store returns a light marker of
+          <em>filtered-but-relevant</em> — whether there was a hidden candidate, in
+          which source system, and who its author is
+          (<code>author_principal_id</code>, resolving to an email), without title
+          or content. On it rests the
+          <a href="grounding.html#access-hints" class="xref-page">hint about hidden
+            access</a>: the author-contact of “whom to go to” exists in v1; the
+          formal grantor of “who grants access” would require a new field in the
+          rights model — <span class="iter v2">v2</span>.
+        </p>
+
+        <p class="note">
+          <strong>The model's arguments are untrusted input.</strong>
+          <code>search_knowledge</code> takes the query and filters as
+          <em>values</em>, not as SQL, and the identity — from the session, not
+          from the model's arguments. So a prompt injection is powerless: it won't
+          grant the model someone else's access (rights are not its argument), and
+          it won't build a SQL injection (a value does not become code — that is
+          the
+          <a href="../../knowledge-store/_workzone/hybrid-search.html#acl-prefilter" class="xref-module"
+            >retrieval layer's concern</a
+          >). We deliberately do not offer text-to-SQL — it would open both
+          vectors.
+        </p>
+      </div>
+
+      <!-- ════════════════ ACCESS SIGNAL ════════════════ -->
+      <div class="section" id="access-signal">
+        <div class="section__title">
+          Access signal for staleness
+          <a
+            class="xref-badge xref-badge--page"
+            href="data-model.html#access-counter"
+            >→ access_counter</a
+          >
+        </div>
+        <p class="desc">
+          What is queried and how often — only Query Engine sees it. This signal is
+          needed by Knowledge Store's
+          <a
+            href="../../knowledge-store/_workzone/lifecycle.html#staleness"
+            class="xref-module"
+            >staleness-decay</a
+          >
+          as the “access frequency” input: what is in demand keeps its weight, what
+          is forgotten sinks. There is deliberately no carrier for it in the KS
+          model — the only one who sees the accesses is this module; it also holds
+          the <code>access_counter</code> counter
+          (<code>hits</code>, <code>last_accessed_at</code> per entity). The decay
+          itself and its formula are with Knowledge Store.
+        </p>
+
+        <p class="note">
+          <strong>An “access” ≠ a raw retrieve.</strong> We count it when an entity
+          actually entered an answer or its source was clicked. A raw retrieve is
+          noisy: landing among candidates is not yet a benefit, and counting it
+          would reinforce something that merely surfaced once. Each counted access
+          is a cheap upsert into <code>access_counter</code> (<code>hits++</code>,
+          <code>last_accessed_at</code>); there is no cross-module call on the hot
+          path of the answer.
+        </p>
+
+        <p class="note">
+          <strong>The signal is not sent — it is read on recompute.</strong>
+          Decay is an absolute recompute of <code>trust_score</code> in the
+          <a
+            href="../../knowledge-store/_workzone/lifecycle.html#staleness"
+            class="xref-module"
+            >Curation&nbsp;Pass</a
+          >
+          from the current inputs. It takes demand the same way it takes authority:
+          by JOIN to the carrier table at run time — <code>authority_tier</code>
+          from Harvester, access frequency from Query Engine's
+          <code>access_counter</code>. There is no separate “send” schedule: the
+          signal's cadence = the Curation Pass cadence, and the hot answer path and
+          the cold curation path are decoupled. What has not been queried for a
+          while (<code>last_accessed_at</code> long ago) decays toward neutral —
+          the forgotten sinks on its own, without deletion.
+        </p>
+
+        <div class="rt-flow">
+          <div class="rt-flow__node rt-flow__node--qe">
+            <span class="rt-flow__t">access_counter · QE</span>
+            <span class="rt-flow__s">hits · last_accessed_at</span>
+          </div>
+          <div class="rt-flow__arr">
+            <span class="rt-flow__arr-line">──▶</span>
+            <span class="rt-flow__arr-cap">JOIN on recompute · like authority_tier</span>
+          </div>
+          <div class="rt-flow__node rt-flow__node--ks">
+            <span class="rt-flow__t">Curation Pass · KS</span>
+            <span class="rt-flow__s">authority × freshness × demand</span>
+          </div>
+          <div class="rt-flow__arr">
+            <span class="rt-flow__arr-line">──▶</span>
+            <span class="rt-flow__arr-cap">absolute recompute</span>
+          </div>
+          <div class="rt-flow__node rt-flow__node--out">
+            <span class="rt-flow__t">entities.trust_score</span>
+            <span class="rt-flow__s">ranking weight</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ LIVE-CHECK ════════════════ -->
+      <div class="section" id="live-check">
+        <div class="section__title">
+          Live rights check on output<span class="iter v2">v2</span>
+        </div>
+        <p class="desc">
+          A pre-filter by the stored ACL answers fast, but the cache lags the
+          source: revoked access may still hang in our base —
+          <a href="../../harvester/_workzone/acl-identity.html#permission-sync" class="xref-module"
+            >Harvester</a
+          >
+          syncs rights eventually. To keep a stale revocation from leaking into an
+          answer, for the final top-N candidates we do a live rights check at the
+          source (late-binding security trim): we confirm access right before the
+          display.
+        </p>
+
+        <div class="rt-trim">
+          <div class="rt-trim__stage rt-trim__stage--fast">
+            <span class="rt-trim__t">pre-filter</span>
+            <span class="rt-trim__d">
+              By the stored ACL — the whole index, one SQL. Fast, but eventually
+              consistent.
+            </span>
+          </div>
+          <div class="rt-trim__arr">▸</div>
+          <div class="rt-trim__stage rt-trim__stage--rank">
+            <span class="rt-trim__t">rerank → top-N</span>
+            <span class="rt-trim__d">
+              Candidates narrowed to a handful of finalists.
+            </span>
+          </div>
+          <div class="rt-trim__arr">▸</div>
+          <div class="rt-trim__stage rt-trim__stage--live">
+            <span class="rt-trim__t">live-check at the source</span>
+            <span class="rt-trim__d">
+              We confirm access to each finalist before display — only on the
+              top-N.
+            </span>
+          </div>
+        </div>
+
+        <p class="note">
+          <strong>The source did not respond — we close (fail-closed).</strong> If
+          at check time the source is unavailable (a failure, a timeout), we do not
+          show the candidate: unconfirmed access is treated as denial — the same
+          fail-safe default as across the entire access layer.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

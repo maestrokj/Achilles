@@ -1,0 +1,1197 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — AI Foundation: Data model</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="data-model.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← AI Foundation</a>
+        <h1 class="header__title">Data model</h1>
+        <div class="header__sub">ai-foundation · workzone</div>
+      </div>
+
+      <p class="desc">
+        The data home of the AI domain — the neural-network system prompt, the
+        AI-model registry (providers · models · assignment by function · chat and
+        agent lists · usage) and the tool catalog. The map below is the whole
+        module at a glance, each node leading to its own table. The ORM models
+        live in the shared core (<code>core</code>), Admin provides CRUD and
+        screens; the consumers — Harvester, Knowledge Store, Query Engine, Agent
+        Engine, Auth — read from core, with no cycles. Global platform
+        configuration (AI budgets) lives in
+        <a href="../../admin-panel/_workzone/data-model.html#singleton" class="xref-module">Admin Panel</a>.
+      </p>
+
+      <!-- Schema overview — the three layers and the registry hub-and-spoke at a
+           glance; each node jumps to its table below. -->
+      <div class="dm-schema">
+        <div class="dm-schema__band dm-schema__band--config">
+          <div class="dm-schema__lyr">
+            <span class="dm-schema__n">1</span>System prompt
+          </div>
+          <a class="dm-node" href="#prompt-settings"
+            >prompt_settings<small>singleton · safety + org</small></a
+          >
+        </div>
+
+        <div class="dm-schema__band dm-schema__band--ai">
+          <div class="dm-schema__lyr">
+            <span class="dm-schema__n">2</span>AI-model registry
+          </div>
+          <div class="dm-schema__hub">
+            <a class="dm-node" href="#t-ai-providers"
+              >ai_providers<small>connections</small></a
+            >
+            <span class="dm-schema__arr">→</span>
+            <a class="dm-node dm-node--hub" href="#t-ai-models"
+              >ai_models<small>model catalog</small></a
+            >
+            <span class="dm-schema__arr">→</span>
+            <div class="dm-schema__spokes">
+              <a class="dm-node dm-node--sm" href="#t-model-assignments"
+                >model_assignments<small>system functions</small></a
+              >
+              <a class="dm-node dm-node--sm" href="#t-chat-models"
+                >chat_models<small>chat</small></a
+              >
+              <a class="dm-node dm-node--sm" href="#t-agent-models"
+                >agent_models<small>agents</small></a
+              >
+              <a class="dm-node dm-node--sm" href="#t-model-usage"
+                >model_usage<small>usage</small></a
+              >
+            </div>
+          </div>
+          <a class="dm-node dm-node--solo" href="#tools"
+            >tools<small>tool catalog · separate</small></a
+          >
+        </div>
+
+        <div class="dm-schema__band dm-schema__band--migration">
+          <div class="dm-schema__lyr">
+            <span class="dm-schema__n">3</span>Migration
+          </div>
+          <span class="dm-schema__note"
+            >one logical step — creates the registry and seeds the Platform
+            provider with its built-in models</span
+          >
+        </div>
+      </div>
+
+      <div class="stk-stack">
+        <!-- ── L1 · System prompt ── HOME of the prompt settings: a singleton in
+             core, the DB stores only the override, the default is a per-locale
+             seed. Layered composition assembles the final prompt of every AI
+             call. -->
+        <div class="stk-layer stk-layer--config" id="prompt-data">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">1</span>
+            <span class="stk-layer__name">System prompt</span>
+            <span class="stk-layer__role">Singleton. Override + layered composition.</span>
+            <a class="xref-badge" href="../../admin-panel/_wireframes/ai-behavior.html#composition"
+              >→ Prompt AI screen</a
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="dm-tbl" id="prompt-settings">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">prompt_settings</span>
+                <span class="dm-tbl__sub">neural-network system prompt</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--flag">singleton · CHECK (id = 1)</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--pk">PK</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (id = 1)">CHECK</span>
+                    </td>
+                    <td class="dm-note">always <code>1</code> · singleton</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">safety_text</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      safety-prompt override · <code>NULL</code> = built-in
+                      default · <a href="#prompt-defaults" class="xref-anchor">→ Default in code</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">org_text</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      organization-prompt override · <code>NULL</code> = built-in
+                      default
+                    </td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">updated_by</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → users, ON DELETE SET NULL">FK→users</span
+                      ><span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">who edited last · SET NULL · the edit trail is in the Audit Log</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>server_default=now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="prompt-layers">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Layered prompt composition</span>
+                <a class="xref-badge xref-badge--page" href="prompt-library.html#safety"
+                  >→ Prompt texts</a
+                >
+                <a class="xref-badge" href="../../admin-panel/_wireframes/ai-behavior.html#composition"
+                  >→ Prompt AI screen</a
+                >
+              </div>
+              <div class="dm-compose">
+                <div class="dm-compose__row dm-compose__row--admin">
+                  <span class="dm-compose__n">1</span>
+                  <span class="dm-compose__t">safety prompt</span>
+                  <span class="dm-compose__o">admin · safety_text</span>
+                </div>
+                <div class="dm-compose__row dm-compose__row--admin">
+                  <span class="dm-compose__n">2</span>
+                  <span class="dm-compose__t">organization prompt</span>
+                  <span class="dm-compose__o">admin · org_text</span>
+                </div>
+                <div class="dm-compose__row dm-compose__row--eng">
+                  <span class="dm-compose__n">3</span>
+                  <span class="dm-compose__t">engineered function-prompt</span>
+                  <span class="dm-compose__o">surface · chat · agent</span>
+                </div>
+                <div class="dm-compose__row dm-compose__row--rt">
+                  <span class="dm-compose__n">4</span>
+                  <span class="dm-compose__t">runtime context</span>
+                  <span class="dm-compose__o">fragments · history</span>
+                </div>
+                <div class="dm-compose__sum">
+                  = the system prompt of every
+                  <span class="ai-tag" title="This step uses a neural network — model inference"><span class="ai-tag__icon"></span>AI</span>
+                  call · assembled top to bottom
+                </div>
+              </div>
+              <div class="stk-dec__d">
+                The first two layers are a single platform layer: the model lives
+                in the <code>ai_foundation/models.py</code> package (code
+                convention — one package per module), CRUD and the screen are in
+                Admin, and it is read by the consumers —
+                <a href="../../query-engine/_workzone/rag-pipeline.html#augment" class="xref-module">Query Engine</a>
+                at the prompt-assembly step and
+                <a href="../../agent-engine/_workzone/identity.html#agent-frame" class="xref-module">Agent Engine</a>
+                in the agent frame. The third layer is each surface's own (the
+                chat grounding contract, the agent task frame). This way the
+                shared tone and rules are set once, while surface-specific detail
+                stays in its engineered prompt, which the admin can't edit — RAG
+                correctness is protected.
+              </div>
+            </div>
+
+            <div class="stk-dec" id="prompt-defaults">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Default in code, the DB stores only the override</span>
+              </div>
+              <div class="stk-dec__d">
+                The built-in texts of both blocks are seed constants in code, not
+                a row in the database. <code>NULL</code> = take the default
+                (improved by deploys); non-empty text = an admin edit, frozen as
+                written. "Reset" nulls the column — a return to the current
+                default. The default is localized: seed constants exist for every
+                platform locale (<code>platform_settings.locale</code>) —
+                <code>locale=en</code> gives an English prompt, <code>ru</code> a
+                Russian one; <code>NULL</code> takes the default for the current
+                locale. This way customization survives platform updates, and an
+                out-of-the-box installation carries a prompt without manual setup.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="prompt-safety-split">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Safety and organization — separate; the perimeter is not in the prompt</span>
+              </div>
+              <div class="stk-dec__d">
+                Two independent fields — the split itself makes editing the
+                defense deliberate: changing the tone in <code>org_text</code>,
+                you won't confuse it with <code>safety_text</code>. The text
+                itself is defense-in-depth on top of the architecture, not the
+                access perimeter; the real boundary is held by the access
+                architecture, not the prompt — the analysis and a
+                <span class="iter v2">v2</span> tag are in the
+                <a class="xref-page" href="prompt-library.html#safety-perimeter">Prompt texts</a>.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="prompt-effective">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">API response — the effective text plus an override flag</span>
+              </div>
+              <div class="stk-dec__d">
+                GET returns, for each block, the ready-to-show <em>effective</em>
+                text (the override, otherwise the built-in default for the
+                locale) and an <code>is_default</code> flag — whether the column
+                is empty. By that flag the
+                <a class="xref-badge" href="../../admin-panel/_wireframes/ai-behavior.html#composition">Prompt AI</a>
+                screen tells the default from an edit: it marks "on default" and
+                keeps "Reset" active only when an override is set. This way the
+                front end doesn't guess the source of the text by comparing
+                strings, and a PATCH with <code>null</code> is a reset to the
+                default.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mod-conn">
+          <div class="mod-conn__line"></div>
+          <div class="mod-conn__arrow"></div>
+        </div>
+
+        <!-- ── L2 · AI-model registry ── HOME of the AI config: providers, their
+             models, assignment by function, the allowed list for chat, and the
+             usage aggregate. ORM in core (like PlatformSettings); screens and
+             CRUD in Admin; the consumers (Harvester · Query Engine · Agent
+             Engine) read the assignment from core. -->
+        <div class="stk-layer stk-layer--ai" id="ai-models">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">2</span>
+            <span class="stk-layer__name">AI-model registry</span>
+            <span class="stk-layer__role">Providers → models → assignment and usage.</span>
+            <a class="xref-badge" href="../../admin-panel/_wireframes/ai-models.html#providers"
+              >→ AI models screen</a
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="dm-tbl" id="t-ai-providers">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">ai_providers</span>
+                <span class="dm-tbl__sub">connections to models</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--flag">key at-rest</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">name</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                    <td class="dm-note">display name · "OpenAI" · "Ollama (on-prem)"</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">kind</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'cloud'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (cloud | local)">CHECK</span>
+                    </td>
+                    <td class="dm-note">where it runs · cloud · local</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">adapter</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (openai | anthropic | google | ollama | openai_compatible)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      API dialect · determines the SDK client and discovery ·
+                      openai · anthropic · google · ollama · openai_compatible ·
+                      <a href="#ai-adapter" class="xref-anchor">→ API dialect</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">base_url</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (kind = 'cloud' OR base_url IS NOT NULL)">CHECK</span>
+                    </td>
+                    <td class="dm-note">endpoint · optional for cloud, required for local (CHECK)</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">api_key_enc</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                    <td class="dm-note">write-only · AES-256-GCM · <code>NULL</code> for local ones · → keys</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">is_system</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">built-in runtime, seeded by the migration · non-deletable, <code>base_url</code>/<code>adapter</code> managed · <a href="#ai-builtin" class="xref-anchor">→ Built-in embedder</a></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">status</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'unchecked'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (active | error | unchecked)">CHECK</span>
+                    </td>
+                    <td class="dm-note">the result of the last check · active · error · unchecked</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">last_check_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                    <td class="dm-note"><code>NULL</code> = never checked</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                    <td class="dm-note"><code>server_default=now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="dm-tbl" id="t-ai-models">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">ai_models</span>
+                <span class="dm-tbl__sub">model catalog</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → ai_providers</span>
+                  <span class="dm-badge dm-badge--uniq">UNIQUE(provider_id, model_id)</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">provider_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → ai_providers, ON DELETE CASCADE">FK→ai_providers</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">CASCADE</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">model_id</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq" title="UNIQUE(provider_id, model_id)">UNIQUE*</span>
+                    </td>
+                    <td class="dm-note">the provider's identifier · "gpt-4o"</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">display_name</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                    <td class="dm-note">display name · default = model_id</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">model_type</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (chat | embedding)">CHECK</span>
+                    </td>
+                    <td class="dm-note">what it outputs · chat · embedding · → the type governs assignment</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">origin</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (discovered | manual | builtin)">CHECK</span>
+                    </td>
+                    <td class="dm-note">how it entered the catalog · discovered · manual · builtin (seeded with the built-in runtime)</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">is_enabled</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">enabled on the platform · DEFAULT <code>false</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">price_input</td>
+                    <td class="dm-t">Numeric</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                    <td class="dm-note">
+                      price per input token · <code>NULL</code> = not set (local) ·
+                      <a href="#ai-pricing" class="xref-anchor">→ Input/output price</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">price_output</td>
+                    <td class="dm-t">Numeric</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                    <td class="dm-note">price per output token · <code>NULL</code> for embedding and local</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">meta</td>
+                    <td class="dm-t">JSONB</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                    <td class="dm-note">model intrinsics · for embedding: <code>embedding_dim</code> (sets <code>halfvec(N)</code> in KS), <code>max_input_tokens</code>, <code>instruction_prefix</code> · <a href="#ai-intrinsics" class="xref-anchor">→ Intrinsics</a></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="dm-tbl" id="t-model-assignments">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">model_assignments</span>
+                <span class="dm-tbl__sub">system functions</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → ai_models</span>
+                  <span class="dm-badge dm-badge--uniq">UNIQUE(function)</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">function</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq">UNIQUE</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (harvester_embedding | query_rag) — the system subset of the function vocabulary">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      one row per function · system ones: harvester_embedding ·
+                      query_rag ·
+                      <a href="#ai-functions" class="xref-anchor">→ Function vocabulary</a>
+                    </td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">model_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → ai_models, ON DELETE RESTRICT">FK→ai_models</span
+                      ><span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">the assigned model · <code>NULL</code> = awaiting a module · RESTRICT</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="dm-tbl" id="t-chat-models">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">chat_models</span>
+                <span class="dm-tbl__sub">user chat</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → ai_models</span>
+                  <span class="dm-badge dm-badge--uniq">exactly one default</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">model_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → ai_models, ON DELETE RESTRICT">FK→ai_models</span
+                      ><span class="dm-c dm-c--uq">UNIQUE</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">an allowed chat model · RESTRICT — in the list = in use</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">is_default</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">partial <code>UNIQUE WHERE is_default</code> — exactly one</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="dm-tbl" id="t-agent-models">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">agent_models</span>
+                <span class="dm-tbl__sub">agent models</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → ai_models</span>
+                  <span class="dm-badge dm-badge--uniq">exactly one default</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">— · <a href="../../agent-engine/_workzone/data-model.html#agents" class="xref-module">agents.model_id</a> references this</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">model_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → ai_models, ON DELETE RESTRICT">FK→ai_models</span
+                      ><span class="dm-c dm-c--uq">UNIQUE</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">an allowed agent model · chat-type, with tool support · RESTRICT — in the list = in use</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">is_default</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">partial <code>UNIQUE WHERE is_default</code> — exactly one · preset in the agent editor</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="dm-tbl" id="t-model-usage">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">model_usage</span>
+                <span class="dm-tbl__sub">usage · per-day aggregate</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → ai_models</span>
+                  <span class="dm-badge dm-badge--uniq">UNIQUE(model_id, function, bucket_date)</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">model_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → ai_models, ON DELETE SET NULL">FK→ai_models</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">SET NULL · usage outlives model deletion</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">function</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (harvester_embedding | query_rag | agent_engine | chat)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      which function consumed it · shared vocabulary ·
+                      <a href="#ai-functions" class="xref-anchor">→ Function vocabulary</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">bucket_date</td>
+                    <td class="dm-t">Date</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq" title="UNIQUE(model_id, function, bucket_date)">UNIQUE*</span>
+                    </td>
+                    <td class="dm-note">the aggregation day</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">request_count</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 0">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">DEFAULT <code>0</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">input_tokens</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 0">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">input tokens · DEFAULT <code>0</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">output_tokens</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 0">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">output tokens · <code>0</code> for embedding</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">cost</td>
+                    <td class="dm-t">Numeric</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                    <td class="dm-note">input·price_input + output·price_output · <code>NULL</code> if the prices aren't set</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code> + trigger · the last increment of the bucket</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="dm-tbl" id="tools">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">tools</span>
+                <span class="dm-tbl__sub">AI tool catalog</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--flag">secret at-rest</span>
+                  <span class="dm-badge dm-badge--uniq">UNIQUE(name)</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">name</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq">UNIQUE</span>
+                    </td>
+                    <td class="dm-note">the tool key = the key linking to the type in the registry · <code>web_search</code> · <code>fetch_url</code> · name/description via <code>t()</code>, not in the DB</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">source</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'preset'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (preset | custom | mcp | openapi)">CHECK</span>
+                    </td>
+                    <td class="dm-note">where the schema comes from · preset · custom (v1) · mcp · openapi (<span class="iter v2">v2</span>) · <a href="tool-catalog.html#sources" class="xref-page">→ Sources</a></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">access</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'read_only'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (read_only | write)">CHECK</span>
+                    </td>
+                    <td class="dm-note">read_only (v1) · write (<span class="iter v2">v2</span>)</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">config</td>
+                    <td class="dm-t">JSONB</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                    <td class="dm-note">non-secret configuration · provider · base_url · options · <strong>not a secret</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">credential_enc</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                    <td class="dm-note">write-only secret · AES-256-GCM by <a href="../../auth-security/_workzone/protection.html#crypto-core" class="xref-module">Auth's crypto core</a> · only the <code>is_set</code> flag leaves outward · <code>NULL</code> = no key needed</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">chat_enabled</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">given to chat · DEFAULT <code>false</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">agents_allowed</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">admitted to the agent allowlist · DEFAULT <code>false</code> · the owner selects in the editor</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">status</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'unchecked'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (active | error | unchecked)">CHECK</span>
+                    </td>
+                    <td class="dm-note">the result of the health check · active · error · unchecked · as with <code>ai_providers</code> · <a href="tool-catalog.html#health" class="xref-page">→ Check</a></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">last_check_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                    <td class="dm-note"><code>NULL</code> = never checked</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="tools-catalog">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">A tool — the catalog is in Admin, the agent's selection is in Agent Engine</span>
+                <a class="xref-badge xref-badge--page" href="tool-catalog.html#governance">→ Tool catalog</a>
+                <a class="xref-badge" href="../../agent-engine/_workzone/data-model.html#agent-tools">→ Agent Engine</a>
+              </div>
+              <div class="stk-dec__d">
+                A <strong>tool</strong> is a callable function, given to the model
+                as a tool-schema (not a prompt). The catalog is open — a registry
+                of types (platform presets + the organization's own class, a
+                mirror of the connectors):
+                <a href="tool-catalog.html#discovery" class="xref-page">the list is a live registry</a>,
+                this table holds the state by <code>name</code> (no row = the type
+                is off, defaults), a row is created lazily. v1 seeds two read-only
+                presets — <code>web_search</code> and <code>fetch_url</code>, both
+                off. Admission is two independent surfaces:
+                <code>chat_enabled</code> (visible to chat) and
+                <code>agents_allowed</code> (available for agents to select); a
+                tool is active as long as it is given to at least one. The agent's
+                selection itself is the
+                <a href="../../agent-engine/_workzone/data-model.html#agent-tools" class="xref-module"><code>agent_tools</code></a>
+                link in Agent Engine; the runtime filters it by the current
+                <code>agents_allowed</code>, and removal → the agent falls back to
+                the KS core (graceful degradation). Non-secret configuration (the
+                <code>web_search</code> provider, options) lives in
+                <code>config</code>, edited by the admin on the screen, not by a
+                config file; the secret is in <code>credential_enc</code>, not in
+                <code>config</code>: like the <code>ai_providers</code> and SMTP
+                keys, only the <code>is_set</code> flag leaves outward.
+                <code>status</code> / <code>last_check_at</code> hold the result
+                of the health check — by the same device as
+                <code>ai_providers</code>.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="ai-ownership">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Models in ai_foundation, CRUD and screens — in Admin</span>
+                <a class="xref-badge" href="../../admin-panel/_wireframes/ai-models.html#model-assignment"
+                  >→ Assignment by function</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                The ORM models are in the <code>ai_foundation/models.py</code>
+                package (code convention — one package per module), not in admin:
+                the assigned models are read by the
+                <span class="ai-tag" title="This step uses a neural network — model inference"><span class="ai-tag__icon"></span>AI</span>
+                consumers Harvester (embed), Knowledge Store (re-embedding), Query
+                Engine (RAG) and Agent Engine — four consumers, not just Admin.
+                Admin provides CRUD and screens; the dependencies go toward core —
+                with no cycles.
+              </div>
+            </div>
+
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Keys — Auth's crypto core</span>
+                <a class="xref-badge" href="../../auth-security/_workzone/protection.html#crypto-core"
+                  >→ Crypto core</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                <code>api_key_enc</code> is a write-only secret, AES-256-GCM
+                ciphertext by Auth's crypto core; it is not returned outward (API,
+                export), the UI gets only the mask <code>••••xxxx</code>. Local
+                providers usually have no key.
+              </div>
+            </div>
+
+            <div class="stk-dec" id="ai-adapter">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">API dialect ≠ where it runs</span>
+                <a class="xref-badge" href="../../admin-panel/_wireframes/ai-models.html#providers"
+                  >→ Providers screen</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Two orthogonal axes. <code>kind</code> (cloud / local) is where
+                the model runs: it determines whether a key is needed and whether
+                <code>base_url</code> is required. <code>adapter</code> is which
+                protocol to speak to it on: it selects the SDK client and the
+                discovery endpoint (<code>openai</code> →
+                <code>GET /v1/models</code>, <code>ollama</code> →
+                <code>GET /api/tags</code>). <code>openai_compatible</code> covers
+                vLLM · llama.cpp · proxies. The protocol can't be inferred from
+                <code>name</code> (the display name) — hence a separate field.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="ai-builtin">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Built-in embedder — out of the box, lazily, not by default</span>
+                <a class="xref-badge" href="../../admin-panel/_wireframes/ai-models.html#model-assignment"
+                  >→ Assignment by function</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                The platform ships its own local embeddings runtime — a separate
+                docker-compose service (OpenAI-compatible, model-agnostic),
+                brought up on <code>make up</code> alongside the backend; the
+                container is lightweight and doesn't pull ML dependencies into the
+                API image. <strong>Weights are not downloaded at install</strong>:
+                the runtime pulls them <strong>lazily</strong> — on model
+                assignment (and immediately
+                <a
+                  href="../../knowledge-store/_workzone/embedding-runtime.html#contention"
+                  class="xref-module"
+                  >warms it up</a
+                >
+                without waiting for the first request), into a cache volume. Until
+                selected, the embedder takes neither disk nor memory, and so it
+                doesn't limit the deploy. The migration seeds the
+                <code>is_system</code> provider <code>Platform</code>
+                (non-deletable, <code>base_url</code> pointing to the internal
+                service, no key) and the catalog of built-in models — selectable
+                (<code>is_enabled=true</code>) but not loaded. The set is defined
+                by the seed, not the screens (the first iteration —
+                <code>bge-m3</code> and <code>Qwen3-Embedding-0.6B</code>, both
+                1024-dimensional); the wireframes reference them only as examples.
+                There is <strong>no default assignment</strong>: the
+                <code>model_assignments.harvester_embedding</code> row does not
+                exist at the start, and Harvester won't start ingesting without an
+                assignment — Admin must assign an embedding model (built-in
+                <em>or</em> their own) before the first ingest. The reason is
+                hard: the choice fixes the dimension <code>N</code> of the
+                <a href="../../knowledge-store/_workzone/data-model.html#chunks" class="xref-module"
+                  ><code>chunks.embedding</code></a
+                >
+                column, and a later change is a mass
+                <a href="../../knowledge-store/_workzone/lifecycle.html#embedding-refresh" class="xref-module"
+                  >re-embedding</a
+                >
+                (with a different <code>N</code> — a schema migration). The
+                default is deliberately empty: neither a model nor its weight is
+                imposed by the installation. How this service handles load streams
+                and scales (v1 → v2) is in
+                <a
+                  href="../../knowledge-store/_workzone/embedding-runtime.html#scaling"
+                  class="xref-module"
+                  >the embeddings runtime</a
+                >.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="ai-intrinsics">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Model intrinsics — in the registry, not in the consumer's code</span>
+                <a class="xref-badge" href="../../harvester/_workzone/pipeline.html#param-homes"
+                  >→ Where parameters live</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Parameters set by the model itself — the vector dimension
+                (<code>embedding_dim</code>), the window cap
+                (<code>max_input_tokens</code>), the required prefix
+                (<code>instruction_prefix</code>) — live in the model's
+                <code>meta</code>, not in the consumer's config (no hardcoding):
+                Harvester's chunker reads the cap from there, KS takes the
+                <code>embedding_dim</code> of the assigned embedding model and
+                provisions <code>halfvec(N)</code>. The built-in models are seeded
+                with their own intrinsics — <code>bge-m3</code>:
+                <code>{ embedding_dim: 1024, max_input_tokens: 8192 }</code>,
+                <code>Qwen3-Embedding-0.6B</code>:
+                <code>{ 1024, 32768 }</code>. A cloud model's
+                <code>embedding_dim</code> isn't returned by discovery, so the
+                Admin declares it when adding the model; a model without a
+                declared dimension — or one that doesn't match the provisioned
+                <code>halfvec(N)</code> — is refused at
+                <a href="../../admin-panel/_wireframes/ai-models.html#model-assignment" class="xref-module">assignment</a>
+                (409), before any re-embedding starts.
+              </div>
+            </div>
+
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">The type governs assignment</span>
+              </div>
+              <div class="stk-dec__d">
+                <code>model_type</code> (chat / embedding) restricts which
+                functions a model can be assigned to: embedding — only to
+                embedding functions, chat — to chat, RAG, agents. Changing the
+                type and disabling a model are blocked while it is assigned to any
+                function <em>or</em> is in the chat or agent list (FK
+                <code>RESTRICT</code> on all three tables): otherwise an
+                assignment would be left with an incompatible or empty type, and a
+                list without a model.
+              </div>
+            </div>
+
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Assignment: system vs lists</span>
+                <a class="xref-badge" href="../../agent-engine/_workzone/data-model.html#agents"
+                  >→ Agent Engine</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                A system function is one <code>model_assignments</code> row (one
+                model). Chat and agents are two lists of the same shape:
+                <code>chat_models</code> (the employee selects the conversation
+                model) and <code>agent_models</code> (the owner selects the agent
+                model), each with exactly one <code>is_default</code> and only
+                chat-type models. The default is protected symmetrically to the
+                system functions: the <code>is_default</code> mark can't be
+                cleared without assigning another, and the default model is held
+                in the list by <code>RESTRICT</code> — the list is never left
+                without a default model. The agent's link to the selection is
+                <a href="../../agent-engine/_workzone/data-model.html#agents" class="xref-module"><code>agents.model_id</code></a>
+                → <code>agent_models</code> (<code>ON DELETE SET NULL</code>):
+                remove a model from the list and the agent's reference is nulled,
+                and the agent stops.
+              </div>
+            </div>
+
+            <div class="stk-dec" id="ai-pricing">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Price and usage — input/output separately</span>
+              </div>
+              <div class="stk-dec__d">
+                For cloud chat the output token is several times more expensive
+                than the input, so the price is two fields
+                (<code>price_input</code> · <code>price_output</code>), and usage
+                accumulates <code>input_tokens</code> and
+                <code>output_tokens</code> separately. <code>cost</code> =
+                input·price_input + output·price_output. Embedding has no output —
+                <code>price_output</code> and <code>output_tokens</code> are empty
+                / zeros. The currency is single for now (dollars), without a
+                separate field — multi-currency is deferred.
+              </div>
+            </div>
+
+            <div class="stk-dec" id="ai-functions">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">A single function vocabulary</span>
+              </div>
+              <div class="stk-dec__d">
+                The set of AI functions is defined once (an enum in
+                <code>core</code>): <code>harvester_embedding</code> ·
+                <code>query_rag</code> · <code>agent_engine</code> ·
+                <code>chat</code>. <code>model_assignments.function</code> is
+                <code>CHECK</code>ed against the subset of the two system ones
+                (<code>harvester_embedding</code> · <code>query_rag</code>) — chat
+                and agents are assigned not here but through the
+                <code>chat_models</code> / <code>agent_models</code> lists;
+                <code>model_usage.function</code> accumulates usage across the
+                full set, including <code>chat</code> and
+                <code>agent_engine</code>. One source of truth — divergence is
+                ruled out.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="ai-spend">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Usage — an aggregate; the budget — an instance setting in Admin</span>
+                <a class="xref-badge" href="../../admin-panel/_workzone/data-model.html#singleton"
+                  >→ platform_settings</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                <code>model_usage</code> accumulates requests / tokens / cost by
+                (model · function · day), not an event-log per request. The budget
+                threshold is an instance setting (<code>ai_monthly_budget</code> +
+                <code>ai_budget_alert_enabled</code>) and lives not here but in
+                <a href="../../admin-panel/_workzone/data-model.html#singleton" class="xref-module">platform_settings</a>,
+                next to <code>maintenance_mode</code>: the admin enters the amount
+                by hand and turns it on with a toggle (a CHECK prevents enabling
+                the alert without an amount) on the
+                <a href="../../admin-panel/_wireframes/usage.html#limits" class="xref-module">AI usage</a>
+                screen, in the shared home of limits. On reaching the threshold, a
+                Budget notification is raised — the channel is held by the
+                notifications module. The week / month / year usage panorama on the
+                same screen is a derived <code>SUM</code> over the period, without
+                a separate counter table. How the accounting works end to end is in
+                the <a href="cost-accounting.html" class="xref-page">usage business logic</a>.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mod-conn">
+          <div class="mod-conn__line"></div>
+          <div class="mod-conn__arrow"></div>
+        </div>
+
+        <!-- ── L3 · Migration ── -->
+        <div class="stk-layer stk-layer--migration" id="migration">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">3</span>
+            <span class="stk-layer__name">Migration</span>
+            <span class="stk-layer__role"
+              >Creates the registry and populates the built-in runtime.</span
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t"><code>alembic/versions/NNN_core_ai_models.py</code></span>
+              </div>
+              <div class="stk-dec__d">
+                Creates the AI registry in one logical step in dependency order:
+                <code>ai_providers</code> → <code>ai_models</code> →
+                <code>model_assignments</code> · <code>chat_models</code> ·
+                <code>agent_models</code> · <code>model_usage</code> ·
+                <code>tools</code>, as well as the singleton
+                <code>prompt_settings</code>. In the same step it
+                <code>INSERT</code>s the platform provider
+                (<code>is_system</code>, <code>name='Platform'</code>) and the
+                catalog of built-in models (<code>origin='builtin'</code>) — these
+                are registry <em>rows</em>, without weights and without
+                assignments
+                (<a href="#ai-builtin" class="xref-anchor">built-in embedder</a>).
+                The rest of the catalog is populated when the first provider is
+                added. <code>downgrade()</code> drops the tables in reverse order.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

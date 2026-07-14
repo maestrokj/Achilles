@@ -1,0 +1,91 @@
+/* Agent Engine — horizon-orchestration.html signature diagram: the n8n conveyor.
+   A horizontal pipeline — external triggers ▸ Achilles node ▸ external actions —
+   showing Achilles as one node in a larger automation, the glue owned by n8n.
+   Loaded by horizon-orchestration.html on top of module.css + horizon.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+.hzo-flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* A stacked column of external endpoints (triggers on the left, actions right). */
+.hzo-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.hzo-col__cap {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--hz-dim);
+  text-align: center;
+  margin-bottom: 0.1rem;
+}
+
+/* External-system node — a workzone-style block (paper, hairline, grey left
+   rail), neutral against the one lit Achilles node it feeds. */
+.hzo-node {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.7rem;
+  min-width: 9.5rem;
+  background: var(--surface);
+  border: 1.5px solid var(--hz-line);
+  border-left: 3px solid var(--hz-dim);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--hz-ink);
+}
+.hzo-node__g {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* Achilles node — the one lit, solid block: the conveyor's knowledge step. */
+.hzo-self {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.2rem;
+  padding: 0.95rem 1.1rem;
+  background: var(--paper);
+  border: 2px solid var(--hz-spark);
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 5px var(--hz-spark-pale);
+}
+.hzo-self__name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.hzo-self__sub {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--hz-ink);
+  max-width: 11rem;
+}
+
+.hzo-arr {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--hz-dim);
+}
+
+@media (max-width: 720px) {
+  .hzo-flow {
+    flex-direction: column;
+  }
+  .hzo-arr {
+    transform: rotate(90deg);
+  }
+}

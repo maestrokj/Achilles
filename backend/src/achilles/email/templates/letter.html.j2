@@ -1,0 +1,40 @@
+<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#f6f4f0;-webkit-text-size-adjust:100%;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:#f6f4f0;font-size:1px;line-height:1px;">{{ preheader }}</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f4f0;">
+      <tr>
+        <td align="center" style="padding:40px 16px;">
+          <table role="presentation" width="536" cellpadding="0" cellspacing="0" style="width:536px;max-width:100%;background:#ffffff;border:1px solid #ece9e3;border-radius:16px;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+            <tr>
+              <td style="padding:40px 44px 0 44px;">
+                <div style="font-size:15px;font-weight:700;letter-spacing:0.2px;color:{{ accent }};">{{ product_name }}</div>
+                <div style="width:26px;height:3px;margin-top:12px;background:{{ accent }};border-radius:2px;"></div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:24px 44px 0 44px;font-size:16px;line-height:1.65;color:#3a3a3d;">{{ body }}</td>
+            </tr>
+            {% if action_url %}
+            <tr>
+              <td style="padding:28px 44px 0 44px;">
+                <a href="{{ action_url }}" style="display:inline-block;background:{{ accent }};color:{{ on_accent }};text-decoration:none;font-size:15px;font-weight:600;padding:13px 26px;border-radius:10px;">{{ action_label }}</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:18px 44px 0 44px;">
+                <div style="font-size:12px;line-height:1.5;color:#b7b3aa;word-break:break-all;">{{ action_url }}</div>
+              </td>
+            </tr>
+            {% endif %}
+            <tr>
+              <td style="padding:32px 44px 40px 44px;">
+                <div style="border-top:1px solid #ece9e3;padding-top:20px;font-size:12.5px;line-height:1.55;color:#a29e95;">{{ footer }}</div>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

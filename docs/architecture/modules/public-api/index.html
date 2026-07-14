@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Public API</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="public-api.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <!-- ═══ Header ═══ -->
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← Back to architecture</a>
+        <h1 class="header__title">Public API</h1>
+        <div class="header__sub">contract · build your own surface</div>
+      </div>
+
+      <!-- ════════════════ HERO ════════════════
+           The core idea is convergence: the platform is API-first, and every
+           surface (ours and the customer’s) converges on ONE public contract,
+           with a single engine beneath it. Hence the hero is a funnel diagram:
+           a row of clients at the top → the contract bar → the core. Your own
+           surface plugs into the same entry. -->
+      <header class="pa-hero">
+        <p class="pa-title">Every surface is a client of one&nbsp;contract</p>
+        <p class="pa-lede">
+          Web&nbsp;App, MCP, Slack, Telegram, Mattermost, the extension — all of them are just clients of one
+          public API. Deployed Achilles and want your own surface —
+          a Teams bot, a CLI, a corporate portal — you plug it into the same entry.
+        </p>
+      </header>
+
+      <!-- ── Funnel: a row of surfaces → contract → core ── -->
+      <div
+        class="pa-fan"
+        role="img"
+        aria-label="The Web App, MCP, Slack, Telegram, Mattermost, extension and your own surfaces converge on one public Public API contract over HTTPS with a key or OAuth; beneath the contract is the core: Query Engine, Auth and Knowledge Store"
+      >
+        <div class="pa-clients">
+          <span class="pa-client">Web&nbsp;App</span>
+          <span class="pa-client">MCP</span>
+          <span class="pa-client">Slack</span>
+          <span class="pa-client">Telegram</span>
+          <span class="pa-client">Mattermost</span>
+          <span class="pa-client">Extension</span>
+          <span class="pa-client pa-client--yours">＋ yours</span>
+        </div>
+
+        <div class="pa-funnel">
+          <span class="pa-funnel__rail"></span>
+          <span class="pa-funnel__lbl">HTTPS · key / OAuth · one contract</span>
+        </div>
+
+        <div class="pa-contract">
+          <span class="pa-contract__tag">contract</span>
+          <span class="pa-contract__name">Public API · <code>/public/v1</code></span>
+          <span class="pa-contract__desc">
+            <code>search</code> · versioned · OpenAPI · ACL pre-filter
+          </span>
+          <span class="pa-contract__only">All you need is to call the contract over HTTP</span>
+        </div>
+
+        <div class="pa-drop"><span class="pa-drop__rail"></span></div>
+
+        <div class="pa-core">
+          <span class="pa-core__lbl">behind the contract</span>
+          <span class="pa-core__nodes">
+            <span class="pa-core__node">Query Engine</span>
+            <span class="pa-core__node">Auth</span>
+            <span class="pa-core__node">Knowledge Store</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- ── The heart of the concept in one line ── -->
+      <p class="pa-thesis" id="model">
+        Achilles is <strong>API-first</strong>: every surface, ours and yours, is a
+        client of one public contract. The contract is a
+        <strong>curated, stable slice</strong> (<code>/public/v1</code>). Our MCP, Slack,
+        Telegram, Mattermost and extension are <strong>reference implementations</strong>: build the same way.
+        <a href="../query-engine/_workzone/conversation.html#surface-api" class="xref-module"
+          >One conversation engine behind the contract →</a
+        >
+      </p>
+
+      <!-- ════════════════ CARDS ════════════════ -->
+      <div class="pa-cards">
+        <!-- Contract -->
+        <section class="pa-card" id="contract-card">
+          <span class="pa-card__num">01</span>
+          <h2 class="pa-card__title">Contract</h2>
+          <p class="pa-card__sub">
+            Outward — a narrow set of operations with the version in the path: the old
+            version lives until a declared retirement of the new one.
+          </p>
+          <ul class="pa-list">
+            <li class="pa-list__item pa-list__item--now">
+              <span class="pa-list__op"><code>search</code></span>
+              <span class="pa-list__note">findings + sources, read-only</span>
+            </li>
+            <li class="pa-list__item">
+              <span class="pa-list__op"><code>ask</code> <span class="iter v2">v2</span></span>
+              <span class="pa-list__note">a full chat turn — a ready answer with sources</span>
+            </li>
+          </ul>
+          <p class="pa-card__foot">
+            OpenAPI is served out of the box (FastAPI) — the client is generated from the schema.
+            Transport is plain REST/JSON; MCP&nbsp;— the same contract wrapped for AI clients.
+          </p>
+        </section>
+
+        <!-- Authorization -->
+        <section class="pa-card" id="auth">
+          <span class="pa-card__num">02</span>
+          <h2 class="pa-card__title">Authorization</h2>
+          <p class="pa-card__sub">
+            We don’t invent our own mechanism — the same entry as at the MCP door.
+          </p>
+          <ul class="pa-list">
+            <li class="pa-list__item pa-list__item--now">
+              <span class="pa-list__op"
+                ><a href="../auth-security/_workzone/authentication.html#api-keys" class="pa-list__link"
+                  >API key <code>ach_…</code></a
+                ></span
+              >
+              <span class="pa-list__note">in the header · headless</span>
+            </li>
+            <li class="pa-list__item">
+              <span class="pa-list__op"
+                ><a href="../auth-security/_workzone/authentication.html#oauth" class="pa-list__link"
+                  >OAuth 2.1</a
+                >
+                <span class="iter v2">v2</span></span
+              >
+              <span class="pa-list__note">browser-based consent, no key handoff</span>
+            </li>
+          </ul>
+          <p class="pa-card__foot">
+            A key resolves to <code>user_id</code> → role → ACL. A key’s scope only
+            <strong>narrows</strong> rights — ACL sits on top, there’s no way around it.
+          </p>
+        </section>
+
+        <!-- Identity -->
+        <section class="pa-card" id="identity">
+          <span class="pa-card__num">03</span>
+          <h2 class="pa-card__title">Identity</h2>
+          <p class="pa-card__sub">
+            The one genuinely new piece — how your surface’s users become
+            Achilles identities. The bridge is
+            <a href="../auth-security/_workzone/data-model.html#identity-mapping" class="xref-module"
+              >identity_mapping</a
+            >
+            with its own <code>source</code> — like <code>'slack'</code> for Slack or
+            <code>'telegram'</code> for Telegram.
+          </p>
+          <p class="pa-card__foot">
+            What the bridge looks like depends on whom the surface represents:
+            <a href="#surface-classes" class="xref-anchor">two classes below</a>.
+            An account is still created by an admin via invitation — membership in your
+            system grants no access.
+          </p>
+        </section>
+
+        <!-- Governance -->
+        <section class="pa-card" id="governance">
+          <span class="pa-card__num">04</span>
+          <h2 class="pa-card__title">Governance</h2>
+          <p class="pa-card__sub">
+            A custom surface sits under the same oversight as the native ones — there’s
+            no separate mode.
+          </p>
+          <ul class="pa-gov">
+            <li class="pa-gov__item">
+              <span class="pa-gov__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M12 3v9" /><path d="M7.5 6.5a7 7 0 1 0 9 0" />
+                </svg>
+              </span>
+              <span
+                ><strong>Kill switch and keys.</strong> Access closes at once by
+                deactivating the key; the owner creates and revokes keys in their profile,
+                with Owner/Admin oversight on the keys screen.</span
+              >
+            </li>
+            <li class="pa-gov__item">
+              <span class="pa-gov__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 12h4l2 6 4-14 2 8h6" />
+                </svg>
+              </span>
+              <span
+                ><strong>Rate limit and tagging.</strong> Every call is rate-limited
+                and tagged to the key — usage is visible on the keys screen; the
+                request text isn’t logged.</span
+              >
+            </li>
+          </ul>
+        </section>
+      </div>
+
+      <!-- ════════════════ TWO CLASSES OF SURFACES ════════════════
+           The key practical difference is whom the surface represents.
+           That determines the identity model; everything else is shared. -->
+      <section class="section" id="surface-classes">
+        <h2 class="section__title">Two classes of surfaces</h2>
+        <table class="pa-classes">
+          <thead>
+            <tr>
+              <th class="pa-classes__rk"></th>
+              <th class="pa-classes__col">Personal</th>
+              <th class="pa-classes__col">Service</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="pa-classes__rk">Principle</td>
+              <td>a key = one employee</td>
+              <td>the surface acts for many</td>
+            </tr>
+            <tr>
+              <td class="pa-classes__rk">Identity</td>
+              <td>key → its <code>user_id</code></td>
+              <td>own <code>source</code> in <code>identity_mapping</code>, each external → <code>user_id</code></td>
+            </tr>
+            <tr>
+              <td class="pa-classes__rk">Access</td>
+              <td>the owner’s personal key</td>
+              <td>a service key + identity resolution on every request</td>
+            </tr>
+            <tr>
+              <td class="pa-classes__rk">Reference</td>
+              <td>MCP · Extension</td>
+              <td>Slack · Telegram · Mattermost</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="pa-classes__foot">
+          A service surface goes through the <strong>shared “act on behalf of” path</strong>
+          — a service key with its own <code>source</code> and presenting the identity on
+          every request. Slack, Telegram and Mattermost are only <strong>references</strong> for this
+          mechanism, not code to fork: your surface uses the same path without
+          touching the platform.
+        </p>
+      </section>
+
+      <!-- ════════════════ OUR SURFACES — REFERENCE ════════════════ -->
+      <section class="section" id="reference">
+        <h2 class="section__title">Our surfaces — reference</h2>
+        <p class="pa-refs__lead">
+          Working examples of the contract — build yours by looking at the closest one to your task.
+        </p>
+        <div class="pa-refs">
+          <a class="pa-ref" href="../mcp/index.html#model">
+            <span class="pa-ref__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5" /><path d="M15 8V2" /><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" /><path d="M9 8V2" /></svg></span>
+            <span class="pa-ref__name">MCP</span>
+            <span class="pa-ref__desc">a personal door with one tool for an AI client</span>
+          </a>
+          <a class="pa-ref" href="../slack/index.html#model">
+            <span class="pa-ref__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg></span>
+            <span class="pa-ref__name">Slack</span>
+            <span class="pa-ref__desc">a surface for many: identity bridge + deferred delivery</span>
+          </a>
+          <a class="pa-ref" href="../telegram/index.html#model">
+            <span class="pa-ref__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg></span>
+            <span class="pa-ref__name">Telegram</span>
+            <span class="pa-ref__desc">the same class: identity bridge, conversation boundary by <code>/new</code></span>
+          </a>
+          <a class="pa-ref" href="../mattermost/index.html#model">
+            <span class="pa-ref__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg></span>
+            <span class="pa-ref__name">Mattermost</span>
+            <span class="pa-ref__desc">the same class on a self-hosted server: identity bridge, thread = conversation</span>
+          </a>
+          <a class="pa-ref" href="../extension/index.html">
+            <span class="pa-ref__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z" /></svg></span>
+            <span class="pa-ref__name">Extension</span>
+            <span class="pa-ref__desc">a personal client in the browser over any page</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- ════════════════ CALL CONTRACT ════════════════
+           A literal sketch of one call — a shape, not a frozen schema:
+           a request with a key → findings with sources, synthesis on the client side. -->
+      <section class="section" id="contract">
+        <h2 class="section__title">Call contract</h2>
+        <div class="pa-call">
+          <div class="pa-call__side pa-call__side--req">
+            <span class="pa-call__tag">request</span>
+            <pre class="pa-call__body"><span class="pa-call__verb">POST</span> /public/v1/search
+<span class="pa-call__hdr">Authorization:</span> Bearer ach_…
+
+{
+  <span class="pa-call__key">"query"</span>: <span class="pa-call__str">"release 4.2 status"</span>,
+  <span class="pa-call__key">"limit"</span>: 8
+}</pre>
+          </div>
+          <div class="pa-call__side pa-call__side--res">
+            <span class="pa-call__tag pa-call__tag--ok">response</span>
+            <pre class="pa-call__body"><span class="pa-call__ok">200 OK</span>
+
+{
+  <span class="pa-call__key">"results"</span>: [
+    {
+      <span class="pa-call__key">"title"</span>: <span class="pa-call__str">"RELEASE-482"</span>,
+      <span class="pa-call__key">"snippet"</span>: <span class="pa-call__str">"Release 4.2 in regression tests…"</span>,
+      <span class="pa-call__key">"source"</span>: <span class="pa-call__str">"ticket"</span>,
+      <span class="pa-call__key">"url"</span>: <span class="pa-call__str">"https://jira…/RELEASE-482"</span>,
+      <span class="pa-call__key">"score"</span>: 0.82
+    }
+  ],
+  <span class="pa-call__key">"degraded"</span>: false
+}</pre>
+          </div>
+        </div>
+        <p class="pa-call__note">
+          Search runs <strong>under the key owner’s ACL</strong> — what they can’t see
+          won’t appear in the results. Answer synthesis is on the client side;
+          <code>degraded</code> flags a result set without the vector leg (the embedder was silent). <span class="iter v2">v2</span> will add
+          <code>POST /public/v1/ask</code> — a ready answer with sources in a single call.
+        </p>
+      </section>
+
+      <!-- ════════════════ LINKS ════════════════ -->
+      <section class="section" id="api">
+        <h2 class="section__title">API</h2>
+        <ul class="api-list">
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/public/v1/search</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/public/v1/ask <span class="iter v2">v2</span></span></li>
+        </ul>
+      </section>
+
+      <section class="section" id="links">
+        <h2 class="section__title">Related modules</h2>
+        <ul class="notes">
+          <li class="note">
+            <strong>Auth / Security</strong> — keys, OAuth and the
+            <code>identity_mapping</code> → <code>user_id</code> bridge.
+            <a href="../auth-security/_workzone/authentication.html#api-keys" class="xref-badge"
+              >→ Auth / Security</a
+            >
+          </li>
+          <li class="note">
+            <strong>Query Engine</strong> — the conversation engine and ACL-scoped search
+            behind the contract.
+            <a href="../query-engine/_workzone/conversation.html#surface-api" class="xref-badge"
+              >→ Query Engine</a
+            >
+          </li>
+          <li class="note">
+            <strong>HTTP API</strong> — the contract summary: this public slice is the
+            external tier of the same engine, under shared rules for versions, errors and
+            identity.
+            <a href="../api/index.html#surface-map" class="xref-badge">→ HTTP API</a>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </body>
+</html>

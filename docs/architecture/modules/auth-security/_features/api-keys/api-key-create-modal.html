@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: API Key Create</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit (feature-local screen,
+         one level deeper than _wireframes/ — see README → Styling) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../wireframe.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="index.html">← API keys</a>
+        <h1 class="header__title">API Key Create</h1>
+        <div class="header__sub">
+          auth / security · features · API keys
+          <a class="in-load in-load--spinner" href="../../../shared-ui/_wireframes/loading-states.html#spinner" title="Awaiting action — spinner">
+            <span class="in-load__icon"></span>loading
+          </a>
+        </div>
+      </div>
+
+      <div class="desc">
+
+        One issuance dialog for all entry points. The mechanic is in
+        <a href="../../_workzone/authentication.html#api-keys" class="xref-page">API keys</a>.
+        </div>
+
+      <!-- Standalone modal (wf-stage--backdrop), two independent parts by entry
+           point: self-issuance by the user and issuance by Owner/Admin. -->
+      <div class="section" id="api-key-create">
+        <div class="section__title">Wireframe</div>
+
+        <!-- ── Part 1: self-issuance (user) ─────────────────────────── -->
+        <p class="note">
+          <strong>Self-issuance.</strong> A key for yourself, from your own profile.</p>
+        <div class="wf-stage wf-stage--backdrop">
+          <div class="wf-gallery">
+            <!-- self-issuance form -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">form</div>
+              <div class="wf-screen wf-screen--modal">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <span class="wf-title">
+                      Create API key <span class="wf-annot">1</span>
+                    </span>
+                    <div class="wf-field">
+                      <span class="wf-label">Name</span>
+                      <div class="wf-input">
+                        My laptop script
+                        <span class="wf-hint">optional</span>
+                        <span class="wf-annot">2</span>
+                      </div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Access</span>
+                      <div class="wf-row">
+                        <span class="wf-chip wf-chip--ok">read-only</span>
+                        <span class="wf-hint">writing via the key isn't available</span>
+                        <span class="wf-annot">3</span>
+                      </div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Sources</span>
+                      <div class="wf-row">
+                        <span class="wf-chip wf-chip--ok">all available</span>
+                        <span class="wf-hint">or choose manually</span>
+                      </div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Expiry</span>
+                      <div class="wf-input">
+                        90 days
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                      <span class="wf-hint">
+
+                        30 / 90 / 365 days / never
+                        <span class="wf-annot">4</span></span>
+                    </div>
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Create</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- key created (one-time display — shared by both parts) -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">key created</div>
+              <div class="wf-screen wf-screen--modal">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <span class="wf-title">Key created</span>
+                    <div class="wf-alert">
+                      The full value is shown once — copy it and store it somewhere safe. <span class="wf-annot">5</span></div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-code">ach_7f2k9xQ…vD3w</span>
+                      <button class="wf-copybtn">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                        Copy
+                      </button>
+                    </div>
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Done</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Dialog title. Self-issuance — from your own
+              <a href="../../_wireframes/profile-account.html" class="xref-page">profile</a>, no user field.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Name — an optional human-readable label ("My laptop script", "CI server") so the key is recognizable in the list beyond its prefix. Empty is fine; the owner can rename it later from the profile.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Key scope: "Access" (read-only) and "Sources" (all available by default, narrowed manually). The permissions cap is in
+              <a href="../../_workzone/authentication.html#api-keys" class="xref-page">API keys</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Expiry — a preset or never.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              The value is shown once — it can only be copied here.
+            </li>
+          </ol>
+        </div>
+
+        <!-- ── Part 2: issuance (Owner / Admin) ─────────────────────────── -->
+        <p class="note">
+          <strong>Issuance — Owner / Admin.</strong> A key for an employee, from the
+          <a href="../../../admin-panel/_wireframes/api-keys.html#api-keys" class="xref-module">key list</a>
+          or the
+          <a href="../../../admin-panel/_wireframes/user-card.html#user-card" class="xref-module">user card</a>. The finish — the same one-time value display.
+        </p>
+        <div class="wf-stage wf-stage--backdrop">
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">form · issuance to a user</div>
+              <div class="wf-screen wf-screen--modal">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <span class="wf-title">Create API key</span>
+                    <div class="wf-field">
+                      <span class="wf-label">User</span>
+                      <!-- Typeahead suggestions spanning the field width (wf-pop--block) -->
+                      <div class="wf-pop wf-pop--block">
+                        <div class="wf-input" tabindex="0">
+                          Soko
+                          <span class="wf-input__action">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                          </span>
+                        </div>
+                        <div class="wf-menu">
+                          <span class="wf-menu__item">Dmitry Sokolov <span class="wf-menu__why">dmitry@company.com</span></span>
+                          <span class="wf-menu__item">Olga Sokolovskaya <span class="wf-menu__why">olga.s@company.com</span></span>
+                        </div>
+                      </div>
+                      <span class="wf-annot">1</span>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Name</span>
+                      <div class="wf-input">
+                        Data export bot
+                        <span class="wf-hint">optional · the owner can rename it</span>
+                        <span class="wf-annot">2</span>
+                      </div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Access</span>
+                      <div class="wf-row">
+                        <span class="wf-chip wf-chip--ok">read-only</span>
+                        <span class="wf-hint">no wider than the employee's permissions</span>
+                        <span class="wf-annot">3</span>
+                      </div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Sources</span>
+                      <div class="wf-row">
+                        <span class="wf-chip wf-chip--ok">all available</span>
+                        <span class="wf-chip">Jira</span>
+                        <span class="wf-chip">Slack</span>
+                        <span class="wf-hint">or choose manually</span>
+                      </div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Expiry</span>
+                      <div class="wf-input">
+                        90 days
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                    </div>
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Create</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Choosing a user — typeahead by name or email. The suggestion mechanic is in
+              <a href="../../_workzone/authentication.html#api-keys" class="xref-page">API keys</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Name — a starting label; optional. It belongs to the owner, who is free to rename the key later from their profile.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Scope — the <b>employee's</b> permissions, not the administrator's; a key can't be issued wider than their role.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

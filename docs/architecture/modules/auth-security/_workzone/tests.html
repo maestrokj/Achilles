@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Test cases</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Test cases</h1>
+        <div class="header__sub">auth / security · workzone</div>
+      </div>
+
+      <!-- ── Overview band: decisions + stack ── -->
+      <div class="test-overview">
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Decisions made</div>
+          <div class="decision-box">
+            <strong>Schemathesis → <code>make fuzz-api</code></strong>
+            A separate command, not part of <code>make test</code>. Run manually or
+            as a dedicated CI step.
+          </div>
+        </div>
+
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Stack and infrastructure</div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Have <span class="iter done">done</span></span>
+            <span>pytest, pytest-asyncio, pytest-cov, httpx</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Add</span>
+            <span
+              >testcontainers (PostgreSQL + Redis), factory_boy + Faker,
+              time-machine, respx (httpx mock for HIBP)</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Fuzz</span>
+            <span
+              >Schemathesis — fuzzes against the OpenAPI schema, surfaces 500
+              responses and contract violations</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Test DB</span>
+            <span
+              >testcontainers-python — real PostgreSQL + Redis,
+              session-scoped containers + per-test rollback</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Markers</span>
+            <span
+              ><code>@pytest.mark.unit</code>, <code>@pytest.mark.integration</code> —
+              filter by type</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Unit ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--unit">Unit</span>
+        <span class="test-sec__title">No DB — cryptography and validation</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" /><path d="m21 2-9.6 9.6" /><circle cx="7.5" cy="15.5" r="5.5" /></svg></span><span class="name">test_jwt.py</span></div>
+            <div class="test-card__sub">JWT tokens — create / validate / edge cases</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="authentication.html#jwt-signing">→ JWT signing</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">create — claims</span><span class="test-case__e">sub, role, exp, iat, jti, iss=<code>achilles</code>, aud=<code>achilles-api</code></span></div>
+              <div class="test-case"><span class="test-case__k">create → decode</span><span class="test-case__e">valid token → correct payload</span></div>
+              <div class="test-case"><span class="test-case__k">expired → reject</span><span class="test-case__e"><code>exp</code> in the past → <code>ExpiredSignatureError</code></span></div>
+              <div class="test-case"><span class="test-case__k">wrong key → reject</span><span class="test-case__e">signed with a different SECRET_KEY → error</span></div>
+              <div class="test-case"><span class="test-case__k">alg substitution → reject</span><span class="test-case__e">RS256 when the server is HS256-only (hardcoded algorithms)</span></div>
+              <div class="test-case"><span class="test-case__k">alg=none → reject</span><span class="test-case__e">header <code>alg: none</code> without a signature → rejected</span></div>
+              <div class="test-case"><span class="test-case__k">kid in header</span><span class="test-case__e">key selected by <code>kid</code> from the registry</span></div>
+              <div class="test-case"><span class="test-case__k">missing claim → reject</span><span class="test-case__e">without sub or role → error</span></div>
+              <div class="test-case"><span class="test-case__k">iss/aud mismatch → reject</span><span class="test-case__e">foreign issuer/audience → reject</span></div>
+              <div class="test-case"><span class="test-case__k">jti uniqueness</span><span class="test-case__e">two creates → different jti</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span><span class="name">test_password.py</span></div>
+            <div class="test-card__sub">Passwords and policy — argon2id, zxcvbn, HIBP</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="authentication.html#password-policy">→ Password policy</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">hash + verify OK</span><span class="test-case__e"><code>hash(pw)</code> → <code>verify</code> = True</span></div>
+              <div class="test-case"><span class="test-case__k">wrong password → False</span><span class="test-case__e">a different string doesn't pass</span></div>
+              <div class="test-case"><span class="test-case__k">argon2 params</span><span class="test-case__e">memory=19MB, iterations=2, parallelism=1 — in the hash</span></div>
+              <div class="test-case"><span class="test-case__k">too short (&lt;8)</span><span class="test-case__e">→ reject</span></div>
+              <div class="test-case"><span class="test-case__k">too long (&gt;128)</span><span class="test-case__e">→ reject</span></div>
+              <div class="test-case"><span class="test-case__k">weak (zxcvbn)</span><span class="test-case__e">"password123456" below the threshold → reject</span></div>
+              <div class="test-case"><span class="test-case__k">HIBP — compromised</span><span class="test-case__e">respx: found in a breach → reject</span></div>
+              <div class="test-case"><span class="test-case__k">HIBP — clean</span><span class="test-case__e">respx: not found → accept</span></div>
+              <div class="test-case"><span class="test-case__k">HIBP — unavailable</span><span class="test-case__e">timeout/500 → fail open, warning</span></div>
+              <div class="test-case"><span class="test-case__k">strong password</span><span class="test-case__e">passes length, zxcvbn, HIBP</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="12" height="12" x="2" y="10" rx="2" ry="2" /><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" /><path d="M6 18h.01" /><path d="M10 14h.01" /><path d="M15 6h.01" /><path d="M18 9h.01" /></svg></span><span class="name">test_tokens.py</span></div>
+            <div class="test-card__sub">CSPRNG tokens — invite, refresh hash, messenger link code</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">invite token format</span><span class="test-case__e">≥32 bytes, URL-safe (base64url)</span></div>
+              <div class="test-case"><span class="test-case__k">uniqueness</span><span class="test-case__e">100 generations → all unique</span></div>
+              <div class="test-case"><span class="test-case__k">constant-time compare</span><span class="test-case__e"><code>hmac.compare_digest()</code>, not <code>==</code></span></div>
+              <div class="test-case"><span class="test-case__k">refresh token — hash</span><span class="test-case__e">SHA-256 ≠ raw token</span></div>
+              <div class="test-case"><span class="test-case__k">messenger link code — hash</span><span class="test-case__e">short CSPRNG, in the DB <code>code_hash</code> SHA-256 ≠ raw</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P0 ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p0">Integration · P0</span>
+        <span class="test-sec__title">Security invariants &amp; core flows</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" /><path d="M20 2v4" /><path d="M22 4h-4" /><circle cx="4" cy="20" r="2" /></svg></span><span class="name">test_setup.py</span></div>
+            <div class="test-card__sub">Setup Wizard — the first Owner</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">setup available</span><span class="test-case__e">0 users → GET /setup → 200</span></div>
+              <div class="test-case"><span class="test-case__k">create owner OK</span><span class="test-case__e">POST /setup → Owner in the DB, access + refresh</span></div>
+              <div class="test-case"><span class="test-case__k">setup gone</span><span class="test-case__e">after the Owner → 404 <code>SETUP_UNAVAILABLE</code></span></div>
+              <div class="test-case"><span class="test-case__k">race condition</span><span class="test-case__e">2 concurrent POSTs → one Owner, the second 409 <code>CONFLICT</code></span></div>
+              <div class="test-case"><span class="test-case__k">invalid email</span><span class="test-case__e">→ 422 <code>VALIDATION_ERROR</code> + errors[], Owner NOT created</span></div>
+              <div class="test-case"><span class="test-case__k">weak password</span><span class="test-case__e">→ 422 <code>VALIDATION_ERROR</code> + errors[], NOT created</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20H2" /><path d="M11 4.562v16.157a1 1 0 0 0 1.242.97L19 20V5.562a2 2 0 0 0-1.515-1.94l-4-1A2 2 0 0 0 11 4.561z" /><path d="M11 4H8a2 2 0 0 0-2 2v14" /><path d="M14 12h.01" /><path d="M22 20h-3" /></svg></span><span class="name">test_login.py</span></div>
+            <div class="test-card__sub">Login — token issuance, generic errors</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">success</span><span class="test-case__e">access (body) + refresh (httpOnly cookie)</span></div>
+              <div class="test-case"><span class="test-case__k">wrong password</span><span class="test-case__e">→ 401 <code>INVALID_CREDENTIALS</code> generic</span></div>
+              <div class="test-case"><span class="test-case__k">unknown email</span><span class="test-case__e">→ 401 same generic — we don't reveal existence</span></div>
+              <div class="test-case"><span class="test-case__k">deactivated user</span><span class="test-case__e">→ 401 — we don't reveal status</span></div>
+              <div class="test-case"><span class="test-case__k">cookie flags</span><span class="test-case__e">httpOnly, Secure, SameSite=Strict, Path=/api/auth, name with the <code>__Secure-</code> prefix</span></div>
+              <div class="test-case"><span class="test-case__k">remember-me off</span><span class="test-case__e">session cookie without <code>Max-Age</code> — dies when the browser closes</span></div>
+              <div class="test-case"><span class="test-case__k">remember-me on</span><span class="test-case__e">persistent cookie, <code>Max-Age</code> = refresh TTL (30 d)</span></div>
+              <div class="test-case"><span class="test-case__k">email case-insensitive</span><span class="test-case__e">signing in as <code>Alice@x</code> for the <code>alice@x</code> account → success</span></div>
+              <div class="test-case"><span class="test-case__k">token claims</span><span class="test-case__e">sub=user_id, role=actual</span></div>
+              <div class="test-case"><span class="test-case__k">timing-safe (spy)</span><span class="test-case__e">nonexistent email → dummy argon2 verify (mock/spy)</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></svg></span><span class="name">test_refresh.py</span></div>
+            <div class="test-card__sub">Token rotation — reuse detection</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="authentication.html#refresh-rotation">→ Refresh token rotation</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">valid refresh → new pair</span><span class="test-case__e">new access + new refresh (rotation)</span></div>
+              <div class="test-case"><span class="test-case__k">grace window (~10s)</span><span class="test-case__e">a repeat refresh with the same token within the window → the same new pair, family alive (tab race)</span></div>
+              <div class="test-case"><span class="test-case__k">old token → reject</span><span class="test-case__e">rotated, outside the window → 401 <code>TOKEN_INVALID</code></span></div>
+              <div class="test-case"><span class="test-case__k">reuse → kill family</span><span class="test-case__e">revoked → 401 <code>TOKEN_INVALID</code>, the whole family</span></div>
+              <div class="test-case"><span class="test-case__k">expired (30d)</span><span class="test-case__e">time-machine +31d → 401 <code>TOKEN_EXPIRED</code></span></div>
+              <div class="test-case"><span class="test-case__k">absolute ceiling (90d)</span><span class="test-case__e">90d from first issue → 401 <code>TOKEN_EXPIRED</code></span></div>
+              <div class="test-case"><span class="test-case__k">invalid signature</span><span class="test-case__e">forgery → 401 <code>TOKEN_INVALID</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2" /><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2" /><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8" /><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" /></svg></span><span class="name">test_logout.py</span></div>
+            <div class="test-card__sub">Logout — ending the session</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">standard logout</span><span class="test-case__e">refresh deleted from the DB, Set-Cookie clears it</span></div>
+              <div class="test-case"><span class="test-case__k">post-logout refresh</span><span class="test-case__e">→ 401</span></div>
+              <div class="test-case"><span class="test-case__k">logout all</span><span class="test-case__e">POST /api/v1/auth/logout-all → all refresh deleted</span></div>
+              <div class="test-case"><span class="test-case__k">access still valid</span><span class="test-case__e">after logout until expiry — stateless, 15 min</span></div>
+              <div class="test-case"><span class="test-case__k">can't kill your own family</span><span class="test-case__e">ending the current session family via session management → the server rejects it (not merely hidden in the UI) — a server-side guard</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="16" r="1" /><rect x="3" y="10" width="18" height="12" rx="2" /><path d="M7 10V7a5 5 0 0 1 10 0v3" /></svg></span><span class="name">test_must_change_password.py</span></div>
+            <div class="test-card__sub">Forced change of a temporary password</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">login with a temporary password</span><span class="test-case__e"><code>must_change_password=true</code> → tokens issued, but gated: redirect to the password-change screen</span></div>
+              <div class="test-case"><span class="test-case__k">server-side gate</span><span class="test-case__e">flag set → request to any protected endpoint → <code>403 PASSWORD_CHANGE_REQUIRED</code>; password change and logout are allowed</span></div>
+              <div class="test-case"><span class="test-case__k">change at the gate</span><span class="test-case__e">strong new password → flag cleared, the user's other refresh tokens revoked (except the current one)</span></div>
+              <div class="test-case"><span class="test-case__k">login again without changing</span><span class="test-case__e">flag still set → the password-change gate again</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P1 ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">Integration · P1</span>
+        <span class="test-sec__title">Protection &amp; access control</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" /></svg></span><span class="name">test_invite.py</span></div>
+            <div class="test-card__sub">Invite flow + scope boundary</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">owner creates invite</span><span class="test-case__e">→ 201, the link is sent by email (SMTP — mock)</span></div>
+              <div class="test-case"><span class="test-case__k">admin creates invite</span><span class="test-case__e">→ 201 (if permitted)</span></div>
+              <div class="test-case"><span class="test-case__k">admin invite → owner role</span><span class="test-case__e">→ 403 <code>FORBIDDEN</code> (scope boundary)</span></div>
+              <div class="test-case"><span class="test-case__k">member → 403</span><span class="test-case__e">can't create an invite</span></div>
+              <div class="test-case"><span class="test-case__k">SMTP unconfigured</span><span class="test-case__e">creating an invite → 409 <code>SMTP_NOT_CONFIGURED</code></span></div>
+              <div class="test-case"><span class="test-case__k">accept invite</span><span class="test-case__e">token + name + password → User with a role</span></div>
+              <div class="test-case"><span class="test-case__k">expired (48h)</span><span class="test-case__e">+49h → 410 <code>INVITE_EXPIRED</code></span></div>
+              <div class="test-case"><span class="test-case__k">reuse invite</span><span class="test-case__e">→ 410 <code>INVITE_USED</code></span></div>
+              <div class="test-case"><span class="test-case__k">duplicate email</span><span class="test-case__e">→ 409 <code>CONFLICT</code></span></div>
+              <div class="test-case"><span class="test-case__k">duplicate (case)</span><span class="test-case__e"><code>Bob@x</code> for the <code>bob@x</code> account → 409 (<code>lower(email)</code>)</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" /></svg></span><span class="name">test_bulk_invite.py</span></div>
+            <div class="test-card__sub">Bulk invite — partial success, duplicates, limit</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">partial success</span><span class="test-case__e">a batch mixing valid and broken rows → <code>207</code>/<code>200</code> with a per-row report: accepted rows create an invite, rejected ones carry a reason; valid rows aren't rolled back over neighboring errors</span></div>
+              <div class="test-case"><span class="test-case__k">duplicates within the batch</span><span class="test-case__e">a repeated email within the batch and the email of an existing user/invite → the row is flagged a duplicate, no second invite is created</span></div>
+              <div class="test-case"><span class="test-case__k">invalid row</span><span class="test-case__e">broken email / missing required field → the row is rejected with <code>VALIDATION_ERROR</code> in the report, not a blanket <code>422</code> on the whole batch</span></div>
+              <div class="test-case"><span class="test-case__k">size limit</span><span class="test-case__e">a batch over the row cap → <code>422</code>, the batch is not partially processed</span></div>
+              <div class="test-case"><span class="test-case__k">scope boundary in bulk</span><span class="test-case__e">the inviter can't grant a role above their own on any row of the batch (the same perimeter as single invites); a violation → the row is rejected</span></div>
+              <div class="test-case"><span class="test-case__k">re-upload idempotency</span><span class="test-case__e">re-uploading the same file doesn't double already-created invites (by email), and already-accepted ones are skipped</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg></span><span class="name">test_messenger_link.py</span></div>
+            <div class="test-card__sub">Messenger linking — resolve, code, relay safety, brute force</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">known user → resolve</span><span class="test-case__e">DM from a linked messenger → <code>identity_mapping</code> → <code>user_id</code>, no code</span></div>
+              <div class="test-case"><span class="test-case__k">auto-match by email</span><span class="test-case__e">workspace provisioned email == account → link automatic, no code</span></div>
+              <div class="test-case"><span class="test-case__k">auto-match off</span><span class="test-case__e">toggle off → even on an email match the bot issues a code</span></div>
+              <div class="test-case"><span class="test-case__k">unknown user → code</span><span class="test-case__e">no link and no auto-match → link/code, <code>identity_mapping</code> untouched</span></div>
+              <div class="test-case"><span class="test-case__k">return code → bind</span><span class="test-case__e">code from DM <code>S</code> → <code>identity_mapping(slack, S)</code> ↔ the issuing account, <code>used_at</code></span></div>
+              <div class="test-case"><span class="test-case__k">relay-safety</span><span class="test-case__e">account A's code, returned from Slack B → link B↔A; a foreign Slack can't be bound to A without its code</span></div>
+              <div class="test-case"><span class="test-case__k">expired (15m)</span><span class="test-case__e">+16m → 410 <code>LINK_EXPIRED</code></span></div>
+              <div class="test-case"><span class="test-case__k">reuse code</span><span class="test-case__e">used → 410 <code>LINK_EXPIRED</code> (single-use)</span></div>
+              <div class="test-case"><span class="test-case__k">already linked</span><span class="test-case__e">account already in <code>identity_mapping</code> → 409 <code>ALREADY_LINKED</code></span></div>
+              <div class="test-case"><span class="test-case__k">telegram → code-only</span><span class="test-case__e">Telegram doesn't expose email → no auto-match, always a code; return → <code>identity_mapping(telegram, …)</code></span></div>
+              <div class="test-case"><span class="test-case__k">mattermost → code-only</span><span class="test-case__e">events carry no email → no auto-match, always a code; return → <code>identity_mapping(mattermost, …)</code></span></div>
+              <div class="test-case"><span class="test-case__k">code brute-force</span><span class="test-case__e">5 wrong codes per <code>chat_id</code> → the attempt is burned, a new code is needed</span></div>
+              <div class="test-case"><span class="test-case__k">no self-registration</span><span class="test-case__e">a code without an account grants no sign-in — it links only to an existing one</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg></span><span class="name">test_rbac.py</span></div>
+            <div class="test-card__sub">RBAC middleware — role matrix</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">no token → 401</span><span class="test-case__e">protected without Authorization → 401</span></div>
+              <div class="test-case"><span class="test-case__k">owner → owner-only</span><span class="test-case__e">→ 200</span></div>
+              <div class="test-case"><span class="test-case__k">admin → owner-only</span><span class="test-case__e">→ 403</span></div>
+              <div class="test-case"><span class="test-case__k">member → admin-only</span><span class="test-case__e">→ 403</span></div>
+              <div class="test-case"><span class="test-case__k">owner → all endpoints</span><span class="test-case__e">full access (matrix)</span></div>
+              <div class="test-case"><span class="test-case__k">admin → user mgmt</span><span class="test-case__e">users, sources → 200</span></div>
+              <div class="test-case"><span class="test-case__k">member → own data</span><span class="test-case__e">/me 200, /users 403</span></div>
+              <div class="test-case"><span class="test-case__k">require(permission)</span><span class="test-case__e">via the ROLE_PERMISSIONS mapping, not the role</span></div>
+              <div class="test-case"><span class="test-case__k">unknown permission → 403</span><span class="test-case__e">not in the mapping → 403 for any role</span></div>
+              <div class="test-case"><span class="test-case__k">admin scope boundary</span><span class="test-case__e">Members 200, non-Owners/Admins 403</span></div>
+              <div class="test-case"><span class="test-case__k">role escalation → 403</span><span class="test-case__e">can't assign above your own</span></div>
+              <div class="test-case"><span class="test-case__k">invalid role in token</span><span class="test-case__e">role="superadmin" → 403</span></div>
+              <div class="test-case"><span class="test-case__k">deactivated + valid token</span><span class="test-case__e">v1 stateless → 200, 15-min window (trade-off, documented)</span></div>
+              <div class="test-case"><span class="test-case__k">stale role — critical endpoint</span><span class="test-case__e">token role=admin, DB member; user management reads the role from the DB → 403</span></div>
+              <div class="test-case"><span class="test-case__k">stale status — critical endpoint</span><span class="test-case__e">valid token, DB status=deactivated; a critical operation reads status from the DB → 401</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10h2" /><path d="M16 14h2" /><path d="M6.17 15a3 3 0 0 1 5.66 0" /><circle cx="9" cy="11" r="2" /><rect x="2" y="5" width="20" height="14" rx="2" /></svg></span><span class="name">test_ownership.py</span></div>
+            <div class="test-card__sub">Resource ownership — IDOR protection</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">own resource → 200</span><span class="test-case__e">the owner edits their own resource — <code>owner_id</code> = <code>user_id</code></span></div>
+              <div class="test-case"><span class="test-case__k">foreign resource → 403</span><span class="test-case__e">Member A edits Member B's resource → 403 <code>FORBIDDEN</code> (IDOR)</span></div>
+              <div class="test-case"><span class="test-case__k">permission yes, ownership no</span><span class="test-case__e">an <code>owner_id</code> check on top of permission → 403</span></div>
+              <div class="test-case"><span class="test-case__k">admin's normal zone</span><span class="test-case__e">user management bypasses ownership; source data does not</span></div>
+              <div class="test-case"><span class="test-case__k"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg> depends on resources</span><span class="test-case__e">specific endpoints arrive with Agent Engine</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2" /><line x1="12" x2="15" y1="14" y2="11" /><circle cx="12" cy="14" r="8" /></svg></span><span class="name">test_brute_force.py</span></div>
+            <div class="test-card__sub">Brute-force protection — rate limit, delays</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="protection.html#brute-force">→ Brute-force defense line</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">IP rate limit</span><span class="test-case__e">21st / 15 min → 429 <code>RATE_LIMITED</code> + retry_after</span></div>
+              <div class="test-case"><span class="test-case__k">exponential delay</span><span class="test-case__e">after 3 failures → 1s / 2s / 4s</span></div>
+              <div class="test-case"><span class="test-case__k">below threshold</span><span class="test-case__e">1–2 → no delay (threshold from the 3rd)</span></div>
+              <div class="test-case"><span class="test-case__k">success resets</span><span class="test-case__e">a successful login resets the counter</span></div>
+              <div class="test-case"><span class="test-case__k">alert (layer 3)</span><span class="test-case__e">10 per-account failures → notify Owner/Admin</span></div>
+              <div class="test-case"><span class="test-case__k">case doesn't reset</span><span class="test-case__e"><code>brute:account</code> by <code>lower(email)</code> — changing case doesn't zero the counter</span></div>
+              <div class="test-case"><span class="test-case__k">IP isolation</span><span class="test-case__e">IP-A exhausted → IP-B still works</span></div>
+              <div class="test-case"><span class="test-case__k">delay cap 30s</span><span class="test-case__e">delay ≤ 30 seconds</span></div>
+              <div class="test-case"><span class="test-case__k">XFF spoofing</span><span class="test-case__e">a forged <code>X-Forwarded-For</code> from an untrusted source doesn't override the IP — the limit can't be bypassed</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11h.01" /><path d="M14 6h.01" /><path d="M18 6h.01" /><path d="M6.5 13.1h.01" /><path d="M22 5c0 9-4 12-6 12s-6-3-6-12c0-2 2-3 6-3s6 1 6 3" /><path d="M17.4 9.9c-.8.8-2 .8-2.8 0" /><path d="M10.1 7.1C9 7.2 7.7 7.7 6 8.6c-3.5 2-4.7 3.9-3.7 5.6 4.5 7.8 9.5 8.4 11.2 7.4.9-.5 1.9-2.1 1.9-4.7" /><path d="M9.1 16.5c.3-1.1 1.4-1.7 2.4-1.4" /></svg></span><span class="name">test_csrf.py</span></div>
+            <div class="test-card__sub">CSRF protection — Origin whitelist</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="protection.html#csrf">→ CSRF check</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">no cookie → 401</span><span class="test-case__e">/refresh without the httpOnly cookie → 401</span></div>
+              <div class="test-case"><span class="test-case__k">origin mismatch</span><span class="test-case__e">foreign Origin → 403</span></div>
+              <div class="test-case"><span class="test-case__k">valid origin → OK</span><span class="test-case__e">Origin from the whitelist → let through</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg></span><span class="name">test_cors.py</span></div>
+            <div class="test-card__sub">CORS configuration</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">allowed origin → OK</span><span class="test-case__e">whitelist → Access-Control-Allow-Origin</span></div>
+              <div class="test-case"><span class="test-case__k">disallowed origin</span><span class="test-case__e">not whitelisted → no CORS headers</span></div>
+              <div class="test-case"><span class="test-case__k">preflight</span><span class="test-case__e">OPTIONS → Allow-Credentials true, Allow-Methods, Max-Age 3600</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg></span><span class="name">test_error_envelope.py</span></div>
+            <div class="test-card__sub">Error envelope — Problem Details (RFC 9457)</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#api-errors">→ API error format</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">problem+json shape</span><span class="test-case__e">any error → <code>Content-Type: application/problem+json</code> and a body with <code>type·title·status·detail·code·request_id</code></span></div>
+              <div class="test-case"><span class="test-case__k">request_id = header</span><span class="test-case__e"><code>request_id</code> in the body matches the response's <code>X-Request-Id</code> — end-to-end tracing</span></div>
+              <div class="test-case"><span class="test-case__k">422 in problem format</span><span class="test-case__e">validation returns the same envelope (not the framework's default ValidationError shape), <code>code=VALIDATION_ERROR</code> + <code>errors[]</code> of <code>{ field, message }</code></span></div>
+              <div class="test-case"><span class="test-case__k">429 carries retry_after</span><span class="test-case__e">the body contains <code>retry_after</code> (sec) + a <code>Retry-After</code> header</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2" /><line x1="12" x2="15" y1="14" y2="11" /><circle cx="12" cy="14" r="8" /></svg></span><span class="name">test_api_rate_limit.py</span></div>
+            <div class="test-card__sub">Per-user API rate limit — role tiers</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="protection.html#cors">→ CORS · trust boundary</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">bucket exhausted → 429</span><span class="test-case__e">exceeding the per-user cap → 429 <code>RATE_LIMITED</code> + <code>Retry-After</code></span></div>
+              <div class="test-case"><span class="test-case__k">tier by role</span><span class="test-case__e">Admin has a higher cap than Member — under equal load Member hits the limit sooner</span></div>
+              <div class="test-case"><span class="test-case__k">X-RateLimit-Remaining</span><span class="test-case__e">the response carries the remaining bucket in a header</span></div>
+              <div class="test-case"><span class="test-case__k">≠ brute-force line</span><span class="test-case__e">this limit is per-user after authentication; login brute force ⑤ is per-IP before sign-in (different counters, no overlap)</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg></span><span class="name">test_security_headers.py</span></div>
+            <div class="test-card__sub">Security headers — checked on the response</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">HSTS</span><span class="test-case__e"><code>Strict-Transport-Security</code> — max-age 1 year, includeSubDomains</span></div>
+              <div class="test-case"><span class="test-case__k">CSP</span><span class="test-case__e"><code>default-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'</code></span></div>
+              <div class="test-case"><span class="test-case__k">nosniff</span><span class="test-case__e"><code>X-Content-Type-Options: nosniff</code></span></div>
+              <div class="test-case"><span class="test-case__k">frame deny</span><span class="test-case__e"><code>X-Frame-Options: DENY</code></span></div>
+              <div class="test-case"><span class="test-case__k">COOP / CORP</span><span class="test-case__e">both <code>same-origin</code></span></div>
+              <div class="test-case"><span class="test-case__k">Referrer-Policy</span><span class="test-case__e"><code>strict-origin-when-cross-origin</code></span></div>
+              <div class="test-case"><span class="test-case__k">Permissions-Policy</span><span class="test-case__e">camera / microphone / geolocation disabled</span></div>
+              <div class="test-case"><span class="test-case__k">no-store on sensitive</span><span class="test-case__e"><code>Cache-Control: no-store</code> on responses with tokens / profile</span></div>
+              <div class="test-case"><span class="test-case__k">fingerprint hidden</span><span class="test-case__e"><code>Server</code> and <code>X-Powered-By</code> are not sent</span></div>
+              <div class="test-case"><span class="test-case__k">Clear-Site-Data on logout</span><span class="test-case__e">the <code>/api/v1/auth/logout</code> response sends <code>Clear-Site-Data</code> (cookies, storage, cache); other responses don't</span></div>
+              <div class="test-case"><span class="test-case__k">no-referrer on token routes</span><span class="test-case__e">invite-accept, reset-password, and messenger-link send <code>Referrer-Policy: no-referrer</code> — the secret link won't leak; ordinary routes keep <code>strict-origin-when-cross-origin</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg></span><span class="name">test_password_change.py</span></div>
+            <div class="test-card__sub">Password change + audit</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">change OK</span><span class="test-case__e">current + strong new → 200, hash updated</span></div>
+              <div class="test-case"><span class="test-case__k">wrong current</span><span class="test-case__e">→ 401 <code>INVALID_CREDENTIALS</code></span></div>
+              <div class="test-case"><span class="test-case__k">wrong current ×3+</span><span class="test-case__e">per-account delay grows — the shared brute-force counter with login</span></div>
+              <div class="test-case"><span class="test-case__k">weak new</span><span class="test-case__e">→ 422 <code>VALIDATION_ERROR</code> + errors[]</span></div>
+              <div class="test-case"><span class="test-case__k">same as current</span><span class="test-case__e">→ 422 <code>VALIDATION_ERROR</code></span></div>
+              <div class="test-case"><span class="test-case__k">other sessions killed</span><span class="test-case__e">all refresh except the current one deleted</span></div>
+              <div class="test-case"><span class="test-case__k">audit entry</span><span class="test-case__e">action=password_change</span></div>
+              <div class="test-case"><span class="test-case__k">audit entry (failure)</span><span class="test-case__e">action=password_change, result=failure</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 8h.01" /><path d="M12 12h.01" /><path d="M14 8h.01" /><path d="M16 12h.01" /><path d="M18 8h.01" /><path d="M6 8h.01" /><path d="M7 16h10" /><path d="M8 12h.01" /><rect width="20" height="16" x="2" y="4" rx="2" /></svg></span><span class="name">test_cli.py</span></div>
+            <div class="test-card__sub">CLI commands — init-owner, reset-password</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">init-owner OK</span><span class="test-case__e">0 users → Owner created</span></div>
+              <div class="test-case"><span class="test-case__k">init-owner exists</span><span class="test-case__e">users exist → error, none created</span></div>
+              <div class="test-case"><span class="test-case__k">init-owner weak pw</span><span class="test-case__e">password doesn't pass → error</span></div>
+              <div class="test-case"><span class="test-case__k">reset-password OK</span><span class="test-case__e">temporary password (CSPRNG), hash updated, all refresh deleted</span></div>
+              <div class="test-case"><span class="test-case__k">reset-password unknown</span><span class="test-case__e">nonexistent email → error</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg></span><span class="name">test_user_lifecycle.py</span></div>
+            <div class="test-card__sub">Deactivation, password reset, scope</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">Owner deactivates Member</span><span class="test-case__e">→ 200, the user's refresh tokens and API keys revoked</span></div>
+              <div class="test-case"><span class="test-case__k">Admin deactivates Member</span><span class="test-case__e">→ 200</span></div>
+              <div class="test-case"><span class="test-case__k">Admin deactivates Admin</span><span class="test-case__e">→ 403 <code>FORBIDDEN</code> (Owner only)</span></div>
+              <div class="test-case"><span class="test-case__k">self-deactivation</span><span class="test-case__e">→ 403 <code>FORBIDDEN</code></span></div>
+              <div class="test-case"><span class="test-case__k">reactivate → login OK</span><span class="test-case__e">old tokens not restored</span></div>
+              <div class="test-case"><span class="test-case__k">Owner resets Member pw</span><span class="test-case__e">→ 200, reset link by email (without SMTP — a temporary password, refresh deleted); audit</span></div>
+              <div class="test-case"><span class="test-case__k">Admin resets Owner pw</span><span class="test-case__e">→ 403 (scope boundary)</span></div>
+              <div class="test-case"><span class="test-case__k">deactivation + reset → audit</span><span class="test-case__e">user_deactivated, password_reset</span></div>
+              <div class="test-case"><span class="test-case__k">admin "terminate all"</span><span class="test-case__e">all the user's refresh tokens revoked → 200; access survives the ≤15-min window (stateless trade-off)</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" /><path d="m21 2-9.6 9.6" /><circle cx="7.5" cy="15.5" r="5.5" /></svg></span><span class="name">test_api_keys.py</span></div>
+            <div class="test-card__sub">Issuance, authentication, revocation</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">create · shown once</span><span class="test-case__e">the response contains the full key (<code>ach_</code> + CSPRNG) exactly once; the DB holds only the <code>SHA-256</code> hash and <code>prefix</code></span></div>
+              <div class="test-case"><span class="test-case__k">authentication by key</span><span class="test-case__e">a valid key in the header → <code>user_id</code> → role / ACL; wrong / nonexistent → 401</span></div>
+              <div class="test-case"><span class="test-case__k">scope ≤ owner's rights</span><span class="test-case__e">the key is no broader than the owner's role and ACL; a source narrowing applies on top</span></div>
+              <div class="test-case"><span class="test-case__k">read-only</span><span class="test-case__e">a write attempt via the key → 403 (writes are Agent Engine's territory)</span></div>
+              <div class="test-case"><span class="test-case__k">issued by an admin</span><span class="test-case__e">Owner / Admin issues a key for an employee; scope is the employee's rights, not the admin's</span></div>
+              <div class="test-case"><span class="test-case__k">expired key</span><span class="test-case__e"><code>expires_at</code> in the past → 401 without a separate revocation; a non-expiring key (<code>NULL</code>) doesn't expire</span></div>
+              <div class="test-case"><span class="test-case__k">revocation is instant</span><span class="test-case__e"><code>is_revoked</code> → the next request 401; revocable by the owner and by Owner / Admin</span></div>
+              <div class="test-case"><span class="test-case__k">cascade on deactivation</span><span class="test-case__e">deactivating the owner → all their keys revoked</span></div>
+              <div class="test-case"><span class="test-case__k">rate limit</span><span class="test-case__e"><code>60 req/min</code> per key → over the limit 429; <code>last_used_at</code> is updated</span></div>
+              <div class="test-case"><span class="test-case__k">audit</span><span class="test-case__e">key creation and revocation are written to <code>audit_log</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" /></svg></span><span class="name">test_email_change.py</span></div>
+            <div class="test-card__sub">Email change by an admin</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">admin changes email</span><span class="test-case__e">→ 200, email updated; the user's refresh tokens revoked</span></div>
+              <div class="test-case"><span class="test-case__k">email taken</span><span class="test-case__e">the new address already exists (including a different case, <code>lower(email)</code>) → 409 <code>CONFLICT</code></span></div>
+              <div class="test-case"><span class="test-case__k">audit entry</span><span class="test-case__e">action=email_changed, metadata old/new, actor=admin_id, target</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10h2" /><path d="M16 14h2" /><path d="M6.17 15a3 3 0 0 1 5.66 0" /><circle cx="9" cy="11" r="2" /><rect x="2" y="5" width="20" height="14" rx="2" /></svg></span><span class="name">test_identity_bridge.py</span></div>
+            <div class="test-card__sub">Auto-link identity↔users by email (the bridge from the sign-in side)</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="authorization.html#identity">→ Identity</a>
+              <a class="xref-badge" href="../../knowledge-store/_workzone/acl-identity.html#identity">→ Knowledge Store</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">accept invite → bridge</span><span class="test-case__e">accepting an invite for <code>alice@x</code> with an existing <code>identity</code> of the same email → <code>identity.user_id</code> = the new user</span></div>
+              <div class="test-case"><span class="test-case__k">case-insensitive</span><span class="test-case__e">invite <code>Alice@x</code> with <code>identity</code> <code>alice@x</code> → link by <code>lower(email)</code></span></div>
+              <div class="test-case"><span class="test-case__k">no identity yet</span><span class="test-case__e">no matching <code>identity</code> → no-op, no error; it links later when Harvester upserts it</span></div>
+              <div class="test-case"><span class="test-case__k">setup owner → bridge</span><span class="test-case__e">the first Owner via <code>/setup</code> / <code>init-owner</code> links to an <code>identity</code> of the same email</span></div>
+              <div class="test-case"><span class="test-case__k">email change → bridge moves</span><span class="test-case__e">admin changes email → the bridge is re-established on the new address's <code>identity</code>, the previous link is removed</span></div>
+              <div class="test-case"><span class="test-case__k">address didn't match → no bridge</span><span class="test-case__e">sign-in email ≠ source email → <code>identity.user_id</code> stays <code>NULL</code>, awaits manual linking in Admin</span></div>
+              <div class="test-case"><span class="test-case__k">manual link not overwritten</span><span class="test-case__e">a link pinned by an admin (<svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5" /><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" /></svg>) is not overwritten by auto-linking</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg></span><span class="name">test_password_reset.py</span></div>
+            <div class="test-card__sub">Reset via email link — "forgot password" and admin reset (SMTP — mock)</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">forgot known email</span><span class="test-case__e">→ 200, email with the link; the DB holds only the token hash</span></div>
+              <div class="test-case"><span class="test-case__k">forgot unknown email</span><span class="test-case__e">→ 200, response indistinguishable from a known one (anti-enumeration)</span></div>
+              <div class="test-case"><span class="test-case__k">resend rate-limit</span><span class="test-case__e">frequent requests for one address → 429</span></div>
+              <div class="test-case"><span class="test-case__k">set password OK</span><span class="test-case__e">hash updated, all refresh deleted, audit</span></div>
+              <div class="test-case"><span class="test-case__k">token reuse</span><span class="test-case__e">reuse → 410 <code>RESET_EXPIRED</code> (indistinguishable from expired)</span></div>
+              <div class="test-case"><span class="test-case__k">token expired</span><span class="test-case__e">TTL 1 h elapsed → 410 <code>RESET_EXPIRED</code></span></div>
+              <div class="test-case"><span class="test-case__k">new link kills old</span><span class="test-case__e">a resend invalidates the previous token</span></div>
+              <div class="test-case"><span class="test-case__k">no sessions killed on send</span><span class="test-case__e">sending the link doesn't touch refresh — they're revoked only when the password is set</span></div>
+              <div class="test-case"><span class="test-case__k">SMTP unconfigured</span><span class="test-case__e">self-service unavailable; admin reset falls back to a temporary password</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P2 ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p2">Integration · P2</span>
+        <span class="test-sec__title">Business logic guards</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p2">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" /><path d="M5 21h14" /></svg></span><span class="name">test_last_owner.py</span></div>
+            <div class="test-card__sub">Last-Owner protection + hard delete</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p2">P2</span>
+              <a class="xref-badge xref-badge--page" href="authentication.html#user-lifecycle">→ Deletion</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">delete last owner</span><span class="test-case__e">the sole one → 403 <code>LAST_OWNER_PROTECTED</code></span></div>
+              <div class="test-case"><span class="test-case__k">deactivate last owner</span><span class="test-case__e">→ 403 <code>LAST_OWNER_PROTECTED</code></span></div>
+              <div class="test-case"><span class="test-case__k">downgrade last owner</span><span class="test-case__e">Owner→Admin with 1 Owner → 403 <code>LAST_OWNER_PROTECTED</code></span></div>
+              <div class="test-case"><span class="test-case__k">delete non-last owner</span><span class="test-case__e">with 2+ → 200</span></div>
+              <div class="test-case"><span class="test-case__k">delete — Owner only</span><span class="test-case__e">Admin calls delete → 403 <code>FORBIDDEN</code>; deletion is irreversible, the right belongs to Owner only</span></div>
+              <div class="test-case"><span class="test-case__k">hard-delete → auth cascade</span><span class="test-case__e">deleting a non-last user physically removes the row + cascades their refresh tokens and API keys</span></div>
+              <div class="test-case"><span class="test-case__k">source content intact</span><span class="test-case__e">after deletion, source data and <code>audit_log</code> are untouched (see <code>test_audit_log.py</code> — <code>actor_id</code> without an FK)</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p2">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12h-5" /><path d="M15 8h-5" /><path d="M19 17V5a2 2 0 0 0-2-2H4" /><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3" /></svg></span><span class="name">test_audit_log.py</span></div>
+            <div class="test-card__sub">Audit log — append-only, owner-read</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p2">P2</span>
+              <a class="xref-badge xref-badge--page" href="protection.html#audit-log">→ Audit log</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">login success → entry</span><span class="test-case__e">actor, action=login, success, ip, ua</span></div>
+              <div class="test-case"><span class="test-case__k">login failure → entry</span><span class="test-case__e">login_failed, failure, ip, ua, actor_id=NULL</span></div>
+              <div class="test-case"><span class="test-case__k">user created → entry</span><span class="test-case__e">user_created, target=new_user_id</span></div>
+              <div class="test-case"><span class="test-case__k">role changed → entry</span><span class="test-case__e">role_changed, metadata old/new</span></div>
+              <div class="test-case"><span class="test-case__k">logout → entry</span><span class="test-case__e">action=logout, actor=user_id</span></div>
+              <div class="test-case"><span class="test-case__k">user deactivated → entry</span><span class="test-case__e">user_deactivated, actor=admin_id, target</span></div>
+              <div class="test-case"><span class="test-case__k">read access — owner only</span><span class="test-case__e">Owner 200; Admin/Member 403 <code>FORBIDDEN</code></span></div>
+              <div class="test-case"><span class="test-case__k">append-only</span><span class="test-case__e">SQL UPDATE/DELETE → error (DB policy)</span></div>
+              <div class="test-case"><span class="test-case__k">survives actor deletion</span><span class="test-case__e">hard-delete user → <code>audit_log</code> rows intact (<code>actor_id</code> without an FK)</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Frontend ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--fe">Frontend</span>
+        <span class="test-sec__title">React — auth flows</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1" /><path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z" /><path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z" /></svg></span><span class="name">AuthProvider + ProtectedRoute + interceptor</span></div>
+            <div class="test-card__sub">state, redirect, deep-link, auto-refresh</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">login → state</span><span class="test-case__e">AuthProvider returns user + role</span></div>
+              <div class="test-case"><span class="test-case__k">logout → redirect</span><span class="test-case__e">state cleared, redirect /login</span></div>
+              <div class="test-case"><span class="test-case__k">unauthenticated → redirect</span><span class="test-case__e">ProtectedRoute without a token → /login</span></div>
+              <div class="test-case"><span class="test-case__k">deep-link → ?next return</span><span class="test-case__e">a guest on a protected route → <code>/login?next=…</code> → after sign-in, return to the original</span></div>
+              <div class="test-case"><span class="test-case__k">?next local only</span><span class="test-case__e">an external <code>?next=https://evil…</code> / <code>//evil</code> is ignored → redirect to the role's home (open-redirect protection)</span></div>
+              <div class="test-case"><span class="test-case__k">entry gate by role</span><span class="test-case__e">with a session: Owner/Admin → /admin, Member → /chat</span></div>
+              <div class="test-case"><span class="test-case__k">wrong role → 403 page</span><span class="test-case__e">Member on admin-only → 403</span></div>
+              <div class="test-case"><span class="test-case__k">auto-refresh</span><span class="test-case__e">401 → /refresh → retry</span></div>
+              <div class="test-case"><span class="test-case__k">refresh failed → logout</span><span class="test-case__e">/refresh 401 → full logout + redirect</span></div>
+              <div class="test-case"><span class="test-case__k">concurrent 401s</span><span class="test-case__e">several 401s → one refresh → all retry</span></div>
+              <div class="test-case"><span class="test-case__k">403 without refresh</span><span class="test-case__e">a permission 403 is passed through — it triggers neither refresh nor logout</span></div>
+              <div class="test-case"><span class="test-case__k">retry-once (anti-loop)</span><span class="test-case__e"><code>_retry</code> flag: a 401 on an already-retried request → logout without recursion</span></div>
+              <div class="test-case"><span class="test-case__k">refresh timeout → logout</span><span class="test-case__e">refresh Promise timeout → logout instead of hanging</span></div>
+              <div class="test-case"><span class="test-case__k">setup redirect</span><span class="test-case__e">0 users → any route → /setup</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ v2 — deferred coverage ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--v2">v2</span>
+        <span class="test-sec__title">Deferred coverage</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          The test plan above covers the first version's scope. The areas below are
+          designed alongside their respective v2 features — only the coverage is
+          fixed here, without detailed cases.
+        </p>
+        <div class="test-stack-row">
+          <span class="test-stack-row__lbl">MFA</span>
+          <span
+            >TOTP (±1-step window, replay protection), recovery codes, a separate
+            MFA-step limit, encryption of <code>mfa_secret</code></span
+          >
+        </div>
+        <div class="test-stack-row">
+          <span class="test-stack-row__lbl">SSO / OIDC</span>
+          <span
+            >state / PKCE / nonce, auto-provisioning from the IdP, auto-match only on
+            a verified email</span
+          >
+        </div>
+        <div class="test-stack-row">
+          <span class="test-stack-row__lbl">OAuth</span>
+          <span
+            >interactive token-issuance flow, headless sign-in via an
+            API key</span
+          >
+        </div>
+        <div class="test-stack-row">
+          <span class="test-stack-row__lbl">Instant revocation</span>
+          <span
+            ><code>jti</code> in a Redis blacklist on deactivation — invalidation
+            without the 15-minute window</span
+          >
+        </div>
+      </div>
+
+      <!-- ═══ Structure ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Structure</span>
+        <span class="test-sec__title">Test file structure</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          Priority (P0–P2) is orthogonal to directories and set by markers
+          (<code>pytest -m p0</code>), not by separate folders.
+        </p>
+        <div class="test-tree">
+          <ul>
+            <li>
+              <span class="test-tree__row"><code>tests/</code><span class="d">backend — shared scaffolding</span></span>
+              <ul>
+                <li><span class="test-tree__row"><code>conftest.py</code><span class="d">DB engine, session, HTTP client</span></span></li>
+                <li><span class="test-tree__row"><code>factories/</code><span class="d">data factories, cross-module</span></span></li>
+                <li>
+                  <span class="test-tree__row"><code>auth/</code><span class="d">module directory</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>conftest.py</code><span class="d">module fixtures</span></span></li>
+                    <li><span class="test-tree__row"><code>unit/</code><span class="d">no DB — crypto and validation</span></span></li>
+                    <li>
+                      <span class="test-tree__row"><code>integration/</code><span class="d">with DB — by domain</span></span>
+                      <ul>
+                        <li><span class="test-tree__row"><code>session/</code><span class="d">setup · login · logout · refresh</span></span></li>
+                        <li><span class="test-tree__row"><code>access/</code><span class="d">rbac · ownership · invite · brute-force · csrf · cors · security-headers</span></span></li>
+                        <li><span class="test-tree__row"><code>account/</code><span class="d">password change · CLI · lifecycle · identity-bridge</span></span></li>
+                        <li><span class="test-tree__row"><code>audit/</code><span class="d">last-owner · audit-log</span></span></li>
+                      </ul>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+          <ul>
+            <li><span class="test-tree__row"><code>frontend/…/auth/__tests__/</code><span class="d">next to the code, by module</span></span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

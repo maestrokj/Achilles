@@ -1,0 +1,83 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+*.whl
+dist/
+build/
+.eggs/
+.venv/
+venv/
+
+# Python — package managers
+.pdm-python
+
+# Python — test & lint caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+coverage.xml
+htmlcov/
+.hypothesis/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+.prettiercache
+
+# Frontend build
+dist-ssr/
+*.tsbuildinfo
+*.local
+
+# Logs
+*.log
+logs/
+
+# Environment (secrets) — .env.example stays in the repo
+.env
+.env.*
+!.env.example
+
+# Secrets & certificates
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Docker
+docker-compose.override.yml
+.docker-data/
+
+# Claude Code (local developer settings)
+.claude/
+
+# Vendored skills & lock file
+.agents/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Architecture — working drafts
+docs/architecture/open-questions.md
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Scratch
+.scratch/
+
+# Schemathesis cache (test artifacts)
+backend/.schemathesis/

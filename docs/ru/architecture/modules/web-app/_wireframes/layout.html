@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Web App: layout</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Web App</a>
+        <h1 class="header__title">layout</h1>
+        <div class="header__sub">
+          web app · макеты · layout
+          <a class="in-load in-load--progress" href="../../shared-ui/_wireframes/loading-states.html#progress" title="Переход между экранами — полоса прогресса">
+            <span class="in-load__icon"></span>переход
+          </a>
+        </div>
+      </div>
+
+      <p class="desc">Оболочка пользователя — шапка и навигация, в которые обёрнуты все экраны. Чат-контент внутри рендерит готовая библиотека.</p>
+
+      <!-- ═══ Макет ═══ -->
+      <div class="section">
+        <div class="section__title">Макет</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">web app shell</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/chat
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/chat · авторизованный пользователь</span>
+                  <span class="wf-urltip__body">Стартовый экран после входа.</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="wf-appbar" id="appbar">
+              <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+              <span class="wf-chip">Проект Аякс</span>
+              <span class="wf-appbar__spacer"></span>
+              <span class="wf-input__action" title="Тема: dark / light">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+              </span>
+              <span class="wf-chip">RU</span>
+              <span class="wf-annot">1</span>
+              <a class="wf-bell" href="notification-feed.html" title="Уведомления — лента">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+                <span class="wf-bell__count">2</span>
+              </a>
+              <span class="wf-annot">2</span>
+              <a class="wf-avatar" href="../../auth-security/_wireframes/profile-account.html">ДС</a>
+              <span class="wf-annot">3</span>
+            </div>
+
+            <div class="wf-shell">
+              <div class="wf-side">
+                <div class="wf-side__group">Обзор</div>
+                <a class="wf-side__item wf-side__item--active" href="grounded-answer.html">Чат <span class="wf-annot">4</span></a>
+                <a class="wf-side__item" href="my-agents.html">Агенты</a>
+              </div>
+              <div class="wf-main">
+                <div class="wf-stack">
+                  <span class="wf-label">Активный роут — /chat (Outlet) <span class="wf-annot">5</span></span>
+                  <div class="wf-line wf-line--w60"></div>
+                  <div class="wf-line wf-line--full"></div>
+                  <div class="wf-line wf-line--w80"></div>
+                  <div class="wf-line wf-line--w40"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Переключатели темы (dark / light) и языка (RU / EN). Личный override — в
+              <a href="../../auth-security/_wireframes/profile-account.html#locale" class="xref-module">профиле</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Колокольчик — личные уведомления сотрудника (прогоны его агентов, события учётки); бейдж — число непрочитанных. Ведёт в
+              <a href="notification-feed.html" class="xref-page">ленту</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Аватар открывает меню
+              <a href="../../auth-security/_wireframes/profile-account.html" class="xref-module">профиля</a>
+              с выходом из текущей и всех сессий.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Чат — стартовый экран (home). Сам диалог рендерит готовая чат-оболочка; см.
+              <a href="grounded-answer.html" class="xref-page">ответ с заземлением</a>.
+            </li>
+            <li class="wf-legend__item" id="outlet">
+              <span class="wf-annot wf-legend__num">5</span>
+              Контент роута (Outlet) наполняет assistant-ui (тред · композер) с нашим слоём внутри —
+              <a href="../_workzone/stack.html#shell" class="xref-page">чат-оболочка</a>. Active-пункт держится и на под-экранах.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

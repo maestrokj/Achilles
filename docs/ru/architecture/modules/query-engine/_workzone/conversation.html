@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Query Engine: Диалог</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../query-engine.css" />
+    <link rel="stylesheet" href="conversation.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Query Engine</a>
+        <h1 class="header__title">Диалог</h1>
+        <div class="header__sub">query-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        Запрос пользователя — не одиночный вопрос, а <strong>сообщение в
+        диалоге</strong>, и диалогом владеет Query Engine: помнит историю,
+        переносит контекст между сообщениями, держит сессию. Но сам ход ведёт
+        <strong>chat-модель пользователя</strong> — у неё в руках инструмент
+        <a href="#route" class="xref-anchor">поиска по базе знаний</a>, и она
+        решает на каждом сообщении: ответить из себя или обратиться к хранилищу.
+        Все surface'ы — Web App, Slack, Telegram, Mattermost, MCP, расширение — лишь тонкие окна в
+        <em>одну</em> модель диалога; состояние живёт здесь, в своих таблицах
+        (<a href="data-model.html#conversations" class="xref-page"
+          >conversations</a
+        >
+        · <a href="data-model.html#messages" class="xref-page">messages</a>), а
+        не на клиенте.
+      </p>
+
+      <!-- ════════════════ SESSIONS — STATEFUL OWNERSHIP ════════════════ -->
+      <div class="section" id="sessions">
+        <div class="section__title">Диалогом владеет Query Engine</div>
+        <p class="desc">
+          Диалог <strong>stateful</strong>: сессия группирует шаги одного
+          разговора, история накапливается сообщение за сообщением. Где-то это состояние
+          должно жить — и живёт оно у Query Engine, единственного модуля, который
+          видит и запрос, и собранный ответ. Дом данных — собственные таблицы:
+          <a href="data-model.html#conversations" class="xref-page">сессии</a>
+          и <a href="data-model.html#messages" class="xref-page">сообщения</a> с их
+          ответами.
+        </p>
+      </div>
+
+      <!-- ════════════════ SESSION BOUNDARY — WHERE A DIALOGUE BEGINS ════════════════
+           Граница «новой» беседы vs «продолжения» = наличие/отсутствие ссылки на
+           беседу (conversation_id) в запросе. Ленивое создание на 1-м сообщении;
+           «новый чат» / clear / resume — выражения одного примитива (id), не
+           отдельные глаголы API. Управление беседами (CRUD) и retention — Web App. -->
+      <div class="section" id="session-boundary">
+        <div class="section__title">Где начинается беседа</div>
+        <p class="desc">
+          Беседа — <strong>устойчивый тред</strong>, а не эфемерная сессия входа:
+          живёт, пока её не удалят, и не истекает по простою (тайм-аут — про вход
+          в систему, не про разговор). Границу между «новой» беседой и
+          «продолжением» задаёт не отдельная команда, а <strong>наличие или
+          отсутствие ссылки на беседу</strong> (<code>conversation_id</code>) в
+          запросе: реплика со ссылкой дописывает существующую, реплика без неё
+          открывает новую.
+        </p>
+        <p class="desc">
+          Беседа создаётся <strong>лениво — на первом сообщении</strong>: пустых
+          тредов не заводим, строка
+          <a href="data-model.html#conversations" class="xref-page"
+            >conversations</a
+          >
+          рождается, когда отправлена первая реплика, и её идентификатор
+          возвращается клиенту для следующих ходов. Кнопка «Новый чат» ничего не
+          открывает на сервере — она лишь сбрасывает активную ссылку на клиенте, а
+          новую беседу родит уже первое отправленное сообщение.
+        </p>
+        <div class="desc">
+          <p>
+            Отсюда — единый рычаг на все каналы: «новый чат», «clear», «resume» не
+            отдельные операции API, а выражения одного и того же «какую ссылку
+            шлёт клиент». Что считать новой беседой, решает <strong>surface</strong>:
+          </p>
+          <ul class="desc-list">
+            <li>
+              <strong>Web App</strong> — кнопка «Новый чат» и список бесед; clear =
+              сброс активной ссылки.
+            </li>
+            <li>
+              <strong>Slack</strong> — нативный тред: новый тред или DM — новая
+              беседа.
+            </li>
+            <li>
+              <strong>Telegram</strong> — DM без тредов: команда <code>/new</code>
+              сбрасывает активную ссылку, новую беседу родит следующее сообщение
+              (перехват на стороне поверхности, в историю не идёт).
+            </li>
+            <li>
+              <strong>Mattermost</strong> — правило Slack: новый тред или DM — новая
+              беседа.
+            </li>
+            <li>
+              <strong>Browser Extension</strong> — эфемерно, в рамках страницы или
+              вкладки.
+            </li>
+          </ul>
+        </div>
+        <p class="note">
+          Управление беседами — список, переименование, удаление, срок хранения —
+          живёт в оболочке Web App и проектируется вместе с ней; модель данных к
+          этому готова (каскад уходит за <code>conversations</code>). Здесь — лишь
+          правило, где проходит граница одного разговора.
+        </p>
+      </div>
+
+      <!-- ════════════════ ROUTE — MODEL DECIDES TO RETRIEVE ════════════════
+           Дом «решения искать». Ход ведёт chat-модель: держит инструмент
+           search_knowledge и решает per-turn — разговор или grounding. Контракт
+           каждого режима — у grounding; полный агентный цикл — у Agent Engine. -->
+      <div class="section" id="route">
+        <div class="section__title">Модель решает: ответить или искать</div>
+        <p class="desc">
+          Не каждое сообщение — запрос к базе. «Спасибо», «переформулируй абзац»,
+          «что такое OKR вообще» — обычный разговор, которому хранилище не нужно.
+          А «какой дедлайн проекта Аякс» — вопрос к корпоративным знаниям.
+          Поэтому ход ведёт <strong>chat-модель</strong>: в руках у неё набор
+          инструментов — <strong><code>search_knowledge</code></strong> (когда
+          база непуста) и, если администратор включил,
+          <strong><code>web_search</code></strong> — и она
+          решает на каждом сообщении: ответить из себя или обратиться к ним.
+          Разговор → отвечает без поиска и без цитат. Вопрос к знаниям → зовёт
+          инструменты — при необходимости несколько разом, <strong>одним
+          раундом</strong> — и строит ответ на том, что они вернули.
+        </p>
+
+        <!-- conversational vs tools — the model holds the toolset and decides -->
+        <div class="cv-route">
+          <div class="cv-route__lead">
+            <span class="cv-route__h">chat-модель ведёт ход</span>
+            <span class="ai-tag" title="Этап использует нейросеть — инференс модели"
+              ><span class="ai-tag__icon"></span>AI</span
+            >
+            <span class="cv-route__tool">в руках
+              <code>search_knowledge</code> · <code>web_search</code></span>
+          </div>
+          <span class="cv-route__split">⟨ нужны инструменты? ⟩</span>
+          <div class="cv-route__paths">
+            <div class="cv-route__path cv-route__path--talk">
+              <span class="cv-route__cond">разговор</span>
+              <span class="cv-route__out">отвечает из себя</span>
+              <span class="cv-route__note">болтовня · мета-просьба · общий
+                вопрос — без поиска, без цитат</span>
+            </div>
+            <div class="cv-route__path cv-route__path--ground">
+              <span class="cv-route__cond">к инструментам</span>
+              <span class="cv-route__out">зовёт один раунд
+                (<code>search_knowledge</code> ± <code>web_search</code>)</span>
+              <span class="cv-route__note">ответ строго из найденного ·
+                с цитатой на источник</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="note">
+          <strong>Смещение в сторону поиска.</strong> На грани «болтовня это или
+          запрос» модель склоняется искать: пустой поиск дёшев, а выдуманный
+          корпоративный факт дорог — рушит доверие. Это — когда есть что искать:
+          при пустой базе <code>search_knowledge</code> модели не подаётся вовсе
+          (производно от
+          <a href="../../knowledge-store/_workzone/hybrid-search.html#emptiness" class="xref-module"
+            ><code>is_empty</code></a>), смещение неприменимо, и модель отвечает
+          из общих знаний как обычный ассистент. Что именно значит grounding
+          в каждом режиме и как звучит честное «не нашёл» — держит
+          <a href="grounding.html#modes" class="xref-page">grounding</a>. Какие
+          инструменты вообще даны чату — решает администратор:
+          <code>web_search</code> по умолчанию выключен, и выключенный инструмент
+          модели не подаётся
+          (<a href="../../ai-foundation/_workzone/tool-catalog.html#governance" class="xref-module">каталог инструментов</a>).
+          Где один раунд инструментов кончается и начинается полный агентный
+          цикл — <a href="rag-pipeline.html#agent-boundary" class="xref-page"
+            >граница с Agent Engine</a>.
+        </p>
+      </div>
+
+      <!-- ════════════════ MULTI-TURN — CONTEXT CARRY ════════════════
+           Контекст переносится; зависимый follow-up модель сама формулирует
+           самостоятельным запросом как аргумент search_knowledge — отдельного
+           condense-шага нет, модель уже читает историю. -->
+      <div class="section" id="multi-turn">
+        <div class="section__title">
+          Перенос контекста и самостоятельный запрос
+        </div>
+        <p class="desc">
+          Внутри сессии сообщения связаны: «а что у него по срокам?» имеет смысл
+          только на фоне предыдущего. Поэтому, решив искать, модель формулирует
+          <strong>самостоятельный запрос</strong> — понятный без истории — и
+          передаёт его аргументом в <code>search_knowledge</code>. Отдельного
+          шага переписывания нет: модель и так держит историю диалога перед
+          глазами, так что подставляет опущенный субъект сама, тем же ходом, что
+          решает позвать поиск. Без этого «а ещё?» ушло бы в retrieval как «ещё»
+          — вектор поймал бы реплику, а не тему разговора.
+        </p>
+
+        <!-- session/turn timeline -->
+        <div class="cv-timeline" aria-hidden="true">
+          <div class="cv-session">
+            <span class="cv-session__tag">Сессия</span>
+            <div class="cv-turns">
+              <div class="cv-turn">
+                <span class="cv-turn__n">сообщение 1</span>
+                <span class="cv-turn__q">«Что по проекту Аякс?»</span>
+                <span class="cv-turn__note">самостоятельное — модель ищет по
+                  нему как есть</span>
+              </div>
+              <span class="cv-turn__seam">↓ история</span>
+              <div class="cv-turn cv-turn--dep">
+                <span class="cv-turn__n">сообщение 2</span>
+                <span class="cv-turn__q">«А что по срокам?»</span>
+                <span class="cv-turn__note cv-turn__note--rw">модель зовёт
+                  search_knowledge(«Сроки проекта Аякс»)</span>
+              </div>
+            </div>
+          </div>
+          <div class="cv-timeline__cap">
+            история переносится между сообщениями · зависимое сообщение модель
+            сама формулирует самостоятельным запросом к инструменту
+          </div>
+        </div>
+
+        <p class="note">
+          Что происходит при вызове инструмента — embed, поиск под правами,
+          упаковка, grounding-генерация — держит
+          <a href="rag-pipeline.html#route" class="xref-page">маршрут
+            поиска</a>. Сколько прошлых ходов доедет до модели в длинном
+          разговоре — вопрос
+          <a href="#context-budget" class="xref-anchor">бюджета окна</a>.
+        </p>
+      </div>
+
+      <!-- ════════════════ CONTEXT BUDGET — ONE WINDOW, MANY CLAIMANTS ════════════════
+           Окно модели — общий ресурс хода: его делят system, история, сообщение,
+           найденный контекст и резерв под ответ. Два толкателя к переполнению —
+           история (растёт по ходам, усекает QE) и найденный контекст (большой за
+           ход, усекает augment) — режутся под ОДИН потолок. Усечение ≠ потеря:
+           дословная переписка в messages, факты перевыбираются из KS. v1 —
+           token-window; running summary — v2-форк. -->
+      <div class="section" id="context-budget">
+        <div class="section__title">
+          Бюджет контекстного окна
+        </div>
+        <p class="desc">
+          Окно chat-модели не безразмерно: всё, что она видит за один ход, делит
+          общий потолок токенов. На grounding-ходе в него разом ложатся
+          system-инструкции, история диалога, текущее сообщение и найденный
+          контекст — и надо ещё оставить место под сам ответ. Поэтому
+          переполнение — не «слишком длинная история», а
+          <strong>конкуренция за единый бюджет</strong>: два потребителя растут
+          независимо, а режутся под один потолок.
+        </p>
+
+        <div class="cb-window">
+          <span class="cb-cap">Контекстное окно · один ход</span>
+          <div class="cb-seg">
+            <span class="cb-seg__k">System prompt</span>
+            <span class="cb-seg__v"><a href="../../admin-panel/_wireframes/ai-behavior.html#composition" class="xref-module">платформенный prompt</a>
+              (безопасность + организация) + grounding-инструкции + описание
+              <code>search_knowledge</code></span>
+            <span class="cb-seg__tag">фикс</span>
+          </div>
+          <div class="cb-seg cb-seg--grow">
+            <span class="cb-seg__k">История диалога</span>
+            <span class="cb-seg__v">прошлые реплики · усекает Query Engine
+              (token-window)</span>
+            <span class="cb-seg__tag">растёт по ходам ▲</span>
+          </div>
+          <div class="cb-seg">
+            <span class="cb-seg__k">Текущее сообщение</span>
+            <span class="cb-seg__v">реплика хода</span>
+            <span class="cb-seg__tag">всегда целиком</span>
+          </div>
+          <div class="cb-seg cb-seg--ctx">
+            <span class="cb-seg__k">Найденный контекст</span>
+            <span class="cb-seg__v">top-K фрагментов из KS · усекает augment под
+              остаток</span>
+            <span class="cb-seg__tag">большой за ход ▲</span>
+          </div>
+          <div class="cb-seg cb-seg--reserve">
+            <span class="cb-seg__k">Резерв под ответ</span>
+            <span class="cb-seg__v">место под генерацию — держится свободным</span>
+            <span class="cb-seg__tag">защищён</span>
+          </div>
+        </div>
+
+        <p class="note">
+          <strong>Усечение окна — не потеря памяти.</strong> Дословная переписка
+          живёт в
+          <a href="data-model.html#messages" class="xref-page">messages</a>,
+          снимки retrieval — в
+          <a href="data-model.html#retrieval-trace" class="xref-page"
+            >retrieval_trace</a>, а факты ответа перевыбираются свежим
+          <a href="rag-pipeline.html#route" class="xref-page">retrieval</a> из
+          Knowledge Store на каждом grounding-ходе. Окно — рабочий буфер одного
+          вызова, не хранилище: выпавшее из него остаётся в базе. Оттого историю
+          здесь можно усекать смелее, чем в чистом чат-боте, где она —
+          единственная память.
+        </p>
+
+        <div class="decision-box">
+          <strong>Общий потолок, усечение по токенам.</strong> История и
+          найденный контекст делят один бюджет окна, а не режутся каждый по своему
+          лимиту:
+          <a href="rag-pipeline.html#augment" class="xref-page">augment</a>
+          укладывает фрагменты в остаток, что оставила усечённая история, удерживая
+          резерв под ответ. История усекается с конца по токенам — ранние ходы
+          уходят первыми, текущая реплика всегда целиком. Связную формулировку
+          follow-up это не ломает: пока субъект в окне, модель строит
+          <a href="#multi-turn" class="xref-anchor">самостоятельный запрос</a> как
+          прежде.
+        </div>
+
+        <p class="note">
+          <span class="iter v2">v2</span> — <strong>running summary</strong> старых
+          ходов: когда даже усечённая история перестаёт влезать, ранние ходы
+          сворачиваются отдельным вызовом в краткое резюме, и в окно идёт «резюме
+          + последнее дословное окно». Надстройка над token-window, не замена:
+          добавляет глубину памяти ценой лишнего вызова и риска растерять
+          низкочастотную, но важную деталь при повторных сжатиях.
+        </p>
+      </div>
+
+      <!-- ════════════════ SURFACE API — ONE DIALOGUE MODEL ════════════════ -->
+      <div class="section" id="surface-api">
+        <div class="section__title">Один диалог на все surface'ы</div>
+        <p class="desc">
+          Точек входа в диалог несколько —
+          <a href="../../web-app/index.html" class="xref-badge">Web App</a>
+          <a href="../../slack/index.html#model" class="xref-badge">Slack</a>
+          <a href="../../telegram/index.html#model" class="xref-badge">Telegram</a>
+          <a href="../../mattermost/index.html#model" class="xref-badge">Mattermost</a>
+          <a href="../../extension/index.html" class="xref-badge">Browser Extension</a> — и все они
+          <strong>тонкие клиенты</strong>: рисуют сообщения и стримят ответ, но
+          логики диалога не несут. Они делят <em>одну</em> модель диалога через
+          единый внутренний API Query Engine. Сессии, история, перенос контекста,
+          решение о поиске — всё на стороне Query Engine; surface лишь
+          открывает сессию, шлёт реплику и показывает ответ.
+        </p>
+        <p class="note">
+          Так разные каналы не расходятся в поведении: правило диалога
+          реализовано один раз, а не по копии в каждом клиенте. Новый surface
+          подключается тем же API и получает ту же память разговора даром —
+          в том числе кастомная поверхность заказчика через публичный контракт.
+          <a href="../../public-api/index.html#model" class="xref-module">→ Public API</a>
+        </p>
+        <p class="note">
+          <strong>MCP сюда не входит.</strong> Это поверхность иного рода — не
+          диалоговый клиент, а поставщик инструмента поиска
+          <em>внешней</em> модели: держит не беседу, а tool-call, и возвращает
+          находки, а не готовый ответ.
+          <a href="../../mcp/index.html#model" class="xref-module">→ MCP</a>
+        </p>
+      </div>
+
+      <!-- ════════════════ STREAMING — SYNCHRONOUS ════════════════ -->
+      <div class="section" id="streaming">
+        <div class="section__title">Синхронный стриминг ответа</div>
+        <p class="desc">
+          Ответ отдаётся <strong>синхронно, потоком</strong>: токены
+          <a href="grounding.html#grounding" class="xref-page">grounding</a>-ответа
+          текут в surface по мере генерации, без постановки в очередь задач.
+        </p>
+        <p class="note">
+          <strong>Slack — исключение.</strong> Мессенджер не держит соединение и
+          ждёт ответ за 3 секунды: стрим собирается на сервере и возвращается
+          постом в тред — приём подтверждается сразу, обработка идёт отложенно
+          через очередь.
+          <a href="../../slack/index.html#delivery" class="xref-module">→ Slack</a>
+        </p>
+      </div>
+
+      <!-- ════════════════ FEEDBACK — THUMBS ════════════════ -->
+      <div class="section" id="feedback">
+        <div class="section__title">Фидбэк на ответ</div>
+        <p class="desc">
+          У каждого ответа — лёгкая оценка: thumbs up / down. Это не действие над
+          диалогом, а сигнал качества: понравился ответ или промахнулся. Оценка
+          ложится рядом с самим сообщением в
+          <a href="data-model.html#messages" class="xref-page">хранилище
+            диалога</a>
+          — копим её на будущее, для оценки качества выдачи и настройки
+          ранжирования.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

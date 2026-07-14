@@ -1,0 +1,423 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Knowledge Store</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Knowledge Store</h1>
+        <div class="header__sub">
+          admin panel · макеты · данные
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Экран рендерится в контентной области каркаса">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Загрузка экрана — каркас (skeleton)">
+              <span class="in-load__icon"></span>загрузка
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">
+        Наблюдать за
+        <a href="../../knowledge-store/index.html" class="xref-module">Knowledge Store</a>
+        и управлять тем, что админ задаёт поверх него.
+      </p>
+
+      <!-- ═══ Состояние хранилища — метрики ═══ -->
+      <div class="section" id="storage-metrics">
+        <div class="section__title">Состояние хранилища</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">метрики графа</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/knowledge-store
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/knowledge-store · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-row wf-spread">
+                  <span class="wf-title">Хранилище знаний</span>
+                  <div class="wf-input wf-input--sm">Все источники ▾ <span class="wf-annot">1</span></div>
+                </div>
+                <div class="wf-row">
+                  <div class="wf-stat">
+                    <span class="wf-stat__num">1.24M</span>
+                    <span class="wf-stat__label">Сущности</span>
+                    <span class="wf-stat__sub">узлы графа · entities</span>
+                  </div>
+                  <div class="wf-stat">
+                    <span class="wf-stat__num">4.81M</span>
+                    <span class="wf-stat__label">Фрагменты</span>
+                    <span class="wf-stat__sub">chunks · вектор + лексика</span>
+                  </div>
+                  <div class="wf-stat">
+                    <span class="wf-stat__num">918k</span>
+                    <span class="wf-stat__label">Связи</span>
+                    <span class="wf-stat__sub">рёбра · entity_edge</span>
+                  </div>
+                  <div class="wf-stat wf-stat--muted">
+                    <span class="wf-stat__num">3.1k</span>
+                    <span class="wf-stat__label">Несведённые связи <span class="wf-annot">2</span></span>
+                    <span class="wf-stat__sub">заявки · entity_ref</span>
+                  </div>
+                  <div class="wf-stat">
+                    <span class="wf-stat__num">38 GB</span>
+                    <span class="wf-stat__label">Объём векторов</span>
+                    <span class="wf-stat__sub">pgvector · HNSW</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Фильтр счётчиков по источнику — вклад каждого; по умолчанию весь граф.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Заявки на рёбра, чей второй узел ещё не пришёл — их закрывает
+              <a href="../../knowledge-store/_workzone/lifecycle.html#edge-materialization" class="xref-module">материализация рёбер</a>. Растущий хвост — сигнал недособранного графа, не ошибка.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════════
+           ДОВОДКА ГРАФА (id="knowledge-store").
+           Сюда ведут входящие ссылки Knowledge Store · Lifecycle:
+           #curation-pass (частоту задаёт Admin) и общий смысловой якорь.
+           Внутри — панель прогона (id="curation-run", цель ссылки от
+           #coordination и от экрана AI-моделей) и расписание доводки.
+           ════════════════════════════════════════════════════════════════ -->
+      <div class="section" id="knowledge-store">
+        <div class="section__title">
+          Доводка графа
+          <a href="../../knowledge-store/_workzone/lifecycle.html#curation-pass" class="xref-badge">→ Knowledge Store</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">прогон доводки · идёт переэмбеддинг</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <!-- Панель текущего прогона -->
+                <div class="wf-stack" id="curation-run">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-label">Прогон доводки</span>
+                    <span class="wf-row">
+                      <button class="wf-btn wf-btn--disabled">⟳ Запустить</button>
+                      <span class="wf-annot">1</span>
+                    </span>
+                  </div>
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-spinner"></span>
+                        <span class="wf-chip wf-chip--warn">running · 62%</span>
+                        <span class="wf-chip">смена модели <span class="wf-annot">2</span></span>
+                      </span>
+                      <span class="wf-row">
+                        <span class="wf-text">началось 8 мин назад</span>
+                        <span class="wf-guarded"
+                          ><a class="wf-a">Отменить прогон</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                        ></span>
+                        <span class="wf-annot">3</span>
+                      </span>
+                    </div>
+                    <hr class="wf-divider" />
+                    <div class="wf-runcell">
+                      <span class="wf-text">
+                        Переэмбеддинг фрагментов
+                        <span class="ai-tag" title="Этап использует нейросеть — инференс модели"><span class="ai-tag__icon"></span>AI</span>
+                        — 8.2k из 13.1k <span class="wf-annot">4</span>
+                      </span>
+                      <span class="wf-runcell__meta">
+                        Embedding 3 Large → Embedding 3 Small
+                      </span>
+                    </div>
+                    <span class="wf-hint">
+                      Поиск во время пересчёта продолжает работать.
+                      <span class="wf-annot">5</span>
+                    </span>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <!-- Расписание доводки -->
+                <div class="wf-stack" id="curation-schedule">
+                  <span class="wf-label">Расписание доводки</span>
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text">
+                        Когда гнать платформенный прогон
+                        <span class="wf-hint">тяжёлую доводку держат в тихие часы · время организации (Europe/Moscow)</span>
+                      </span>
+                      <span class="wf-annot">6</span>
+                    </div>
+                    <hr class="wf-divider" />
+                    <div class="wf-row">
+                      <div class="wf-field">
+                        <span class="wf-label">Частота</span>
+                        <div class="wf-input wf-input--sm">Раз в сутки ▾</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Время</span>
+                        <div class="wf-input wf-input--sm">04:00 ▾</div>
+                      </div>
+                    </div>
+                    <span class="wf-hint">↳ каждый день в 04:00 · следующий прогон — сегодня в 04:00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">прогон · по расписанию (разрушительное окно)</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-body">
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-spinner"></span>
+                        <span class="wf-chip wf-chip--warn">running · 41%</span>
+                        <span class="wf-chip">по расписанию</span>
+                      </span>
+                      <span class="wf-guarded"
+                        ><a class="wf-a">Отменить</a>
+                    <a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                      ></span>
+                    </div>
+                    <hr class="wf-divider" />
+                    <span class="wf-row">
+                      <span class="wf-chip wf-chip--ok">рёбра ✓</span>
+                      <span class="wf-chip wf-chip--warn">сведение ●</span>
+                      <span class="wf-chip">decay</span>
+                      <span class="wf-chip">retention <span class="iter v2">v2</span></span>
+                    </span>
+                    <span class="wf-hint wf-hint--error">
+                      Разрушительное окно (мёрж дублей) · синхронизация затронутых источников в очереди
+                      <span class="wf-annot">7</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">простой · последний прогон</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-body">
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-chip wf-chip--ok">succeeded</span>
+                      <span class="wf-text">сегодня 04:00 · за 6 мин</span>
+                    </div>
+                    <hr class="wf-divider" />
+                    <span class="wf-runcell__meta">
+                      рёбер +1.2k <span class="wf-sep">·</span> сведено 84
+                      <span class="wf-sep">·</span> занижено 320
+                    </span>
+                    <span class="wf-hint">следующий по расписанию — завтра 04:00 <span class="wf-annot">8</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Поднимает разовый прогон вне расписания. Прогон на платформе один — пока идёт текущий, кнопка неактивна (<a href="../../knowledge-store/_workzone/lifecycle.html#curation-runs" class="xref-module">curation_runs</a>).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Чип триггера — по расписанию, вручную или смена embedding-модели.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Отмена переэмбеддинга безопасна: до атомарного свопа берётся старый индекс, новые вектора собираются в отдельной колонке рядом (<a href="../../knowledge-store/_workzone/lifecycle.html#embedding-refresh" class="xref-module">refresh</a>). Прогон дорогой, поэтому за <a href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" class="xref-module">подтверждением</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Общий индикатор активности: какой этап сейчас и сколько пройдено. На него ссылается
+              <a href="../../knowledge-store/_workzone/lifecycle.html#coordination" class="xref-module">координация полос</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Переэмбеддинг запускается со
+              <a href="ai-models.html#model-assignment" class="xref-page">смены embedding-модели</a>. Механика — <a href="../../knowledge-store/_workzone/lifecycle.html#embedding-refresh" class="xref-module">embedding refresh</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              Одно платформенное расписание, не per-source: частота и время. Хранится в
+              <a href="../_workzone/data-model.html#data-model" class="xref-page">platform_settings</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              Шаги прогона — чипами. Лишь разрушительное окно (мёрж дублей и
+              <a href="#retention" class="xref-anchor">retention</a>) приостанавливает запись затронутых источников.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              В простое — итог последнего прогона и время следующего планового.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Retention policy (v2) ═══ -->
+      <div class="section" id="retention">
+        <div class="section__title">
+          Retention policy <span class="iter v2">v2</span>
+        </div>
+        <p class="note">Что хранить, архивировать или удалять по типу сущности и сроку — отложено в <span class="iter v2">v2</span>. Механика — <a href="../../knowledge-store/_workzone/lifecycle.html#retention" class="xref-module">Knowledge Store · Lifecycle</a>.
+        </p>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">политика хранения по типу · эскиз v2</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-body">
+              <div class="wf-stack wf-dim">
+                <table class="wf-table">
+                  <thead>
+                    <tr><th>Тип сущности</th><th>Хранить</th><th>Архивировать после</th><th>Удалять после</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Сообщения чатов</td>
+                      <td><span class="wf-chip">бессрочно ▾</span></td>
+                      <td>1 год ▾</td>
+                      <td>—</td>
+                    </tr>
+                    <tr>
+                      <td>Документы</td>
+                      <td><span class="wf-chip">бессрочно ▾</span></td>
+                      <td>—</td>
+                      <td>—</td>
+                    </tr>
+                    <tr>
+                      <td>Задачи / тикеты</td>
+                      <td><span class="wf-chip">бессрочно ▾</span></td>
+                      <td>2 года ▾</td>
+                      <td>5 лет ▾</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <span class="wf-hint">Эскиз — состав типов и единицы срока устаканиваются при проектировании v2.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Backup & restore (id="backups") ═══
+           id="backups" — цель входящей ссылки Knowledge Store · Lifecycle →
+           Backup & restore. -->
+      <div class="section" id="backups">
+        <div class="section__title">Backup &amp; restore</div>
+        <p class="note">
+          Назначение, периодичность и срок хранения снимков; отсюда же — восстановление. Механика —
+          <a href="../../knowledge-store/_workzone/lifecycle.html#backup" class="xref-module">Knowledge Store · Lifecycle</a>.
+        </p>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">бэкапы · расписание · restore</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-stack">
+                  <span class="wf-label">Назначение и расписание</span>
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-text">
+                      Внешнее хранилище
+                      <span class="wf-hint">S3-совместимое (вкл. MinIO) · ключ write-only, пусто = IAM-роль</span>
+                    </span>
+                    <span class="wf-row">
+                      <div class="wf-input wf-input--sm">s3://acme-achilles-backups ▾</div>
+                      <div class="wf-input wf-input--sm">••••a3f7</div>
+                    </span>
+                  </div>
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-text">
+                      Периодичность
+                      <span class="wf-hint">когда снимать полный дамп базы</span>
+                    </span>
+                    <span class="wf-row">
+                      <div class="wf-input wf-input--sm">Ежедневно ▾</div>
+                      <div class="wf-input wf-input--sm">02:00 ▾</div>
+                    </span>
+                  </div>
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-text">
+                      Хранить снимков
+                      <span class="wf-hint">старые ротируются по мере набора</span>
+                    </span>
+                    <div class="wf-input wf-input--sm">14 ▾</div>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <div class="wf-stack">
+                  <span class="wf-label">Последние снимки</span>
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-row">
+                      <span class="wf-chip wf-chip--ok">готов</span>
+                      <span class="wf-text">сегодня 02:00 · 12.4 GB</span>
+                    </span>
+                    <span class="wf-guarded">
+                      <a class="wf-a">Восстановить</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#type-to-confirm" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a>
+                      <span class="wf-annot">1</span>
+                    </span>
+                  </div>
+                  <div class="wf-card wf-row wf-spread wf-table__row--muted">
+                    <span class="wf-row">
+                      <span class="wf-chip wf-chip--ok">готов</span>
+                      <span class="wf-text">вчера 02:00 · 12.3 GB</span>
+                    </span>
+                    <span class="wf-guarded">
+                      <a class="wf-a">Восстановить</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#type-to-confirm" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Восстановление перезаписывает текущую базу снимком — необратимо, поэтому за
+              <a href="../../shared-ui/_wireframes/confirm-dialog.html#type-to-confirm" class="xref-module">подтверждением вводом</a>. На время restore платформа уходит в обслуживание.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

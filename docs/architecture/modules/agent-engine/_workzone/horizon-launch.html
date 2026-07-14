@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Agent Engine: Launch and spend</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="horizon.css" />
+    <link rel="stylesheet" href="horizon-launch.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--horizon">
+      <div class="header">
+        <a class="back" href="../index.html">← Agent Engine</a>
+        <span class="hz-eyebrow">Beyond the horizon</span>
+        <h1 class="header__title">Launch and spend <span class="iter v2">v2</span></h1>
+        <div class="header__sub">agent-engine · beyond the horizon</div>
+      </div>
+
+      <!-- ── hero: the intrigue ── -->
+      <div class="hz-hero">
+        <p class="hz-hero__lead">
+          The agent <b>wakes on an event</b> by itself, spends under watch, and
+          <b>reports back</b> on the result on its own.
+        </p>
+        <p class="hz-hero__sub">
+          v1 wakes the agent on a schedule and counts tokens. The next horizon
+          gives it live triggers, a money budget with an alert and an instant
+          stop, and — once done — a notification plus delivery of the answer
+          straight to chat.
+        </p>
+      </div>
+
+      <!-- ════════════ Full run lifecycle ════════════ -->
+      <div class="section" id="run-lifecycle">
+        <h2 class="section__title">Wakes → spends → reports</h2>
+        <div class="hz-stage">
+          <span class="hz-stage__cap">lifecycle of an autonomous run</span>
+          <div class="hzl-flow">
+            <!-- 1 · Wakes -->
+            <div class="hzl-beat">
+              <span class="hzl-beat__cap">triggers</span>
+              <span class="hzl-beat__name"><span class="hzl-g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8" /><path d="M12 9v4l2 2" /><path d="M5 3 2 6" /><path d="m22 6-3-3" /><path d="M6.38 18.7 4 21" /><path d="M17.64 18.67 20 21" /></svg></span>Wakes</span>
+              <div class="hzl-item"><span class="hzl-item__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 16.98h-5.99c-1.1 0-1.95.94-2.48 1.9A4 4 0 0 1 2 17c.01-.7.2-1.4.57-2" /><path d="m6 17 3.13-5.78c.53-.97.1-2.18-.5-3.1a4 4 0 1 1 6.89-4.06" /><path d="m12 6 3.13 5.73C15.66 12.7 16.9 13 18 13a4 4 0 0 1 0 8" /></svg></span>Webhook / external event</div>
+              <div class="hzl-item"><span class="hzl-item__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></svg></span>cron schedule</div>
+              <div class="hzl-item"><span class="hzl-item__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /></svg></span>event in chat</div>
+            </div>
+
+            <span class="hzl-arr">▸</span>
+
+            <!-- 2 · Spends -->
+            <div class="hzl-beat">
+              <span class="hzl-beat__cap">money budget</span>
+              <span class="hzl-beat__name"><span class="hzl-g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2" /><circle cx="12" cy="12" r="2" /><path d="M6 12h.01M18 12h.01" /></svg></span>Spends</span>
+              <div class="hzl-meter">
+                <span class="hzl-meter__used"></span>
+                <span class="hzl-meter__free"></span>
+                <span class="hzl-meter__alert"></span>
+                <span class="hzl-meter__kill"></span>
+              </div>
+              <div class="hzl-meter-legend">
+                <span><b>┃ alert</b> nearing</span>
+                <span>╎ kill — stop</span>
+              </div>
+              <div class="hzl-item"><span class="hzl-item__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0" /><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" /></svg></span>alert at the threshold</div>
+              <div class="hzl-item"><span class="hzl-item__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M4.929 4.929 19.07 19.071" /></svg></span>kill switch — instant</div>
+            </div>
+
+            <span class="hzl-arr">▸</span>
+
+            <!-- 3 · Reports -->
+            <div class="hzl-beat">
+              <span class="hzl-beat__cap">run finale</span>
+              <span class="hzl-beat__name"><span class="hzl-g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" /><path d="M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14" /><path d="M8 6v8" /></svg></span>Reports</span>
+              <div class="hzl-item"><span class="hzl-item__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg></span>completion notification</div>
+              <div class="hzl-item"><span class="hzl-item__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /></svg></span>result straight to chat</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── foot: closing line + tie to the v1 budget ── -->
+      <div class="hz-foot">
+        <span>
+          <b>The same v1 brakes, grown up.</b> The token cap grows into money,
+          the schedule into events, the stop into instant.
+        </span>
+        <a href="governance.html#budget" class="xref-page">Budget and control</a>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: AI tools</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">AI tools</h1>
+        <div class="header__sub">
+          admin panel · wireframes · ai
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Screen renders inside the shell content area">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Screen loading — skeleton">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">
+        The tools the platform gives models as a tool schema. Each tool lives on
+        two surfaces, and each is enabled separately:
+        <strong>chat</strong> and <strong>agents</strong>. Concept and roles —
+        <a href="../../ai-foundation/_workzone/tool-catalog.html" class="xref-module">Tool catalog</a>.
+        Out of the box, both presets are off.
+      </p>
+
+      <!-- ═══ Tool catalog ═══ -->
+      <div class="section" id="catalog">
+        <div class="section__title">
+          Tool catalog
+          <a href="../../ai-foundation/_workzone/data-model.html#tools" class="xref-badge">→ Data model</a>
+          <a href="../../agent-engine/_workzone/harness.html#params" class="xref-badge">→ Tool-calling harness</a>
+        </div>
+        <p class="note">
+          Two read-only platform presets. Off by default: external egress is
+          opened deliberately.
+        </p>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">tools · registry</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/ai-tools
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/ai-tools · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-stack wf-stack--tight">
+                  <span class="wf-title">AI tools</span>
+                  <span class="wf-hint">
+                    Two independent switches on each tool —
+                    <strong>In chat</strong> (the model sees it in conversation) and
+                    <strong>For agents</strong> (an owner can assign it to an agent).
+                    A gray pill means off; a click turns it on.
+                  </span>
+                </div>
+
+                <!-- ── Web search ── -->
+                <div class="wf-card wf-row wf-spread">
+                  <div class="wf-row">
+                    <span class="wf-ico">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10Z" /></svg>
+                    </span>
+                    <div class="wf-stack wf-stack--tight">
+                      <span class="wf-row">
+                        <span class="wf-text">Web search</span>
+                        <span class="wf-hint"><code>web_search</code></span>
+                      </span>
+                      <span class="wf-row">
+                        <span class="wf-hint">Tavily · key set</span>
+                        <span class="wf-chip wf-chip--ok" title="Result of the last health check">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                          checked · 2 min ago
+                        </span>
+                        <a class="wf-chip" tabindex="0" title="Provider · key · check">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" /></svg>
+                          Configure
+                        </a>
+                        <span class="wf-annot">1</span>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="wf-route">
+                    <span class="wf-pill wf-pill--on">In chat</span>
+                    <span class="wf-pill wf-pill--on">For agents</span>
+                  </div>
+                </div>
+
+                <!-- ── Fetch URL ── -->
+                <div class="wf-card wf-row wf-spread">
+                  <div class="wf-row">
+                    <span class="wf-ico">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+                    </span>
+                    <div class="wf-stack wf-stack--tight">
+                      <span class="wf-row">
+                        <span class="wf-text">Fetch URL</span>
+                        <span class="wf-hint"><code>fetch_url</code></span>
+                      </span>
+                      <span class="wf-row">
+                        <span class="wf-hint">no key needed</span>
+                        <span class="wf-chip" title="Check has not run yet">not checked</span>
+                        <a class="wf-chip" tabindex="0" title="Check egress availability">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>
+                          Check
+                        </a>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="wf-route">
+                    <span class="wf-pill wf-pill--off">In chat</span>
+                    <span class="wf-pill wf-pill--off">For agents</span>
+                  </div>
+                </div>
+
+                <!-- ── Knowledge Store · core ── -->
+                <div class="wf-card wf-row wf-spread">
+                  <div class="wf-row">
+                    <span class="wf-ico">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5v14a9 3 0 0 0 18 0V5" /><path d="M3 12a9 3 0 0 0 18 0" /></svg>
+                    </span>
+                    <div class="wf-stack wf-stack--tight">
+                      <span class="wf-row">
+                        <span class="wf-text">Knowledge Store · core</span>
+                        <span class="wf-hint"><code>search</code> · <code>graph</code> · <code>sql</code></span>
+                      </span>
+                      <span class="wf-hint">core · read-only · always on, no configuration needed <span class="wf-annot">2</span></span>
+                    </div>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <!-- ── MCP · v2 ── -->
+                <div class="wf-card wf-row wf-spread">
+                  <div class="wf-row">
+                    <span class="wf-ico">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5" /><path d="M9 8V2" /><path d="M15 8V2" /><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z" /></svg>
+                    </span>
+                    <div class="wf-stack wf-stack--tight">
+                      <span class="wf-row">
+                        <span class="wf-text">External MCP servers</span>
+                        <span class="iter v2">v2</span>
+                      </span>
+                      <span class="wf-hint">connecting servers and write tools — next iteration</span>
+                    </div>
+                  </div>
+                  <button class="wf-btn wf-btn--disabled">Connect <span class="wf-annot">3</span></button>
+                </div>
+
+                <span class="wf-hint">
+                  The list is a live registry of types. An organization’s own tool,
+                  registered as a <a href="../../ai-foundation/_workzone/tool-catalog.html#custom" class="xref-module">class in code</a>,
+                  <a href="../../ai-foundation/_workzone/tool-catalog.html#discovery" class="xref-module">appears here on its own</a>
+                  after a restart — as a row, like the presets, and off.
+                </span>
+
+                <span class="wf-hint">
+                  Enabling a tool and changing a setting (provider, key)
+                  are written to the <a href="audit-log.html" class="xref-page">audit log</a>
+                  as an admin action. A call limit / budget for
+                  <code>web_search</code> is <span class="iter v2">v2</span>.
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">web search · “Configure”</div>
+              <div class="wf-pop">
+                <span class="wf-chip" tabindex="0"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" /></svg> Configure</span>
+                <div class="wf-menu">
+                  <div class="wf-field">
+                    <span class="wf-label">Provider</span>
+                    <span class="wf-input wf-input--sm" tabindex="0">Tavily ▾</span>
+                    <span class="wf-hint">Tavily · Brave · Serper · Google CSE — the model sees one tool</span>
+                  </div>
+                  <div class="wf-field">
+                    <span class="wf-label">API key</span>
+                    <div class="wf-input wf-input--sm wf-input--focus">••••f3a1</div>
+                    <span class="wf-hint">entered once — never shown again</span>
+                  </div>
+                  <hr class="wf-divider" />
+                  <div class="wf-row wf-spread">
+                    <button class="wf-btn wf-btn--ghost">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>
+                      Test
+                    </button>
+                    <span class="wf-chip wf-chip--ok">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                      provider responded
+                    </span>
+                  </div>
+                  <span class="wf-hint">
+                    a ping to the provider, not a real model request; the result lands in
+                    <code>status</code> · <code>last_check_at</code>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              <strong>Configure</strong> gathers all of a tool’s settings into one
+              popover: provider (Tavily · Brave · Serper · CSE), API key
+              (a “set” flag, not the secret — it’s encrypted by the
+              <a href="../../auth-security/_workzone/protection.html#crypto-core" class="xref-module">Auth crypto core</a>
+              and never returned) and a <strong>Test</strong> button —
+              a ping to the provider, with the result in
+              <a href="../../ai-foundation/_workzone/data-model.html#tools" class="xref-module"><code>status</code> · <code>last_check_at</code></a>,
+              shown on the card as a pill. <code>fetch_url</code> has nothing to
+              configure — only “Check” (egress availability). Same approach as the
+              <a href="ai-models.html#providers" class="xref-page">AI model provider check</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              The KS core is a reference row: the three tools are always available
+              to chat and agents, with no separate configuration. Removing an <em>added</em>
+              tool is <a href="../../ai-foundation/_workzone/tool-catalog.html#surfaces" class="xref-module">graceful degradation</a> —
+              the agent carries on with the core.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Connecting external MCP servers and write tools is <span class="iter v2">v2</span>;
+              the button is disabled.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

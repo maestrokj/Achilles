@@ -1,0 +1,1247 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Data model and contracts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="data-model.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Data model and contracts</h1>
+        <div class="header__sub">auth / security · workzone</div>
+      </div>
+
+      <div class="stk-stack">
+        <!-- ── L1 · Outward contract ── -->
+        <div class="stk-layer stk-layer--contract" id="api-errors">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">1</span>
+            <span class="stk-layer__name">Outward contract</span>
+            <span class="stk-layer__role"
+              >The API error format. What the client sees.</span
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="dm-env">
+              <div class="mod-label dm-env__t"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg> Problem Details (RFC 9457) + extensions</div>
+<pre class="file-tree"><span class="dim">Content-Type: application/problem+json</span>
+{
+  "type":       "/errors/invalid-credentials"  <span class="dim">error type (URI)</span>
+  "title":      "Invalid credentials"          <span class="dim">type title</span>
+  "status":     401                            <span class="dim">mirrors the HTTP status</span>
+  <span class="dm-ecode">"code"</span>:       "INVALID_CREDENTIALS"          <span class="dim">machine-readable</span>
+  "detail":     "Invalid credentials"          <span class="dim">human, i18n-ready</span>
+  "request_id": "req_a1b"                   <span class="dim">tracing · = X-Request-Id header</span>
+}
+<span class="dim">422 — + errors:</span>      [{ "field", "message" }]
+<span class="dim">429 — + retry_after:</span> 30 <span class="dim">sec · + Retry-After header</span></pre>
+            </div>
+            <div class="dm-codes">
+              <div class="mod-label dm-codes__t"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="9" y2="9" /><line x1="4" x2="20" y1="15" y2="15" /><line x1="10" x2="8" y1="3" y2="21" /><line x1="16" x2="14" y1="3" y2="21" /></svg> Codes by HTTP status</div>
+              <ul>
+                <li>
+                  <span class="dm-http dm-http--401">401</span
+                  ><span class="dm-ecode">INVALID_CREDENTIALS</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--401">401</span
+                  ><span class="dm-ecode">TOKEN_EXPIRED</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--401">401</span
+                  ><span class="dm-ecode">TOKEN_INVALID</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--403">403</span
+                  ><span class="dm-ecode">FORBIDDEN</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--403">403</span
+                  ><span class="dm-ecode">LAST_OWNER_PROTECTED</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--403">403</span
+                  ><span class="dm-ecode">PASSWORD_CHANGE_REQUIRED</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--404">404</span
+                  ><span class="dm-ecode">NOT_FOUND</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--404">404</span
+                  ><span class="dm-ecode">SETUP_UNAVAILABLE</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--409">409</span
+                  ><span class="dm-ecode">CONFLICT</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--409">409</span
+                  ><span class="dm-ecode">SMTP_NOT_CONFIGURED</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--409">409</span
+                  ><span class="dm-ecode">ALREADY_LINKED</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--410">410</span
+                  ><span class="dm-ecode">INVITE_EXPIRED</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--410">410</span
+                  ><span class="dm-ecode">INVITE_USED</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--410">410</span
+                  ><span class="dm-ecode">RESET_EXPIRED</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--410">410</span
+                  ><span class="dm-ecode">LINK_EXPIRED</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--422">422</span
+                  ><span class="dm-ecode">VALIDATION_ERROR</span
+                  ><span class="dm-extra">+ errors</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--429">429</span
+                  ><span class="dm-ecode">RATE_LIMITED</span
+                  ><span class="dm-extra">+ retry_after</span>
+                </li>
+              </ul>
+            </div>
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Principle</span>
+                <a class="xref-badge xref-badge--page" href="protection.html#brute-force"
+                  >→ Brute-force</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Don't reveal internal details. <strong>401 is always
+                generic</strong> (not “user not found” vs “wrong
+                password”). Validation errors (422) are returned in the same format
+                with an <code>errors</code> array, not in the framework's default form.
+              </div>
+              <details>
+                <summary>why so</summary>
+                <div>
+                  By default FastAPI returns a <code>ValidationError</code> in its own
+                  format — we intercept it and wrap it in Problem Details.
+                </div>
+              </details>
+            </div>
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Format · RFC 9457</span>
+              </div>
+              <div class="stk-dec__d">
+                The error body is <code>application/problem+json</code> per
+                <strong>RFC 9457</strong> (<code>type · title · status ·
+                detail</code>) + the <code>code</code> extension (a short,
+                stable token the client matches on) and
+                <code>request_id</code> in the role of <code>instance</code>
+                (the identifier of the specific occurrence).
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mod-conn">
+          <div class="mod-conn__line"></div>
+          <div class="mod-conn__arrow"></div>
+        </div>
+
+        <!-- ── L2 · Identity core ── -->
+        <div class="stk-layer stk-layer--idcore" id="data-model">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">2</span>
+            <span class="stk-layer__name">Identity core</span>
+            <span class="stk-layer__role"
+              >The identity. The root of all relations.</span
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="dm-tbl">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">users</span>
+                <span class="dm-tbl__sub">accounts</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--flag">MFA v2</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">email</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--uq" title="UNIQUE (lower(email)) — case-insensitive, functional index">UNIQUE</span
+                      ><span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">login identifier · <code>lower()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">password_hash</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK ((auth_provider = 'local') = (password_hash IS NOT NULL))">CHECK</span>
+                    </td>
+                    <td class="dm-note"><code>NULL</code> for SSO · CHECK ↔ auth_provider</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">full_name</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">role</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (owner | admin | member)">CHECK</span>
+                    </td>
+                    <td class="dm-note">owner · admin · member</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">status</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'active'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (active | deactivated)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      DEFAULT <code>'active'</code> · active · deactivated
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">auth_provider</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'local'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (local | okta | azure_ad)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      DEFAULT <code>'local'</code> · local · okta · azure_ad
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">must_change_password</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">
+                      <code>true</code> after a temporary password is issued · gate
+                      on sign-in
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>server_default=now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">last_login_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">denormalization → Last login</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">timezone</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      override · IANA tz · <code>NULL</code> = inherits org
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">locale</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (locale IS NULL OR locale IN ('ru','en'))">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      override · ru · en · <code>NULL</code> = inherits org
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">date_format</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (date_format IS NULL OR date_format IN ('DD.MM.YYYY','MM/DD/YYYY','YYYY-MM-DD'))">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      override · <code>NULL</code> = inherits org
+                    </td>
+                  </tr>
+                  <tr id="col-last_chat_model">
+                    <td class="dm-f">last_chat_model</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      personal sticky chat-model pick ·
+                      <a href="../../query-engine/_workzone/data-model.html#sticky-model" class="xref-module">seeds new conversations</a>
+                      · <code>NULL</code> = admin default
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">mfa_enabled</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">
+                      <code>true</code> after the 1st code is confirmed
+                      <span class="iter v2">v2</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">mfa_secret</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      AES-256-GCM <span class="iter v2">v2</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">mfa_recovery</td>
+                    <td class="dm-t">JSONB</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      hashes of single-use codes (argon2id)
+                      <span class="iter v2">v2</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="stk-dec" id="user-status">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">User status</span>
+              </div>
+              <div class="stk-dec__d">
+                Deliberately two states, with no intermediates
+                (<code>suspended</code>, <code>pending</code>).
+                <strong>deactivated</strong> — a block by an admin, not
+                self-removal.
+              </div>
+            </div>
+            <div class="stk-dec" id="temp-password-gate">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Temporary-password gate</span>
+                <a class="xref-badge xref-badge--page" href="../_features/forced-password-change/index.html"
+                  >→ Forced password change</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                <code>must_change_password</code> is set to <code>true</code>
+                when a temporary password is issued and cleared on a successful change at the
+                gate. While the flag is <code>true</code>, the server rejects any
+                authenticated request except password change and sign-out
+                (<code>403 PASSWORD_CHANGE_REQUIRED</code>) — the application admits
+                neither the UI nor a direct API call. The login / refresh response carries the
+                flag so the client can send the user straight to the change screen.
+              </div>
+            </div>
+            <div class="stk-dec" id="locale-override">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Locale — personal override</span>
+                <a class="xref-badge" href="../../admin-panel/_workzone/locale.html#user-override"
+                  >→ Language and region</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                <code>timezone</code> / <code>locale</code> /
+                <code>date_format</code> — nullable: <code>NULL</code> means
+                “inherit the organization's default”, set in the profile. They affect
+                only the frontend display; storage and the API are UTC. The full
+                precedence chain — in Admin Panel.
+              </div>
+            </div>
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Last login</span>
+                <a class="xref-badge" href="../../admin-panel/_wireframes/users.html#users-tabs"
+                  >→ Admin Panel</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Denormalization — updated on a successful sign-in.
+              </div>
+              <details>
+                <summary>why so</summary>
+                <div>
+                  The full sign-in history is in <code>audit_log</code>. The duplicate on
+                  <code>users</code> is needed so the user list opens without a JOIN to the
+                  journal.
+                </div>
+              </details>
+            </div>
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Email normalization</span>
+              </div>
+              <div class="stk-dec__d">
+                Email is lowercased on input, uniqueness is
+                <code>UNIQUE (lower(email))</code> (or <code>citext</code>).
+                A case-sensitive <code>UNIQUE</code> would let
+                <code>Alice@x</code> and <code>alice@x</code> through as two accounts.
+              </div>
+              <details>
+                <summary>why so</summary>
+                <div>
+                  The same normalized form is used in <code>invite_tokens.email</code>,
+                  <code>identity_mapping.source_email</code>, and in the brute-force key
+                  (<code>brute:account:{email_hash}</code>): otherwise a guessing attempt
+                  resets the counter by changing case.
+                </div>
+              </details>
+            </div>
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">CHECK vs ENUM</span>
+              </div>
+              <div class="stk-dec__d">
+                Fields with a fixed set of values (<code>role</code>,
+                <code>status</code>, <code>auth_provider</code>,
+                <code>result</code>) are plain Text with a
+                <code>CHECK</code> constraint, not a native PostgreSQL ENUM.
+              </div>
+              <details>
+                <summary>why so</summary>
+                <div>
+                  Easier to migrate via Alembic.
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <div class="mod-conn">
+          <div class="mod-conn__line"></div>
+          <div class="mod-conn__arrow"></div>
+        </div>
+
+        <!-- ── L3 · Sessions and access ── -->
+        <div class="stk-layer stk-layer--sessions" id="sessions">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">3</span>
+            <span class="stk-layer__name">Sessions and access</span>
+            <span class="stk-layer__role"
+              >The sign-in lifecycle.</span
+            >
+            <a class="xref-badge xref-badge--page" href="protection.html#crypto-core"
+              >→ Crypto core</a
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="dm-tbl">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">refresh_tokens</span>
+                <span class="dm-tbl__sub">JWT rotation</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → users</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">user_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">CASCADE</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">token_hash</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq">UNIQUE</span>
+                    </td>
+                    <td class="dm-note">cryptographically random (unlike family_id)</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">family_id</td>
+                    <td class="dm-t">UUIDv7</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">reuse detection → Token family</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">is_revoked</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">DEFAULT <code>false</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">expires_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">sliding 30d</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">absolute_expires_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">ceiling 90d</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">remember_me</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                      <span class="dm-c">DEFAULT false</span>
+                    </td>
+                    <td class="dm-note">
+                      choice at sign-in · rotation reissues a cookie of the same kind
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">user_agent</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      device · captured at sign-in and refresh
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">ip</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      address · real IP from nginx · geo at render time
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code> · the session's “last activity”</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="dm-tbl">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">invite_tokens</span>
+                <span class="dm-tbl__sub">invitations 48h</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → users</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">email</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">who is invited</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">role</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (owner | admin | member)">CHECK</span>
+                    </td>
+                    <td class="dm-note">role to assign</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">token_hash</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq">UNIQUE</span>
+                    </td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">invited_by</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">CASCADE</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">expires_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">48h</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">accepted_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">NULL = not yet accepted</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="dm-tbl">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">reset_tokens</span>
+                <span class="dm-tbl__sub">password reset 1h</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → users</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">user_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">CASCADE</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">token_hash</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq">UNIQUE</span>
+                    </td>
+                    <td class="dm-note">SHA-256 · only the hash in the DB</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">expires_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">1h</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">used_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">NULL = not yet used</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="dm-tbl" id="link-tokens">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">link_tokens</span>
+                <span class="dm-tbl__sub">messenger link code 15m</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → users</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">user_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">CASCADE · the issuing account</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">code_hash</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq">UNIQUE</span>
+                    </td>
+                    <td class="dm-note">SHA-256 · only the hash in the DB</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">expires_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">15m</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">used_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">NULL = not yet used</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Reset token — single-use</span>
+                <a class="xref-badge xref-badge--page" href="authentication.html#admin-reset"
+                  >→ Password reset</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Use sets <code>used_at</code>; sending another
+                email revokes the user's previous token. Expired and
+                used are indistinguishable to the client — a single response
+                <code>410 RESET_EXPIRED</code>. The flow machinery — in
+                authentication.
+              </div>
+            </div>
+
+            <div class="dm-tbl" id="api-keys">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">api_keys</span>
+                <span class="dm-tbl__sub">machine access</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → users</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">user_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">owner · CASCADE · <code>key</code> → <code>user_id</code> → role / ACL</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">key_hash</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq">UNIQUE</span>
+                    </td>
+                    <td class="dm-note"><code>SHA-256</code> · only the hash in the DB</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">prefix</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note"><code>ach_xxxx</code> · identification in the list, not a secret</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">scope</td>
+                    <td class="dm-t">JSONB</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">access (read-only) + sources (<code>null</code> = all available) · never exceeds owner's permissions</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">expires_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">30 / 90 / 365 days · <code>NULL</code> = never-expiring</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">last_used_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">the fact and time of use · “Used” in the list</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">is_revoked</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">DEFAULT <code>false</code> · revoked manually or by cascade on deactivation</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">revoked_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">the moment of revocation · set once, never overwritten · “Revoked keys” in the profile</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code> · the moment of issue</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code> + trigger · the key mutates in place (<code>is_revoked</code>, <code>last_used_at</code>)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Messenger link code — single-use</span>
+                <a class="xref-badge xref-badge--page" href="authentication.html#messenger-link"
+                  >→ Messenger linking</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Generated in a signed-in session (<code>user_id</code> is known at once),
+                consumed by returning it to the bot in a DM: it links the <b>returning</b>
+                <code>source_user_id</code> to the <b>issuing</b> account via
+                <a href="#identity-mapping" class="xref-anchor"><code>identity_mapping</code></a>.
+                The code itself is channel-neutral — <code>source</code> (<code>slack</code> ·
+                <code>telegram</code> · <code>mattermost</code>) is set by the receiving bot;
+                <code>UNIQUE(source, source_user_id)</code> catches a repeat link
+                (<code>409 ALREADY_LINKED</code>). Expired and used are indistinguishable
+                to the client — a single <code>410 LINK_EXPIRED</code>.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Token family</span>
+              </div>
+              <div class="stk-dec__d">
+                <code>family_id</code> — a UUIDv7, assigned at sign-in,
+                inherited through rotation. Reuse detection acts within a
+                chain, without touching all of the user's sessions.
+              </div>
+              <details>
+                <summary>why so</summary>
+                <div>
+                  Reuse detection deletes by <code>family_id</code> — it breaks off
+                  one rotation chain, not all of the user's sessions. UUIDv7, not
+                  v4: the timestamp in the prefix orders the keys, so inserts
+                  land at the end of the index (like an auto-increment). Stored as the native
+                  <code>uuid</code> type (16 bytes), not text. An internal grouping
+                  key, not a secret — cryptographic randomness isn't needed (unlike
+                  <code>token_hash</code>).
+                </div>
+              </details>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="session-identity">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Session = token family</span>
+                <a class="xref-badge xref-badge--page" href="authentication.html#parallel-sessions"
+                  >→ Concurrent sessions</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                In UI terms, <b>one session = one family</b> — a single sign-in from a
+                device or browser. An <b>active session</b> is a family with a live
+                refresh token (not <code>is_revoked</code>, not expired); the same
+                criterion drives both the count in the
+                <a href="../../admin-panel/_wireframes/user-card.html#user-sessions" class="xref-module">user card</a>
+                and the list in
+                <a href="../_wireframes/session-management.html" class="xref-page">session management</a>.
+                A <b>session card</b> in the UI is the family's last row: its
+                <code>created_at</code> gives “last activity”, and
+                <code>user_agent</code> and <code>ip</code> give the device and address.
+              </div>
+              <details>
+                <summary>who fills it and when</summary>
+                <div>
+                  <code>user_agent</code> and <code>ip</code> are written by the backend at
+                  sign-in and on <b>every</b> refresh from the current request
+                  (the <code>User-Agent</code> header and the real IP from nginx —
+                  <code>X-Forwarded-For</code>), not on the client's word. There is no separate
+                  “last activity” field: rotation already inserts a new
+                  row, and its <code>created_at</code> is the last
+                  activity. Geo is not stored — it is derived from <code>ip</code> at
+                  render time (approximate; VPN / proxy distort it). The current
+                  session is identified by matching the request's refresh cookie with
+                  <code>family_id</code>.
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <div class="mod-conn">
+          <div class="mod-conn__line"></div>
+          <div class="mod-conn__arrow"></div>
+        </div>
+
+        <!-- ── L4 · Federation ── -->
+        <div class="stk-layer stk-layer--federation" id="federation">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">4</span>
+            <span class="stk-layer__name">Federation</span>
+            <span class="stk-layer__role">The link between the source sign-in channel ↔ user.</span>
+          </div>
+          <div class="stk-layer__body">
+            <div class="dm-tbl" id="identity-mapping">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">identity_mapping</span>
+                <span class="dm-tbl__sub">external identities</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → users</span>
+                  <span class="dm-badge dm-badge--uniq"
+                    >UNIQUE(source, source_user_id)</span
+                  >
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">user_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">CASCADE</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">source</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq" title="UNIQUE(source, source_user_id)">UNIQUE*</span>
+                    </td>
+                    <td class="dm-note">sign-in channel: SSO · <code>slack</code> · <code>telegram</code> · <code>mattermost</code> (part of the composite UNIQUE)</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">source_user_id</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq" title="UNIQUE(source, source_user_id)">UNIQUE*</span>
+                    </td>
+                    <td class="dm-note">id at the provider (part of the composite UNIQUE)</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">source_email</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      auto-match —
+                      <a class="xref-page" href="authorization.html#identity"
+                        >verified only</a
+                      >
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">This is sign-in federation, not content identities</span>
+                <a class="xref-badge" href="../../knowledge-store/_workzone/acl-identity.html#identity"
+                  >→ Knowledge Store</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                <code>source</code> here is the sign-in channel: an SSO provider (Okta, Azure AD)
+                or a messenger bot (<code>source='slack'</code>
+                <a class="xref-badge" href="../../slack/index.html#identity">→ Slack</a>,
+                <code>source='telegram'</code>
+                <a class="xref-badge" href="../../telegram/index.html#identity">→ Telegram</a>,
+                <code>source='mattermost'</code>
+                <a class="xref-badge" href="../../mattermost/index.html#identity">→ Mattermost</a>),
+                not a content source. Who <em>authored</em> content in Jira / Slack /
+                Confluence and the consolidation of people into an identity is
+                <code>source_principal</code> / <code>identity</code> in Knowledge
+                Store; the bridge is <code>identity.user_id → users</code>.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mod-conn">
+          <div class="mod-conn__line"></div>
+          <div class="mod-conn__arrow"></div>
+        </div>
+
+        <!-- ── L5 · Observability ── -->
+        <div class="stk-layer stk-layer--observ" id="audit-log">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">5</span>
+            <span class="stk-layer__name">Observability</span>
+            <span class="stk-layer__role"
+              >Append-only. Independent of the users lifecycle.</span
+            >
+            <a class="xref-badge xref-badge--page" href="protection.html#audit-log"
+              >→ Audit log</a
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="dm-tbl">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">audit_log</span>
+                <span class="dm-tbl__sub">event journal</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--flag">no UPDATE / DELETE</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">actor_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">
+                      <code>NULL</code> = system · <strong>no FK</strong>
+                      (independent of the users lifecycle)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">action</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">target_type</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">target_id</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">result</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (success | failure)">CHECK</span>
+                    </td>
+                    <td class="dm-note">success · failure</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">ip</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">user_agent</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">meta</td>
+                    <td class="dm-t">JSONB</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">arbitrary context</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code> · indexed</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Layer decision · append-only</span>
+              </div>
+              <div class="stk-dec__d">
+                No UPDATE / DELETE. <code>actor_id</code> = NULL means
+                system; <strong>no FK</strong> on users — the audit is kept when
+                an account is deleted (independent of the users lifecycle).
+                <code>result</code> CHECK <code>success | failure</code>.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </body>
+</html>

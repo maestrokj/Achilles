@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Модель данных</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="data-model.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Модель данных</h1>
+        <div class="header__sub">admin panel · workzone</div>
+      </div>
+
+      <p class="desc">
+        Admin Panel держит глобальную
+        <a href="#data-model" class="xref-anchor">конфигурацию платформы</a> —
+        singleton с общими настройками и бюджетами AI. Реестр AI-ресурсов
+        (провайдеры, модели, их назначение по функциям, расходы, инструменты,
+        системный prompt) вынесен в сквозной модуль
+        <a href="../../ai-foundation/_workzone/data-model.html#ai-models" class="xref-module">AI Foundation</a>,
+        а уведомления (каналы, маршруты, личные настройки, лента доставки) — в
+        <a href="../../notifications/_workzone/data-model.html#notifications-data" class="xref-module">Notifications</a>.
+        ORM-модель singleton'а живёт в Knowledge Store
+        (<code>knowledge_store/models.py</code>); Admin — тонкий пакет-фасад
+        (schemas + service + routes) поверх неё. Потребители — Harvester,
+        Query Engine, Agent Engine, Auth — читают модель напрямую; никто не
+        импортирует admin, циклов между модулями нет.
+      </p>
+
+      <div class="stk-stack">
+        <!-- ── L1 · Конфигурация платформы ── -->
+        <div class="stk-layer stk-layer--config" id="data-model">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">1</span>
+            <span class="stk-layer__name">Конфигурация платформы</span>
+            <span class="stk-layer__role"
+              >Singleton. Одна строка на инстанс.</span
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="dm-tbl">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">platform_settings</span>
+                <span class="dm-tbl__sub">глобальные настройки</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--flag">singleton · CHECK (id = 1)</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--pk">PK</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (id = 1)">CHECK</span>
+                    </td>
+                    <td class="dm-note">всегда <code>1</code> · → Singleton</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">org_name</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'Achilles'">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">DEFAULT <code>'Achilles'</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">org_logo_url</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">org_description</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">accent_color</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT '#6366f1'">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">hex · DEFAULT <code>'#6366f1'</code> · → Branding</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">timezone</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'UTC'">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">IANA tz · DEFAULT <code>'UTC'</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">locale</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'ru'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (ru | en)">CHECK</span>
+                    </td>
+                    <td class="dm-note">DEFAULT <code>'ru'</code> · ru · en</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">date_format</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'DD.MM.YYYY'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (DD.MM.YYYY | MM/DD/YYYY | YYYY-MM-DD)">CHECK</span>
+                    </td>
+                    <td class="dm-note">DEFAULT <code>'DD.MM.YYYY'</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">access_token_ttl</td>
+                    <td class="dm-t">Integer</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 900">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (access_token_ttl > 0)">CHECK</span>
+                    </td>
+                    <td class="dm-note">сек · DEFAULT <code>900</code> (15 мин) · → Session TTLs</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">refresh_token_ttl</td>
+                    <td class="dm-t">Integer</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 2592000">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (refresh_token_ttl > 0)">CHECK</span>
+                    </td>
+                    <td class="dm-note">сек · DEFAULT <code>2592000</code> (30 дней)</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">session_absolute_ttl</td>
+                    <td class="dm-t">Integer</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 7776000">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (session_absolute_ttl > 0)">CHECK</span>
+                    </td>
+                    <td class="dm-note">сек · DEFAULT <code>7776000</code> (90 дней)</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">maintenance_mode</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">DEFAULT <code>false</code> · → Режим обслуживания</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">mcp_enabled</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT true">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">
+                      DEFAULT <code>true</code> · рубильник MCP-двери · закрыт ⇒ запрос к <code>/mcp</code> отклонён до проверки ключа ·
+                      <a href="../../mcp/index.html#governance" class="xref-module">→ MCP</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">ai_monthly_budget</td>
+                    <td class="dm-t">Numeric</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      месячный порог расходов · <code>NULL</code> = не задан ·
+                      <a href="#ai-budget" class="xref-anchor">→ Бюджет AI</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">ai_budget_alert_enabled</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (NOT ai_budget_alert_enabled OR ai_monthly_budget IS NOT NULL)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      оповещение · DEFAULT <code>false</code> · CHECK: вкл ⇒ сумма задана
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">curation_frequency</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'daily'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (daily | weekly)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      каденс платформенного прогона доводки · DEFAULT
+                      <code>'daily'</code> · daily · weekly ·
+                      <a href="../../knowledge-store/_workzone/lifecycle.html#curation-pass" class="xref-module">→ Curation Pass</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">curation_weekday</td>
+                    <td class="dm-t">Integer</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (curation_weekday BETWEEN 0 AND 6)">CHECK</span>
+                    </td>
+                    <td class="dm-note">0–6 (пн–вс) · только для weekly · <code>NULL</code> для daily</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">curation_time</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT '04:00'">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">
+                      <code>'HH:MM'</code> локального времени организации · DEFAULT
+                      <code>'04:00'</code> · тяжёлый прогон в тихие часы
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">agent_weekly_token_budget</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (agent_weekly_token_budget IS NULL OR agent_weekly_token_budget > 0)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      недельный токен-потолок агентов на пользователя · блокирующий ·
+                      <code>NULL</code> = без лимита · расход — <code>SUM(tokens_used)</code> по прогонам ·
+                      <a href="../_wireframes/usage.html#limits" class="xref-page">→ Расходы AI</a> ·
+                      <a href="../../agent-engine/_workzone/governance.html#budget" class="xref-module">→ Agent Engine</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">chat_weekly_token_budget</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (chat_weekly_token_budget IS NULL OR chat_weekly_token_budget > 0)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      недельный токен-потолок чата на пользователя · справочный в v1
+                      (учёт без блокировки) · <code>NULL</code> = без лимита · расход —
+                      <code>SUM(tokens_used)</code> по сообщениям ·
+                      <a href="../_wireframes/usage.html#limits" class="xref-page">→ Расходы AI</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">agent_iteration_cap</td>
+                    <td class="dm-t">Integer</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 15">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (agent_iteration_cap > 0)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      потолок шагов одного прогона · DEFAULT <code>15</code> ·
+                      предохранитель от зацикливания, не бюджет ·
+                      <a href="../../agent-engine/_workzone/runtime.html#loop" class="xref-module">→ Agent Engine</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">agent_max_concurrency</td>
+                    <td class="dm-t">Integer</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 4">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (agent_max_concurrency > 0)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      потолок одновременных LLM-вызовов фоновой полосы агентов ·
+                      DEFAULT <code>4</code> · отделён от живого чата ·
+                      <a href="../../agent-engine/_workzone/execution.html#concurrency" class="xref-module">→ Agent Engine</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>server_default=now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="stk-dec" id="singleton">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Singleton — одна строка на инстанс</span>
+              </div>
+              <div class="stk-dec__d">
+                <code>CHECK (id = 1)</code> гарантирует единственность. Миграция
+                сразу вставляет строку с defaults — приложение всегда
+                читает / обновляет, никогда не создаёт.
+              </div>
+            </div>
+
+            <div class="stk-dec" id="session-ttl">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Session TTLs</span>
+                <a class="xref-badge" href="../../auth-security/_workzone/authentication.html#tokens-sessions"
+                  >→ Auth &amp; Security</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Переопределяют defaults auth. Значения в секундах — единый формат
+                с JWT-библиотекой. <code>session_absolute_ttl</code> — предельный
+                срок жизни token family (= <code>absolute_expires_at</code> в
+                auth-модуле). Auth импортирует модель из core и читает TTL при
+                выдаче токенов.
+              </div>
+            </div>
+
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Branding</span>
+              </div>
+              <div class="stk-dec__d">
+                <code>accent_color</code> — hex-цвет, применяется к login-экрану
+                и шапке через CSS custom property. Тема (dark / light) задаётся
+                на стороне клиента: первый визит следует системной
+                (prefers-color-scheme), выбор хранится в localStorage.
+              </div>
+            </div>
+
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Global config — модель вне admin</span>
+                <a class="xref-badge" href="../../auth-security/_workzone/authentication.html#tokens-sessions"
+                  >→ Auth &amp; Security</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                ORM-модель <code>PlatformSettings</code> размещена в
+                <code>knowledge_store/models.py</code>, не в admin. Admin
+                предоставляет CRUD API (settings service / routes); auth и
+                другие модули импортируют модель для чтения. Зависимости идут
+                admin → KS/auth — без циклов.
+              </div>
+            </div>
+
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">CHECK vs ENUM</span>
+              </div>
+              <div class="stk-dec__d">
+                Поля с фиксированным набором (<code>locale</code>,
+                <code>date_format</code>) — Text + <code>CHECK</code>, а не
+                native ENUM PostgreSQL.
+              </div>
+              <details>
+                <summary>почему так</summary>
+                <div>
+                  <code>ALTER TYPE ADD VALUE</code> не откатывается в транзакции —
+                  Alembic-миграции проще.
+                </div>
+              </details>
+            </div>
+
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">SMTP-настройки — в модуле Email</span>
+                <a class="xref-badge" href="../../email/_workzone/data-model.html#data-model"
+                  >→ Email</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Модель <code>smtp_settings</code> (поля, шифрование пароля,
+                миграция) живёт у транспорта
+                <a href="../../email/index.html" class="xref-module">Email</a>.
+                Здесь — только экран редактирования
+                (<a class="xref-badge xref-badge--page" href="../_wireframes/platform-settings.html#smtp">→ Экран SMTP</a>),
+                пишущий настройки через API.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="ai-budget">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Бюджет AI — настройка инстанса; расходы — в реестре</span>
+                <a class="xref-badge xref-badge--page" href="../_wireframes/usage.html#limits"
+                  >→ Расходы AI</a
+                >
+                <a class="xref-badge" href="../../ai-foundation/_workzone/data-model.html#ai-spend"
+                  >→ model_usage</a
+                >
+                <a class="xref-badge xref-badge--page" href="../_wireframes/notifications.html"
+                  >→ Уведомления</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Порог месячных расходов на AI админ <strong>вводит руками</strong>
+                и включает тумблером — не hardcode: сумма и флаг живут здесь, в
+                singleton (<code>ai_monthly_budget</code> +
+                <code>ai_budget_alert_enabled</code>), рядом с
+                <code>maintenance_mode</code>. CHECK не даёт включить оповещение
+                без заданной суммы. Регулятор стоит на экране
+                <a href="../_wireframes/usage.html#limits" class="xref-page">Расходы AI</a> —
+                общий дом лимитов рядом с недельными токен-потолками; сам месячный
+                счёт по моделям копит реестр AI-ресурсов
+                (<a href="../../ai-foundation/_workzone/data-model.html#ai-spend" class="xref-module"><code>model_usage</code></a>,
+                агрегат по модели · функции · дню) и показывает
+                <a href="../_wireframes/usage.html#by-model" class="xref-page">разрез по моделям</a> там же.
+                При достижении порога поднимается уведомление типа Budget — канал
+                держит модуль уведомлений. Сами модели и их назначения — тоже в
+                <a href="../../ai-foundation/_workzone/data-model.html#ai-models" class="xref-module">AI Foundation</a>.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="user-usage">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Расход по людям — производный из журналов, без счётчика</span>
+                <a class="xref-badge xref-badge--page" href="../_wireframes/usage.html">→ Расходы AI</a>
+              </div>
+              <div class="stk-dec__d">
+                Экран <a href="../_wireframes/usage.html" class="xref-page">Расходы AI</a>
+                считает суммы по пользователю <strong>на лету из журналов</strong>:
+                агентский расход — из
+                <a href="../../agent-engine/_workzone/data-model.html#agent-runs" class="xref-module"><code>agent_runs.tokens_used</code></a>
+                (через <code>agents.user_id</code>), чат — из
+                <a href="../../query-engine/_workzone/data-model.html#messages" class="xref-module"><code>messages.tokens_used</code></a>
+                (через <code>conversations.user_id</code>). Отдельной таблицы-счётчика
+                по пользователю нет — потолок производный, как у агентского бюджета.
+                Оба недельных потолка
+                (<code>agent_weekly_token_budget</code> · <code>chat_weekly_token_budget</code>)
+                живут здесь, в singleton; агентский блокирует прогоны, чат в v1 справочный.
+                Индексация и RAG-поиск к человеку не привязываются — их агрегат держит
+                <a href="../../ai-foundation/_workzone/data-model.html#ai-spend" class="xref-module"><code>model_usage</code></a>
+                (по модели · функции · дню); тот же экран показывает их
+                <a href="../_wireframes/usage.html#by-model" class="xref-page">разрезом по моделям</a>, не по людям.
+                Денежная стоимость <em>по людям</em>, суточный агрегат
+                <code>user_usage</code> при росте нагрузки и блокировка чата —
+                <span class="iter v2">v2</span>.
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="mod-conn">
+          <div class="mod-conn__line"></div>
+          <div class="mod-conn__arrow"></div>
+        </div>
+
+        <!-- ── L3 · Миграция ── -->
+        <div class="stk-layer stk-layer--migration" id="migration">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">2</span>
+            <span class="stk-layer__name">Миграция</span>
+            <span class="stk-layer__role"
+              >Создаёт таблицы и заселяет singleton.</span
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t"><code>alembic/versions/NNN_core_platform_settings.py</code></span>
+              </div>
+              <div class="stk-dec__d">
+                Создаёт таблицу <code>platform_settings</code> и тем же шагом
+                выполняет <code>INSERT</code> начальной строки с defaults —
+                singleton существует с первого запуска, приложение его никогда не
+                создаёт. <code>downgrade()</code> — <code>DROP TABLE</code>.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

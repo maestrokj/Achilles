@@ -1,0 +1,230 @@
+/* Agent Engine — governance page diagrams: budget meter · admin lock · lifecycle map.
+   Loaded by _workzone/governance.html on top of module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ═══════════════════════════════════════════
+   Gate — combined run predicate (enabled ∧ ¬admin_paused ∧ budget-ok)
+   ═══════════════════════════════════════════ */
+.gv-gate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.5rem;
+  margin: 0.3rem 0;
+}
+.gv-gate__lead {
+  display: flex;
+  align-items: center;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--text);
+}
+.gv-gate__iff,
+.gv-gate__and {
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+.gv-cond {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1.5px solid var(--s3);
+  border-left-width: 3px;
+  text-decoration: none;
+}
+.gv-cond__k {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: var(--s3);
+}
+.gv-cond__d {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+@media (max-width: 680px) {
+  .gv-gate {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .gv-gate__iff,
+  .gv-gate__and {
+    justify-content: center;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   Budget meter — weekly token ceiling
+   ═══════════════════════════════════════════ */
+.gv-meter {
+  margin: 0.3rem 0;
+}
+.gv-meter__cap {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  margin-bottom: 0.25rem;
+}
+.gv-meter__bar {
+  position: relative;
+  display: flex;
+  height: 2rem;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1.5px solid var(--border);
+}
+.gv-meter__fill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+}
+.gv-meter__fill--used {
+  background: var(--s3);
+  flex: 0 0 62%;
+}
+.gv-meter__fill--free {
+  color: var(--text-dim);
+  flex: 1 1 auto;
+}
+.gv-meter__fill--over {
+  background: var(--s1);
+  flex: 0 0 16%;
+  border-left: 2px dashed #fff;
+}
+.gv-meter__mark {
+  position: absolute;
+  top: -0.2rem;
+  bottom: -0.2rem;
+  left: 84%;
+  width: 0;
+  border-left: 2px solid var(--s1);
+}
+.gv-meter__mark span {
+  position: absolute;
+  top: -1.15rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--s1);
+  white-space: nowrap;
+}
+.gv-meter__note {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  margin-top: 0.85rem;
+}
+
+/* ═══════════════════════════════════════════
+   Locks — owner switch (enabled) + admin lock (admin_paused)
+   ═══════════════════════════════════════════ */
+.gv-lock {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.8rem;
+  align-items: center;
+  padding: 0.85rem 0.95rem;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1.5px solid var(--s1);
+  border-left-width: 3px;
+  margin: 0.3rem 0;
+}
+.gv-lock--owner {
+  border-color: var(--accent);
+}
+.gv-lock__icon {
+  font-size: 1.6rem;
+}
+.gv-lock__who {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+.gv-who {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  border-radius: var(--pill-radius);
+  padding: 0.12rem 0.5rem;
+  border: 1.5px solid var(--border);
+}
+.gv-who--yes {
+  border-color: var(--s3);
+  color: var(--s3);
+}
+.gv-who--no {
+  border-color: var(--s1);
+  color: var(--s1);
+  text-decoration: line-through;
+}
+
+/* ═══════════════════════════════════════════
+   Lifecycle map — owner event → agent fate
+   ═══════════════════════════════════════════ */
+.gv-life {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.3rem 0;
+}
+.gv-row {
+  display: grid;
+  grid-template-columns: 11rem auto 1fr;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+}
+.gv-row__ev {
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+.gv-row__ev small {
+  display: block;
+  font-weight: 400;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.gv-row__arr {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+.gv-row__fate {
+  font-size: 0.79rem;
+  color: var(--text-dim);
+}
+.gv-row__fate b {
+  color: var(--text);
+}
+.gv-row--delete {
+  border-left: 3px solid var(--s1);
+}
+.gv-row--deactivate {
+  border-left: 3px solid var(--s2);
+}
+
+@media (max-width: 680px) {
+  .gv-row {
+    grid-template-columns: 1fr;
+  }
+  .gv-lock {
+    grid-template-columns: 1fr;
+  }
+}

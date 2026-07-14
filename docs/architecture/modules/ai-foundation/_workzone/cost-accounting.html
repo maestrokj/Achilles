@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — AI Foundation: Cost accounting</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="cost-accounting.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← AI Foundation</a>
+        <h1 class="header__title">Cost accounting</h1>
+        <div class="header__sub">ai-foundation · workzone</div>
+      </div>
+
+      <p class="desc">
+        The platform meters <strong>every model call</strong> — who spent what,
+        on what, and how much — to show spend and hold the budget. Accounting is
+        end-to-end: one monetary aggregate by model, plus token attribution to
+        people from the journals. Money is counted by model and by company; by
+        person — for now, in tokens.
+      </p>
+
+      <!-- ════════════════ MENTAL MODEL ════════════════
+           Every AI call is metered into two places: model_usage (the platform's
+           full spend, in money) and — for chat/agents — the journals
+           (attribution to a person, in tokens). The AI usage screen reads both. -->
+      <div class="ca-hero">
+        <div class="ca-flow">
+          <div class="ca-node ca-node--calls">
+            <span class="ca-node__g">✦</span>
+            <span class="ca-node__t">AI calls</span>
+            <span class="ca-node__s">indexing · search<br />chat · agents</span>
+          </div>
+          <div class="ca-edge">
+            <span class="ca-edge__arr">──▶</span>
+            <span class="ca-edge__lbl">every call is metered</span>
+          </div>
+          <div class="ca-node ca-node--store">
+            <span class="ca-node__g">▦</span>
+            <span class="ca-node__t">Accounting — two paths</span>
+            <span class="ca-node__s">model_usage · aggregate<br />journals · attribution</span>
+          </div>
+          <div class="ca-edge">
+            <span class="ca-edge__arr">──▶</span>
+            <span class="ca-edge__lbl">the screen reads it</span>
+          </div>
+          <div class="ca-node ca-node--screen">
+            <span class="ca-node__g">▤</span>
+            <span class="ca-node__t">AI usage</span>
+            <span class="ca-node__s">total · by person<br />by model · limits</span>
+          </div>
+        </div>
+        <div class="ca-hero__foot">
+          <span><b>model_usage</b> — the platform’s full spend, in money</span>
+          <span><b>journals</b> — token attribution to a person</span>
+        </div>
+      </div>
+
+      <!-- ════════════════ MAP · WHAT WE COUNT ════════════════
+           Four screen views = four rows of data lineage. -->
+      <div class="section" id="map">
+        <div class="section__title">
+          What we count and from where
+          <a href="../../admin-panel/_wireframes/usage.html" class="xref-badge">→ AI usage</a>
+        </div>
+        <p class="desc">
+          The screen shows four views; each has its own source, unit, and scope.
+          One accounting circuit, four projections.
+        </p>
+        <table class="ca-map">
+          <thead>
+            <tr><th>View</th><th>Source</th><th>Unit</th><th>Scope</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="../../admin-panel/_wireframes/usage.html#total" class="xref-module">Company total</a></td>
+              <td class="ca-map__src"><code>model_usage</code> · <code>SUM</code> over the period</td>
+              <td>tokens + $</td>
+              <td>all functions</td>
+            </tr>
+            <tr>
+              <td><a href="../../admin-panel/_wireframes/usage.html#by-user" class="xref-module">By employee</a></td>
+              <td class="ca-map__src">journals: <code>messages</code> · <code>agent_runs</code></td>
+              <td>tokens</td>
+              <td>chat + agents</td>
+            </tr>
+            <tr>
+              <td><a href="../../admin-panel/_wireframes/usage.html#by-model" class="xref-module">By model</a></td>
+              <td class="ca-map__src"><code>model_usage</code> · by model · function</td>
+              <td>$ (input / output)</td>
+              <td>all functions</td>
+            </tr>
+            <tr>
+              <td><a href="../../admin-panel/_wireframes/usage.html#limits" class="xref-module">Limits</a></td>
+              <td class="ca-map__src"><a href="../../admin-panel/_workzone/data-model.html#singleton" class="xref-module"><code>platform_settings</code></a></td>
+              <td>tokens · $</td>
+              <td>caps + alert</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ════════════════ WHY TWO SOURCES ════════════════ -->
+      <div class="section" id="two-sources">
+        <div class="section__title">Why two sources</div>
+        <p class="desc">
+          Spend is written to two places not out of duplication, but because they
+          answer different questions.
+        </p>
+        <div class="ca-vs">
+          <div class="ca-vs__col ca-vs__col--agg">
+            <div class="ca-vs__head">
+              <span class="ca-vs__name">model_usage</span>
+              <span class="ca-vs__kind">aggregate</span>
+            </div>
+            <ul class="ca-vs__lines">
+              <li class="ca-vs__line">accrues requests · input · output · <code>cost</code> by model · function · day</li>
+              <li class="ca-vs__line">catches impersonal spend too — indexing and RAG search</li>
+              <li class="ca-vs__line">the basis for “company total” and “by model”, in money</li>
+            </ul>
+          </div>
+          <div class="ca-vs__col ca-vs__col--journal">
+            <div class="ca-vs__head">
+              <span class="ca-vs__name">journals</span>
+              <span class="ca-vs__kind">attribution</span>
+            </div>
+            <ul class="ca-vs__lines">
+              <li class="ca-vs__line">chat — <a href="../../query-engine/_workzone/data-model.html#messages" class="xref-module"><code>messages.tokens_used</code></a>; agents — <a href="../../agent-engine/_workzone/data-model.html#agent-runs" class="xref-module"><code>agent_runs.tokens_used</code></a></li>
+              <li class="ca-vs__line">per-person spend — <code>SUM</code> from the journals, no counter</li>
+              <li class="ca-vs__line">the basis for “by employee”, in tokens</li>
+            </ul>
+          </div>
+        </div>
+        <p class="ca-vs__take">
+          They overlap on chat and agents, but <b>the aggregate is broader</b>: it
+          catches indexing and search, which can’t be attributed to a person. So
+          “company total” ≠ the sum over people. Money <b>per person</b> requires
+          splitting the input/output price across each message and run — that’s
+          <span class="iter v2">v2</span>.
+        </p>
+      </div>
+
+      <!-- ════════════════ PERIODS AND BUDGET ════════════════ -->
+      <div class="section" id="periods">
+        <div class="section__title">Periods and budget</div>
+        <p class="desc">
+          The week, month, and year panorama is one and the same table under a
+          different window.
+        </p>
+        <ul class="stk-dec__list">
+          <li>
+            <b>Total for the period</b> — a derived <code>SUM</code> over
+            <code>model_usage</code> for the calendar window (week · month · year),
+            not a separate counter table. The same technique as the
+            <a href="../../agent-engine/_workzone/governance.html#budget" class="xref-module">agent budget</a> — “a derived budget”.
+          </li>
+          <li>
+            <b>Budget alert</b> — a monthly $ threshold for the whole organization
+            (<a href="../../admin-panel/_workzone/data-model.html#ai-budget" class="xref-module"><code>ai_monthly_budget</code></a>):
+            the monthly “total” tile is checked against it, and on reaching it —
+            a Budget notification; requests aren’t blocked.
+          </li>
+          <li>
+            <b>Weekly token caps</b> per employee
+            (<a href="../../admin-panel/_workzone/data-model.html#user-usage" class="xref-module">agents · chat</a>)
+            are checked against journal spend, the window is calendar-based, reset
+            Sunday 00:00 in the organization’s timezone.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ════════════════ v1 / v2 BOUNDARY ════════════════ -->
+      <div class="section" id="scope">
+        <div class="section__title">v1 / v2 boundary</div>
+        <div class="ca-scope">
+          <div class="ca-rail">
+            <span class="ca-rail__tag ca-rail__tag--v1">v1</span>
+            <span class="ca-rail__body">
+              Tokens everywhere; <b>money</b> by model and by company; the monthly
+              budget alert; weekly token caps (agents — blocking, chat —
+              informational).
+            </span>
+          </div>
+          <div class="ca-rail ca-rail--v2">
+            <span class="ca-rail__tag ca-rail__tag--v2">v2</span>
+            <span class="ca-rail__body">
+              <b>Budgets by org structure</b> — caps and alerts not as two poles
+              (whole company + person), but a full-fledged system of allocating
+              tokens to teams and departments, by hierarchy. Money <b>per
+              person</b>; trends, charts, and export; blocking chat over the cap;
+              a daily <code>user_usage</code> aggregate as load grows.
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Web App: Stack and chat shell</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../swimlane.css" />
+    <link rel="stylesheet" href="stack.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Web App</a>
+        <h1 class="header__title">Stack and chat shell</h1>
+        <div class="header__sub">web app · workzone</div>
+      </div>
+
+      <!-- ════════════ LANE: FRONTEND ════════════ -->
+      <div class="swl-lane swl-lane--fe">
+        <div class="swl-lane__rail">
+          <span class="swl-lane__tag">Frontend</span>
+        </div>
+        <div class="swl-lane__body">
+          <!-- col: stack -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg> stack — libraries</div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Shell and render</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill swl-pill--std" data-tip="UI library — component rendering">React</span>
+                <span class="swl-pill swl-pill--std" data-tip="bundler and dev server">Vite</span>
+                <span class="swl-pill" data-tip="type safety across the whole frontend">TypeScript</span>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Styling and components</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill swl-pill--std" data-tip="utility CSS, dark and light themes via shadcn tokens">Tailwind CSS</span>
+                <span class="swl-pill" data-tip="shadcn/ui components on top of Base UI (@base-ui/react)">shadcn/ui · Base UI</span>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Data and state</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill swl-pill--std" data-tip="server-state cache, refetch, keep-previous for lists">TanStack Query</span>
+                <span class="swl-pill" data-tip="two SSE channels: the Query Engine answer stream and the bell's push notifications — separate from the chat adapter">SSE client</span>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">i18n and routing</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="UI translations, typed keys, locales ru · en">react-i18next</span>
+                <span class="swl-pill" data-tip="client-side routing — /chat · /account; planned, not installed yet">client routing</span>
+                <a class="xref-badge" href="../../auth-security/_workzone/routing.html#routes">→ Auth / Security</a>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Chat shell</span>
+                <a class="xref-anchor" href="#shell">↓ below</a>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill swl-pill--ours" data-tip="off-the-shelf React chat library for LLMs — thread, composer, streaming">assistant-ui</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- col: structure -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head">
+              <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.55l-.42-.85a1 1 0 0 0-.92-.6H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M3 5a2 2 0 0 0 2 2h3" /><path d="M3 3v13a2 2 0 0 0 2 2h3" /></svg> structure — files · <code>frontend/src/</code>
+            </div>
+<pre class="file-tree">
+frontend/src/
+├── routes/      <span class="dim">pages under routes — /chat · /account</span>
+├── components/  <span class="dim">UI primitives — shadcn on Base UI</span>
+├── features/    <span class="dim">chat — assistant-ui wrapper + our layer</span>
+├── i18n/        <span class="dim">locales — ru · en</span>
+└── lib/         <span class="dim">API client · SSE adapter · helpers</span>
+</pre>
+
+            <details class="swl-note">
+              <summary>Why a thin client</summary>
+              <div class="swl-note__body">
+                The heavy conversation logic — the flow of the conversation,
+                retrieval, grounding — is run by
+                <a href="../../query-engine/index.html" class="xref-module">Query Engine</a>,
+                one API for all surfaces; Web App keeps conversation management
+                (list, retention) and rendering. The frontend receives one
+                <code>SSE</code> answer stream and one conversation schema — and
+                draws them in the shell.
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════ CHAT SHELL: an off-the-shelf library ════════════
+           The key decision of the frontend layer: we don't build the chat from
+           scratch. The thread, history, streaming, and “new conversation” come
+           from a mature library; our domain lives INSIDE its thread as custom
+           components. The block is full-width, #shell is the target of links
+           from the chat wireframes. -->
+      <div class="section" id="shell-section">
+        <div class="section__title">
+          The surface's chat shell — off the shelf
+        </div>
+        <div class="swl-grp swl-grp--shell" id="shell">
+          <div class="swl-grp__head">
+            <span class="swl-grp__label"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z" /></svg> assistant-ui</span>
+            <span class="swl-pill" data-tip="React chat library for LLMs · MIT · headless primitives · streaming out of the box">MIT · headless</span>
+          </div>
+          <p class="swl-shell__lead">
+            The web surface doesn't build the chat from scratch: the thread,
+            history, streaming, and “new conversation” come from a mature
+            library. Our domain is custom components <strong>inside</strong> its
+            thread and a thin conversation-management layer
+            <strong>around</strong> it, not a rewritten shell.
+          </p>
+          <div class="swl-shell__split">
+            <div class="swl-shell__half">
+              <span class="swl-shell__cap">from the library</span>
+              <div class="swl-grp__pills">
+                <span class="swl-pill">thread</span>
+                <span class="swl-pill">composer</span>
+                <span class="swl-pill">history</span>
+                <span class="swl-pill">streaming</span>
+                <span class="swl-pill">new conversation</span>
+                <span class="swl-pill">auto-scroll</span>
+                <span class="swl-pill">markdown</span>
+                <span class="swl-pill">a11y</span>
+              </div>
+            </div>
+            <div class="swl-shell__half">
+              <span class="swl-shell__cap">ours — inside the thread</span>
+              <div class="swl-grp__pills">
+                <span class="swl-pill swl-pill--ours" data-tip="record-level citation — source cards under the answer">sources [n]</span>
+                <span class="swl-pill swl-pill--ours" data-tip="from sources · not found · no access · access hint (hidden results exist) · conversational — grounding states">grounding states</span>
+                <span class="swl-pill swl-pill--ours" data-tip="lightweight answer rating · quality signal">feedback <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" /><path d="M7 10v12" /></svg>/<svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z" /><path d="M17 14V2" /></svg></span>
+              </div>
+            </div>
+            <div class="swl-shell__half">
+              <span class="swl-shell__cap">ours — around the thread</span>
+              <div class="swl-grp__pills">
+                <span class="swl-pill swl-pill--ours" data-tip="conversation list, rename, delete — on top of Query Engine's conversation API">conversation management</span>
+                <span class="swl-pill swl-pill--ours" data-tip="conversation retention period — a surface-side policy">retention</span>
+                <span class="swl-pill swl-pill--ours" data-tip="what counts as a new conversation is decided by the surface — not the library">“new chat” semantics</span>
+              </div>
+            </div>
+          </div>
+          <details class="swl-note">
+            <summary>Two integration seams</summary>
+            <div class="swl-note__body">
+              <strong>SSE → adapter.</strong> The
+              <a href="../../query-engine/index.html" class="xref-module">Query Engine</a>
+              stream (<code>StreamingResponse · SSE</code>) is consumed by a
+              <code>ChatModelAdapter</code> on the client — the library doesn't
+              dictate the backend, and the LLM keys stay with us.<br />
+              <strong>The skin is ours.</strong> We take the headless primitives
+              and style them with our own shadcn tokens on
+              <code>@base-ui/react</code>, not the library's stock Radix theme:
+              the look stays house-style, and we don't pull in a second set of
+              primitives.
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

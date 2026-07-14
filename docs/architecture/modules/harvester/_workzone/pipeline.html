@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Harvester: Pipeline</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="pipeline.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Harvester</a>
+        <h1 class="header__title">Pipeline</h1>
+        <div class="header__sub">harvester · workzone</div>
+      </div>
+
+      <p class="desc">
+        The internal processing pipeline: how raw source material becomes a
+        normalized entity and lands in storage. Three stages —
+        <a href="#extract" class="xref-anchor">Extract</a>
+        <span class="pl-arrow">→</span>
+        <a href="#transform" class="xref-anchor">Transform</a>
+        <span class="pl-arrow">→</span>
+        <a href="#load" class="xref-anchor">Load</a>. Source-specific work covers
+        only the entry (extract) and the first transform step (normalize);
+        everything past that is shared across every source and every
+        <a href="sync-modes.html" class="xref-page">sync mode</a>.
+      </p>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ════════ EXTRACT ════════ -->
+          <div class="stk-layer stk-layer--extract" id="extract">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Extract</span>
+              <span class="stk-layer__role">Pipeline entry: a stream of RawItem.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">A thin connector per source</span>
+                  <a class="conn-tag" href="connectors.html#contract"
+                    title="This step is implemented in the connector"
+                    ><span class="conn-tag__icon"></span>connector</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  One connector per source — a thin async client (httpx) over the
+                  REST API; official SDKs are not used: they are synchronous and
+                  carry their own retry layers, whereas the platform's reliability
+                  lives on the raw HTTP response.<br/>Every connector hides behind
+                  a single interface <code>fetch(since) → RawItem</code> and emits
+                  a stream of <code>RawItem</code> — that is the entry into
+                  Transform. The fetch mechanics themselves — connection,
+                  authentication, pagination, and the <code>since</code> increment
+                  — are held by
+                  <a href="sources.html#fetch" class="xref-page">sources</a>.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ TRANSFORM ════════ -->
+          <div class="stk-layer stk-layer--transform" id="transform">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Transform</span>
+              <span class="stk-layer__role"
+                >The chain for full sync and incremental.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="pl-chain">
+                <!-- normalize -->
+                <div class="pl-step pl-step--src">
+                  <div class="pl-step__head">
+                    <span class="pl-step__n">1</span>
+                    <span class="pl-step__name">normalize</span>
+                    <a class="conn-tag" href="connectors.html#contract"
+                      title="This step is implemented in the connector"
+                      ><span class="conn-tag__icon"></span>connector</a
+                    >
+                  </div>
+                  <div class="pl-step__d">
+                    Raw source data <span class="pl-arrow">→</span> the unified
+                    <code>Entity</code> model. The one transform step written for a
+                    specific source.
+                  </div>
+                </div>
+                <div class="pl-link"></div>
+
+                <!-- filter -->
+                <div class="pl-step" id="filter">
+                  <div class="pl-step__head">
+                    <span class="pl-step__n">2</span>
+                    <span class="pl-step__name">filter</span>
+                  </div>
+                  <div class="pl-step__d">
+                    Drops what should not be indexed: empty entities, system
+                    events (“X joined the channel”), bot messages. The baseline
+                    rules are built in and not configurable. What to pull beyond
+                    them — a set of toggles declared by the
+                    <a href="connectors.html#manifest" class="xref-page">connector manifest</a>
+                    (as with the scope objects): overrides (bring back what was
+                    filtered — bots in chats) and extra inclusions (attachments,
+                    comments and threads, private channels and DMs). The card
+                    shows the ones relevant to the type —
+                    <a
+                      href="../../admin-panel/_wireframes/data-sources.html#content-filter"
+                      class="xref-module"
+                      >source settings</a
+                    >. Object-level scope is a neighbouring
+                    topic,
+                    <a href="sources.html#allowlist" class="xref-page"
+                      >sources</a
+                    >.
+                  </div>
+                </div>
+                <div class="pl-link"></div>
+
+                <!-- classify -->
+                <div class="pl-step">
+                  <div class="pl-step__head">
+                    <span class="pl-step__n">3</span>
+                    <span class="pl-step__name">classify</span>
+                  </div>
+                  <div class="pl-step__d">
+                    Entity status: <code>draft</code> / <code>final</code> /
+                    <code>archived</code>.
+                  </div>
+                </div>
+                <div class="pl-link"></div>
+
+                <!-- resolve -->
+                <div class="pl-step">
+                  <div class="pl-step__head">
+                    <span class="pl-step__n">4</span>
+                    <span class="pl-step__name">resolve</span>
+                  </div>
+                  <div class="pl-step__d">
+                    Collapsing duplicates <em>within a single run</em> and picking
+                    the winner on a version conflict: one <code>fetch</code> can
+                    return an entity twice. Idempotency
+                    <em>across runs</em> is not here — Load provides it via upsert
+                    on <code>source_id + source_type + source_entity_id</code>. Deep
+                    cross-source entity resolution is held by
+                    <a href="data-model.html#cross-source" class="xref-page"
+                      >data-model</a
+                    >.
+                  </div>
+                </div>
+                <div class="pl-link"></div>
+
+                <!-- enrich -->
+                <div class="pl-step">
+                  <div class="pl-step__head">
+                    <span class="pl-step__n">5</span>
+                    <span class="pl-step__name">enrich</span>
+                  </div>
+                  <div class="pl-step__d">
+                    Relationships. An edge is drawn immediately when the target
+                    node is already loaded; otherwise — a link to another source
+                    or to a not-yet-arrived node of its own — it is stored as a
+                    mention (refs) in the metadata and materialized later, once
+                    both ends are in the database. The boundary is data-model.
+                  </div>
+                </div>
+                <div class="pl-link"></div>
+
+                <!-- clean -->
+                <div class="pl-step">
+                  <div class="pl-step__head">
+                    <span class="pl-step__n">6</span>
+                    <span class="pl-step__name">clean</span>
+                  </div>
+                  <div class="pl-step__d">
+                    Stripping markup for the vector: marked-up text
+                    <span class="pl-arrow">→</span> flat. Done late, after
+                    <code>enrich</code>: links and mentions in the markup are
+                    needed for relationships, and headings for splitting into
+                    fragments. Only the copy bound for embedding is cleaned; the
+                    original in <code>Entity</code> stays untouched.
+                  </div>
+                </div>
+                <div class="pl-link"></div>
+
+                <!-- chunk -->
+                <div class="pl-step" id="chunk">
+                  <div class="pl-step__head">
+                    <span class="pl-step__n">7</span>
+                    <span class="pl-step__name">chunk</span>
+                  </div>
+                  <div class="pl-step__d">
+                    Long text <span class="pl-arrow">→</span> fragments for
+                    embedding. One <code>Entity</code>
+                    <span class="pl-arrow">→</span> many fragments, each with its
+                    own vector. Target size — <code>512</code> tokens
+                    (working range <code>256–1024</code>), a tunable parameter.
+                    The model window is not a target but a cap:
+                    <code>effective = min(target_chunk_tokens, model_max_tokens)</code>.
+                    A large embedder window (<code>text-embedding-3</code> has
+                    <code>8192</code>) buys headroom against clipping long
+                    sections, not permission to make a fragment fill the whole
+                    window: the longer the text under a single vector, the more it
+                    “averages out” and the worse search hits become.
+                  </div>
+                  <div class="pl-step__d">
+                    The strategy is <strong>by content type</strong>, not one
+                    global size for everything: Slack — a thread or window,
+                    messages stay whole; a Jira ticket or GitLab MR — the ticket
+                    together with its comments as one document; code — by syntax
+                    (functions, AST), not by a token window; a long Confluence
+                    page takes the default route below. This is a valid modern
+                    default — just routed by type.
+                  </div>
+                  <ul class="pl-mech">
+                    <li class="pl-mech__row">
+                      <span class="pl-mech__badge">structural</span>
+                      <span class="pl-mech__d"
+                        >The primary cut — by the structure from
+                        <code>normalize</code>: headings, sections, a message
+                        or a thread. The boundary is natural — no overlap
+                        needed.</span
+                      >
+                    </li>
+                    <li class="pl-mech__row">
+                      <span class="pl-mech__badge">recursive</span>
+                      <span class="pl-mech__d"
+                        >Fallback: a block larger than the target size is broken
+                        down by paragraphs until it fits.</span
+                      >
+                    </li>
+                    <li class="pl-mech__row">
+                      <span class="pl-mech__badge">overlap</span>
+                      <span class="pl-mech__d"
+                        >~15% (≈75 tokens) — overlap at the seam so the boundary
+                        context is not torn. Engaged
+                        <strong>only on the recursive fallback</strong>: on a
+                        structural cut the boundary is natural, and short content
+                        (a Slack message) stays whole,
+                        <code>overlap = 0</code>.</span
+                      >
+                    </li>
+                  </ul>
+                </div>
+                <div class="pl-link"></div>
+
+                <!-- contextualize -->
+                <div class="pl-step pl-step--v2" id="contextualize">
+                  <div class="pl-step__head">
+                    <span class="pl-step__n">8</span>
+                    <span class="pl-step__name">contextualize</span>
+                    <span class="iter v2">v2</span>
+                    <span class="ai-tag" title="This stage uses a neural network — model inference"><span class="ai-tag__icon"></span>AI</span>
+                  </div>
+                  <div class="pl-step__d">
+                    Before embedding, each fragment is prepended with a short
+                    context that grounds it in the document — which source and
+                    section, what it is about; the note is written by a model that
+                    sees the whole document and the fragment itself. Embedding the
+                    fragment together with that note markedly raises semantic
+                    search hits: the fragment stops being torn out of context.
+                  </div>
+                  <div class="pl-step__d">
+                    A <span class="iter v2">v2</span> subtlety for the content
+                    cache: the note changes the final string, so the string is
+                    hashed <strong>together with it</strong> — re-embedding
+                    happens on its own. The generated blurb is
+                    <strong>stored alongside the fragment</strong>: the model is
+                    non-deterministic, and without the saved note the hash would
+                    “drift” on every run.
+                  </div>
+                </div>
+                <div class="pl-link"></div>
+
+                <!-- embed -->
+                <div class="pl-step pl-step--embed" id="embed">
+                  <div class="pl-step__head">
+                    <span class="pl-step__n">9</span>
+                    <span class="pl-step__name">embed</span>
+                    <span class="ai-tag" title="This stage uses a neural network — model inference"><span class="ai-tag__icon"></span>AI</span>
+                    <span class="cache-tag" title="Embeddings are cached by content hash — unchanged fragments are not re-embedded"><span class="cache-tag__icon"></span>content cache</span>
+                  </div>
+                  <div class="pl-step__d">
+                    Each fragment <span class="pl-arrow">→</span> a vector.
+                    The model comes from the AI-model registry — Admin assigns it
+                    to the embedding function
+                    (<a
+                      href="../../admin-panel/_wireframes/ai-models.html#model-assignment"
+                      class="xref-module"
+                      >assignment by function</a
+                    >); this is the first concrete function and the point where
+                    Harvester meets model management. Harvester keeps no setting of
+                    its own: it uses whichever model is assigned in the registry.
+                    The assignment is a <strong>precondition for ingestion</strong>:
+                    there is no default, and until an embedding model is chosen
+                    (the platform's built-in models are available out of the box
+                    <em>or</em> one of your own), ingestion will not start —
+                    otherwise there is no way to pin the dimensionality of
+                    <code>chunks.embedding</code>.
+                  </div>
+                  <div class="pl-step__d">
+                    The content-cache key is a hash of the
+                    <strong>exact final string</strong> that goes to the embedder,
+                    plus everything that affects the vector:
+                    <code>SHA256(model_id@version | instruction_prefix | normalized(fragment text))</code>.
+                    Changing the model, the tokenizer, the required prefix
+                    (<code>query:</code>/<code>passage:</code>), or the
+                    normalization rules changes the key <span class="pl-arrow">→</span>
+                    re-embedding. So an unchanged fragment reuses its vector, and a
+                    real change hits inference precisely where it matters. How the
+                    shared runtime holds this flow and scales under load —
+                    <a
+                      href="../../knowledge-store/_workzone/embedding-runtime.html#scaling"
+                      class="xref-module"
+                      >embeddings runtime</a
+                    >.
+                  </div>
+                </div>
+              </div>
+              <div class="decision-box" id="param-homes">
+                <strong>Where the parameters live.</strong> The “no hardcoding”
+                convention splits the <code>chunk</code> and
+                <code>embed</code> knobs across two homes. Model intrinsics — the
+                max window tokens, the required prefix
+                (<code>query:</code>/<code>passage:</code>), the vector
+                dimensionality — live in the
+                <a href="../../ai-foundation/_workzone/data-model.html#ai-intrinsics" class="xref-module">AI-model registry</a>;
+                the chunker reads the cap from there.
+                Tunable knobs — <code>target_chunk_tokens</code>,
+                <code>overlap_pct</code>, per-content-type sizes — are in config.
+                At the seam sits a validator:
+                <code>target_chunk_tokens ≤ model.max_input_tokens</code>.
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ LOAD ════════ -->
+          <div class="stk-layer stk-layer--load" id="load">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Load</span>
+              <span class="stk-layer__role"
+                >Idempotent upsert — the pipeline exit.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Loader</span>
+                </div>
+                <div class="stk-dec__d">
+                  Idempotent upsert on the key
+                  <code>source_id + source_type + source_entity_id</code>: each entity is
+                  written to exactly its own row, a repeat run updates it rather
+                  than spawning duplicates. Idempotency extends to fragments too:
+                  their vectors are child rows of the entity, and the same run
+                  reconciles the whole set — stale ones are deleted, new ones
+                  added, no orphaned vectors from a previous version remain.
+                  Unchanged fragments are not re-embedded: the vector is reused by
+                  content hash, and inference hits only what actually changed. The
+                  module's core guarantee: a repeat sync, or connecting a new
+                  source later, does not break already-collected data. One entity
+                  meanwhile lands in several storage sinks at once:
+                </div>
+                <ul class="pl-mech">
+                  <li class="pl-mech__row">
+                    <span class="pl-mech__badge pl-mech__badge--rel"
+                      >relational</span
+                    >
+                    <span class="pl-mech__d"
+                      >The record body, metadata, and ACL — structure for exact
+                      filters.</span
+                    >
+                  </li>
+                  <li class="pl-mech__row">
+                    <span class="pl-mech__badge">vector</span>
+                    <span class="pl-mech__d"
+                      >Fragment embeddings — semantic search.</span
+                    >
+                  </li>
+                  <li class="pl-mech__row">
+                    <span class="pl-mech__badge pl-mech__badge--graph"
+                      >graph</span
+                    >
+                    <span class="pl-mech__d"
+                      >The entity node and within-source relationships — graph
+                      traversal.</span
+                    >
+                  </li>
+                </ul>
+                <div class="stk-dec__d">
+                  The full layout — which field goes to which database, plus
+                  fields, history, and deletes — is held by
+                  <a href="data-model.html#storage" class="xref-page"
+                    >data-model</a
+                  >.
+                </div>
+              </div>
+              <div class="stk-sink">
+                <code>RawItem</code> <span class="pl-arrow">→</span>
+                <code>Entity</code> <span class="pl-arrow">→</span> saved
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ CONTRACTS ════════ -->
+      <div class="section" id="contracts">
+        <div class="section__title">Contracts</div>
+        <p class="desc">
+          The pipeline rests on two contracts. Each stage knows only them — which
+          is why everything after normalize stays shared.
+        </p>
+        <div class="pl-contracts">
+          <div class="mod-card pl-contract">
+            <div class="pl-contract__name"><code>RawItem</code></div>
+            <div class="pl-contract__role">Connector → Transform</div>
+            <div class="pl-contract__d">
+              Raw source material together with its metadata. The connector's
+              output and the transform's input.
+            </div>
+          </div>
+          <div class="pl-contract-arrow"></div>
+          <div class="mod-card pl-contract pl-contract--entity">
+            <div class="pl-contract__name"><code>Entity</code></div>
+            <div class="pl-contract__role">Transform → Loader</div>
+            <div class="pl-contract__d">
+              A normalized entity. Different types within a source (ticket, page,
+              message) are subtypes of one <code>Entity</code> and pass through
+              the same pipeline. The full model is held by
+              <a href="data-model.html#entity" class="xref-page">data-model</a>.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

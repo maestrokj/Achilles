@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Invite Accept</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Invite Accept</h1>
+        <div class="header__sub">
+          auth / security · макеты · публичные
+          <a class="in-load in-load--spinner" href="../../shared-ui/_wireframes/loading-states.html#spinner" title="Ожидание действия — спиннер">
+            <span class="in-load__icon"></span>загрузка
+          </a>
+        </div>
+      </div>
+
+      <p class="desc">
+        Создание аккаунта по приглашению из
+        <a href="../../admin-panel/_wireframes/users.html#invites" class="xref-module">Admin Panel</a>.</p>
+
+      <!-- ═══ Макет ═══ -->
+      <div class="section">
+        <div class="section__title">Макет</div>
+        <div class="wf-stage">
+          <div class="wf-frame">
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/invite/9c2f4e…7a
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/invite/&lt;token&gt; · публичный</span>
+                      <span class="wf-urltip__body">Одноразовая ссылка из письма — доступ без входа.</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                      <h2 class="wf-title">Принять приглашение</h2>
+                      <p class="wf-subtitle">
+                        Анна Петрова приглашает вас в Achilles. Создайте
+                        аккаунт, чтобы войти.
+                      </p>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Email</span>
+                      <div class="wf-input wf-input--locked">
+                        dmitry@company.com
+                        <span class="wf-input__action" title="Поле из приглашения, изменить нельзя">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                        </span>
+                        <span class="wf-annot">1</span>
+                      </div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Роль</span>
+                      <div class="wf-row">
+                        <span class="wf-chip">Member</span>
+                        <span class="wf-annot">2</span>
+                      </div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Полное имя</span>
+                      <div class="wf-input wf-input--focus">Дмитрий Соколов</div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Пароль</span>
+                      <div class="wf-input">
+                      ••••••••••••
+                      <span class="wf-input__action" title="Показать пароль">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                      </div>
+                      <div class="wf-meter wf-meter--strong">
+                        <span class="wf-meter__seg"></span>
+                        <span class="wf-meter__seg"></span>
+                        <span class="wf-meter__seg"></span>
+                        <span class="wf-meter__seg"></span>
+                      </div>
+                      <div class="wf-row wf-spread">
+                        <span class="wf-hint">
+                          От 8 символов <span class="wf-annot">3</span></span>
+                      <span class="wf-hint">Надёжный <span class="wf-annot">4</span></span>
+                      </div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Повторите пароль</span>
+                      <div class="wf-input">
+                        ••••••••••••
+                        <span class="wf-input__action" title="Показать пароль">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                      </div>
+                    </div>
+
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Создать аккаунт</button>
+
+                    <div class="wf-center">
+                      <a class="wf-a" href="login.html">Уже есть аккаунт? Войти</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Email — read-only, закреплён приглашением.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Роль задана при создании приглашения —
+              <a href="../_workzone/authentication.html#invite-flow" class="xref-page">Invite flow</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Требование политики —
+              <a href="../_workzone/authentication.html#password-policy" class="xref-page">Парольная политика</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Индикатор силы пароля по мере ввода.
+            </li>
+            <li class="wf-legend__item">
+              Недействительный или использованный токен ведёт на
+              <a class="wf-a" href="status-screen.html">Status Screen</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

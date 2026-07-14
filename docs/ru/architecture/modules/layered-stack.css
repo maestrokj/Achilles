@@ -1,0 +1,361 @@
+/* Layered-stack kit (stk-*) — a reusable "request descends top→down through
+   layers" visual language. Bands (.stk-layer) joined by the shared .mod-conn
+   connector; each carries decision blocks (.stk-dec); an optional sticky side
+   channel (.stk-side) runs a parallel path. Per-page layer accents are driven
+   by one custom property — set --lc on a .stk-layer--* preset (presets live in
+   the consuming module's sheet, e.g. auth.css). Wider canvas via .page--wide.
+   Decision blocks are static (not links) — no hover affordance.
+   Loaded on top of module.css by pages that use the stack.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+.stk-stage {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 1.4rem;
+  align-items: start;
+}
+
+/* Solo stage — no side channel: drop the reserved side column and center the
+   stack on the canvas instead of leaving it pinned left under empty space. */
+.stk-stage--solo {
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+}
+
+.stk-stage--solo .stk-stack {
+  width: 100%;
+  max-width: 920px;
+}
+
+.stk-stack {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Landing highlight for the cross-linked layers, reusing the
+   .section:target keyframes without .section's block margin */
+/* Compact targets land in the upper third of the viewport — the eye's
+   natural landing zone — with context above still visible. */
+.stk-layer[id],
+.stk-side__chan[id],
+.stk-dec[id] {
+  scroll-margin-top: 28vh;
+}
+
+.stk-layer:target,
+.stk-side__chan:target,
+.stk-dec:target {
+  animation: target-highlight 2.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stk-layer:target,
+  .stk-side__chan:target,
+  .stk-dec:target {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+}
+
+/* A prose paragraph can also be a cross-link target (e.g. a sub-topic anchored
+   inside a .section). Give it the same landing flash, with the section's own
+   scroll-margin so it isn't glued to the viewport top. */
+.desc[id] {
+  scroll-margin-top: 1rem;
+}
+
+.desc[id]:target {
+  border-radius: var(--radius-md);
+  animation: target-highlight 2.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desc[id]:target {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+}
+
+/* ── Layer band ── */
+.stk-layer {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+.stk-layer__bar {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  padding: 0.7rem 1.1rem;
+  border-left: 6px solid var(--stk-lc, var(--accent));
+  background: var(--stk-lc-pale, var(--tint-6));
+}
+
+.stk-layer__n {
+  flex: 0 0 auto;
+  width: 1.7rem;
+  height: 1.7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--stk-lc, var(--accent));
+  background: var(--paper);
+  border: 1.5px solid var(--stk-lc, var(--accent));
+  border-radius: 50%;
+}
+
+.stk-layer__name {
+  font-size: 1.12rem;
+  font-weight: 700;
+  letter-spacing: var(--heading-spacing);
+}
+
+.stk-layer__role {
+  margin-left: auto;
+  max-width: 38ch;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--text-dim);
+  text-align: right;
+}
+
+.stk-layer__body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--grid-gap);
+  padding: 0.9rem 1.1rem 1.05rem;
+}
+
+/* ── Decision block (one inventory item) ── */
+.stk-dec {
+  flex: 1 1 220px;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.7rem 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.stk-dec--wide {
+  flex-basis: 320px;
+}
+.stk-dec--full {
+  flex-basis: 100%;
+}
+
+/* ── Warning variant — an implementation caveat to revisit during testing,
+   not a settled decision. Amber accent (--s4) reads as caution inside the
+   warm palette; the ⚠ marker is owned by the variant, not the markup. ── */
+.stk-dec--warn {
+  background: var(--s4-pale);
+  border-color: var(--s4-glow);
+  border-left: var(--border-w) solid var(--s4);
+}
+
+.stk-dec--warn .stk-dec__h::before {
+  content: "⚠";
+  font-size: 0.95rem;
+  line-height: 1;
+  color: var(--s4);
+}
+
+.stk-dec--warn .stk-dec__t {
+  color: var(--s4);
+}
+
+.stk-dec__h {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.stk-dec__t {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.stk-dec__d {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+.stk-dec__cols {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.stk-dec__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.stk-dec__list li {
+  position: relative;
+  padding-left: 0.85rem;
+}
+
+.stk-dec__list li::before {
+  content: "";
+  position: absolute;
+  left: 0.1rem;
+  top: 0.55em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-dim);
+}
+
+.stk-dec details {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+}
+
+.stk-dec summary {
+  user-select: none;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.stk-dec summary::before {
+  content: "▸ ";
+}
+
+.stk-dec details[open] summary::before {
+  content: "▾ ";
+}
+
+.stk-dec details > div {
+  margin-top: 0.3rem;
+  line-height: 1.5;
+}
+
+/* ── Side channel (a parallel path beside the stack) ── */
+.stk-side__chan {
+  padding: 0.8rem 0.9rem 1rem;
+  background: var(--s4-pale);
+  border: 1px dashed var(--s4);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+}
+
+.stk-side__chan + .stk-side__chan {
+  margin-top: 1rem;
+}
+
+.stk-side__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stk-side__name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--s4);
+  letter-spacing: var(--heading-spacing);
+}
+
+.stk-side__tag {
+  display: block;
+  margin-top: 0.1rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--s4);
+}
+
+.stk-side__xrefs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.35rem;
+}
+
+.stk-side__flow {
+  margin: 0.55rem 0 0.7rem;
+  padding: 0.4rem 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--text-dim);
+  text-align: center;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.stk-side__flow b {
+  color: var(--s4);
+}
+
+.stk-side__decs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.stk-side__decs .stk-dec {
+  flex: none;
+  min-width: 0;
+  background: var(--paper);
+}
+
+.stk-side__into {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--s4);
+}
+
+.stk-side__into::before,
+.stk-side__into::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--s4);
+  opacity: 0.4;
+}
+
+.stk-side__merge {
+  margin-top: 0.35rem;
+  font-size: 0.7rem;
+  font-style: italic;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+@media (max-width: 880px) {
+  .stk-stage {
+    grid-template-columns: 1fr;
+  }
+  .stk-layer__role {
+    display: none;
+  }
+}

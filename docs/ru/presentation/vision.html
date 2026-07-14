@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Vision</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../shared.css" />
+    <link rel="stylesheet" href="presentation.css" />
+    <link rel="stylesheet" href="vision.css" />
+  </head>
+
+  <body>
+    <a class="home-link" href="../index.html" title="На главную">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 10.5 12 3l9 7.5" />
+        <path d="M5 9.5V21h14V9.5" />
+      </svg>
+      Главная
+    </a>
+    <div class="page">
+      <!-- ══════════════════════════════════════ -->
+      <!-- HERO                                  -->
+      <!-- ══════════════════════════════════════ -->
+      <header class="hero">
+        <h1 class="hero__title">Achilles</h1>
+        <p class="hero__subtitle">Vision</p>
+        <p class="hero__desc">
+          Куда движется Achilles: от базы знаний —
+          к корпоративной памяти, от пассивных ответов —
+          к проактивной помощи.
+        </p>
+      </header>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- TODAY                                 -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section">
+        <div class="section__label section__label--today">Сегодня</div>
+        <h2 class="section__title">Enterprise AI Platform</h2>
+        <p class="section__text">
+          Сегодня Achilles — единая AI-платформа компании: хаб
+          провайдеров, моделей, агентов и расходов. Платформа
+          подключается к инструментам компании и строит единый граф
+          знаний — люди, проекты, задачи и решения связаны в одном
+          месте, а ответы заземлены на них.
+        </p>
+
+        <svg viewBox="0 0 480 150" class="graph-vis">
+          <!-- Lines: sources → Achilles -->
+          <g stroke="#d2c6b6" stroke-width="1.5">
+            <line x1="100" y1="115" x2="210" y2="72" opacity="0.4" />
+            <line x1="240" y1="115" x2="240" y2="78" opacity="0.4" />
+            <line x1="380" y1="115" x2="270" y2="72" opacity="0.4" />
+          </g>
+          <!-- Lines: Achilles → outputs -->
+          <g stroke="#6a8048" stroke-width="1.5">
+            <line x1="220" y1="52" x2="140" y2="24" opacity="0.4" />
+            <line x1="260" y1="52" x2="340" y2="24" opacity="0.4" />
+          </g>
+          <!-- Output pills -->
+          <rect x="90" y="8" width="100" height="24" rx="12" fill="#6a8048" />
+          <rect x="290" y="8" width="100" height="24" rx="12" fill="#886040" />
+          <g font-size="9.5" fill="#fff" text-anchor="middle" font-weight="600">
+            <text x="140" y="25">Граф знаний</text>
+            <text x="340" y="25">Агенты</text>
+          </g>
+          <!-- Achilles hub -->
+          <rect x="195" y="46" width="90" height="30" rx="15" fill="#b84e30" />
+          <text x="240" y="66" font-size="11" fill="#fff"
+                text-anchor="middle" font-weight="700">Achilles</text>
+          <!-- Source pills -->
+          <rect x="62" y="108" width="76" height="24" rx="12" fill="#baa898" />
+          <rect x="202" y="108" width="76" height="24" rx="12" fill="#baa898" />
+          <rect x="340" y="108" width="80" height="24" rx="12" fill="#baa898" />
+          <g font-size="9.5" fill="#fff" text-anchor="middle" font-weight="600">
+            <text x="100" y="125">Jira</text>
+            <text x="240" y="125">Slack</text>
+            <text x="380" y="125">Confluence</text>
+          </g>
+        </svg>
+        <div class="graph-vis__caption">
+          Источники подключены — платформа строит граф
+          и управляет агентами
+        </div>
+      </section>
+
+      <div class="bridge">
+        <p>
+          Граф знаний находит документы и связи.
+          Но что если платформа не просто находит —
+          а понимает, почему решения были приняты?
+        </p>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- THREE LEVELS                          -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section">
+        <div class="section__label section__label--evolution">
+          Эволюция
+        </div>
+        <h2 class="section__title">
+          Три уровня корпоративных знаний
+        </h2>
+        <p class="section__text">
+          Каждый уровень добавляет глубину. Поиск находит документы.
+          Граф связывает их. Контекст объясняет, почему всё
+          устроено именно так.
+        </p>
+
+        <!-- Three levels progression -->
+        <svg viewBox="0 0 480 96" class="graph-vis">
+          <!-- Stage labels -->
+          <g font-size="7" fill="#a09080" text-anchor="middle"
+             font-weight="700" letter-spacing="0.06em">
+            <text x="75" y="12">ДРУГИЕ</text>
+            <text x="240" y="12">ACHILLES СЕЙЧАС</text>
+            <text x="410" y="12">КУДА ИДЁМ</text>
+          </g>
+          <!-- Level 1: Search -->
+          <rect x="15" y="24" width="120" height="32" rx="16"
+                fill="#baa898" />
+          <text x="75" y="45" font-size="10" fill="#fff"
+                text-anchor="middle" font-weight="600">
+            Поиск
+          </text>
+          <!-- Arrow 1→2 -->
+          <line x1="135" y1="40" x2="160" y2="40"
+                stroke="#d2c6b6" stroke-width="1.5" />
+          <polygon points="160,36 168,40 160,44" fill="#d2c6b6" />
+          <!-- Level 2: Knowledge Graph (current, prominent) -->
+          <rect x="168" y="20" width="144" height="40" rx="20"
+                fill="#b84e30" />
+          <text x="240" y="45" font-size="11" fill="#fff"
+                text-anchor="middle" font-weight="700">
+            Граф знаний
+          </text>
+          <!-- Arrow 2→3 -->
+          <line x1="312" y1="40" x2="340" y2="40"
+                stroke="#d2c6b6" stroke-width="1.5" />
+          <polygon points="340,36 348,40 340,44" fill="#d2c6b6" />
+          <!-- Level 3: Context -->
+          <rect x="348" y="24" width="120" height="32" rx="16"
+                fill="#6a8048" />
+          <text x="408" y="45" font-size="10" fill="#fff"
+                text-anchor="middle" font-weight="600">
+            Контекст
+          </text>
+          <!-- Bottom labels -->
+          <g font-size="7.5" fill="#a09080" text-anchor="middle">
+            <text x="75" y="74">что есть</text>
+            <text x="240" y="74">что связано</text>
+            <text x="408" y="74">почему так</text>
+          </g>
+        </svg>
+        <div class="graph-vis__caption">
+          Achilles уже на уровне графа знаний.
+          Следующий шаг — контекст
+        </div>
+
+        <!-- Three level cards -->
+        <div class="levels">
+          <div class="level level--muted">
+            <span class="level__icon">●</span>
+            <div class="level__body">
+              <div class="level__title">
+                Корпоративный поиск
+              </div>
+              <div class="level__text">
+                Индексирует документы. Находит по ключевым словам
+                и семантике. Не знает связей между сущностями.
+                <br />
+                <strong>«ADR-015 существует»</strong>
+              </div>
+            </div>
+          </div>
+          <div class="level level--current">
+            <span class="level__icon">●</span>
+            <div class="level__body">
+              <div class="level__title">
+                Граф знаний — Achilles сегодня
+              </div>
+              <div class="level__text">
+                Связывает людей, проекты, задачи, документы
+                и каналы. Знает кто создал что и как это
+                связано.
+                <br />
+                <strong>
+                  «@alex создал ADR-015, связан с INFRA-891,
+                  обсуждение в #backend»
+                </strong>
+              </div>
+            </div>
+          </div>
+          <div class="level level--future">
+            <span class="level__icon">●</span>
+            <div class="level__body">
+              <div class="level__title">
+                Контекст — следующий шаг
+              </div>
+              <div class="level__text">
+                Понимает причины, историю решений, аргументы
+                сторон, рассмотренные альтернативы и эволюцию
+                проектов.
+                <br />
+                <strong>
+                  «PostgreSQL выбрали из-за ACID + write load.
+                  @alex предложил, @john возражал. 3 дня
+                  обсуждения, 2 альтернативы»
+                </strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Compare: Graph vs Context -->
+        <div class="compare">
+          <div class="compare__item compare__item--old">
+            <div class="compare__tag">Граф знаний</div>
+            <div class="compare__title">Знает что связано</div>
+            <div class="compare__steps">
+              <div class="step step--ok">
+                @alex создал ADR-015
+              </div>
+              <div class="step step--ok">
+                ADR-015 связан с INFRA-891
+              </div>
+              <div class="step step--ok">
+                Обсуждение было в #backend
+              </div>
+              <div class="step step--fail">
+                Не знает, почему решение принято
+              </div>
+              <div class="step step--fail">
+                Не знает, какие альтернативы были
+              </div>
+            </div>
+          </div>
+          <div class="compare__item compare__item--new">
+            <div class="compare__tag">Контекст</div>
+            <div class="compare__title">Знает почему</div>
+            <div class="compare__steps">
+              <div class="step step--ok">
+                Всё, что знает граф
+              </div>
+              <div class="step step--ok">
+                Почему PostgreSQL: ACID + write load
+              </div>
+              <div class="step step--ok">
+                @alex предложил, @john возражал
+              </div>
+              <div class="step step--ok">
+                Рассмотрены 2 альтернативы за 3 дня
+              </div>
+              <div class="step step--ok">
+                INFRA-891 — следствие решения
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Key insight -->
+        <div class="insight">
+          <div class="insight__text">
+            Граф знает что связано.<br />
+            Контекст знает почему.
+          </div>
+          <div class="insight__sub">
+            Корпоративная память — это граф знаний
+            + понимание причин.
+          </div>
+        </div>
+      </section>
+
+      <div class="bridge">
+        <p>
+          Когда платформа понимает не только что произошло,
+          но почему и к чему это привело — открываются
+          возможности, недоступные обычному графу.
+        </p>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PROACTIVE AGENTS                      -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section">
+        <div class="section__label section__label--next">
+          Следующий уровень
+        </div>
+        <h2 class="section__title">
+          Агенты, которые действуют на опережение
+        </h2>
+        <p class="section__text">
+          Сегодня агенты отвечают на запросы. Завтра — персональный
+          агент-помощник с полным контекстом компании сам предупредит
+          о рисках, подскажет нужный опыт и сэкономит время —
+          до того, как сотрудник столкнётся с проблемой.
+        </p>
+
+        <!-- Agent flow visualization -->
+        <svg viewBox="0 0 480 120" class="graph-vis">
+          <!-- Context → Agent -->
+          <line x1="145" y1="50" x2="170" y2="50"
+                stroke="#d2c6b6" stroke-width="1.5" />
+          <polygon points="170,46 178,50 170,54" fill="#d2c6b6" />
+          <!-- Agent → Employee -->
+          <line x1="322" y1="50" x2="350" y2="50"
+                stroke="#6a8048" stroke-width="1.5" />
+          <polygon points="350,46 358,50 350,54" fill="#6a8048" />
+          <!-- Context pill -->
+          <rect x="15" y="34" width="130" height="32" rx="16"
+                fill="#886040" />
+          <text x="80" y="55" font-size="10" fill="#fff"
+                text-anchor="middle" font-weight="600">
+            Контекст
+          </text>
+          <!-- Agent pill (larger, prominent) -->
+          <rect x="178" y="28" width="144" height="44" rx="22"
+                fill="#b84e30" />
+          <text x="250" y="46" font-size="7" fill="#fff"
+                text-anchor="middle" font-weight="700"
+                letter-spacing="0.04em" opacity="0.75">
+            ПРОАКТИВНЫЙ
+          </text>
+          <text x="250" y="62" font-size="12" fill="#fff"
+                text-anchor="middle" font-weight="700">
+            ИИ-агент
+          </text>
+          <!-- Employee pill -->
+          <rect x="358" y="34" width="108" height="32" rx="16"
+                fill="#6a8048" />
+          <text x="412" y="55" font-size="10" fill="#fff"
+                text-anchor="middle" font-weight="600">
+            Сотрудник
+          </text>
+          <!-- Flow labels -->
+          <g font-size="7.5" fill="#a09080" text-anchor="middle">
+            <text x="80" y="86">решения, история,</text>
+            <text x="80" y="97">связи, причины</text>
+            <text x="412" y="86">подсказки</text>
+            <text x="412" y="97">на опережение</text>
+          </g>
+        </svg>
+        <div class="graph-vis__caption">
+          Агент получает контекст компании и проактивно
+          помогает сотруднику
+        </div>
+
+        <!-- Agent example scenarios -->
+        <div class="agent-examples">
+          <div class="agent-example">
+            <span class="agent-example__icon">→</span>
+            <div class="agent-example__text">
+              <strong>Ты берёшь задачу X</strong> — команда Y
+              пробовала похожий подход полгода назад. Вот что они
+              узнали и почему сменили направление.
+            </div>
+          </div>
+          <div class="agent-example">
+            <span class="agent-example__icon">→</span>
+            <div class="agent-example__text">
+              <strong>В твоём спринте зависимость</strong> от
+              команды Z, которая сейчас в заморозке функций
+              до пятницы. Стоит перепланировать PROJ-142.
+            </div>
+          </div>
+          <div class="agent-example">
+            <span class="agent-example__icon">→</span>
+            <div class="agent-example__text">
+              <strong>Ты пишешь RFC</strong> — вот три решения
+              в соседних командах, которые могут конфликтовать
+              с твоим предложением.
+            </div>
+          </div>
+          <div class="agent-example">
+            <span class="agent-example__icon">→</span>
+            <div class="agent-example__text">
+              <strong>Новый тикет от клиента</strong> — похожую
+              проблему решали в Q3, вот контекст и решение.
+            </div>
+          </div>
+        </div>
+
+        <!-- Reactive vs Proactive -->
+        <div class="compare">
+          <div class="compare__item compare__item--old">
+            <div class="compare__tag">Сегодня</div>
+            <div class="compare__title">Реактивный агент</div>
+            <div class="compare__steps">
+              <div class="step step--fail">
+                Отвечает только на запрос
+              </div>
+              <div class="step step--fail">
+                Знает то, что нашёл по запросу
+              </div>
+              <div class="step step--fail">
+                Не видит контекст текущей работы
+              </div>
+            </div>
+          </div>
+          <div class="compare__item compare__item--new">
+            <div class="compare__tag">Завтра</div>
+            <div class="compare__title">Проактивный помощник</div>
+            <div class="compare__steps">
+              <div class="step step--ok">
+                Сам замечает релевантный контекст
+              </div>
+              <div class="step step--ok">
+                Знает историю решений и причины
+              </div>
+              <div class="step step--ok">
+                Понимает, над чем работает сотрудник
+              </div>
+              <div class="step step--ok">
+                Подсказывает до того, как спросят
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- BUSINESS CONTINUITY                   -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section">
+        <div class="section__label section__label--perspective">
+          Перспектива
+        </div>
+        <h2 class="section__title">
+          Знания остаются — люди меняются
+        </h2>
+        <p class="section__text">
+          Когда сотрудник уходит, с ним уходит контекст: почему
+          были приняты решения, как устроены процессы, что уже
+          пробовали и не сработало. Корпоративная память решает эту
+          проблему — знания не привязаны к людям.
+        </p>
+
+        <!-- Continuity flow visualization -->
+        <svg viewBox="0 0 480 110" class="graph-vis">
+          <!-- Stage 1: Working -->
+          <rect x="6" y="22" width="96" height="32" rx="16"
+                fill="#6a8048" />
+          <text x="54" y="43" font-size="9" fill="#fff"
+                text-anchor="middle" font-weight="600">
+            Работает
+          </text>
+          <!-- Arrow -->
+          <line x1="102" y1="38" x2="120" y2="38"
+                stroke="#d2c6b6" stroke-width="1.5" />
+          <polygon points="120,34 128,38 120,42" fill="#d2c6b6" />
+          <!-- Stage 2: Leaves -->
+          <rect x="128" y="22" width="84" height="32" rx="16"
+                fill="#b84e30" />
+          <text x="170" y="43" font-size="9" fill="#fff"
+                text-anchor="middle" font-weight="600">
+            Уходит
+          </text>
+          <!-- Arrow -->
+          <line x1="212" y1="38" x2="240" y2="38"
+                stroke="#d2c6b6" stroke-width="1.5" />
+          <polygon points="240,34 248,38 240,42" fill="#d2c6b6" />
+          <!-- Stage 3: AI covers -->
+          <rect x="248" y="22" width="100" height="32" rx="16"
+                fill="#886040" />
+          <text x="298" y="43" font-size="9" fill="#fff"
+                text-anchor="middle" font-weight="600">
+            ИИ-дублёр
+          </text>
+          <!-- Arrow -->
+          <line x1="348" y1="38" x2="370" y2="38"
+                stroke="#d2c6b6" stroke-width="1.5" />
+          <polygon points="370,34 378,38 370,42" fill="#d2c6b6" />
+          <!-- Stage 4: New person -->
+          <rect x="378" y="22" width="96" height="32" rx="16"
+                fill="#6a8048" />
+          <text x="426" y="43" font-size="9" fill="#fff"
+                text-anchor="middle" font-weight="600">
+            Новый
+          </text>
+          <!-- Stage labels -->
+          <g font-size="7" text-anchor="middle" font-weight="600">
+            <text x="54" y="72" fill="#6a8048">
+              контекст копится
+            </text>
+            <text x="170" y="72" fill="#b84e30">
+              контекст сохранён
+            </text>
+            <text x="298" y="72" fill="#886040">
+              покрывает роль
+            </text>
+            <text x="426" y="72" fill="#6a8048">
+              получает контекст
+            </text>
+          </g>
+          <!-- Continuous context bar -->
+          <rect x="6" y="88" width="468" height="4" rx="2"
+                fill="#6a8048" opacity="0.2" />
+          <text x="240" y="106" font-size="7.5" fill="#a09080"
+                text-anchor="middle" font-style="italic">
+            контекст непрерывен — знания не теряются при смене людей
+          </text>
+        </svg>
+        <div class="graph-vis__caption">
+          Жизненный цикл роли: контекст остаётся
+          в компании на каждом этапе
+        </div>
+
+        <!-- Compare: with/without context -->
+        <div class="compare">
+          <div class="compare__item compare__item--old">
+            <div class="compare__tag">Без контекста</div>
+            <div class="compare__title">Потеря знаний</div>
+            <div class="compare__steps">
+              <div class="step step--fail">
+                Ключевой сотрудник уходит
+              </div>
+              <div class="step step--fail">
+                Контекст решений теряется с ним
+              </div>
+              <div class="step step--fail">
+                Команда повторяет старые ошибки
+              </div>
+              <div class="step step--fail">
+                Новый сотрудник входит в курс месяцами
+              </div>
+            </div>
+          </div>
+          <div class="compare__item compare__item--new">
+            <div class="compare__tag">С контекстом</div>
+            <div class="compare__title">Бесшовная ротация</div>
+            <div class="compare__steps">
+              <div class="step step--ok">
+                Контекст роли сохранён в системе
+              </div>
+              <div class="step step--ok">
+                ИИ-дублёр покрывает рутину
+                на переходный период
+              </div>
+              <div class="step step--ok">
+                История решений доступна —
+                ошибки не повторяются
+              </div>
+              <div class="step step--ok">
+                Новый сотрудник получает контекст роли
+                за часы
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="benefits">
+          <div class="benefit">
+            <div class="benefit__title">Нулевой bus factor</div>
+            <div class="benefit__text">
+              Знания не зависят от одного человека — контекст
+              доступен всей компании.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">ИИ-дублёр на время поиска</div>
+            <div class="benefit__text">
+              Пока ищется замена — ИИ покрывает рутинные
+              функции роли на основе контекста.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Онбординг за часы</div>
+            <div class="benefit__text">
+              Новый сотрудник получает полный контекст роли:
+              решения, причины, процессы, связи.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Институциональная память</div>
+            <div class="benefit__text">
+              Компания помнит не только что было сделано,
+              но почему — даже спустя годы.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- CTA                                   -->
+      <!-- ══════════════════════════════════════ -->
+      <footer class="cta">
+        <h2 class="cta__title">Строим будущее</h2>
+        <p class="cta__text">
+          Achilles в активной разработке. Текущее состояние
+          и архитектура — в основной презентации.
+        </p>
+        <div class="cta__actions">
+          <a href="presentation.html"
+             class="cta__btn cta__btn--primary">
+            Презентация →
+          </a>
+          <a href="https://github.com/maestrokj/Achilles" class="cta__btn cta__btn--secondary">
+            GitHub
+          </a>
+        </div>
+      </footer>
+    </div>
+    <script defer src="../architecture/doc-nav.js"></script>
+  </body>
+</html>

@@ -1,0 +1,123 @@
+<!doctype html>
+<!--
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  FEATURE: api-keys — выпуск машинного ключа доступа к платформе.       │
+  │                                                                       │
+  │  Topology = CONVERGENCE, not a journey: три двери ведут в один         │
+  │  диалог. Самовыпуск (профиль) и выдача Owner/Admin (список ключей и    │
+  │  карточка сотрудника) сходятся на api-key-create-modal. Поэтому это    │
+  │  ОДНА фича с двумя линиями (самовыпуск / выдача), а вторая дверь        │
+  │  выдачи — карточка — нарисована веткой от линии выдачи.                │
+  │                                                                       │
+  │  OWNS api-key-create-modal.html — единственный узел только этой фичи    │
+  │  (orphan-тест: удали фичу — у диалога нет дома). Точки входа — профиль   │
+  │  / список ключей / карточка — лишь entry points, не делают диалог       │
+  │  shared. Поэтому модалка — обычный .flow-stop (локальный узел), а        │
+  │  экраны точек входа — общие (_wireframes / admin-panel), --shared.      │
+  │  Механику ключа (хеш, привязка, срок, rate limit, контракт поиска при   │
+  │  выдаче) НЕ копируем — только ссылки в workzone. README → "Features".   │
+  └─────────────────────────────────────────────────────────────────────┘
+-->
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: API-ключи</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · feature-flow kit (no wireframe
+         kit — screens link out) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../feature-flow.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../index.html">← Auth / Security</a>
+        <h1 class="header__title">API-ключи</h1>
+        <div class="header__sub">auth / security · фичи</div>
+      </div>
+
+      <!-- ═══ Описание ═══ Только продукт: что за фича и кто откуда заходит.
+           Механику ключа и контракт поиска НЕ здесь — ссылки в workzone. -->
+      <p class="desc">
+        Выпуск API-ключа — машинного (headless) доступа к платформе: им
+        аутентифицируется <a href="../../../public-api/index.html#auth" class="xref-module">Public API</a>, в следующей версии —
+        <a href="../../../mcp/index.html#auth" class="xref-module">MCP</a> <span class="iter v2">v2</span>. Особенность фичи не в длине пути, а в его форме: один
+        диалог создания, в который ведут <b>три двери</b>. Пользователь выпускает
+        ключ на себя из своего профиля (самовыпуск, без выбора пользователя);
+        Owner / Admin выдаёт ключ на сотрудника из общего списка ключей или из
+        карточки конкретного сотрудника (выдача, с поиском-подсказками). Все
+        двери сходятся в одном
+        <a href="api-key-create-modal.html#api-key-create" class="xref-page">диалоге создания</a>,
+        который существует единственной копией. Самовыпуск — основной путь,
+        выдача администратором — вспомогательный; ключ никогда не шире прав
+        своего владельца.
+      </p>
+
+      <!-- ═══ Поток · самовыпуск ═══ Пользователь выпускает ключ на себя.
+           Профиль — общий экран (--shared, _wireframes), диалог — узел этой
+           фичи (обычный stop). Линия короткая: дверь → диалог; «показ один
+           раз» — состояние диалога, не экран (правило высот), оно на его
+           легенде. -->
+      <div class="section">
+        <div class="section__title">Поток · самовыпуск (пользователь)</div>
+        <div class="flow">
+          <div class="flow-stop flow-stop--shared">
+            <a class="flow-stop__name" href="../../_wireframes/profile-account.html">Profile Account</a>
+            <span class="flow-stop__role">старт · своя учётка</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">«Создать ключ» · без выбора пользователя</span>
+          </div>
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="api-key-create-modal.html#api-key-create">API Key Create</a>
+            <span class="flow-stop__role">диалог · форма самовыпуска</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Поток · выдача ═══ Owner/Admin выдаёт ключ на сотрудника.
+           Главный вход — общий список ключей; вторая дверь — карточка
+           сотрудника — нарисована веткой (адресный вход, тот же диалог,
+           пользователь предзаполнен). .flow--branch резервирует место. -->
+      <div class="section">
+        <div class="section__title">Поток · выдача (Owner / Admin)</div>
+        <div class="flow flow--branch">
+          <div class="flow-stop flow-stop--shared">
+            <a
+              class="flow-stop__name"
+              href="../../../admin-panel/_wireframes/api-keys.html#api-keys"
+              >API Keys</a
+            >
+            <span class="flow-stop__role">старт · надзор, выдача на сотрудника</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">«Создать ключ» · поиск сотрудника</span>
+            <div class="flow-branch">
+              <span class="flow-branch__label">адресно</span>
+              <span class="flow-branch__elbow"></span>
+              <span class="flow-branch__stop"></span>
+              <a
+                class="flow-branch__name"
+                href="../../../admin-panel/_wireframes/user-card.html#user-card"
+                >User Card</a
+              >
+              <span class="flow-branch__role">из карточки · сотрудник предзаполнен</span>
+            </div>
+          </div>
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="api-key-create-modal.html#api-key-create">API Key Create</a>
+            <span class="flow-stop__role">диалог · форма выдачи + пикер</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

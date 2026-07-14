@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Shared UI: Confirm Dialog</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Shared UI</a>
+        <h1 class="header__title">Confirm Dialog</h1>
+        <div class="header__sub">shared ui · макеты · общий компонент</div>
+      </div>
+
+      <p class="desc">Подтверждение деструктивного действия. Три уровня по тяжести последствий.</p>
+
+      <!-- Decision-таблица: какой вариант брать (§9 — легитимная компонент-дока) -->
+      <table class="wf-table">
+        <thead>
+          <tr>
+            <th>Вариант</th>
+            <th>Когда</th>
+            <th>Тон</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><a href="#reversible" class="xref-anchor">Reversible</a></td>
+            <td>Состояние возвращается, данные целы</td>
+            <td>Акцентная кнопка</td>
+          </tr>
+          <tr>
+            <td>
+              <a href="#irreversible" class="xref-anchor">Irreversible</a></td>
+            <td>Данные или доступ уничтожаются</td>
+            <td>Алерт + красная кнопка</td>
+          </tr>
+          <tr>
+            <td>
+              <a href="#type-to-confirm" class="xref-anchor">Type-to-confirm</a></td>
+            <td>Самое тяжёлое: удаление пользователя, организации</td>
+            <td>Ввод имени разблокирует кнопку</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ═══ Вариант: reversible ═══ Канонический, с полной легендой;
+           irreversible/type-to-confirm подаются как дельта от него. -->
+      <div class="section" id="reversible">
+        <h2 class="section__title">Reversible · обратимое</h2>
+        <div class="wf-stage wf-stage--backdrop">
+          <div class="wf-stage__caption">confirm · reversible</div>
+          <div class="wf-screen wf-screen--modal">
+            <div class="wf-body">
+              <div class="wf-stack">
+                <h3 class="wf-title">
+                  Деактивировать пользователя? <span class="wf-annot">1</span></h3>
+                <p class="wf-text">
+                   Вход для <strong>Анны Петровой</strong>
+                  будет закрыт, активные сессии завершены. Учётная запись и история
+                  сохранятся — можно активировать обратно в любой момент.
+                <span class="wf-annot">2</span>
+                </p>
+                <div class="wf-row wf-spread">
+                  <a class="wf-btn wf-btn--ghost">Отмена <span class="wf-annot">3</span></a>
+                  <div class="wf-guarded">
+                    <a class="wf-btn wf-btn--primary">
+                    Деактивировать</a>
+                    <a class="wf-guard"><span class="wf-guard__icon"></span></a>
+                    <span class="wf-annot">4</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ol class="wf-legend">
+          <li class="wf-legend__item">
+            <span class="wf-annot wf-legend__num">1</span>
+            <strong>Вопрос</strong> — глагол действия + объект, одна строка.
+          </li>
+          <li class="wf-legend__item">
+            <span class="wf-annot wf-legend__num">2</span>
+            <strong>Последствия</strong> — что произойдёт; имя объекта выделено.
+          </li>
+          <li class="wf-legend__item">
+            <span class="wf-annot wf-legend__num">3</span>
+            <strong>Отмена</strong> — ghost-кнопка, фокус по умолчанию.
+          </li>
+          <li class="wf-legend__item">
+            <span class="wf-annot wf-legend__num">4</span>
+            <strong>Подтверждение</strong> — акцентная кнопка с guard-маркером, текст повторяет глагол (не «OK»).
+          </li>
+        </ol>
+      </div>
+
+      <!-- ═══ Вариант: irreversible ═══ Необратимое: hard delete / отзыв. -->
+      <div class="section" id="irreversible">
+        <h2 class="section__title">Irreversible · необратимое</h2>
+        <div class="wf-stage wf-stage--backdrop">
+          <div class="wf-stage__caption">confirm · irreversible</div>
+          <div class="wf-screen wf-screen--modal">
+            <div class="wf-body">
+              <div class="wf-stack">
+                <h3 class="wf-title">Отозвать API-ключ?</h3>
+                <p class="wf-text">
+                  Ключ <code>ach_live_••••4f2a</code> перестанет работать
+                  немедленно. Интеграции, использующие его, потеряют доступ.
+                </p>
+                <div class="wf-alert wf-alert--error">
+                  Действие необратимо — отозванный ключ восстановить нельзя,
+                  понадобится создать новый.
+                </div>
+                <div class="wf-row wf-spread">
+                  <a class="wf-btn wf-btn--ghost">Отмена</a>
+                  <div class="wf-guarded">
+                    <a class="wf-btn wf-btn--danger">Отозвать ключ</a>
+                    <a class="wf-guard"><span class="wf-guard__icon"></span></a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+        <p class="wf-subtitle wf-legend__lead">Дельта к <a href="#reversible" class="xref-anchor">reversible</a>: алерт о необратимости и красная кнопка вместо акцентной.</p>
+      </div>
+
+      <!-- ═══ Вариант: type-to-confirm ═══ Самые тяжёлые действия. -->
+      <div class="section" id="type-to-confirm">
+        <h2 class="section__title">Type-to-confirm · впишите имя</h2>
+        <div class="wf-stage wf-stage--backdrop">
+          <div class="wf-stage__caption">confirm · type-to-confirm</div>
+          <div class="wf-screen wf-screen--modal">
+            <div class="wf-body">
+              <div class="wf-stack">
+                <h3 class="wf-title">Удалить пользователя?</h3>
+                <p class="wf-text">
+                  Учётная запись <strong>Анны Петровой</strong> и её привязки будут
+                  удалены без возможности восстановления. История в аудит-логе
+                  сохранится.
+                </p>
+                <div class="wf-field">
+                  <span class="wf-label">Впишите имя для подтверждения</span>
+                  <div class="wf-input">
+                    <span class="wf-line wf-line--w40"></span>
+                  </div>
+                  <span class="wf-hint">Ожидается: <code>Анна Петрова</code></span>
+                </div>
+                <div class="wf-row wf-spread">
+                  <a class="wf-btn wf-btn--ghost">Отмена</a>
+                  <div class="wf-guarded">
+                    <span class="wf-btn wf-btn--disabled">Удалить</span>
+                <a class="wf-guard"><span class="wf-guard__icon"></span></a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="wf-subtitle wf-legend__lead">Дельта к <a href="#reversible" class="xref-anchor">reversible</a>: поле ввода имени — кнопка активна лишь при точном совпадении. Применяется, например, при удалении учётной записи в <a href="../../admin-panel/_wireframes/users.html" class="xref-module">Admin Panel</a>.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

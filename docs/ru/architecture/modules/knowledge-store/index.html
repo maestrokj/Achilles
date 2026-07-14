@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Knowledge Store</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="knowledge-store.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← К схеме</a>
+        <h1 class="header__title">Knowledge Store</h1>
+        <div class="header__sub">персистентное хранение знаний</div>
+      </div>
+
+      <p class="desc">
+        Multi-model хранилище: одна сущность знаний живёт тремя проекциями в
+        одном Postgres — реляционное тело, векторы фрагментов, граф связей. Это
+        retrieval-слой платформы: Harvester сюда пишет, Query Engine отсюда
+        берёт контекст для RAG. Отличительная черта — слияние четырёх парадигм
+        поиска под единым ACL одним SQL-запросом.
+      </p>
+
+      <div class="section">
+        <div class="section__title">Архитектура</div>
+        <div class="ksa">
+          <div class="ksa__stack">
+            <!-- Пласт 1 — производители -->
+            <div class="ksa__layer ksa__layer--l1">
+              <div class="ksa__cap">
+                <b>Производители</b><span>пласт 1 · поверхность</span>
+              </div>
+              <div class="ksa__producer">
+                <div class="ksa__box ksa__box--in">
+                  <div class="ksa__box-t">Harvester</div>
+                  <div class="ksa__box-d">
+                    пишет: контент · структурные рёбра · права доступа · людей
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ksa__flow ksa__flow--write">пишет ▼</div>
+
+            <!-- Пласт 2 — хранилище -->
+            <div class="ksa__layer ksa__layer--l2">
+              <div class="ksa__cap">
+                <b>Хранилище · один PostgreSQL</b><span>пласт 2 · ядро</span>
+              </div>
+              <div class="ksa__entity">
+                <b>entity</b><span>узел знаний · source of truth</span>
+              </div>
+              <div class="ksa__proj">
+                <div class="ksa__card ksa__card--rel">
+                  <div class="ksa__card-t">entities</div>
+                  <div class="ksa__card-r">реляц. тело</div>
+                  <div class="ksa__card-d">точные фильтры и джойны</div>
+                </div>
+                <div class="ksa__card ksa__card--vec">
+                  <div class="ksa__card-t">chunks</div>
+                  <div class="ksa__card-r">текст фрагментов</div>
+                  <div class="ksa__card-d">
+                    вектор pgvector·HNSW + лексика tsvector·GIN
+                  </div>
+                </div>
+                <div class="ksa__card ksa__card--gph">
+                  <div class="ksa__card-t">entity_edge</div>
+                  <div class="ksa__card-r">граф связей</div>
+                  <div class="ksa__card-d">recursive SQL·CTE · без Neo4j</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Пласт 3 — retrieval -->
+            <div class="ksa__layer ksa__layer--l3">
+              <div class="ksa__cap">
+                <b>Retrieval</b><span>пласт 3 · слияние</span>
+              </div>
+              <div class="ksa__acl">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <rect x="2" y="6" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6" />
+                  <path d="M4.2 6V4.2a2.8 2.8 0 015.6 0V6" stroke="currentColor" stroke-width="1.6" />
+                </svg>
+                <span>
+                  единый <b>ACL pre-filter</b> · личность на входе сужает
+                  кандидатов до ранжирования · один JOIN на все 4 примитива
+                </span>
+              </div>
+              <div class="ksa__prims">
+                <div class="ksa__prim ksa__prim--vec">
+                  <div class="ksa__prim-t">vector</div>
+                  <div class="ksa__prim-d">семантика</div>
+                </div>
+                <div class="ksa__prim ksa__prim--lex">
+                  <div class="ksa__prim-t">lexical</div>
+                  <div class="ksa__prim-d">слова</div>
+                </div>
+                <div class="ksa__prim ksa__prim--gph">
+                  <div class="ksa__prim-t">graph</div>
+                  <div class="ksa__prim-d">связи · CTE</div>
+                </div>
+                <div class="ksa__prim ksa__prim--sql">
+                  <div class="ksa__prim-t">sql</div>
+                  <div class="ksa__prim-d">точные факты</div>
+                </div>
+              </div>
+              <div class="ksa__fuse">▼</div>
+              <div class="ksa__rrf">
+                <b>RRF fusion</b><span>ключ слияния = сущность</span>
+              </div>
+            </div>
+
+            <div class="ksa__flow ksa__flow--read">читает ▲</div>
+
+            <!-- Пласт 4 — потребители -->
+            <div class="ksa__layer ksa__layer--l4">
+              <div class="ksa__cap">
+                <b>Потребители</b><span>пласт 4 · выход</span>
+              </div>
+              <div class="ksa__cons">
+                <div class="ksa__box ksa__box--out">
+                  <div class="ksa__box-t">Query Engine</div>
+                  <div class="ksa__box-d">RAG над знаниями · владеет диалогом</div>
+                </div>
+                <div class="ksa__box ksa__box--out">
+                  <div class="ksa__box-t">Agent Engine</div>
+                  <div class="ksa__box-d">4 примитива как tools</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Боковой процесс — Curation Pass -->
+          <aside class="ksa__rail">
+            <div class="ksa__cur">
+              <div class="ksa__cur-h">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path d="M15 9a6 6 0 11-1.8-4.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                  <path d="M14.8 1.6v3.4h-3.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <b>Curation Pass</b>
+              </div>
+              <ul>
+                <li>фоновая доводка графа</li>
+                <li>материализация рёбер</li>
+                <li>staleness decay</li>
+                <li>журнал — <code>curation_runs</code></li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- ═══ API ═══ Полные пути контракта модуля под версией. -->
+      <section class="section" id="api">
+        <div class="section__title">API</div>
+        <ul class="api-list">
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/retrieval/vector · lexical · graph · sql</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/retrieval/hybrid</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/admin/knowledge/sources</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/admin/knowledge/reindex</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/admin/knowledge/re-embed</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/admin/knowledge/backup</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/admin/knowledge/restore</span></li>
+        </ul>
+        <p class="note">
+          Статус доводки, re-embed и бэкапов доезжает до открытых экранов push-сигналами
+          по платформенному
+          <a href="../api/_workzone/live-updates.html#boards" class="xref-module">потоку живых обновлений</a>;
+          эндпоинты выше остаются единственным источником, который клиент рефетчит.
+        </p>
+      </section>
+
+      <!-- ═══ Workzone ═══ -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Проектирование</span>
+        </div>
+        <p class="workzone-hint">
+          Детальные решения по проектированию модуля.
+        </p>
+
+        <div class="wz-nav">
+          <a class="wz-link" href="_workzone/data-model.html">
+            <span>Модель данных</span>
+          </a>
+          <a class="wz-link" href="_workzone/hybrid-search.html">
+            <span>Hybrid search</span>
+          </a>
+          <a class="wz-link" href="_workzone/acl-identity.html">
+            <span>ACL и личности</span>
+          </a>
+          <a class="wz-link" href="_workzone/lifecycle.html">
+            <span>Lifecycle</span>
+          </a>
+          <a class="wz-link" href="_workzone/stack.html">
+            <span>Стек</span>
+          </a>
+          <a class="wz-link" href="_workzone/embedding-runtime.html">
+            <span>Embeddings-рантайм</span>
+          </a>
+          <a class="wz-link" href="_workzone/tests.html">
+            <span>Тесты</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

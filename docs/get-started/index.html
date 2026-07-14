@@ -1,0 +1,920 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Get Started</title>
+    <meta
+      name="description"
+      content="Get started with Achilles: deploy, create the owner, and let the dashboard setup panel guide the rest."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../shared.css" />
+    <link rel="stylesheet" href="../presentation/presentation.css" />
+    <link rel="stylesheet" href="get-started.css" />
+  </head>
+
+  <body>
+    <a class="home-link" href="../index.html" title="Home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 10.5 12 3l9 7.5" />
+        <path d="M5 9.5V21h14V9.5" />
+      </svg>
+      Home
+    </a>
+    <div class="page">
+      <!-- ══════════════════════════════════════ -->
+      <!-- HERO                                  -->
+      <!-- ══════════════════════════════════════ -->
+      <header class="hero">
+        <h1 class="hero__title">Achilles</h1>
+        <p class="hero__subtitle">Get Started</p>
+        <p class="hero__desc">
+          Two console steps — deploy and create the owner. From there the
+          platform guides you itself: the dashboard shows a setup panel that
+          links to every screen and checks off what's done.
+        </p>
+      </header>
+
+      <!-- Table of contents -->
+      <nav class="toc">
+        <a class="toc__item" href="#deploy">
+          <span class="toc__num">1</span>
+          <span class="toc__body">
+            <span class="toc__title">Deployment</span>
+            <span class="toc__text">Bring the platform up on your own server — Docker Compose and three commands.</span>
+          </span>
+        </a>
+        <a class="toc__item" href="#first-login">
+          <span class="toc__num">2</span>
+          <span class="toc__body">
+            <span class="toc__title">First login</span>
+            <span class="toc__text">Create the platform owner and open the admin panel.</span>
+          </span>
+        </a>
+        <a class="toc__item" href="#panel">
+          <span class="toc__num">3</span>
+          <span class="toc__body">
+            <span class="toc__title">Setup panel</span>
+            <span class="toc__text">Six steps on the dashboard: AI models, sources, email, messengers — the panel tracks your progress.</span>
+          </span>
+        </a>
+        <a class="toc__item" href="#team">
+          <span class="toc__num">4</span>
+          <span class="toc__body">
+            <span class="toc__title">Inviting the team</span>
+            <span class="toc__text">Invite employees by email, assign roles, link messenger accounts.</span>
+          </span>
+        </a>
+        <a class="toc__item" href="#finetune">
+          <span class="toc__num">5</span>
+          <span class="toc__body">
+            <span class="toc__title">Fine-tuning<span class="opt">optional</span></span>
+            <span class="toc__text">Organization, spend limits, AI tools, organization prompt, notifications.</span>
+          </span>
+        </a>
+        <a class="toc__item" href="#custom">
+          <span class="toc__num">6</span>
+          <span class="toc__body">
+            <span class="toc__title">Customization<span class="opt">optional</span></span>
+            <span class="toc__text">Your own surfaces via Public API, MCP, new connectors and tools.</span>
+          </span>
+        </a>
+      </nav>
+
+      <!-- Prerequisites -->
+      <section class="section">
+        <div class="section__label section__label--summary">Before you begin</div>
+        <h2 class="section__title">What you'll need</h2>
+        <div class="prereqs">
+          <div class="prereq">
+            <span><strong>A Linux server (VPS)</strong> with Docker and Docker Compose installed — from 2 vCPU and 8 GB RAM (details in step 1).</span>
+          </div>
+          <div class="prereq">
+            <span><strong>A domain</strong> whose A record points to the server.</span>
+          </div>
+          <div class="prereq">
+            <span><strong>An AI provider API key</strong> — Anthropic, OpenAI, Google, a model aggregator (OpenRouter and the like), or your own OpenAI-compatible server, including local Ollama.</span>
+          </div>
+          <div class="prereq">
+            <span><strong>SMTP access</strong> (a mail server for outgoing email) — needed to invite employees. Can be added later.</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- STEP 1: DEPLOY                        -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="deploy">
+        <div class="section__label section__label--solution">Console · step 1</div>
+        <h2 class="section__title">Deployment</h2>
+        <p class="section__text">
+          The platform ships as a set of Docker containers: the database,
+          queues, backend, frontend, and reverse proxy all come up with a single
+          command.
+        </p>
+
+        <div class="ui-card ui-card--wide">
+          <div class="ui-card__bar">
+            Server requirements
+            <span class="ui-card__bar-note">minimum · recommended</span>
+          </div>
+          <div class="ui-card__row">
+            <span class="ui-card__label">AI hub (no knowledge base)</span>
+            <span class="ui-card__value">2 vCPU · 8 GB RAM · 40 GB SSD</span>
+          </div>
+          <div class="ui-card__row">
+            <span class="ui-card__label">With knowledge base and built-in embedder</span>
+            <span class="ui-card__value">8 vCPU · 16 GB RAM · 80 GB SSD</span>
+          </div>
+        </div>
+        <div class="ui-card__caption">
+          the built-in embedder keeps the model in memory (peak ~6 GB);
+          if an external provider computes the embeddings, the minimum is enough.
+          Running the embedder on an 8 GB host? Add swap (4 GB is enough) —
+          the load peak is transient, but without swap it can OOM the service
+        </div>
+
+        <div class="step-rows">
+          <div class="step-row">
+            <span class="step-row__num">1</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Clone the repository and fill in the settings</div>
+              <div class="step-row__text">
+                The <span class="chip-url">.env</span> file is the only place
+                you need to edit before launch.
+              </div>
+              <div class="codeblock">git clone https://github.com/maestrokj/Achilles.git
+cd Achilles
+cp .env.example .env</div>
+              <div class="ui-card">
+                <div class="ui-card__bar">
+                  .env
+                  <span class="ui-card__bar-note">fill in these lines</span>
+                </div>
+                <div class="ui-card__row ui-card__row--focus">
+                  <span class="ui-card__label">POSTGRES_PASSWORD / REDIS_PASSWORD</span>
+                  <span class="ui-card__value ui-card__value--in">strong passwords</span>
+                </div>
+                <div class="ui-card__row ui-card__row--focus">
+                  <span class="ui-card__label">SECRET_KEY</span>
+                  <span class="ui-card__value ui-card__value--in">openssl rand -base64 32</span>
+                </div>
+                <div class="ui-card__row ui-card__row--focus">
+                  <span class="ui-card__label">CORS_ORIGINS</span>
+                  <span class="ui-card__value ui-card__value--in">["https://your-domain.com"]</span>
+                </div>
+                <div class="ui-card__row ui-card__row--focus">
+                  <span class="ui-card__label">DOMAIN</span>
+                  <span class="ui-card__value ui-card__value--in">your-domain.com</span>
+                </div>
+                <div class="ui-card__row ui-card__row--focus">
+                  <span class="ui-card__label">PUBLIC_BASE_URL</span>
+                  <span class="ui-card__value ui-card__value--in">https://your-domain.com</span>
+                </div>
+                <div class="ui-card__row ui-card__row--focus">
+                  <span class="ui-card__label">VITE_API_URL</span>
+                  <span class="ui-card__value ui-card__value--in">https://your-domain.com/api</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">2</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Start the platform</div>
+              <div class="codeblock">docker compose -f docker-compose.prod.yml up -d</div>
+              <div class="step-row__text">
+                Check: open
+                <span class="chip-url">http://&lt;your-domain&gt;/</span> —
+                the platform greets you with a status page.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">3</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Issue a TLS certificate</div>
+              <div class="step-row__text">
+                Certbot is already included. Once the certificate is issued,
+                nginx switches to HTTPS on its own; renewal is automatic.
+              </div>
+              <div class="codeblock">docker compose -f docker-compose.prod.yml run --rm --entrypoint certbot certbot \
+  certonly --webroot -w /var/www/certbot -d &lt;your-domain&gt; -d www.&lt;your-domain&gt;
+docker compose -f docker-compose.prod.yml restart nginx</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="arch-ref">
+          How it works:
+          <a href="../architecture/deployment.html">Deployment</a>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- STEP 2: FIRST LOGIN                   -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="first-login">
+        <div class="section__label section__label--solution">Console · step 2</div>
+        <h2 class="section__title">First login</h2>
+        <p class="section__text">
+          A fresh platform has no accounts at all. You create the first one —
+          the Owner — yourself; everyone else signs in later by invitation.
+          There are two ways to do it, and both work only while the database is
+          still empty.
+        </p>
+
+        <div class="step-rows">
+          <div class="step-row">
+            <span class="step-row__num">A</span>
+            <div class="step-row__body">
+              <div class="step-row__title">In the browser — the first-run screen</div>
+              <div class="step-row__text">
+                Just open <span class="chip-url">https://&lt;your-domain&gt;/</span>.
+                On an empty database the platform takes you straight to the
+                owner-creation screen — enter a name, email, and password, and
+                you land in the admin panel already signed in.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">B</span>
+            <div class="step-row__body">
+              <div class="step-row__title">In the console — a command</div>
+              <div class="step-row__text">
+                Prefer to keep the form off the public domain? Create the Owner
+                on the server, then sign in at
+                <span class="chip-url">https://&lt;your-domain&gt;/login</span>.
+              </div>
+              <div class="codeblock">docker compose -f docker-compose.prod.yml exec backend \
+  achilles init-owner --email you@company.com --password '…' --name 'Your name'</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="note">
+          The first-run screen is open to whoever reaches the domain first, so
+          create the Owner right after deployment. Once any account exists, both
+          the screen and the command switch off for good, and the domain shows
+          the normal login.
+        </div>
+
+        <div class="note">
+          Roles in the platform: <strong>Owner</strong> — everything, including
+          the audit log and security settings; <strong>Admin</strong> — the
+          control panel; <strong>Member</strong> — chat, agents, and personal
+          settings.
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- SETUP PANEL                           -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="panel">
+        <div class="section__label section__label--summary">In the browser</div>
+        <h2 class="section__title">The setup panel takes it from here</h2>
+        <p class="section__text">
+          After the first login the admin dashboard greets you with a setup
+          panel: six steps, each linking to the right screen. The platform
+          checks them off on its own as you go, and once everything is
+          configured the panel retires itself. The sections below walk the same
+          six steps in the same order.
+        </p>
+
+        <div class="ui-card setup-mock">
+          <div class="ui-card__bar">
+            Let's set up the platform
+            <span class="ui-card__bar-note">/admin · dashboard</span>
+          </div>
+          <a class="setup-mock__row" href="#chat-models">
+            <span class="setup-mock__check"></span>
+            <span class="setup-mock__title">Models for answers</span>
+            <span class="setup-mock__where">AI models</span>
+          </a>
+          <a class="setup-mock__row" href="#embedding">
+            <span class="setup-mock__check"></span>
+            <span class="setup-mock__title">Embedding model</span>
+            <span class="setup-mock__where">AI models</span>
+          </a>
+          <a class="setup-mock__row" href="#sources">
+            <span class="setup-mock__check"></span>
+            <span class="setup-mock__title">Data sources</span>
+            <span class="setup-mock__where">Data sources</span>
+          </a>
+          <a class="setup-mock__row" href="#agent-models">
+            <span class="setup-mock__check"></span>
+            <span class="setup-mock__title">Models for agents</span>
+            <span class="setup-mock__where">AI models</span>
+          </a>
+          <a class="setup-mock__row" href="#email">
+            <span class="setup-mock__check"></span>
+            <span class="setup-mock__title">Email delivery</span>
+            <span class="setup-mock__where">Platform</span>
+          </a>
+          <a class="setup-mock__row" href="#surfaces">
+            <span class="setup-mock__check"></span>
+            <span class="setup-mock__title">Chat surfaces</span>
+            <span class="setup-mock__where">Platform</span>
+          </a>
+        </div>
+        <div class="ui-card__caption">
+          the panel on the dashboard — here every row jumps to its section below
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PANEL 1: MODELS FOR ANSWERS           -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="chat-models">
+        <div class="section__label section__label--solution">Panel · 1</div>
+        <h2 class="section__title">Models for answers</h2>
+        <p class="section__text">
+          The heart of the platform. One provider and one model is the minimum
+          for chat to work. Everything happens on one screen —
+          <span class="chip-url">https://&lt;your-domain&gt;/admin/ai-models</span>
+          (the "AI models" menu item).
+        </p>
+
+        <div class="step-rows">
+          <div class="step-row">
+            <span class="step-row__num">1</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Add a provider</div>
+              <div class="step-row__text">
+                "Add provider" → paste the API key → "Test". Any major
+                provider works (Anthropic, OpenAI, Google), as does a model
+                aggregator or your own OpenAI-compatible model — for the
+                latter just point at the server URL.
+              </div>
+              <div class="ui-card">
+                <div class="ui-card__bar">
+                  New provider
+                  <span class="ui-card__btn">Test</span>
+                </div>
+                <div class="ui-card__row">
+                  <span class="ui-card__label">Provider</span>
+                  <span class="ui-card__value">Anthropic</span>
+                </div>
+                <div class="ui-card__row ui-card__row--focus">
+                  <span class="ui-card__label">API key</span>
+                  <span class="ui-card__value ui-card__value--in">sk-ant-•••••••••••••</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">2</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Enable models</div>
+              <div class="step-row__text">
+                Switch on the models you need from the provider's catalog.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">3</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Assign them to chat</div>
+              <div class="step-row__text">
+                In the "Assignments" block pick which of the enabled models are
+                available to employees in chat.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="milestone">
+          <strong>Chat is live.</strong> Open
+          <span class="chip-url">https://&lt;your-domain&gt;/chat</span> and try
+          it — the remaining panel steps don't block it. This is the
+          employees' workspace: they talk to the AI here, and set up their
+          own agents next door.
+        </div>
+
+        <div class="arch-ref">
+          How it works:
+          <a href="../architecture/modules/ai-foundation/index.html">AI Foundation</a>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PANEL 2: EMBEDDING MODEL              -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="embedding">
+        <div class="section__label section__label--solution">
+          Panel · 2 <span class="opt">for the knowledge base</span>
+        </div>
+        <h2 class="section__title">Embedding model</h2>
+        <p class="section__text">
+          The same "AI models" screen, the "Assignments" block. The embedding
+          model turns documents into vectors for search — the knowledge base
+          can't be built without one. A built-in embedder ships with the
+          platform and runs on your server, so an external provider is
+          optional.
+        </p>
+
+        <div class="note">
+          Pick the model before the first source sync: changing it later means
+          reindexing the entire base.
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PANEL 3: DATA SOURCES                 -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="sources">
+        <div class="section__label section__label--solution">
+          Panel · 3 <span class="opt">for the knowledge base</span>
+        </div>
+        <h2 class="section__title">Data sources</h2>
+        <p class="section__text">
+          This step turns the platform from an AI hub into company memory:
+          Jira, Confluence, and other sources are gathered into a knowledge
+          graph, and answers start drawing on your documents — with links to
+          the source. The screen is
+          <span class="chip-url">https://&lt;your-domain&gt;/admin/harvester</span>
+          (the "Data sources" menu item).
+        </p>
+
+        <div class="step-rows">
+          <div class="step-row">
+            <span class="step-row__num">1</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Add a source</div>
+              <div class="step-row__text">
+                The "Add source" button opens a wizard: source type,
+                credentials, connection test, scope.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">2</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Run a sync</div>
+              <div class="step-row__text">
+                Start it manually or wait for the schedule. The incremental
+                interval is shared across all sources; an individual source can
+                be given its own schedule in its card.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">3</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Check that people got matched</div>
+              <div class="step-row__text">
+                After the first sync the platform links source accounts to
+                platform users by email. Anyone it couldn't match shows up on
+                the dashboard ("unlinked accounts") and on
+                <span class="chip-url">https://&lt;your-domain&gt;/admin/users</span>
+                → the "Data source links" tab — link them there manually in a
+                couple of clicks. Until an account is linked, that employee
+                only gets public documents in their answers.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">4</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Keep an eye on the storage</div>
+              <div class="step-row__text">
+                <span class="chip-url">https://&lt;your-domain&gt;/admin/knowledge-store</span>
+                (the "Storage" item) — graph state (entities, chunks, links,
+                vectors), the curation schedule, retention policy, and backups
+                to external storage.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="note">
+          Source access rights are carried into the graph: an employee only gets
+          the documents in their answers that they can access in the original
+          source.
+        </div>
+
+        <div class="arch-ref">
+          How it works:
+          <a href="../architecture/modules/harvester/index.html">Harvester</a>
+          <a href="../architecture/modules/knowledge-store/index.html">Knowledge Store</a>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PANEL 4: MODELS FOR AGENTS            -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="agent-models">
+        <div class="section__label section__label--solution">Panel · 4</div>
+        <h2 class="section__title">Models for agents</h2>
+        <p class="section__text">
+          Agents are autonomous assistants employees set up for recurring work
+          at <span class="chip-url">https://&lt;your-domain&gt;/agents</span>.
+          On the "AI models" screen, in the same "Assignments" block, mark the
+          models agents may use — each employee then picks from that list for
+          their agent.
+        </p>
+
+        <div class="arch-ref">
+          How it works:
+          <a href="../architecture/modules/agent-engine/index.html">Agent Engine</a>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PANEL 5: EMAIL DELIVERY               -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="email">
+        <div class="section__label section__label--solution">Panel · 5</div>
+        <h2 class="section__title">Email delivery</h2>
+        <p class="section__text">
+          Without it, employee invitations and password resets won't work. On
+          <span class="chip-url">https://&lt;your-domain&gt;/admin/platform</span>
+          (the "Platform" menu item) fill in the SMTP card and click "Test" —
+          the platform sends a test email.
+        </p>
+
+        <div class="ui-card">
+          <div class="ui-card__bar">
+            Email (SMTP)
+            <span class="ui-card__btn">Test</span>
+          </div>
+          <div class="ui-card__row ui-card__row--focus">
+            <span class="ui-card__label">Host</span>
+            <span class="ui-card__value ui-card__value--in">smtp.yourcompany.com</span>
+          </div>
+          <div class="ui-card__row ui-card__row--focus">
+            <span class="ui-card__label">Port · Encryption</span>
+            <span class="ui-card__value ui-card__value--in">465 · SSL/TLS</span>
+          </div>
+          <div class="ui-card__row ui-card__row--focus">
+            <span class="ui-card__label">Username · Password</span>
+            <span class="ui-card__value ui-card__value--in">noreply@yourcompany.com · ••••</span>
+          </div>
+          <div class="ui-card__row ui-card__row--focus">
+            <span class="ui-card__label">Sender address</span>
+            <span class="ui-card__value ui-card__value--in">noreply@yourcompany.com</span>
+          </div>
+        </div>
+        <div class="ui-card__caption">
+          a snippet of the "Platform" screen — green marks what to fill in
+        </div>
+
+        <div class="arch-ref">
+          How it works:
+          <a href="../architecture/modules/email/index.html">Email</a>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PANEL 6: CHAT SURFACES                -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="surfaces">
+        <div class="section__label section__label--solution">
+          Panel · 6 <span class="opt">optional</span>
+        </div>
+        <h2 class="section__title">Chat surfaces</h2>
+        <p class="section__text">
+          Employees can ask the platform right from their messenger — each
+          thread is its own conversation. The cards live on the "Platform"
+          screen, in the "Surfaces" block; connect any or all three.
+        </p>
+
+        <div class="ui-card">
+          <div class="ui-card__bar">
+            Surfaces
+            <span class="ui-card__bar-note">Platform · what each one needs</span>
+          </div>
+          <div class="ui-card__row">
+            <span class="ui-card__label">Slack</span>
+            <span class="ui-card__value">bot token · signing secret</span>
+          </div>
+          <div class="ui-card__row">
+            <span class="ui-card__label">Mattermost</span>
+            <span class="ui-card__value">server URL · bot token</span>
+          </div>
+          <div class="ui-card__row">
+            <span class="ui-card__label">Telegram</span>
+            <span class="ui-card__value">bot token</span>
+          </div>
+        </div>
+        <div class="ui-card__caption">
+          each card has its own "Test" button — the platform verifies the
+          credentials right away
+        </div>
+
+        <div class="note">
+          For the platform to recognize who's writing, each employee links
+          their messenger account in their personal settings — see
+          "Inviting the team" below.
+        </div>
+
+        <div class="milestone">
+          <strong>All six checkmarks — the panel retires itself.</strong> The
+          platform is configured; what's left is to bring people in.
+        </div>
+
+        <div class="arch-ref">
+          How it works:
+          <a href="../architecture/modules/slack/index.html">Slack</a>
+          <a href="../architecture/modules/mattermost/index.html">Mattermost</a>
+          <a href="../architecture/modules/telegram/index.html">Telegram</a>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- TEAM                                  -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="team">
+        <div class="section__label section__label--solution">Almost there</div>
+        <h2 class="section__title">Inviting the team</h2>
+        <p class="section__text">
+          Accounts are created by invitation only — there's no self-signup.
+          You'll need email configured (panel step 5); if SMTP isn't set up,
+          the invitations screen reminds you.
+        </p>
+
+        <div class="step-rows">
+          <div class="step-row">
+            <span class="step-row__num">1</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Send an invitation</div>
+              <div class="step-row__text">
+                <span class="chip-url">https://&lt;your-domain&gt;/admin/users</span>
+                (the "Users" item) → the "Invitations" tab → email and role. The
+                link in the email is valid for 48 hours.
+              </div>
+              <div class="ui-card">
+                <div class="ui-card__bar">
+                  Invite an employee
+                  <span class="ui-card__btn">Send</span>
+                </div>
+                <div class="ui-card__row ui-card__row--focus">
+                  <span class="ui-card__label">Email</span>
+                  <span class="ui-card__value ui-card__value--in">colleague@company.com</span>
+                </div>
+                <div class="ui-card__row ui-card__row--focus">
+                  <span class="ui-card__label">Role</span>
+                  <span class="ui-card__value ui-card__value--in">Member</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">2</span>
+            <div class="step-row__body">
+              <div class="step-row__title">The employee accepts the invitation</div>
+              <div class="step-row__text">
+                From the link in the email they set a name and password — and
+                land in chat. Their agents, conversation history, notification
+                feed, and personal settings are already waiting for them.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">3</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Linking a messenger <span class="opt">optional</span></div>
+              <div class="step-row__text">
+                In personal settings
+                (<span class="chip-url">https://&lt;your-domain&gt;/account</span>,
+                the "Connected accounts" section) the employee picks a
+                messenger — the platform issues a short-lived code to send to
+                the bot in a direct message, and the accounts are linked.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- FINE-TUNING (optional)                -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="finetune">
+        <div class="section__label section__label--solution">
+          Fine-tuning <span class="opt">optional</span>
+        </div>
+        <h2 class="section__title">Making it yours</h2>
+        <p class="section__text">
+          Beyond the setup panel — worth a look once the platform is running.
+        </p>
+
+        <div class="benefits">
+          <div class="benefit">
+            <div class="benefit__title">Organization</div>
+            <div class="benefit__text">
+              Company name, logo, timezone, interface language, and date format
+              — defaults every employee can override.
+              <span class="chip-url">/admin/platform</span>
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Spend limits</div>
+            <div class="benefit__text">
+              A weekly token cap for agents and a monthly budget alert; spend
+              per employee and per model shows up here too.
+              <span class="chip-url">/admin/ai-usage</span>
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">AI tools</div>
+            <div class="benefit__text">
+              Web search and page fetching for chat and agents.
+              <span class="chip-url">/admin/ai-tools</span>
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Organization prompt</div>
+            <div class="benefit__text">
+              The company's tone, rules, and context that the AI factors into
+              every answer.
+              <span class="chip-url">/admin/ai-prompt</span>
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Notifications</div>
+            <div class="benefit__text">
+              Which events reach people and through which channels — in-app
+              feed and email.
+              <span class="chip-url">/admin/notifications</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- CUSTOMIZATION (optional)              -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="custom">
+        <div class="section__label section__label--solution">
+          Growing further <span class="opt">optional</span>
+        </div>
+        <h2 class="section__title">Customization</h2>
+        <p class="section__text">
+          The platform extends in four directions — each described in the
+          architecture documentation.
+        </p>
+
+        <div class="benefits">
+          <div class="benefit">
+            <div class="benefit__title">Your own surfaces — Public API</div>
+            <div class="benefit__text">
+              An internal portal, another messenger, your own tool — any surface
+              connects through an open HTTP API. Access keys are issued on the
+              "API keys" screen (<span class="chip-url">/admin/api-keys</span>).
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">External AI assistants — MCP</div>
+            <div class="benefit__text">
+              Claude, IDEs, and other MCP clients connect to the company
+              knowledge base as a tool — switched on with a kill switch on the
+              "Platform" screen.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Your own connectors</div>
+            <div class="benefit__text">
+              A non-standard data source connects via the Harvester contract —
+              syncing, scheduling, and monitoring come for free.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Your own AI tools</div>
+            <div class="benefit__text">
+              The tool catalog is open: the next iteration adds connecting MCP
+              servers with tools for agents.
+            </div>
+          </div>
+        </div>
+
+        <div class="arch-ref">
+          How it works:
+          <a href="../architecture/modules/public-api/index.html">Public API</a>
+          <a href="../architecture/modules/mcp/index.html">MCP</a>
+          <a href="../architecture/modules/harvester/index.html">Harvester</a>
+          <a href="../architecture/modules/ai-foundation/index.html">AI Foundation</a>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- CTA                                   -->
+      <!-- ══════════════════════════════════════ -->
+      <footer class="cta">
+        <h2 class="cta__title">Go deeper</h2>
+        <p class="cta__text">
+          Why it's all built this way — in the presentation; how it works under
+          the hood — in the architecture documentation.
+        </p>
+        <div class="cta__actions">
+          <a href="../presentation/presentation.html" class="cta__btn cta__btn--primary">
+            Presentation →
+          </a>
+          <a href="../architecture/architecture-scheme.html" class="cta__btn cta__btn--secondary">
+            Architecture
+          </a>
+          <a href="https://github.com/maestrokj/Achilles" class="cta__btn cta__btn--secondary">
+            GitHub
+          </a>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      // Click-to-copy: URL chips copy on click; shell blocks get a button.
+      function copyText(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+          return navigator.clipboard.writeText(text);
+        }
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand("copy");
+        } finally {
+          document.body.removeChild(ta);
+        }
+        return Promise.resolve();
+      }
+
+      function flash(el, cls) {
+        el.classList.add(cls);
+        clearTimeout(el._copyTimer);
+        el._copyTimer = setTimeout(function () {
+          el.classList.remove(cls);
+        }, 1400);
+      }
+
+      document.querySelectorAll(".chip-url").forEach(function (chip) {
+        chip.title = "Click to copy";
+        chip.addEventListener("click", function () {
+          copyText(chip.textContent.trim()).then(function () {
+            flash(chip, "copied");
+          });
+        });
+      });
+
+      document.querySelectorAll(".codeblock").forEach(function (block) {
+        var text = block.textContent.replace(/^\n+|\s+$/g, "");
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "copy-btn";
+        btn.textContent = "copy";
+        btn.addEventListener("click", function () {
+          copyText(text).then(function () {
+            btn.textContent = "copied ✓";
+            flash(btn, "copied");
+            setTimeout(function () {
+              btn.textContent = "copy";
+            }, 1400);
+          });
+        });
+        block.appendChild(btn);
+      });
+    </script>
+    <script defer src="../architecture/doc-nav.js"></script>
+  </body>
+</html>

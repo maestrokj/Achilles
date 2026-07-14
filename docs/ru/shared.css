@@ -1,0 +1,244 @@
+/* Shared foundation — design tokens, reset, .iter labels.
+   Loaded first by every architecture page; all other sheets layer on top.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #f5efe5;
+  --surface: #fcf9f2;
+  --paper: #fffdf9; /* elevated white for framed content (flow, mockup screens) */
+  --text: #2e2218;
+  --text-dim: #6a5645;
+  --text-muted: #a09080;
+  --border: #e0d5c4;
+  --radius: 14px; /* framed blocks (cards with shadow, lanes, panels) */
+  --radius-md: 10px; /* compact cards and sub-blocks inside a panel */
+
+  --s1: #b84e30;
+  --s1-glow: #d06840;
+  --s2: #886040;
+  --s2-pale: #f0e8de;
+  --s2-glow: #a87858;
+  --s3: #6a8048;
+  --s3-pale: rgba(106, 128, 72, 0.08); /* translucent: tints varying surfaces */
+  --s3-glow: #88a060;
+  --s4: #a05838;
+  --s4-pale: #f0e2d8;
+  --s4-glow: #c07048;
+
+  --accent: #b86030;
+  --accent-muted: #baa898;
+  --dot: #d2c6b6;
+
+  /* Cross-reference color — destination encoded by hue, shared across the two
+     surfaces (inline word + heading badge) so they read as one kind of link:
+     · Module = accent — the most-traveled cross-ref gets the vivid accent
+     · Page   = olive/green (the --s3 Identity green) — stays inside the module
+     · Anchor = dark — a same-page block; rarest, so it stays quiet
+     Inline uses the hue as underlined text, the badge as a fill behind white
+     text. Accent reads as both. Where the fill is too light to read as text
+     (green) the inline value is the badge green darkened for contrast on --bg;
+     anchor has no badge, only the dark inline word. */
+  --link-module-fg: var(--accent);
+  --link-page-fg: #5d7138;
+  --link-anchor-fg: #4d3d2e;
+  --link-module-bg: var(--accent);
+  --link-module-bg-hover: #a0542a;
+  --link-page-bg: #6a8048;
+  --link-page-bg-hover: #788e54;
+
+  /* Accent tints (based on --accent #b86030) */
+  --tint-4: rgba(184, 96, 48, 0.04);
+  --tint-6: rgba(184, 96, 48, 0.06);
+  --tint-8: rgba(184, 96, 48, 0.08);
+  --tint-15: rgba(184, 96, 48, 0.15);
+  --tint-25: rgba(184, 96, 48, 0.25);
+
+  --font:
+    "Rubik", ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+  --mono:
+    ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", Menlo, monospace;
+  --heading-weight: 700;
+  --heading-spacing: -0.02em;
+
+  /* Geometry */
+  --border-w: 3px;
+  --card-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+  --card-shadow-hover: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --link-shadow-hover: 0 6px 24px rgba(0, 0, 0, 0.1);
+  --link-hover-lift: -3px;
+  --card-pad-y: 1.1rem;
+  --card-pad-x: 1.25rem;
+  --grid-gap: 0.85rem;
+  --badge-radius: 9px;
+  --badge-pad-y: 0.45rem;
+  --badge-pad-x: 0.9rem;
+  --pill-radius: 4px;
+  --tag-radius: 5px;
+  --connector-h: 32px;
+  --block-w: 280px;
+}
+
+html {
+  font-size: 15px;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--bg);
+  background-image: radial-gradient(circle, var(--dot) 1px, transparent 1px);
+  background-size: 18px 18px;
+  min-height: 100vh;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Iteration labels (done / v1 / v2) ── */
+.iter {
+  display: inline-flex;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.45rem;
+  border-radius: var(--pill-radius);
+  color: #fff;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+.iter.done {
+  background: var(--accent);
+}
+
+.iter.v1 {
+  background: #2d8a4e;
+}
+
+.iter.v2 {
+  background: var(--text-muted);
+}
+
+/* ── Neural-network marker (.ai-tag) ──
+   Inline tag on a stage / task that runs model inference — embedding,
+   processing, RAG, agent reasoning, a user's chat query — so the AI
+   touchpoints read at a glance, distinct from the config / plumbing around
+   them (provider setup, discovery, cost tracking carry no inference). A
+   static label, not a link; outlined rather than the solid .iter fill so it
+   reads as a different kind of mark. Sparkle glyph + short word. Cross-
+   cutting — used in prose wherever a module names a model-consuming step. */
+.ai-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.16rem 0.42rem 0.16rem 0.34rem;
+  border-radius: var(--pill-radius);
+  color: var(--accent);
+  background: var(--tint-8);
+  border: 1px solid var(--tint-25);
+  margin-left: 0.4rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.ai-tag__icon {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  background: var(--accent);
+  /* four-point sparkle — the AI shimmer */
+  clip-path: polygon(
+    50% 0%,
+    61% 39%,
+    100% 50%,
+    61% 61%,
+    50% 100%,
+    39% 61%,
+    0% 50%,
+    39% 39%
+  );
+}
+
+/* ── Inline doc icon ──
+   Lucide line-art (and monochrome brand glyphs) used inline across the
+   architecture docs in place of the old emoji. em-sized so it tracks the
+   surrounding font-size, currentColor so it inherits the context's colour;
+   vertical-align centres it on the text baseline. One class fits every slot —
+   headings, labels, legends, list markers — without per-context tuning.
+
+   The layout props are !important on purpose: many module sheets carry a
+   diagram rule like `.canvas svg { position:absolute; width:100% }` whose
+   `<container> svg` selector also matches an inline icon nested inside that
+   container (equal specificity, later in the cascade → it would win and blow
+   the icon up to fill the box). The utility must never be overridden by a
+   component's svg sizing, so it forces its own geometry. */
+svg.doc-ico {
+  width: 1em !important;
+  height: 1em !important;
+  position: static !important;
+  inset: auto !important;
+  display: inline-block;
+  vertical-align: -0.14em;
+  flex: none;
+}
+
+/* ── Home link ── back to the landing hub, top-left, fixed on scroll.
+   Markup lives on the branch pages (presentation, vision, get-started);
+   the landing itself omits it. Warm pill, subtle until hovered. */
+.home-link {
+  position: fixed;
+  top: 1.25rem;
+  left: 1.25rem;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  padding: 0.4rem 0.8rem 0.4rem 0.65rem;
+  font-family: var(--font);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-decoration: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+}
+.home-link:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: var(--link-shadow-hover);
+  transform: translateY(-1px);
+}
+.home-link svg {
+  width: 1em;
+  height: 1em;
+  flex: none;
+}
+
+@media (max-width: 700px) {
+  .home-link {
+    top: 0.75rem;
+    left: 0.75rem;
+  }
+}

@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Cache &amp; Workers: queues and workers</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="queues.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Cache &amp; Workers</a>
+        <h1 class="header__title">Queues and workers</h1>
+        <div class="header__sub">cache-workers · workzone</div>
+      </div>
+
+      <p class="desc">
+        The substrate for running background jobs: how traffic is split by load and
+        which processes chew through it. The queue payload lives in
+        <a href="redis-keys.html#instances" class="xref-page">redis-durable</a>;
+        a job's path inside the queue (heartbeat, retries, cleanup) is on the
+        <a href="lifecycle.html#path" class="xref-page">job lifecycle</a>.
+      </p>
+
+      <!-- ═══ Lanes ═══ Grouped by nature of load, not by module: we separate
+           what contends with each other. -->
+      <div class="section" id="lanes">
+        <h2 class="section__title">Three lanes by load</h2>
+        <p class="note">
+          Grouped by the <strong>nature of the job</strong>: we separate what
+          contends with each other — fast from heavy, bulk mailings from
+          transactional mail (so a campaign doesn't delay an invite or a password
+          reset), and agents (which hit the LLM provider's rate limit) apart from
+          live traffic.
+        </p>
+        <div class="lanes">
+          <div class="lane lane--interactive">
+            <div class="lane__h">interactive</div>
+            <div class="lane__t">fast · low latency</div>
+            <ul class="lane__list">
+              <li>Email — invite · reset</li>
+              <li>Notifications — emails · webhooks</li>
+            </ul>
+          </div>
+          <div class="lane lane--background">
+            <div class="lane__h">background</div>
+            <div class="lane__t">heavy and bulky · high concurrency</div>
+            <ul class="lane__list">
+              <li>Harvester — sync</li>
+              <li>KS — embedding · curation · backup</li>
+              <li>Email — bulk mailing</li>
+            </ul>
+          </div>
+          <div class="lane lane--agents">
+            <div class="lane__h">agents</div>
+            <div class="lane__t">own cap on LLM calls</div>
+            <ul class="lane__list">
+              <li>Agent Engine — runs</li>
+              <li><code>agent_max_concurrency</code> separate from chat</li>
+            </ul>
+          </div>
+        </div>
+        <p class="note">
+          The <code>agents</code> lane keeps its own cap on concurrent LLM calls, so
+          background work doesn't eat the provider's rate limit out from under live
+          chat.
+        </p>
+      </div>
+
+      <!-- ═══ Worker topology ═══ One image — several services; the API scales
+           independently. -->
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--worker" id="worker">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__name">Worker topology</span>
+              <span class="stk-layer__role">one image · several services · API scales independently</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Same image, different command</span>
+                </div>
+                <div class="stk-dec__d">
+                  A worker is the same image as the backend with a different
+                  <code>command</code> (<code>saq</code> configured for its lane).
+                  Three worker services with different concurrency; the API is a
+                  separate service.
+                  <ul class="stk-dec__list cw-rules">
+                    <li><b>Load isolation:</b> a heavy run doesn't slow down requests, and one service crashing doesn't take another down.</li>
+                    <li><b>Start at 3, not 1 or 5:</b> merging conflated lanes back together costs more than splitting further later.</li>
+                    <li><b>Split on demand:</b> SAQ supports named queues, so breaking a lane into sub-queues is trivial.</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="wk-grid">
+                <div class="wk-svc wk-svc--api">
+                  <div class="wk-svc__name">api</div>
+                  <div class="wk-svc__d">FastAPI · serves requests · scales on its own</div>
+                </div>
+                <div class="wk-svc">
+                  <div class="wk-svc__name">worker · interactive</div>
+                  <div class="wk-svc__d">low latency · moderate concurrency</div>
+                </div>
+                <div class="wk-svc">
+                  <div class="wk-svc__name">worker · background</div>
+                  <div class="wk-svc__d">high concurrency · heavy jobs</div>
+                </div>
+                <div class="wk-svc">
+                  <div class="wk-svc__name">worker · agents</div>
+                  <div class="wk-svc__d">cap <code>agent_max_concurrency</code></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Queue registry ═══ queue → lane → consumer → nature. -->
+      <div class="section" id="registry">
+        <h2 class="section__title">Queue registry</h2>
+        <table class="reg">
+          <thead>
+            <tr>
+              <th>Queue</th>
+              <th>Lane</th>
+              <th>Consumer</th>
+              <th>Nature of jobs</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="reg__q">Harvester sync</td>
+              <td><span class="lane-pill lane-pill--background">background</span></td>
+              <td class="reg__c"><a class="xref-module" href="../../harvester/_workzone/sync-modes.html">Harvester</a></td>
+              <td>full · incremental · partial-resync · dlq-retry · reconcile · health</td>
+            </tr>
+            <tr>
+              <td class="reg__q">Email · transactional</td>
+              <td><span class="lane-pill lane-pill--interactive">interactive</span></td>
+              <td class="reg__c"><a class="xref-module" href="../../email/_workzone/delivery.html#modes">Email</a></td>
+              <td>invite · reset <span class="reg__note">(test email — inline, bypasses the queue)</span></td>
+            </tr>
+            <tr>
+              <td class="reg__q">Email · bulk mailing</td>
+              <td><span class="lane-pill lane-pill--background">background</span></td>
+              <td class="reg__c">Email</td>
+              <td>bulk campaigns — by volume, not weight; separated so they don't crowd out transactional mail</td>
+            </tr>
+            <tr>
+              <td class="reg__q">KS background runs</td>
+              <td><span class="lane-pill lane-pill--background">background</span></td>
+              <td class="reg__c"><a class="xref-module" href="../../knowledge-store/_workzone/embedding-runtime.html#contention">Knowledge Store</a></td>
+              <td>ingest · re-embedding · graph curation · backup — bounded concurrency <span class="reg__note">(online search calls the runtime directly, bypassing the queue)</span></td>
+            </tr>
+            <tr>
+              <td class="reg__q">Agent runs</td>
+              <td><span class="lane-pill lane-pill--agents">agents</span></td>
+              <td class="reg__c"><a class="xref-module" href="../../agent-engine/_workzone/execution.html#lane">Agent Engine</a></td>
+              <td>runs under the cap on concurrent LLM calls</td>
+            </tr>
+            <tr>
+              <td class="reg__q">Notifications · external delivery</td>
+              <td><span class="lane-pill lane-pill--interactive">interactive</span></td>
+              <td class="reg__c"><a class="xref-module" href="../../notifications/_workzone/dispatcher.html#fanout">Notifications</a></td>
+              <td>email + webhook POST <span class="reg__note">(in-app is written synchronously to Postgres, bypassing the broker)</span></td>
+            </tr>
+            <tr>
+              <td class="reg__q">Slack bot · inbound</td>
+              <td><span class="lane-pill lane-pill--interactive">interactive</span></td>
+              <td class="reg__c"><a class="xref-module" href="../../slack/index.html#delivery">Slack</a></td>
+              <td>DM event → Query Engine → post back to the thread <span class="reg__note">(ack&lt;3s on receipt, dedup by <code>event_id</code>)</span></td>
+            </tr>
+            <tr>
+              <td class="reg__q">Telegram bot · inbound</td>
+              <td><span class="lane-pill lane-pill--interactive">interactive</span></td>
+              <td class="reg__c"><a class="xref-module" href="../../telegram/index.html#delivery">Telegram</a></td>
+              <td>DM update → Query Engine → reply as a message <span class="reg__note">(received by webhook, dedup by <code>update_id</code>)</span></td>
+            </tr>
+            <tr>
+              <td class="reg__q">Mattermost bot · inbound</td>
+              <td><span class="lane-pill lane-pill--interactive">interactive</span></td>
+              <td class="reg__c"><a class="xref-module" href="../../mattermost/index.html#delivery">Mattermost</a></td>
+              <td>DM post → Query Engine → reply in the thread <span class="reg__note">(no webhook — enqueued by the scheduler's WebSocket listener, dedup by post id)</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <ul class="notes reg-notes">
+          <li class="note">
+            <strong>Enqueue is idempotent by <code>job_id</code></strong> —
+            a repeat call spawns no duplicate; the mechanics are on
+            <a href="lifecycle.html#uniqueness" class="xref-page">job uniqueness</a>.
+          </li>
+          <li class="note">
+            <strong><code>pub/sub</code> — the push-notification signal</strong>:
+            a new feed row fans out across the api replicas, and the notification
+            bell updates instantly. The channel is ephemeral
+            (<a href="redis-keys.html#instances" class="xref-page">redis-cache</a>);
+            the source of truth is Postgres, and polling stays a background top-up.
+          </li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Web App: Стек и чат-оболочка</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../swimlane.css" />
+    <link rel="stylesheet" href="stack.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Web App</a>
+        <h1 class="header__title">Стек и чат-оболочка</h1>
+        <div class="header__sub">web app · workzone</div>
+      </div>
+
+      <!-- ════════════ ДОРОЖКА: FRONTEND ════════════ -->
+      <div class="swl-lane swl-lane--fe">
+        <div class="swl-lane__rail">
+          <span class="swl-lane__tag">Frontend</span>
+        </div>
+        <div class="swl-lane__body">
+          <!-- col: stack -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg> стек — библиотеки</div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Каркас и рендер</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill swl-pill--std" data-tip="UI-библиотека — компонентный рендер">React</span>
+                <span class="swl-pill swl-pill--std" data-tip="сборщик и dev-сервер">Vite</span>
+                <span class="swl-pill" data-tip="типобезопасность всего фронтенда">TypeScript</span>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Стиль и компоненты</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill swl-pill--std" data-tip="utility-CSS, тёмная и светлая темы через токены shadcn">Tailwind CSS</span>
+                <span class="swl-pill" data-tip="компоненты shadcn/ui поверх Base UI (@base-ui/react)">shadcn/ui · Base UI</span>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Данные и состояние</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill swl-pill--std" data-tip="кэш серверного состояния, рефетч, keep-previous для списков">TanStack Query</span>
+                <span class="swl-pill" data-tip="два SSE-канала: стрим ответа Query Engine и push-уведомления колокольчика — отдельный от чат-адаптера">SSE-клиент</span>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">i18n и маршрутизация</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="переводы UI, типизированные ключи, locales ru · en">react-i18next</span>
+                <span class="swl-pill" data-tip="client-side routing — /chat · /account; планируется, ещё не установлен">client routing</span>
+                <a class="xref-badge" href="../../auth-security/_workzone/routing.html#routes">→ Auth / Security</a>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Чат-оболочка</span>
+                <a class="xref-anchor" href="#shell">↓ ниже</a>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill swl-pill--ours" data-tip="готовая React-библиотека чата для LLM — тред, композер, стриминг">assistant-ui</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- col: structure -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head">
+              <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.55l-.42-.85a1 1 0 0 0-.92-.6H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M3 5a2 2 0 0 0 2 2h3" /><path d="M3 3v13a2 2 0 0 0 2 2h3" /></svg> структура — файлы · <code>frontend/src/</code>
+            </div>
+<pre class="file-tree">
+frontend/src/
+├── routes/      <span class="dim">страницы под роутами — /chat · /account</span>
+├── components/  <span class="dim">UI-примитивы — shadcn на Base UI</span>
+├── features/    <span class="dim">chat — обёртка assistant-ui + наш слой</span>
+├── i18n/        <span class="dim">locales — ru · en</span>
+└── lib/         <span class="dim">API-клиент · SSE-адаптер · хелперы</span>
+</pre>
+
+            <details class="swl-note">
+              <summary>Почему тонкий клиент</summary>
+              <div class="swl-note__body">
+                Тяжёлую логику диалога — ход беседы, retrieval, grounding — ведёт
+                <a href="../../query-engine/index.html" class="xref-module">Query Engine</a>,
+                единый API на все surface'ы; за Web App остаётся управление
+                беседами (список, retention) и отрисовка. Фронтенд принимает один
+                <code>SSE</code>-поток ответа и одну схему диалога — и рисует их в
+                оболочке.
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════ ЧАТ-ОБОЛОЧКА: готовая библиотека ════════════
+           Ключевое решение фронтенд-слоя: чат не пишем с нуля. Тред, история,
+           стриминг и «новый диалог» — зрелая библиотека; наш домен живёт ВНУТРИ
+           её треда кастомными компонентами. Блок полноширинный, #shell — цель
+           ссылок с макетов чата. -->
+      <div class="section" id="shell-section">
+        <div class="section__title">
+          Чат-оболочка surface'а — готовая
+        </div>
+        <div class="swl-grp swl-grp--shell" id="shell">
+          <div class="swl-grp__head">
+            <span class="swl-grp__label"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z" /></svg> assistant-ui</span>
+            <span class="swl-pill" data-tip="React-библиотека чата для LLM · MIT · headless-примитивы · стриминг из коробки">MIT · headless</span>
+          </div>
+          <p class="swl-shell__lead">
+            Web-surface не пишет чат с нуля: тред, история, стриминг и «новый
+            диалог» — зрелая библиотека. Наш домен — кастомные компоненты
+            <strong>внутри</strong> её треда и тонкий слой управления беседами
+            <strong>вокруг</strong>, не переписанная оболочка.
+          </p>
+          <div class="swl-shell__split">
+            <div class="swl-shell__half">
+              <span class="swl-shell__cap">от библиотеки</span>
+              <div class="swl-grp__pills">
+                <span class="swl-pill">тред</span>
+                <span class="swl-pill">композер</span>
+                <span class="swl-pill">история</span>
+                <span class="swl-pill">стриминг</span>
+                <span class="swl-pill">новый диалог</span>
+                <span class="swl-pill">авто-скролл</span>
+                <span class="swl-pill">markdown</span>
+                <span class="swl-pill">a11y</span>
+              </div>
+            </div>
+            <div class="swl-shell__half">
+              <span class="swl-shell__cap">наше — внутри треда</span>
+              <div class="swl-grp__pills">
+                <span class="swl-pill swl-pill--ours" data-tip="цитата на уровне записи — карточки источников под ответом">источники [n]</span>
+                <span class="swl-pill swl-pill--ours" data-tip="из источников · не нашёл · нет доступа · access-hint (есть скрытое) · разговорный — состояния заземления">grounding-состояния</span>
+                <span class="swl-pill swl-pill--ours" data-tip="лёгкая оценка ответа · сигнал качества">фидбэк <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" /><path d="M7 10v12" /></svg>/<svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z" /><path d="M17 14V2" /></svg></span>
+              </div>
+            </div>
+            <div class="swl-shell__half">
+              <span class="swl-shell__cap">наше — вокруг треда</span>
+              <div class="swl-grp__pills">
+                <span class="swl-pill swl-pill--ours" data-tip="список бесед, переименование, удаление — поверх conversation-API Query Engine">управление беседами</span>
+                <span class="swl-pill swl-pill--ours" data-tip="срок хранения бесед — политика на стороне surface">retention</span>
+                <span class="swl-pill swl-pill--ours" data-tip="что считать новой беседой, решает surface — не библиотека">семантика «нового чата»</span>
+              </div>
+            </div>
+          </div>
+          <details class="swl-note">
+            <summary>Два стыка интеграции</summary>
+            <div class="swl-note__body">
+              <strong>SSE → адаптер.</strong> Поток
+              <a href="../../query-engine/index.html" class="xref-module">Query Engine</a>
+              (<code>StreamingResponse · SSE</code>) принимает
+              <code>ChatModelAdapter</code> на клиенте — библиотека не диктует
+              бэкенд, ключи к LLM остаются у нас.<br />
+              <strong>Скин — наш.</strong> Берём headless-примитивы и красим
+              своими shadcn-токенами на <code>@base-ui/react</code>, не готовой
+              Radix-темой библиотеки: вид в house-style, второй набор примитивов
+              не тянем.
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Harvester: Reliability</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="reliability.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Harvester</a>
+        <h1 class="header__title">Reliability</h1>
+        <div class="header__sub">harvester · workzone</div>
+      </div>
+
+      <p class="desc">
+        What happens on failures and at high volume: the module does not lose
+        data and survives crashes. Any sync is a
+        <strong>background job on SAQ over Redis</strong>, not a request within
+        an HTTP session. The administrator starts a sync and can close the tab:
+        no connection needs to be held, breaking the session does not stop the
+        work — the run is carried by a worker. What follows is the resilience
+        path of a single run:
+        <a href="#sync-run" class="xref-anchor">SyncRun</a>
+        <span class="rl-arrow">→</span>
+        <a href="#checkpoint" class="xref-anchor">checkpoint</a>
+        <span class="rl-arrow">→</span>
+        <a href="#retry" class="xref-anchor">retries</a>
+        <span class="rl-arrow">→</span>
+        <a href="#dlq" class="xref-anchor">DLQ</a>
+        <span class="rl-arrow">→</span>
+        <a href="#visibility" class="xref-anchor">visibility</a>. The modes
+        themselves that drive these runs are on the
+        <a href="sync-modes.html" class="xref-page">sync modes</a> page.
+      </p>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ════════ SYNC-RUN ════════ -->
+          <div class="stk-layer stk-layer--run" id="sync-run">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">SyncRun — run state</span>
+              <span class="stk-layer__role"
+                >One record per run.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">The entity of a single run</span>
+                </div>
+                <div class="stk-dec__d">
+                  Every sync launch creates a <code>SyncRun</code> — the single
+                  source of truth for how the work is going. It holds the state
+                  (<code>queued</code> / <code>running</code> /
+                  <code>succeeded</code> / <code>failed</code> /
+                  <code>cancelled</code>), the
+                  “N of M processed” progress, the current checkpoint, the
+                  worker's heartbeat, and accumulated errors. The UI computes
+                  nothing itself: it reads the <code>SyncRun</code> and renders
+                  progress and outcome from it.
+                </div>
+              </div>
+              <div class="rl-meters">
+                <div class="rl-meter">
+                  <span class="rl-meter__k">progress</span>
+                  <span class="rl-meter__v">N / M</span>
+                </div>
+                <div class="rl-meter">
+                  <span class="rl-meter__k">checkpoint</span>
+                  <span class="rl-meter__v">cursor</span>
+                </div>
+                <div class="rl-meter">
+                  <span class="rl-meter__k">heartbeat</span>
+                  <span class="rl-meter__v">alive&nbsp;at</span>
+                </div>
+                <div class="rl-meter rl-meter--err">
+                  <span class="rl-meter__k">errors</span>
+                  <span class="rl-meter__v">K&nbsp;in&nbsp;DLQ</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ CHECKPOINT ════════ -->
+          <div class="stk-layer stk-layer--checkpoint" id="checkpoint">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Checkpoint and resume</span>
+              <span class="stk-layer__role"
+                >Large volume syncs in parts.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Page by page, with resumption</span>
+                </div>
+                <div class="stk-dec__d">
+                  A source with hundreds of thousands of entities is pulled page
+                  by page, and after each batch the run records its position — a
+                  checkpoint. An interrupted run resumes from the last
+                  checkpoint, not from scratch: already-processed work is not
+                  redone. A page not written through to a checkpoint at the moment
+                  of the crash is re-processed by resume — without duplicates,
+                  because the write to storage is idempotent
+                  (<a href="pipeline.html#load" class="xref-page"
+                    >Load</a
+                  >).
+                  The cursor and page-fetch mechanics themselves come from
+                  <a href="sources.html#fetch" class="xref-page">sources</a>;
+                  here we cover only how the run leans on them to survive
+                  volume.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Heartbeat: worker crash and restart</span>
+                </div>
+                <div class="stk-dec__d">
+                  While a worker is active, it updates the heartbeat in
+                  <code>SyncRun</code>. A stopped heartbeat means the worker has
+                  died (pod restart, container recreation): the run is picked back
+                  up and continues from the last checkpoint. The heartbeat
+                  interval is 30&nbsp;s, and silence is counted as a crash after
+                  three missed beats (90&nbsp;s): enough to ride out a GC pause or
+                  a brief pod restart, while a stuck run is reclaimed within a
+                  minute or two. Both values are fixed worker constants, not a
+                  source setting. A worker crash turns into a pause, not a loss.
+                  The heartbeat beats from a separate coroutine, independent of
+                  the <a href="#retry" class="xref-anchor">retry</a> stack:
+                  otherwise a long pause inside an attempt would look like the
+                  worker dying and trigger a false restart. A short backoff
+                  (60&nbsp;s cap) is safe — it stays below the 90&nbsp;s silence
+                  threshold; long pauses do not hold the worker at all, they go
+                  into deferred re-enqueue.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Resume — on a freshness budget, not forever</span>
+                </div>
+                <div class="stk-dec__d">
+                  Resume undoes the effect of a crash, it does not replace a full
+                  run: continuing from a checkpoint makes sense while the gap is
+                  short. If the break exceeds the checkpoint's freshness budget
+                  (6&nbsp;hours — a fixed module constant, not a source setting),
+                  the cursor and the source catalog have time to go stale and
+                  objects to disappear: the checkpoint is discarded and the run
+                  restarts from scratch. Auto-resume applies only to a crash (a
+                  stopped heartbeat): a run cancelled by an administrator
+                  (<code>cancelled</code>) is terminal, its checkpoint is not
+                  resumed — the next run starts from scratch. This way a
+                  day-long source pause does not lead to loading a stale
+                  selection. Resume applies only to a connector's incremental run
+                  whose stream is globally ordered by modification time (a
+                  manifest flag): with an unordered stream a watermark does not
+                  guarantee everything earlier has been processed. Reconciliation
+                  and a targeted DLQ retry do not resume and do not move the
+                  cursor — their selection does not reflect the stream frontier.
+                </div>
+              </div>
+              <div class="rl-scenarios">
+                <div class="rl-scenario rl-scenario--resume">
+                  <div class="rl-scenario__cap">
+                    <span class="rl-scenario__badge">crash · within budget</span>
+                    <span class="rl-scenario__lbl"
+                      >run continues from the last checkpoint</span
+                    >
+                  </div>
+                  <div class="rl-tl">
+                    <span class="rl-tl__step">page 1</span>
+                    <span class="rl-tl__step">page 2</span>
+                    <span class="rl-tl__step rl-tl__step--cut">✗ crash</span>
+                    <span class="rl-tl__step rl-tl__step--from">↻ resume</span>
+                    <span class="rl-tl__step">page 3</span>
+                    <span class="rl-tl__step">…</span>
+                  </div>
+                </div>
+                <div class="rl-scenario rl-scenario--expired">
+                  <div class="rl-scenario__cap">
+                    <span class="rl-scenario__badge">crash · budget expired</span>
+                    <span class="rl-scenario__lbl"
+                      >checkpoint discarded, run from scratch</span
+                    >
+                  </div>
+                  <div class="rl-tl">
+                    <span class="rl-tl__step">page 1</span>
+                    <span class="rl-tl__step">page 2</span>
+                    <span class="rl-tl__step rl-tl__step--cut">✗ crash</span>
+                    <span class="rl-tl__step rl-tl__step--wait"
+                      >⏳ budget expired</span
+                    >
+                    <span class="rl-tl__step rl-tl__step--restart"
+                      >↺ from scratch</span
+                    >
+                    <span class="rl-tl__step">page 1</span>
+                    <span class="rl-tl__step">…</span>
+                  </div>
+                </div>
+                <div class="rl-scenario rl-scenario--cancelled">
+                  <div class="rl-scenario__cap">
+                    <span class="rl-scenario__badge">cancelled · admin</span>
+                    <span class="rl-scenario__lbl"
+                      >run is terminal, next one starts from scratch</span
+                    >
+                  </div>
+                  <div class="rl-tl">
+                    <span class="rl-tl__step">page 1</span>
+                    <span class="rl-tl__step">page 2</span>
+                    <span class="rl-tl__step rl-tl__step--stop"
+                      ><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M4.929 4.929 19.07 19.071" /></svg> cancelled</span
+                    >
+                    <span class="rl-tl__brk">new run</span>
+                    <span class="rl-tl__step">page 1</span>
+                    <span class="rl-tl__step">…</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ RETRY ════════ -->
+          <div class="stk-layer stk-layer--retry" id="retry">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Retries with backoff</span>
+              <span class="stk-layer__role"
+                >Transient source failure.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Retry with a growing pause</span>
+                </div>
+                <div class="stk-dec__d">
+                  A network drop, a timeout, a <code>429</code> or <code>5xx</code>
+                  from the source API — a reason to retry, not to fail. The
+                  request is retried with backoff: the pause between attempts
+                  grows, so as not to overload the source and to wait out a spike.
+                  After the attempts are exhausted, the item is not lost — it moves
+                  further along the path, into the
+                  <a href="#dlq" class="xref-anchor">DLQ</a>.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">What to retry, what goes straight to the DLQ — by error class</span>
+                </div>
+                <div class="stk-dec__d">
+                  The “retry or defer” decision depends on the
+                  <strong>error class</strong>, not the specific code.
+                  <strong>Transient</strong> errors (they pass on their own: a
+                  load spike, brief unavailability) — are retried.
+                  <strong>Permanent</strong> ones (a retry is pointless: the
+                  request is invalid, no permission, no object, the data does not
+                  normalize) — go to the <a href="#dlq" class="xref-anchor">DLQ</a>
+                  without attempts. This is not tied to HTTP: the classification is
+                  a layer above the protocol, so sources of a different nature
+                  (S3, a database, file shares, mail — with no HTTP codes) fit the
+                  same mechanism without reworking the core. The connector declares
+                  its error classifier, the core applies a single retry/DLQ cycle.
+                </div>
+              </div>
+
+              <div class="rl-class">
+                <div class="rl-class__col rl-class__col--retry">
+                  <span class="rl-class__hd">transient → retry</span>
+                  <span class="rl-class__codes"
+                    ><code>429</code> · <code>500</code> · <code>502</code> ·
+                    <code>503</code> · <code>504</code> · <code>408</code> ·
+                    network timeouts and drops</span
+                  >
+                </div>
+                <div class="rl-class__col rl-class__col--dlq">
+                  <span class="rl-class__hd">permanent → straight to DLQ</span>
+                  <span class="rl-class__codes"
+                    ><code>400</code> · <code>401</code> · <code>404</code> ·
+                    <code>422</code> · normalization and validation errors</span
+                  >
+                </div>
+              </div>
+
+              <div class="decision-box">
+                <strong>The HTTP mapping is only a default.</strong> The code
+                table above is the standard “code → class” mapping for HTTP
+                sources, which the connector may <strong>override</strong>: a code
+                that means different things across APIs is classified by the
+                behaviour of the specific source, not by the letter of the
+                protocol. Example — <code>403</code> on GitHub/GitLab: more often
+                a rate limit than an access denial, so before sending to the DLQ
+                the connector checks
+                <code>Retry-After</code> / <code>X-RateLimit-Remaining</code> and
+                treats such a <code>403</code> as transient.
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Backoff parameters</span>
+                </div>
+                <div class="stk-dec__d">
+                  Attempts per HTTP page — 5 (the first&nbsp;+ 4 retries),
+                  in-memory within the worker job. The pause is exponential with
+                  full&nbsp;jitter: base 1&nbsp;s, factor ×2, cap
+                  60&nbsp;s. The cap is deliberately set <strong>below</strong> the
+                  heartbeat silence threshold (90&nbsp;s), so a short retry never
+                  looks like the worker dying. All four are fixed worker
+                  constants, not a source setting.
+                </div>
+              </div>
+
+              <div class="rl-meters rl-meters--bo">
+                <div class="rl-meter">
+                  <span class="rl-meter__k">attempts</span>
+                  <span class="rl-meter__v">5 (1&nbsp;+&nbsp;4)</span>
+                </div>
+                <div class="rl-meter">
+                  <span class="rl-meter__k">base</span>
+                  <span class="rl-meter__v">1&nbsp;s</span>
+                </div>
+                <div class="rl-meter">
+                  <span class="rl-meter__k">factor</span>
+                  <span class="rl-meter__v">×2</span>
+                </div>
+                <div class="rl-meter">
+                  <span class="rl-meter__k">cap</span>
+                  <span class="rl-meter__v">60&nbsp;s</span>
+                </div>
+                <div class="rl-meter">
+                  <span class="rl-meter__k">jitter</span>
+                  <span class="rl-meter__v">full</span>
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Two levels of retries: memory versus queue</span>
+                </div>
+                <div class="stk-dec__d">
+                  Short delays (≤&nbsp;the 60&nbsp;s cap) are an
+                  <strong>in-memory</strong> retry of the page right in the job: it
+                  heals a transient failure without losing the run's progress. Long
+                  pauses (minutes to hours: a large <code>Retry-After</code>, a
+                  degraded source) the worker does <strong>not sleep off</strong> —
+                  it re-enqueues the job (SAQ defer / re-enqueue) and frees the
+                  slot. This is how the
+                  <a href="#checkpoint" class="xref-anchor">checkpoint freshness
+                  budget</a>
+                  (6&nbsp;hours) is realized through deferred re-enqueue, not by
+                  holding a worker on <code>sleep</code>. If the source sent a
+                  <code>Retry-After</code>, it
+                  <strong>overrides</strong> the computed backoff.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ DLQ ════════ -->
+          <div class="stk-layer stk-layer--dlq" id="dlq">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">4</span>
+              <span class="stk-layer__name">Dead Letter Queue</span>
+              <span class="stk-layer__role"
+                >A single failed item.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Partial failure, not all-or-nothing</span>
+                </div>
+                <div class="stk-dec__d">
+                  An item that could not be processed even after retries is set
+                  aside in the DLQ together with its reason — and the run carries
+                  on with the rest. This is a partial-failure strategy: a thousand
+                  entities loaded, three failed ones sit in the triage queue. The
+                  run then terminates as <code>succeeded</code> with
+                  <code>error_count&nbsp;&gt;&nbsp;0</code> — finished
+                  successfully, but not flawlessly: the error count separates a
+                  partial failure from a total one (<code>failed</code>). The DLQ
+                  is the durable table
+                  <a href="data-model.html#dead-letters-table" class="xref-page"
+                    ><code>dead_letters</code></a
+                  >
+                  in Postgres, not ephemeral run state: the backoff retries above
+                  live in the worker job's memory and are measured in seconds,
+                  while a failed item awaits manual triage and survives a worker
+                  restart.
+                </div>
+              </div>
+              <div class="rl-split">
+                <div class="rl-split__lane rl-split__lane--ok">
+                  processed <span class="rl-arrow">→</span> storage
+                </div>
+                <div class="rl-split__lane rl-split__lane--dlq">
+                  failed <span class="rl-arrow">→</span> <code>DLQ</code>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ VISIBILITY ════════ -->
+          <div class="stk-layer stk-layer--visibility" id="visibility">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">5</span>
+              <span class="stk-layer__name">Failure visibility</span>
+              <span class="stk-layer__role"
+                >A failure is visible, understandable, and fixable.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Run status</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>SyncRun</code> shows “N/M processed, K in DLQ” — it reveals
+                  both the progress and the outcome of any run.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Failure notification</span>
+                </div>
+                <div class="stk-dec__d">
+                  A failed run raises a notification — the admin learns of the
+                  failure without opening the panel. The delivery channel (in-app,
+                  by email) is chosen by the
+                  <a
+                    href="../../admin-panel/_wireframes/notifications.html#routing"
+                    class="xref-module"
+                    >notification system</a
+                  >, not by Harvester.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Re-run</span>
+                </div>
+                <div class="stk-dec__d">
+                  “Retry failed” launches a
+                  <a href="sync-modes.html#dlq-retry" class="xref-page"
+                    >manual incremental run</a
+                  >
+                  scoped to the queue (dlq retry) — after the source or
+                  permissions are fixed, they need not be collected anew. Processed
+                  ones leave the DLQ, failed ones again await the next triage; the
+                  fields and lifecycle are held by
+                  <a href="data-model.html#dead-letters-table" class="xref-page"
+                    >the data model</a
+                  >.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Where this is viewed</span>
+                </div>
+                <div class="stk-dec__d">
+                  <a
+                    href="../../admin-panel/_wireframes/harvester.html#sync-overview"
+                    class="xref-module"
+                    >The sync monitoring screen</a
+                  >
+                  and
+                  <a
+                    href="../../admin-panel/_wireframes/harvester.html#sync-errors"
+                    class="xref-module"
+                    >the failed-item triage</a
+                  >
+                  live in the Admin Panel — Harvester only supplies the
+                  <code>SyncRun</code> data here.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="worker">
+        <ul class="notes">
+          <li class="note">
+            <strong>Where the worker is deployed:</strong> the SAQ sync worker
+            runs not inside the backend container, but in the platform's shared
+            <a href="../../cache-workers/_workzone/queues.html#worker" class="xref-module"
+              >worker container</a
+            >
+            — the same one that drains background Email sending. The worker
+            topology is owned by the queue owner; Harvester only produces jobs
+            here. This is a deployment matter, not a module-design one.
+          </li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Email: Test cases</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Email</a>
+        <h1 class="header__title">Test cases</h1>
+        <div class="header__sub">email · workzone</div>
+      </div>
+
+      <!-- ── Overview band: decisions + stack ── -->
+      <div class="test-overview">
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Decisions made</div>
+          <div class="decision-box">
+            <strong>SMTP is mocked</strong>
+            No mail is actually sent. We check that the email is assembled
+            correctly (address, subject, link, language,
+            <code>multipart/alternative</code>) and that <code>send</code> was
+            called. The same approach is already used in the auth tests.
+          </div>
+          <div class="decision-box">
+            <strong>SAQ task — call the handler directly</strong>
+            Without spinning up a worker: we test the task's logic (compose +
+            send, retries, marking as “not delivered”), not the queue
+            infrastructure.
+          </div>
+        </div>
+
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Stack and infrastructure</div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Already have <span class="iter done">done</span></span>
+            <span>pytest, pytest-asyncio, pytest-cov, httpx</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">To add</span>
+            <span
+              >testcontainers (PostgreSQL), an SMTP mock (stubbing
+              <code>aiosmtplib</code>), time-machine (link TTLs and timeouts)</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Test DB</span>
+            <span
+              >singleton <code>smtp_settings</code> — a real row in the test DB,
+              per-test rollback</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Markers</span>
+            <span
+              ><code>@pytest.mark.unit</code>, <code>@pytest.mark.integration</code> —
+              filter by type</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Unit ═══ No DB or SMTP — pure email assembly, language selection,
+           readiness predicate. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--unit">Unit</span>
+        <span class="test-sec__title">No DB or SMTP — email assembly, languages, readiness</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" /></svg></span><span class="name">test_compose.py</span></div>
+            <div class="test-card__sub">compose — template + data + language → finished email</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="delivery.html#service">→ Service interface</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">invite</span><span class="test-case__e">subject — inviter's name + product; body has the role, link, “48 hours”</span></div>
+              <div class="test-case"><span class="test-case__k">reset</span><span class="test-case__e">subject, body, link, “1 hour” text</span></div>
+              <div class="test-case"><span class="test-case__k">test</span><span class="test-case__e">confirmation subject and body — no button, no link</span></div>
+              <div class="test-case"><span class="test-case__k">multipart/alternative</span><span class="test-case__e">HTML part AND text part — both present</span></div>
+              <div class="test-case"><span class="test-case__k">link twice</span><span class="test-case__e">action button + the same link as plain text below</span></div>
+              <div class="test-case"><span class="test-case__k">text part — plain</span><span class="test-case__e">no HTML tags, link is readable</span></div>
+              <div class="test-case"><span class="test-case__k">From header</span><span class="test-case__e"><code>from_address</code> → display-name + address (RFC 5322)</span></div>
+              <div class="test-case"><span class="test-case__k">missing var → reject</span><span class="test-case__e">no data for a key → render error, not an empty substitution</span></div>
+              <div class="test-case"><span class="test-case__k">HTML escaping</span><span class="test-case__e">inviter name with <code>&lt;</code>, <code>&amp;</code> is escaped in the HTML part (injection)</span></div>
+              <div class="test-case"><span class="test-case__k">typed keys</span><span class="test-case__e">unknown key → error, not a placeholder string in code</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg></span><span class="name">test_i18n.py</span></div>
+            <div class="test-card__sub">Email language selection RU / EN</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="templates.html#i18n">→ Languages RU / EN</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">reset → recipient</span><span class="test-case__e">language from the recipient's profile</span></div>
+              <div class="test-case"><span class="test-case__k">test → recipient</span><span class="test-case__e">language from the admin's profile</span></div>
+              <div class="test-case"><span class="test-case__k">invite → org default</span><span class="test-case__e">organization's language (the invitee isn't in the system yet)</span></div>
+              <div class="test-case"><span class="test-case__k">untranslated language</span><span class="test-case__e">unsupported → fall back to the default</span></div>
+              <div class="test-case"><span class="test-case__k">key parity</span><span class="test-case__e">RU and EN — one set of keys, not a single gap</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg></span><span class="name">test_availability.py</span></div>
+            <div class="test-card__sub">Transport readiness — <code>is_available()</code> + secret</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#availability">→ Optionality and resilience</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">available → true</span><span class="test-case__e"><code>is_enabled</code> + host + port + from_address all set</span></div>
+              <div class="test-case"><span class="test-case__k">disabled → false</span><span class="test-case__e"><code>is_enabled=false</code> even with the fields filled in</span></div>
+              <div class="test-case"><span class="test-case__k">required missing → false</span><span class="test-case__e">NULL in host / port / from_address — each one</span></div>
+              <div class="test-case"><span class="test-case__k">last_test_ok=false — advisory</span><span class="test-case__e">does NOT affect <code>is_available</code> (not a gate)</span></div>
+              <div class="test-case"><span class="test-case__k">last_test_ok=NULL</span><span class="test-case__e">“not tested” ≠ “broken” — does not block</span></div>
+              <div class="test-case"><span class="test-case__k">password never leaves</span><span class="test-case__e">serialization → only a “set / not set” flag, no <code>password_enc</code> and no plaintext password</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P0 ═══ Heart of the module — the two delivery paths. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p0">Integration · P0</span>
+        <span class="test-sec__title">Delivery — two modes</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></svg></span><span class="name">test_send_inline.py</span></div>
+            <div class="test-card__sub">Inline send — test email, verdict right away</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="delivery.html#modes">→ Inline or queue</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">success</span><span class="test-case__e"><code>send</code> called, verdict OK, <code>last_test_ok=true</code> + <code>last_test_at</code></span></div>
+              <div class="test-case"><span class="test-case__k">SMTP failure</span><span class="test-case__e">typed error bubbles up, <code>last_test_ok=false</code>, <code>last_test_at</code> recorded</span></div>
+              <div class="test-case"><span class="test-case__k">timeout</span><span class="test-case__e">fail verdict within the timeout, the request doesn't hang</span></div>
+              <div class="test-case"><span class="test-case__k">email assembled correctly</span><span class="test-case__e">recipient = current admin, test subject, no link</span></div>
+              <div class="test-case"><span class="test-case__k">password decrypted in send</span><span class="test-case__e">spy: crypto core <code>decrypt</code> is called at send time; the plaintext password goes to SMTP auth, not to the DB / log</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" /></svg></span><span class="name">test_queue_task.py</span></div>
+            <div class="test-card__sub">SAQ queue — task handler directly</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="delivery.html#modes">→ Inline or queue</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">handler: compose + send</span><span class="test-case__e">email assembled (address, subject, link, language), <code>send</code> called</span></div>
+              <div class="test-case"><span class="test-case__k">enqueue → instant response</span><span class="test-case__e">task is queued, the consumer responds immediately, without waiting for delivery</span></div>
+              <div class="test-case"><span class="test-case__k">idempotency</span><span class="test-case__e">re-enqueue with the same <code>job_id</code> → one task, the email isn't duplicated</span></div>
+              <div class="test-case"><span class="test-case__k">consumer doesn't batch</span><span class="test-case__e">N emails = N tasks; splitting into batches is the worker's concern</span></div>
+              <div class="test-case"><span class="test-case__k">successful delivery</span><span class="test-case__e">task completed, retries never ran</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P1 ═══ Failures, disclosure safety, rate. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">Integration · P1</span>
+        <span class="test-sec__title">Delivery errors, anti-enumeration, rate</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg></span><span class="name">test_delivery_errors.py</span></div>
+            <div class="test-card__sub">Error taxonomy — 4xx vs 5xx, retries, “not delivered”</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="delivery.html#errors">→ Delivery errors</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">4xx / network → retry</span><span class="test-case__e">transient failure → retry with exponential backoff</span></div>
+              <div class="test-case"><span class="test-case__k">5xx → no retries</span><span class="test-case__e">invalid address, mailbox rejected → straight to “not delivered”</span></div>
+              <div class="test-case"><span class="test-case__k">retries exhausted</span><span class="test-case__e">task in “not delivered”, status visible to the consumer</span></div>
+              <div class="test-case"><span class="test-case__k">invite status</span><span class="test-case__e">a failed invite delivery is reflected on the admission model</span></div>
+              <div class="test-case"><span class="test-case__k">backoff grows</span><span class="test-case__e">the delay between attempts increases, ≤ the ceiling</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></svg></span><span class="name">test_reset_anti_enum.py</span></div>
+            <div class="test-card__sub">Password reset — a delivery failure isn't disclosed</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="delivery.html#errors">→ Delivery errors</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">failure → swallowed</span><span class="test-case__e">a failed reset delivery is NOT propagated upward</span></div>
+              <div class="test-case"><span class="test-case__k">uniform response</span><span class="test-case__e">the outcome is indistinguishable from success — anti-enumeration (mechanics in Auth)</span></div>
+              <div class="test-case"><span class="test-case__k">failure to log and audit</span><span class="test-case__e">the failure is recorded internally, nothing surfaces</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4" /><path d="M3.34 19a10 10 0 1 1 17.32 0" /></svg></span><span class="name">test_throttling.py</span></div>
+            <div class="test-card__sub">Send rate — the worker's responsibility</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="delivery.html#throttling">→ Queue and batch sending</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">rate limiting</span><span class="test-case__e">the worker holds the configured send rate (config)</span></div>
+              <div class="test-case"><span class="test-case__k">batch size</span><span class="test-case__e">no more than one batch is taken at a time (config)</span></div>
+              <div class="test-case"><span class="test-case__k">parameters — config</span><span class="test-case__e">rate, batch, concurrency from settings, not hardcoded</span></div>
+              <div class="test-case"><span class="test-case__k">burst of tasks</span><span class="test-case__e">many tasks at once → the worker works through them at pace, not in one burst</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ v2 — deferred coverage ═══ Security alerts are designed together
+           with the feature itself; only the coverage is recorded here. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--v2">v2</span>
+        <span class="test-sec__title">Deferred coverage</span>
+      </div>
+      <div class="test-struct">
+        <div class="test-stack-row">
+          <span class="test-stack-row__lbl">Security alerts</span>
+          <span
+            >fan-out to recipients (Owner / Admin) via the same queue path, dedup
+            of repeats, shared template layout</span
+          >
+        </div>
+      </div>
+
+      <!-- ═══ Structure ═══ Module directory: unit without DB, integration with
+           DB and a mock SMTP. Priority is set by markers, not folders. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Structure</span>
+        <span class="test-sec__title">Test file structure</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          Priority (P0–P1) is orthogonal to the directories and is set by markers
+          (<code>pytest -m p0</code>), not by separate folders.
+        </p>
+        <div class="test-tree">
+          <ul>
+            <li>
+              <span class="test-tree__row"><code>tests/email/</code><span class="d">module directory</span></span>
+              <ul>
+                <li><span class="test-tree__row"><code>conftest.py</code><span class="d">SMTP mock, singleton smtp_settings, factories</span></span></li>
+                <li>
+                  <span class="test-tree__row"><code>unit/</code><span class="d">no DB or SMTP</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>compose · i18n · availability</code><span class="d">email assembly, languages, predicate</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>integration/</code><span class="d">with DB and mock SMTP</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>send-inline · queue-task</code><span class="d">two delivery modes</span></span></li>
+                    <li><span class="test-tree__row"><code>delivery-errors · reset-anti-enum · throttling</code><span class="d">failures, security, rate</span></span></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

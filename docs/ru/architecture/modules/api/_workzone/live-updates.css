@@ -1,0 +1,81 @@
+/* HTTP API — live-updates workzone diagram (lu-* pipeline strip + frames
+   table). The push channel reads left-to-right in one strip — worker →
+   publish → stream → client → REST — before the notes are read; the lu-tbl
+   carries the event contract and the boards matrix.
+   Static — no hover affordance (README §Hover).
+   Loaded by _workzone/live-updates.html on top of ../../module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Pipeline strip ── */
+.lu-flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+}
+.lu-flow__step {
+  position: relative;
+  flex: 1 1 128px;
+  min-width: 120px;
+  padding: 0.55rem 0.65rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.lu-flow__step + .lu-flow__step::before {
+  content: "→";
+  position: absolute;
+  left: -0.62rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--accent);
+  font-weight: 700;
+}
+.lu-flow__t {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 0.2rem;
+}
+.lu-flow__d {
+  display: block;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: var(--text-dim);
+}
+
+/* ── Contract / boards table ── */
+.lu-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.lu-tbl th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.67rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0.3rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+.lu-tbl td {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+.lu-tbl tr:last-child td {
+  border-bottom: none;
+}
+.lu-tbl td:first-child {
+  white-space: nowrap;
+  color: var(--text);
+}

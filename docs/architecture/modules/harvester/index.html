@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Harvester</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="harvester.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <!-- ═══ Header ═══ -->
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← Back to architecture</a>
+        <h1 class="header__title">Harvester</h1>
+        <div class="header__sub">backend domain · ingestion and sync</div>
+      </div>
+
+      <!-- ═══ Description ═══ A single ingestion module: three modes, one internal
+           pipeline. Depth lives on the workzone pages, the overview is the map. -->
+      <p class="desc">
+        A single module for ingesting data from external sources. It runs in three
+        modes — full import, incremental sync, and periodic
+        reconciliation — over one internal pipeline:
+        extract → normalize → load.
+      </p>
+
+      <!-- ═══ Metro map ═══ Overview diagram of the pipeline as a metro line:
+           connectors → Extract → 9 Transform stations → Load → 3 stores.
+           Three modes — three lines along the same tracks. Depth lives in the workzone. -->
+      <div class="section">
+        <h2 class="section__title">Architecture</h2>
+        <div class="metro">
+          <!-- ===================== METRO MAP SVG ===================== -->
+          <svg
+            class="metro__svg"
+            viewBox="0 0 1000 560"
+            role="img"
+            aria-label="Harvester module metro map: connectors, Transform pipeline, stores"
+            preserveAspectRatio="xMidYMid meet"
+          >
+            <defs>
+              <marker
+                id="arrow"
+                viewBox="0 0 10 10"
+                refX="8"
+                refY="5"
+                markerWidth="7"
+                markerHeight="7"
+                orient="auto-start-reverse"
+              >
+                <path d="M0,0 L10,5 L0,10 z" fill="var(--track)" />
+              </marker>
+            </defs>
+
+            <!-- ============ THE THREE MODE LINES (offset, same track) ============
+                 Lines run along y≈250 main spine. They are drawn parallel with a
+                 small offset so the "three lines on one track" reads. Each starts
+                 at a different x = its `since` window. -->
+
+            <!-- shared rail base (thick, under everything) -->
+            <g stroke-linecap="round" fill="none">
+              <!-- FULL — rides the whole branch from epoch : top offset -->
+              <path
+                d="M 200,244 H 800"
+                stroke="var(--line-full)"
+                stroke-width="5"
+                opacity="0.9"
+              />
+              <!-- INCREMENTAL — boards mid-spine (last run) : center -->
+              <path
+                d="M 250,250 H 800"
+                stroke="var(--line-inc)"
+                stroke-width="5"
+                opacity="0.95"
+              />
+              <!-- RECONCILIATION — express audit over whole branch : bottom -->
+              <path
+                d="M 200,256 H 800"
+                stroke="var(--line-rec)"
+                stroke-width="5"
+                opacity="0.9"
+              />
+            </g>
+
+            <!-- feeder lines from connectors into EXTRACT hub (45° elbows) -->
+            <g
+              stroke="var(--track)"
+              stroke-width="3"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              opacity="0.55"
+            >
+              <path d="M 96,70 V 110 L 150,164" marker-end="url(#arrow)" />
+              <path d="M 96,135 V 150 L 150,196" marker-end="url(#arrow)" />
+              <path d="M 96,250 H 150" marker-end="url(#arrow)" />
+              <path d="M 96,365 V 350 L 150,304" marker-end="url(#arrow)" />
+              <path d="M 96,430 V 390 L 150,336" marker-end="url(#arrow)" />
+            </g>
+
+            <!-- branch lines from LOAD hub into three storage terminals -->
+            <g
+              stroke="var(--track)"
+              stroke-width="3"
+              fill="none"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              opacity="0.55"
+            >
+              <path d="M 850,250 H 880 L 916,150" marker-end="url(#arrow)" />
+              <path d="M 850,250 H 904" marker-end="url(#arrow)" />
+              <path d="M 850,250 H 880 L 916,350" marker-end="url(#arrow)" />
+            </g>
+
+            <!-- ============ EXTRACT HUB (left transfer interchange) ============ -->
+            <g class="station">
+              <rect
+                x="150"
+                y="206"
+                width="50"
+                height="88"
+                rx="13"
+                fill="var(--s1)"
+              />
+              <text class="hub-title" x="175" y="244" font-size="14" text-anchor="middle">
+                E
+              </text>
+              <text class="hub-sub" x="175" y="262" font-size="8.5" text-anchor="middle">
+                Extract
+              </text>
+            </g>
+            <text class="svg-mono" x="175" y="190" font-size="9.5" text-anchor="middle">
+              fetch(since)
+            </text>
+            <text class="svg-cap" x="175" y="318" font-size="8" text-anchor="middle">
+              source-specific
+            </text>
+
+            <!-- ============ LOAD HUB (right transfer interchange) ============ -->
+            <g class="station">
+              <rect
+                x="800"
+                y="206"
+                width="50"
+                height="88"
+                rx="13"
+                fill="var(--s3)"
+              />
+              <text class="hub-title" x="825" y="244" font-size="14" text-anchor="middle">
+                L
+              </text>
+              <text class="hub-sub" x="825" y="262" font-size="8.5" text-anchor="middle">
+                Load
+              </text>
+            </g>
+            <text class="svg-mono" x="825" y="190" font-size="9" text-anchor="middle">
+              upsert · idempotent
+            </text>
+            <text class="svg-cap" x="825" y="318" font-size="8" text-anchor="middle">
+              source record key
+            </text>
+
+            <!-- ============ CONNECTOR TERMINALS (left feeders) ============ -->
+            <!-- positions: 70,135,250,365,430 in y; x=96 -->
+            <g font-size="11">
+              <circle class="st-dot" cx="96" cy="70" r="13" fill="var(--paper)" stroke="var(--s1)" stroke-width="3.5" />
+              <svg x="87.5" y="63.5" width="15" height="15" viewBox="0 0 24 24" fill="var(--s1)"><path d="M11.571 11.513H0a5.218 5.218 0 0 0 5.232 5.215h2.13v2.057A5.215 5.215 0 0 0 12.575 24V12.518a1.005 1.005 0 0 0-1.005-1.005zm5.723-5.756H5.736a5.215 5.215 0 0 0 5.215 5.214h2.129v2.058a5.218 5.218 0 0 0 5.215 5.214V6.758a1.001 1.001 0 0 0-1.001-1.001zM23.013 0H11.455a5.215 5.215 0 0 0 5.215 5.215h2.129v2.057A5.215 5.215 0 0 0 24 12.483V1.005A1.001 1.001 0 0 0 23.013 0Z"/></svg>
+              <text class="svg-label" x="78" y="74" text-anchor="end" font-size="11">Jira</text>
+
+              <circle class="st-dot" cx="96" cy="135" r="13" fill="var(--paper)" stroke="var(--s1)" stroke-width="3.5" />
+              <svg x="88.5" y="127.5" width="15" height="15" viewBox="0 0 24 24" fill="var(--s1)"><path d="M.87 18.257c-.248.382-.53.875-.763 1.245a.764.764 0 0 0 .255 1.04l4.965 3.054a.764.764 0 0 0 1.058-.26c.199-.332.454-.763.733-1.221 1.967-3.247 3.945-2.853 7.508-1.146l4.957 2.337a.764.764 0 0 0 1.028-.382l2.364-5.346a.764.764 0 0 0-.382-1 599.851 599.851 0 0 1-4.965-2.361C10.911 10.97 5.224 11.185.87 18.257zM23.131 5.743c.249-.405.531-.875.764-1.25a.764.764 0 0 0-.256-1.034L18.675.404a.764.764 0 0 0-1.058.26c-.195.335-.451.763-.734 1.225-1.966 3.246-3.945 2.85-7.508 1.146L4.437.694a.764.764 0 0 0-1.027.382L1.046 6.422a.764.764 0 0 0 .382 1c1.039.49 3.105 1.467 4.965 2.361 6.698 3.246 12.392 3.029 16.738-4.04z"/></svg>
+              <text class="svg-label" x="78" y="139" text-anchor="end" font-size="11">Confluence</text>
+
+              <circle class="st-dot" cx="96" cy="250" r="13" fill="var(--paper)" stroke="var(--s1)" stroke-width="3.5" />
+              <svg x="88.5" y="242.5" width="15" height="15" viewBox="0 0 24 24" fill="var(--s1)"><path d="m23.6004 9.5927-.0337-.0862L20.3.9814a.851.851 0 0 0-.3362-.405.8748.8748 0 0 0-.9997.0539.8748.8748 0 0 0-.29.4399l-2.2055 6.748H7.5375l-2.2057-6.748a.8573.8573 0 0 0-.29-.4412.8748.8748 0 0 0-.9997-.0537.8585.8585 0 0 0-.3362.4049L.4332 9.5015l-.0325.0862a6.0657 6.0657 0 0 0 2.0119 7.0105l.0113.0087.03.0213 4.976 3.7264 2.462 1.8633 1.4995 1.1321a1.0085 1.0085 0 0 0 1.2197 0l1.4995-1.1321 2.4619-1.8633 5.006-3.7489.0125-.01a6.0682 6.0682 0 0 0 2.0094-7.003z"/></svg>
+              <text class="svg-label" x="78" y="254" text-anchor="end" font-size="11">GitLab</text>
+
+              <circle class="st-dot" cx="96" cy="365" r="13" fill="var(--paper)" stroke="var(--s1)" stroke-width="3.5" />
+              <svg x="88.5" y="357.5" width="15" height="15" viewBox="0 0 24 24" fill="var(--s1)"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg>
+              <text class="svg-label" x="78" y="369" text-anchor="end" font-size="11">Slack</text>
+
+              <circle class="st-dot" cx="96" cy="430" r="13" fill="var(--paper)" stroke="var(--text-muted)" stroke-width="3.5" />
+              <svg x="88.5" y="422.5" width="15" height="15" viewBox="0 0 24 24" fill="var(--text-muted)"><path d="M20.913 13.147l.12-.895c.947.576 1.258.922 1.354 1.071-.16.031-.562.046-1.474-.176zm-2.174 7.988a.547.547 0 0 0-.005.073c0 .084-.207.405-1.124.768a10.28 10.28 0 0 1-1.438.432c-1.405.325-3.128.504-4.853.504-4.612 0-7.412-1.184-7.412-1.704a.547.547 0 0 0-.005-.073L1.81 5.602c.135.078.28.154.432.227.042.02.086.038.128.057.134.062.272.122.417.18l.179.069c.154.058.314.114.478.168.043.013.084.029.13.043.207.065.423.127.646.187l.176.044c.175.044.353.087.534.127a23.414 23.414 0 0 0 .843.17l.121.023c.252.045.508.085.768.122.071.011.144.02.216.03.2.027.4.053.604.077l.24.027c.245.026.49.05.74.07l.081.009c.275.022.552.04.83.056l.233.012c.21.01.422.018.633.025a33.088 33.088 0 0 0 2.795-.026l.232-.011c.278-.016.555-.034.83-.056l.08-.008c.25-.02.497-.045.742-.072l.238-.026c.205-.024.408-.05.609-.077.07-.01.141-.019.211-.03.261-.037.519-.078.772-.122l.111-.02c.215-.04.427-.082.634-.125l.212-.047c.186-.041.368-.085.546-.13l.166-.042c.225-.06.444-.122.654-.189.04-.012.077-.026.115-.038a10.6 10.6 0 0 0 .493-.173c.058-.021.114-.044.17-.066.15-.06.293-.12.43-.185.038-.017.079-.034.116-.052.153-.073.3-.15.436-.228l-.976 7.245c-2.488-.78-5.805-2.292-7.311-3a1.09 1.09 0 0 0-1.088-1.085c-.6 0-1.088.489-1.088 1.088 0 .6.488 1.089 1.088 1.089.196 0 .378-.056.537-.148 1.72.812 5.144 2.367 7.715 3.15zm-7.42-20.047c5.677 0 9.676 1.759 9.75 2.736l-.014.113c-.01.033-.031.067-.048.101-.015.028-.026.057-.047.087-.024.033-.058.068-.09.102-.028.03-.051.06-.084.09-.038.035-.087.07-.133.105-.04.03-.074.06-.119.091-.053.036-.116.071-.177.107-.05.03-.095.06-.15.09-.068.036-.147.073-.222.11-.059.028-.114.057-.177.085-.084.038-.177.074-.268.111-.068.027-.13.054-.203.082-.097.036-.205.072-.31.107-.075.026-.148.053-.228.079-.111.035-.233.069-.35.103-.085.024-.165.05-.253.073-.124.034-.258.065-.389.098-.093.022-.181.046-.278.068-.139.032-.287.061-.433.091-.098.02-.191.041-.293.06-.155.03-.32.057-.482.084-.1.018-.198.036-.302.052-.166.026-.342.048-.515.072-.11.014-.213.03-.325.044-.181.023-.372.041-.56.06-.11.012-.218.025-.332.036-.188.016-.386.029-.58.043-.122.009-.24.02-.364.028-.207.012-.422.02-.635.028-.12.005-.234.012-.354.016a35.605 35.605 0 0 1-2.069 0c-.12-.004-.234-.011-.352-.016-.214-.008-.43-.016-.637-.028-.122-.008-.238-.02-.36-.027-.195-.015-.394-.028-.584-.044-.11-.01-.215-.024-.324-.035-.19-.02-.384-.038-.568-.06l-.315-.044c-.176-.024-.355-.046-.525-.073-.1-.015-.192-.033-.29-.05-.167-.028-.335-.055-.494-.086-.096-.018-.183-.038-.276-.056-.151-.032-.305-.062-.45-.095-.09-.02-.173-.043-.26-.064-.138-.034-.277-.067-.407-.102-.082-.022-.157-.046-.235-.069a11.75 11.75 0 0 1-.368-.108c-.075-.024-.141-.049-.213-.073-.11-.037-.223-.075-.325-.113-.067-.025-.125-.051-.188-.077-.096-.038-.195-.076-.282-.115-.06-.027-.11-.054-.166-.08-.08-.039-.162-.077-.233-.116-.052-.028-.094-.055-.142-.084-.063-.038-.13-.075-.185-.113-.043-.029-.075-.058-.113-.086-.048-.037-.098-.073-.139-.11-.032-.029-.054-.057-.08-.087-.033-.035-.069-.07-.093-.104-.02-.03-.031-.058-.046-.086-.018-.035-.039-.068-.049-.102l-.015-.113c.076-.977 4.074-2.736 9.748-2.736zm12.182 12.124c-.118-.628-.84-1.291-2.31-2.128l.963-7.16a.531.531 0 0 0 .005-.073C22.16 1.581 16.447 0 11.32 0 6.194 0 .482 1.581.482 3.851a.58.58 0 0 0 .005.072L2.819 21.25c.071 2.002 5.236 2.75 8.5 2.75 1.805 0 3.615-.188 5.098-.531.598-.138 1.133-.3 1.592-.48 1.18-.467 1.789-1.053 1.813-1.739l.945-7.018c.557.131 1.016.197 1.389.197.54 0 .902-.137 1.134-.413a.956.956 0 0 0 .21-.804Z"/></svg>
+              <text class="svg-label" x="78" y="434" text-anchor="end" font-size="11">S3</text>
+              <rect x="106" y="423" width="22" height="13" rx="3" fill="var(--text-muted)" />
+              <text x="117" y="433" text-anchor="middle" font-size="8" font-family="var(--mono)" font-weight="700" fill="#fff">v2</text>
+            </g>
+            <text class="svg-cap" x="40" y="488" font-size="8" text-anchor="start">
+              terminals · connectors
+            </text>
+
+            <!-- ============ TRANSFORM STATIONS (on the spine) ============
+                 9 stations spaced evenly between Extract(200) and Load(800).
+                 step ≈ 60. x = 250,310,370,430,490,550,610,670,730 -->
+
+            <!-- station label helper: alternating above / below to avoid clash -->
+            <g>
+              <!-- 1 normalize — anchor (boundary): larger ring -->
+              <g class="station">
+                <circle class="st-dot" cx="250" cy="250" r="11" fill="var(--paper)" stroke="var(--s2)" stroke-width="4.5" />
+              </g>
+              <text class="svg-label" x="250" y="218" text-anchor="middle" font-size="10.5">normalize</text>
+              <text class="svg-cap" x="250" y="206" text-anchor="middle" font-size="7">boundary ↔ shared</text>
+
+              <!-- 2 filter -->
+              <g class="station">
+                <circle class="st-dot" cx="310" cy="250" r="8" fill="var(--paper)" stroke="var(--s2)" stroke-width="3.5" />
+              </g>
+              <text class="svg-label" x="310" y="288" text-anchor="middle" font-size="10">filter</text>
+
+              <!-- 3 classify -->
+              <g class="station">
+                <circle class="st-dot" cx="370" cy="250" r="8" fill="var(--paper)" stroke="var(--s2)" stroke-width="3.5" />
+              </g>
+              <text class="svg-label" x="370" y="222" text-anchor="middle" font-size="10">classify</text>
+
+              <!-- 4 resolve — reinforced station (express audit point) -->
+              <g class="station">
+                <circle class="st-dot" cx="430" cy="250" r="11" fill="var(--paper)" stroke="var(--line-rec)" stroke-width="5" />
+                <circle cx="430" cy="250" r="3" fill="var(--line-rec)" />
+              </g>
+              <text class="svg-label" x="430" y="288" text-anchor="middle" font-size="10">resolve</text>
+              <text class="svg-cap" x="430" y="300" text-anchor="middle" font-size="7" fill="var(--line-rec)">reinforced in Reconcile</text>
+
+              <!-- 5 enrich -->
+              <g class="station">
+                <circle class="st-dot" cx="490" cy="250" r="8" fill="var(--paper)" stroke="var(--s2)" stroke-width="3.5" />
+              </g>
+              <text class="svg-label" x="490" y="222" text-anchor="middle" font-size="10">enrich</text>
+
+              <!-- 6 clean -->
+              <g class="station">
+                <circle class="st-dot" cx="550" cy="250" r="8" fill="var(--paper)" stroke="var(--s2)" stroke-width="3.5" />
+              </g>
+              <text class="svg-label" x="550" y="288" text-anchor="middle" font-size="10">clean</text>
+
+              <!-- 7 chunk -->
+              <g class="station">
+                <circle class="st-dot" cx="610" cy="250" r="8" fill="var(--paper)" stroke="var(--s2)" stroke-width="3.5" />
+              </g>
+              <text class="svg-label" x="610" y="222" text-anchor="middle" font-size="10">chunk</text>
+
+              <!-- 8 contextualize — AI + v2 -->
+              <g class="station">
+                <!-- AI sparkle station glyph -->
+                <circle cx="670" cy="250" r="11" fill="var(--paper)" stroke="var(--accent)" stroke-width="3" />
+                <path
+                  d="M670,242 L672.4,247.6 L678,250 L672.4,252.4 L670,258 L667.6,252.4 L662,250 L667.6,247.6 Z"
+                  fill="var(--accent)"
+                />
+              </g>
+              <text class="svg-label" x="670" y="288" text-anchor="middle" font-size="10" fill="var(--accent)">contextualize</text>
+              <text class="svg-cap" x="670" y="300" text-anchor="middle" font-size="7" fill="var(--accent)">AI · v2</text>
+
+              <!-- 9 embed — AI -->
+              <g class="station">
+                <circle cx="730" cy="250" r="11" fill="var(--paper)" stroke="var(--accent)" stroke-width="3" />
+                <path
+                  d="M730,242 L732.4,247.6 L738,250 L732.4,252.4 L730,258 L727.6,252.4 L722,250 L727.6,247.6 Z"
+                  fill="var(--accent)"
+                />
+              </g>
+              <text class="svg-label" x="730" y="222" text-anchor="middle" font-size="10" fill="var(--accent)">embed</text>
+              <text class="svg-cap" x="730" y="210" text-anchor="middle" font-size="7" fill="var(--accent)">AI</text>
+            </g>
+
+            <!-- Transform branch caption -->
+            <text class="svg-cap" x="490" y="345" font-size="8.5" text-anchor="middle">
+              T · Transform — shared pipeline · 9 stations
+            </text>
+
+            <!-- ============ STORAGE TERMINALS (right) ============ -->
+            <g>
+              <circle class="st-dot" cx="916" cy="150" r="13" fill="var(--paper)" stroke="var(--s3)" stroke-width="3.5" />
+              <text class="svg-label" x="934" y="146" text-anchor="start" font-size="11">Relational</text>
+              <text class="svg-mono" x="934" y="160" text-anchor="start" font-size="8">body · ACL · meta</text>
+
+              <circle class="st-dot" cx="904" cy="250" r="13" fill="var(--paper)" stroke="var(--s3)" stroke-width="3.5" />
+              <text class="svg-label" x="922" y="246" text-anchor="start" font-size="11">Vector</text>
+              <text class="svg-mono" x="922" y="260" text-anchor="start" font-size="8">embeddings</text>
+
+              <circle class="st-dot" cx="916" cy="350" r="13" fill="var(--paper)" stroke="var(--s3)" stroke-width="3.5" />
+              <text class="svg-label" x="934" y="346" text-anchor="start" font-size="11">Graph</text>
+              <text class="svg-mono" x="934" y="360" text-anchor="start" font-size="8">nodes · edges</text>
+            </g>
+            <text class="svg-cap" x="960" y="412" font-size="8" text-anchor="end">
+              terminals · Knowledge Store →
+            </text>
+
+            <!-- ============ CONTRACT CHIPS on the legs ============ -->
+            <!-- RawItem : connector → Transform (between E hub and first station) -->
+            <g class="contract-chip" transform="translate(225,420)">
+              <rect class="contract" x="-72" y="-15" width="144" height="30" rx="7" />
+              <text class="contract-key" x="-60" y="-1" font-size="9.5">RawItem</text>
+              <text class="contract-val" x="-60" y="10" font-size="7.5">Connector → Transform</text>
+            </g>
+            <path
+              d="M225,403 V 270"
+              stroke="var(--border)"
+              stroke-width="1.2"
+              stroke-dasharray="3 3"
+              fill="none"
+            />
+
+            <!-- Entity : Transform → Loader (between last station and L hub) -->
+            <g class="contract-chip" transform="translate(770,420)">
+              <rect class="contract" x="-78" y="-15" width="156" height="30" rx="7" />
+              <text class="contract-key" x="-66" y="-1" font-size="9.5">Entity</text>
+              <text class="contract-val" x="-66" y="10" font-size="7.5">Transform → Loader · ticket·page·msg</text>
+            </g>
+            <path
+              d="M770,403 V 270"
+              stroke="var(--border)"
+              stroke-width="1.2"
+              stroke-dasharray="3 3"
+              fill="none"
+            />
+
+            <!-- since markers: where each coloured line BOARDS the shared track -->
+            <g font-family="var(--mono)" font-weight="700" font-size="8">
+              <!-- Full + Reconciliation board at the E hub edge (epoch / whole source) -->
+              <line x1="200" y1="244" x2="200" y2="128" stroke="var(--line-full)" stroke-width="1.3" stroke-dasharray="4 3" />
+              <circle cx="200" cy="244" r="3.5" fill="var(--line-full)" />
+              <text x="196" y="124" text-anchor="end" fill="var(--line-full)">since = epoch (Full)</text>
+
+              <!-- Incremental boards mid-spine at the last-run point -->
+              <line x1="250" y1="250" x2="250" y2="372" stroke="var(--line-inc)" stroke-width="1.3" stroke-dasharray="4 3" />
+              <circle cx="250" cy="250" r="3.5" fill="var(--line-inc)" />
+              <text x="256" y="385" text-anchor="start" fill="var(--line-inc)">since = last run (Incr.)</text>
+            </g>
+          </svg>
+          <!-- =================== /METRO MAP SVG =================== -->
+
+          <!-- ── legend of lines (= modes) ── -->
+          <div class="metro__legend">
+            <div class="mode mode--full">
+              <div class="mode__head">
+                <span class="mode__bullet"></span>
+                <span class="mode__name">Full Sync</span>
+              </div>
+              <span class="mode__code">full</span>
+              <p class="mode__desc">
+                Full import from the beginning of time — on connecting a source or
+                a manual rebuild.
+              </p>
+              <p class="mode__since">start: <b>epoch</b></p>
+            </div>
+
+            <div class="mode mode--inc">
+              <div class="mode__head">
+                <span class="mode__bullet"></span>
+                <span class="mode__name">Incremental</span>
+              </div>
+              <span class="mode__code">incremental</span>
+              <p class="mode__desc">
+                Only the deltas since last time — webhooks plus scheduled
+                polling.
+              </p>
+              <p class="mode__since">start: <b>last run</b></p>
+            </div>
+
+            <div class="mode mode--rec">
+              <div class="mode__head">
+                <span class="mode__bullet"></span>
+                <span class="mode__name">Reconciliation</span>
+              </div>
+              <span class="mode__code">reconciliation</span>
+              <p class="mode__desc">
+                Express audit over the whole branch: clears what has vanished, aggressive
+                <code>resolve</code>.
+              </p>
+              <p class="mode__since">start: <b>whole source</b></p>
+            </div>
+          </div>
+
+          <!-- ── outward ties ── -->
+          <div class="ties">
+            <div class="tie">
+              <span class="tie__dir">→</span>
+              <span><b>Knowledge Store</b> — 3 projections + ACL + identities</span>
+            </div>
+            <div class="tie">
+              <span class="tie__dir">←</span>
+              <span><b>Sources</b> — Jira · Confluence · GitLab · Slack · S3</span>
+            </div>
+            <div class="tie">
+              <span class="tie__dir">←</span>
+              <span><b>Admin Panel</b> — sources · sync · DLQ</span>
+            </div>
+            <div class="tie">
+              <span class="tie__dir">→</span>
+              <span><b>AI model registry</b> — <code>embedding</code> model (built-in or your own; assignment is a precondition for ingestion)</span>
+            </div>
+            <div class="tie">
+              <span class="tie__dir">↔</span>
+              <span><b>Auth</b> crypto core · <b>Cache &amp; Workers</b> SAQ + Redis</span>
+            </div>
+            <div class="tie">
+              <span class="tie__dir">→</span>
+              <span><b>Query Engine</b> — pre-filter by ACL</span>
+            </div>
+          </div>
+
+          <!-- ── glyph glossary ── -->
+          <div class="glyphs">
+            <span><i class="gl-hub"></i> E/T/L hub (interchange)</span>
+            <span><i class="gl-dot"></i> Transform station</span>
+            <span><i class="gl-ai"></i> AI station</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ API ═══ Full contract paths of the module under version. -->
+      <section class="section" id="api">
+        <div class="section__title">API</div>
+        <ul class="api-list">
+          <li><span class="api-list__m">GET · POST</span><span class="api-list__p">/api/v1/sources</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/sources/sync</span></li>
+          <li><span class="api-list__m">GET · PATCH · DELETE</span><span class="api-list__p">/api/v1/sources/{id}</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/sources/{id}/test-connection</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/sources/{id}/catalog</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/sources/{id}/sync</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/sources/{id}/cancel</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/sources/{id}/runs</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/sources/{id}/dead-letters</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/sources/{id}/health</span></li>
+        </ul>
+        <p class="note">
+          Run status and progress reach open screens as push nudges over the platform
+          <a href="../api/_workzone/live-updates.html#boards" class="xref-module">live-updates stream</a>;
+          the endpoints above stay the single source the client refetches.
+        </p>
+      </section>
+
+      <!-- ═══ Workzone ═══ -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Design</span>
+        </div>
+        <p class="workzone-hint">
+          Detailed design decisions for the module.
+        </p>
+
+        <div class="wz-nav">
+          <a class="wz-link" href="_workzone/pipeline.html">
+            <span>Pipeline</span>
+          </a>
+          <a class="wz-link" href="_workzone/connectors.html">
+            <span>Connectors</span>
+          </a>
+          <a class="wz-link" href="_workzone/sources.html">
+            <span>Sources</span>
+          </a>
+          <a class="wz-link" href="_workzone/sync-modes.html">
+            <span>Sync</span>
+          </a>
+          <a class="wz-link" href="_workzone/reliability.html">
+            <span>Reliability</span>
+          </a>
+          <a class="wz-link" href="_workzone/security.html">
+            <span>Security</span>
+          </a>
+          <a class="wz-link" href="_workzone/acl-identity.html">
+            <span>ACL and identities</span>
+          </a>
+          <a class="wz-link" href="_workzone/data-model.html">
+            <span>Data model</span>
+          </a>
+          <a class="wz-link" href="_workzone/tests.html">
+            <span>Tests</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — HTTP API: Живые обновления</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="live-updates.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← HTTP API</a>
+        <h1 class="header__title">Живые обновления</h1>
+        <div class="header__sub">http api · push-канал · workzone</div>
+      </div>
+
+      <p class="desc">
+        Статусные борды показывают состояние, которое мутируют <em>фоновые воркеры</em> —
+        sync-прогоны, curation-прогоны, бэкапы, прогоны агентов. Экран не мутирует то,
+        что показывает, поэтому инвалидация кеша по действиям пользователя его не
+        обновит, а поэкранные таймеры опроса не масштабируются. Все их заменяет один
+        платформенный push-канал.
+      </p>
+
+      <!-- ════════════════ КОНЦЕПЦИЯ ════════════════ -->
+      <section class="section" id="concept">
+        <div class="section__title">Пушим факт изменения, не данные</div>
+        <div class="decision-box">
+          <strong>SSE как сигнал инвалидации</strong>
+          Поток несёт крошечный сигнал — «борд X изменился» — и ничего больше. Клиент в
+          ответ рефетчит затронутые запросы через обычные REST-эндпоинты, которыми уже
+          пользуется. Данные, auth и ACL остаются на REST: поток не может утечь
+          пейлоадом, не дрейфует от REST-схемы, а нагрузка на бэкенд пропорциональна
+          реальным изменениям состояния — не числу открытых экранов.
+        </div>
+        <div class="lu-flow">
+          <div class="lu-flow__step">
+            <span class="lu-flow__t">Воркер</span>
+            <span class="lu-flow__d">переход прогона или коммит прогресса</span>
+          </div>
+          <div class="lu-flow__step">
+            <span class="lu-flow__t">Publish</span>
+            <span class="lu-flow__d">сигнал → pub/sub cache-Redis, после commit</span>
+          </div>
+          <div class="lu-flow__step">
+            <span class="lu-flow__t">Поток</span>
+            <span class="lu-flow__d"><code>/events/stream</code> — один SSE на вкладку</span>
+          </div>
+          <div class="lu-flow__step">
+            <span class="lu-flow__t">Клиент</span>
+            <span class="lu-flow__d">инвалидирует query-ключи борда</span>
+          </div>
+          <div class="lu-flow__step">
+            <span class="lu-flow__t">REST</span>
+            <span class="lu-flow__d">обычный рефетч — auth, ACL, схема</span>
+          </div>
+        </div>
+        <p class="note">
+          Канал едет на pub/sub
+          <a href="../../cache-workers/_workzone/redis-keys.html#instances" class="xref-module">cache-Redis</a>
+          — потерянный сигнал стоит одного отложенного обновления, никогда — данных.
+          Публикация best-effort: сломанная шина не должна валить транзакцию самого
+          воркера.
+        </p>
+      </section>
+
+      <!-- ════════════════ КОНТРАКТ ════════════════ -->
+      <section class="section" id="contract">
+        <div class="section__title">Контракт событий — <code>GET /api/v1/events/stream</code></div>
+        <p class="note">
+          Один мультиплексный поток на вкладку несёт все push-заботы; колокольчик
+          уведомлений тоже едет в нём, так что платформа держит единственное постоянное
+          соединение.
+          <a href="../../notifications/_workzone/dispatcher.html#fanout" class="xref-module">Диспетчер</a>
+          публикует сигналы колокольчика ровно как раньше — общим стал только транспорт.
+        </p>
+        <table class="lu-tbl">
+          <thead>
+            <tr><th>Событие</th><th>Пейлоад</th><th>Смысл</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>hello</code></td>
+              <td><code>{boards: […]}</code></td>
+              <td>открывает поток: борды, на которые подписан вызывающий. Клиент
+                инвалидирует их все — reconnect нагоняет всё пропущенное.</td>
+            </tr>
+            <tr>
+              <td><code>board</code></td>
+              <td><code>{board}</code></td>
+              <td>названный борд изменился; клиент инвалидирует его query-ключи по
+                реестру.</td>
+            </tr>
+            <tr>
+              <td><code>unread</code></td>
+              <td><code>{count}</code></td>
+              <td>счётчик колокольчика, рефетчится на сервере по сигналу колокольчика —
+                поведение прежнее, транспорт новый.</td>
+            </tr>
+            <tr>
+              <td><code>ping</code></td>
+              <td><code>{}</code></td>
+              <td>heartbeat после 25 с тишины — настоящий event-фрейм, не SSE-комментарий,
+                чтобы клиентский watchdog видел живость.</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ════════════════ БОРДЫ ════════════════ -->
+      <section class="section" id="boards">
+        <div class="section__title">Борды и кто их получает</div>
+        <p class="note">
+          Доступ решается <strong>в момент подписки</strong>: при открытии потока роль
+          вызывающего выбирает набор каналов — админские борды админам, канал агентов
+          владельца каждому. Никакой пофреймовой фильтрации, никакого пер-юзерного
+          fan-out для админских бордов.
+        </p>
+        <table class="lu-tbl">
+          <thead>
+            <tr><th>Борд</th><th>Кормится из</th><th>Аудитория</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>harvester</code></td>
+              <td>журнал sync-прогонов
+                <a href="../../harvester/index.html#api" class="xref-module">Harvester</a>
+                + постраничные счётчики прогресса</td>
+              <td>админы</td>
+            </tr>
+            <tr>
+              <td><code>knowledge</code></td>
+              <td>curation-прогоны · прогресс re-embed · бэкапы
+                <a href="../../knowledge-store/index.html#api" class="xref-module">Knowledge&nbsp;Store</a></td>
+              <td>админы</td>
+            </tr>
+            <tr>
+              <td><code>agents</code></td>
+              <td>журнал прогонов
+                <a href="../../agent-engine/index.html#api" class="xref-module">Agent&nbsp;Engine</a>,
+                включая шаги</td>
+              <td>владелец агента — свой канал; админы — канал всех агентов</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- ════════════════ ПУБЛИКАЦИЯ ════════════════ -->
+      <section class="section" id="publishing">
+        <div class="section__title">Точки публикации и коалесинг</div>
+        <div class="notes">
+          <p class="note">
+            <strong>Что публикует.</strong> Каждый закоммиченный переход прогона
+            (queued → running → терминальный, отмена) и каждая закоммиченная запись
+            прогресса по ходу — граница страницы синка, батч re-embed, шаг агента.
+            Публикация идёт после commit, поэтому сигнал никогда не анонсирует
+            состояние, которого рефетч ещё не увидит.
+          </p>
+          <p class="note">
+            <strong>Что не публикует.</strong> Чистые heartbeat-касания — учёт живости
+            не изменение состояния и не должен будить каждый открытый экран.
+          </p>
+          <p class="note">
+            <strong>Коалесинг — забота подписчика.</strong> Воркеры публикуют свободно —
+            publish в Redis почти бесплатен; каждое соединение потока коалесцирует по
+            борду с минимальным зазором эмиссии 1.5 с, по задней кромке (всплеск даёт
+            один фрейм сразу и один по истечении зазора). Горячий цикл воркера не
+            заставит клиента рефетчить чаще зазора, а последнее состояние доедет всегда.
+          </p>
+        </div>
+      </section>
+
+      <!-- ════════════════ КЛИЕНТ ════════════════ -->
+      <section class="section" id="client">
+        <div class="section__title">Клиент — одно соединение, один реестр</div>
+        <p class="note">
+          Шелл монтирует единственного потребителя потока с декларативным реестром
+          <em>борд → префиксы query-ключей</em>. Фрейм <code>board</code> инвалидирует
+          префиксы этого борда; рефетчатся только реально смонтированные запросы. Экраны
+          не несут никакого кода живых обновлений — ни таймеров, ни интервалов: экран
+          живой потому, что его ключи в реестре, а не потому, что он опрашивает.
+        </p>
+      </section>
+
+      <section class="section" id="fallback">
+        <div class="section__title">Fallback — тихая деградация</div>
+        <ul class="checklist">
+          <li class="check">
+            <span class="check__rule"><span class="check__name">Reconnect</span>
+              <span class="check__desc">экспоненциальный backoff 1 с → 30 с, сброс на
+                любом живом фрейме; <code>hello</code> при переоткрытии инвалидирует все
+                борды — разрыв нагоняется целиком.</span></span>
+          </li>
+          <li class="check">
+            <span class="check__rule"><span class="check__name">Watchdog</span>
+              <span class="check__desc">нет фрейма (включая ping) за два heartbeat →
+                соединение считается мёртвым, abort и reconnect.</span></span>
+          </li>
+          <li class="check">
+            <span class="check__rule"><span class="check__name">Страховка на визит</span>
+              <span class="check__desc">запросы живых бордов держат
+                <code>staleTime 0</code> — каждый заход на экран рефетчит даже с лежащим
+                потоком, плюс штатный рефетч по фокусу окна и восстановлению сети.</span></span>
+          </li>
+          <li class="check">
+            <span class="check__rule"><span class="check__name">Без UI устаревания</span>
+              <span class="check__desc">деградация тихая — борд просто обновится при
+                следующем визите или фокусе, а не мгновенно.</span></span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- ════════════════ ИСКЛЮЧЕНИЕ ════════════════ -->
+      <section class="section" id="embedder-exception">
+        <div class="section__title">Единственное исключение — веса эмбеддера</div>
+        <p class="note">
+          Загрузка весов встроенного эмбеддера — единственный живой статус, живущий вне
+          базы платформы: внутри
+          <a href="../../knowledge-store/_workzone/embedding-runtime.html" class="xref-module">embeddings-рантайма</a>,
+          который бэкенд лишь проксирует. Нашего перехода, из которого публиковать, нет —
+          поэтому карточка эмбеддера сохраняет узкий опрос <em>только пока грузятся
+          веса</em>. Всё остальное на каждом борде — push. Второй статус такого рода
+          оправдал бы серверного наблюдателя; один — нет.
+        </p>
+      </section>
+    </div>
+  </body>
+</html>

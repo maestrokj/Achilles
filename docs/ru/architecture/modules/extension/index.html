@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Browser Extension</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="extension.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <!-- ═══ Header ═══ -->
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← К схеме</a>
+        <h1 class="header__title">Browser Extension <span class="iter v2">v2</span></h1>
+        <div class="header__sub">AI-панель поверх любой страницы</div>
+        <div class="header__status">Концепт</div>
+      </div>
+
+      <div class="ext-stage">
+        <div class="ext-art-wrap">
+          <svg
+            class="ext-art"
+            viewBox="0 0 680 430"
+            role="img"
+            aria-label="Окно браузера: граф знаний перетекает в боковую панель-расширение"
+          >
+            <!-- ambient sparks -->
+            <g class="ext-sparks">
+              <circle cx="54" cy="120" r="3" />
+              <circle cx="628" cy="98" r="2.5" />
+              <circle cx="612" cy="338" r="3" />
+              <circle cx="60" cy="326" r="2.5" />
+              <circle cx="356" cy="52" r="2.5" />
+              <circle cx="300" cy="398" r="3" />
+              <circle cx="598" cy="58" r="2" />
+            </g>
+
+            <!-- browser window -->
+            <rect class="ext-art__win" x="80" y="78" width="520" height="276" rx="18" />
+            <circle class="ext-art__tdot" cx="106" cy="97" r="4.5" />
+            <circle class="ext-art__tdot" cx="124" cy="97" r="4.5" />
+            <circle class="ext-art__tdot" cx="142" cy="97" r="4.5" />
+            <rect class="ext-art__url" x="178" y="88" width="248" height="18" rx="9" />
+            <line class="ext-art__divider" x1="80" y1="116" x2="600" y2="116" />
+
+            <!-- knowledge graph -->
+            <g class="ext-edges">
+              <line class="ext-art__edge" x1="150" y1="180" x2="250" y2="158" />
+              <line class="ext-art__edge" x1="150" y1="180" x2="176" y2="250" />
+              <line class="ext-art__edge" x1="150" y1="180" x2="120" y2="232" />
+              <line class="ext-art__edge" x1="250" y1="158" x2="330" y2="210" />
+              <line class="ext-art__edge" x1="330" y1="210" x2="270" y2="268" />
+              <line class="ext-art__edge" x1="176" y1="250" x2="270" y2="268" />
+            </g>
+            <g class="ext-nodes">
+              <circle class="ext-art__node" cx="150" cy="180" r="13" />
+              <circle class="ext-art__node" cx="250" cy="158" r="10" />
+              <circle class="ext-art__node ext-art__node--hub" cx="330" cy="210" r="16" />
+              <circle class="ext-art__node" cx="176" cy="250" r="10" />
+              <circle class="ext-art__node" cx="270" cy="268" r="11" />
+              <circle class="ext-art__node" cx="120" cy="232" r="8" />
+            </g>
+
+            <!-- flow into the panel -->
+            <path class="ext-art__flow" d="M330 210 C 384 198 404 162 448 150" />
+
+            <!-- extension side panel -->
+            <rect class="ext-art__panel" x="438" y="128" width="150" height="200" rx="11" />
+            <g class="ext-art__piece" transform="translate(452 138) scale(0.82)">
+              <path
+                d="M0 5 H5 A3 3 0 1 1 11 5 H16 V10 A3 3 0 1 1 16 16 V21 H11 A3 3 0 1 0 5 21 H0 V16 A3 3 0 1 0 0 10 Z"
+              />
+            </g>
+            <rect class="ext-art__tag" x="478" y="142" width="84" height="7" rx="3.5" />
+            <rect class="ext-art__line" x="456" y="172" width="114" height="7" rx="3.5" />
+            <rect class="ext-art__line" x="456" y="187" width="96" height="7" rx="3.5" />
+            <rect class="ext-art__line" x="456" y="202" width="108" height="7" rx="3.5" />
+            <rect class="ext-art__bubble" x="456" y="224" width="96" height="36" rx="9" />
+            <rect class="ext-art__bubble-line" x="466" y="234" width="66" height="6" rx="3" />
+            <rect
+              class="ext-art__bubble-line ext-art__bubble-line--soft"
+              x="466"
+              y="246"
+              width="48"
+              height="6"
+              rx="3"
+            />
+            <rect class="ext-art__input" x="456" y="296" width="114" height="20" rx="10" />
+            <circle class="ext-art__send" cx="560" cy="306" r="4" />
+          </svg>
+        </div>
+
+        <p class="ext-title">Ваш рабочий AI — на каждой вкладке</p>
+        <p class="ext-sub">
+          Знания, агенты и модели компании — на любой странице, без переключения
+          вкладок. Расширение Achilles появится во второй версии.
+        </p>
+
+        <p class="ext-foot">
+          Диалог —
+          <a class="xref-module" href="../query-engine/_workzone/conversation.html#surface-api"
+            >Query Engine</a
+          >
+          · авторизация — OAuth ·
+          <a class="xref-module" href="../auth-security/index.html">Auth / Security</a>
+          · контракт —
+          <a class="xref-module" href="../public-api/index.html#reference">Public API</a>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

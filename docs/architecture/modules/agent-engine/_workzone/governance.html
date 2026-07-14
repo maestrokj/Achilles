@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Agent Engine: Budget and control</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="governance.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Agent Engine</a>
+        <h1 class="header__title">Budget and control</h1>
+        <div class="header__sub">agent-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        An autonomous agent spends tokens on its own, with no human looking over
+        its shoulder — so it needs brakes. The weekly
+        <strong>token budget</strong> guards the wallet.
+        <strong>Two locks</strong> — the owner's switch and the admin's sticky
+        lock — stop the agent entirely: both must be open for a run to start.
+        And the <strong>owner lifecycle</strong> keeps a departed employee from
+        leaving background agents behind to burn budget. The fewest levers
+        possible — yet enough to close the main risks.
+      </p>
+
+      <!-- ════════════════ GATE ════════════════
+           Single launch formula: the page's levers converge into one predicate.
+           owner-active collapses into enabled (deactivation writes the same flag),
+           so effectively there are three control axes. The locks gate the start;
+           a run in progress finishes (instant abort — kill switch, v2). -->
+      <div class="section" id="gate">
+        <h2 class="section__title">When an agent starts</h2>
+        <p class="desc">
+          Every lever on this page converges into <strong>one condition</strong>.
+          A run starts — on schedule or by hand — only if all four are open;
+          any one closed shuts the launch down entirely.
+        </p>
+
+        <div class="gv-gate">
+          <span class="gv-gate__lead">run starts</span>
+          <span class="gv-gate__iff">⟺</span>
+          <a href="#admin-pause" class="gv-cond">
+            <span class="gv-cond__k">enabled</span>
+            <span class="gv-cond__d">switched on by owner</span>
+          </a>
+          <span class="gv-gate__and">∧</span>
+          <a href="#admin-pause" class="gv-cond">
+            <span class="gv-cond__k">¬ admin_paused</span>
+            <span class="gv-cond__d">not locked by admin</span>
+          </a>
+          <span class="gv-gate__and">∧</span>
+          <a href="#budget" class="gv-cond">
+            <span class="gv-cond__k">budget within limit</span>
+            <span class="gv-cond__d">weekly cap not exhausted</span>
+          </a>
+          <span class="gv-gate__and">∧</span>
+          <a href="#model" class="gv-cond">
+            <span class="gv-cond__k">model_id ≠ NULL</span>
+            <span class="gv-cond__d">model chosen and available</span>
+          </a>
+        </div>
+
+        <p class="note">
+          A fifth condition — <strong>owner active</strong> — is not a separate
+          axis: deactivation writes the same <code>enabled=false</code>
+          (<a href="#lifecycle" class="xref-anchor">lifecycle</a>), so
+          effectively there are four axes of control. Any lock gates the
+          <em>start</em>; a run already underway finishes to the end — instant
+          abort (<code>kill switch</code>) is
+          <span class="iter v2">v2</span>.
+        </p>
+        <p class="note">
+          <strong>An empty store is not a fifth condition.</strong> When there
+          is nothing to search
+          (<a href="../../knowledge-store/_workzone/hybrid-search.html#emptiness" class="xref-module"
+            ><code>is_empty</code></a>), the agent still starts: the KS core is
+          withheld as a derived consequence
+          (<a href="runtime.html#tools" class="xref-page">tools</a>), and it
+          either degrades onto external tools or exits honestly. This is a data
+          state, not a control lock — once the store fills, the core returns
+          without intervention.
+        </p>
+      </div>
+
+      <!-- ════════════════ BUDGET ════════════════
+           Weekly per-user token limit — a fuse. The limit lives in
+           platform_settings (Admin); spend is summed from agent_runs.tokens_used
+           for the week. Overage → runs do not start (skipped, reason budget_exceeded),
+           they wait for the weekly reset (calendar, Sunday 00:00 org-tz). Money,
+           alerts, kill switch — v2. -->
+      <div class="section" id="budget">
+        <h2 class="section__title">Weekly token budget</h2>
+        <p class="desc">
+          The admin sets a <strong>weekly token cap per user</strong> — one cap
+          across all of their agents at once. Spend is
+          <strong>summed from the run journal</strong> for the current week
+          (<a href="data-model.html#agent-runs" class="xref-page"
+            ><code>agent_runs.tokens_used</code></a>); there is no dedicated
+          counter table — the cap is derived. Before a run starts, the engine
+          checks the sum against the limit: within it, go ahead; over it, the
+          run does not start.
+        </p>
+
+        <div class="gv-meter">
+          <div class="gv-meter__cap">
+            <span>weekly spend · all of the employee's agents</span>
+            <span>cap</span>
+          </div>
+          <div class="gv-meter__bar">
+            <span class="gv-meter__fill gv-meter__fill--used">spent</span>
+            <span class="gv-meter__fill gv-meter__fill--free">headroom</span>
+            <span class="gv-meter__fill gv-meter__fill--over">refused</span>
+            <span class="gv-meter__mark"><span>limit</span></span>
+          </div>
+          <p class="gv-meter__note">
+            Beyond the cap, runs are marked <code>skipped</code> with the reason
+            “limit exceeded” and wait for the weekly reset: spend zeroes out on
+            <strong>Sunday 00:00 in the organization's timezone</strong> (the
+            week is calendar, not rolling), and the agents come back to life on
+            their own. The cap guards against <em>bankruptcy</em>; the
+            <a href="runtime.html#loop" class="xref-page">iteration cap</a>
+            insures a <em>single</em> run against looping — different brakes.
+          </p>
+        </div>
+
+        <p class="note">
+          The limit is a platform setting on the
+          <a href="../../admin-panel/_wireframes/usage.html#limits" class="xref-module">AI usage</a>
+          screen
+          (<code>platform_settings.agent_weekly_token_budget</code>), one per
+          organization; the same screen shows spend by person and the reference
+          chat budget. Monetary budgets, alerts on approaching the cap, and an
+          instant kill switch are <span class="iter v2">v2</span>.
+        </p>
+      </div>
+
+      <!-- ════════════════ MODEL ════════════════
+           The agent runs on a chat model from the list the admin allowed for
+           agents (agent_models). The owner picks it; agents.model_id references
+           a row in the list. The admin removes the model from the list → SET NULL
+           clears the reference → the agent stalls (banner). Which model the loop
+           takes is runtime. -->
+      <div class="section" id="model">
+        <h2 class="section__title">Agent model</h2>
+        <p class="desc">
+          A run is driven by a <a href="runtime.html#loop" class="xref-page">chat model</a>
+          the owner picked from the list the admin allowed for agents
+          (<a href="../../ai-foundation/_workzone/data-model.html#ai-models" class="xref-module"
+            >agent_models</a>). The choice is stored in
+          <a href="data-model.html#agents" class="xref-page"><code>model_id</code></a> —
+          a reference to a row in the list. As long as the model is in the list,
+          the agent starts; once the admin removes it,
+          <code>SET NULL</code> clears the reference, and
+          <code>model_id IS NOT NULL</code> in the gate turns false.
+        </p>
+        <p class="note">
+          A removed model stops the agent like a lock: <code>next_run_at</code>
+          is cleared, the scheduler does not scan the row, and no
+          <code>skipped</code> record piles up. On the agent's screen a banner
+          reads “model not supported, choose another”; the owner brings the
+          agent back by picking a model from the current list. There is no
+          implicit fallback to a default — <code>NULL</code> means “no model,”
+          not “take the default.”
+        </p>
+      </div>
+
+      <!-- ════════════════ TWO LOCKS ════════════════
+           Starting a run requires two open locks: the owner's switch
+           (enabled — full stop, both scheduled and manual) and the admin's
+           sticky lock (admin_paused — the owner cannot release it). Either one
+           closed stops the agent entirely. -->
+      <div class="section" id="admin-pause">
+        <h2 class="section__title">Two locks</h2>
+        <p class="desc">
+          For a run to start, <strong>both locks</strong> must be open: the
+          owner's switch and the administrator's lock. Either one closed stops
+          the agent <em>entirely</em> — neither on schedule nor by hand. The
+          first is the agent owner's lever, the second is oversight's lever over
+          someone else's agent.
+        </p>
+        <p class="note">
+          A closed lock stops the agent <em>silently</em>: its
+          <a href="data-model.html#agents" class="xref-page"><code>next_run_at</code></a>
+          is cleared, the scheduler does not scan the row, and the manual-run
+          button is disabled — a durable stop breeds no <code>skipped</code>
+          records; it shows through the agent's status. Only a runtime refusal
+          is journaled, invisible from the agent's settings: the chosen
+          <a href="#budget" class="xref-anchor">budget</a> and overlap onto a
+          run still in progress. So the stop is not mute, the owner learns of a
+          pause or a removed model through a personal
+          <a href="../../notifications/_workzone/dispatcher.html#catalog" class="xref-module">notification</a>
+          (targeted at them) — the handler that sets the flag raises an event.
+        </p>
+
+        <div class="gv-lock gv-lock--owner">
+          <span class="gv-lock__icon">⏻</span>
+          <div>
+            <strong>Owner's switch</strong> — <code>enabled</code>. On, and the
+            agent is live: it runs on schedule and the “Run now” button is
+            available. Off, and it is dormant: the schedule is silent, the
+            manual run is disabled. The owner is free to flip it however they
+            like.
+            <div class="gv-lock__who">
+              <span class="gv-who gv-who--yes">released by: owner</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="gv-lock">
+          <span class="gv-lock__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span>
+          <div>
+            <strong>Administrator's lock</strong> — <code>admin_paused</code>,
+            <strong>sticky</strong>: the admin halts a specific agent without
+            waiting for the owner and without deleting it. The owner cannot
+            release it — a banner “paused by administrator” stays on the agent's
+            screen. This is the <em>only</em> lever the admin has over someone
+            else's agent.
+            <div class="gv-lock__who">
+              <span class="gv-who gv-who--yes">released by: admin</span>
+              <span class="gv-who gv-who--no">owner</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="note">
+          Full oversight of others' agents — bulk actions, editing, fine-grained
+          policies — is <span class="iter v2">v2</span>. The admin has exactly a
+          lock: blunt, but enough to shut a problem down.
+        </p>
+      </div>
+
+      <!-- ════════════════ LIFECYCLE ════════════════
+           Owner lifecycle → the agents' fate. Account deletion — cascade
+           (agents + runs). Deactivation (row intact) — the system flips the
+           owner's switch (enabled=false); reactivation does not flip it back,
+           the owner switches the agents on themselves. -->
+      <div class="section" id="lifecycle">
+        <h2 class="section__title">Owner lifecycle</h2>
+        <p class="desc">
+          An agent lives on the owner's rights and wallet — so its fate is tied
+          to the account. Two events decide everything:
+          <strong>deletion</strong> of the account and
+          <a href="../../auth-security/_workzone/authentication.html#user-lifecycle" class="xref-module"
+            ><strong>deactivation</strong></a> (the account row stays). The main
+          risk both close: a departed employee must not leave background agents
+          behind that silently burn budget and read the store under their
+          rights.
+        </p>
+
+        <div class="gv-life">
+          <div class="gv-row gv-row--delete">
+            <div class="gv-row__ev">
+              Account deletion
+              <small>the users row disappears</small>
+            </div>
+            <span class="gv-row__arr">▸</span>
+            <div class="gv-row__fate">
+              <b>cascade</b> — personal agents and their entire run journal go
+              with it (<code>ON DELETE CASCADE</code>), nothing is orphaned.
+            </div>
+          </div>
+          <div class="gv-row gv-row--deactivate">
+            <div class="gv-row__ev">
+              Deactivation
+              <small>the row is intact</small>
+            </div>
+            <span class="gv-row__arr">▸</span>
+            <div class="gv-row__fate">
+              <b>agents switch off</b> — the system flips the owner's switch
+              (<code>enabled=false</code>) on all of their agents: the account
+              and history are intact, but runs freeze. The scheduler does not
+              wake them and accrues no <code>skipped</code> journal — a
+              switched-off agent sleeps silently. Reactivation does
+              <em>not</em> flip the switch back — the returning employee
+              switches their agents on themselves.
+            </div>
+          </div>
+        </div>
+
+        <p class="note">
+          The cascade is described in the
+          <a href="data-model.html#agents" class="xref-page">data model</a>: the
+          FKs from runs to agent and from agent to owner carry
+          <code>ON DELETE CASCADE</code>. Deactivation introduces no separate
+          state of its own — it writes that same <code>enabled</code> switch,
+          and only the owner may flip it back.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,236 @@
+/* Job lifecycle — the canonical convention for a background job's life:
+   the state-machine path, heartbeat reaping, retries, uniqueness lock, and the
+   terminal/DLQ policy. Diagrams bespoke to this one page; module.css carries
+   the chrome and the .section / .decision-box :target landing flash.
+   Loaded by lifecycle.html on top of module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ═══════════════════════════════════════════
+   State machine — the job's path
+   ═══════════════════════════════════════════ */
+.sm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+/* A state node — pill-shaped, colored by phase. */
+.sm__state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 6.5rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--st-bg, var(--surface));
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--st-c, var(--accent));
+  border-radius: var(--radius-md);
+}
+
+.sm__name {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--st-c, var(--text));
+}
+
+.sm__d {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  line-height: 1.3;
+}
+
+/* Phase accents: queued (neutral) · running (live) · success · failure. */
+.sm__state--queued {
+  --st-c: var(--text-muted);
+}
+.sm__state--running {
+  --st-c: var(--s2);
+  --st-bg: var(--s2-pale);
+}
+.sm__state--ok {
+  --st-c: var(--s3);
+  --st-bg: var(--s3-pale);
+}
+.sm__state--fail {
+  --st-c: var(--s1);
+}
+/* Reaping is a post-terminal STEP, not one of the four persisted states in the
+   run contract — dashed and muted so it reads apart from the state pills. */
+.sm__step {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.15rem;
+  min-width: 6.5rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--paper);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+}
+
+.sm__step .sm__name {
+  color: var(--text-muted);
+}
+
+/* Connector arrow between states; carries an optional edge label above. */
+.sm__edge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  flex: 0 0 auto;
+  padding: 0 0.1rem;
+}
+
+.sm__edge::after {
+  content: "→";
+  font-size: 1rem;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.sm__lbl {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+/* A split where running forks into success vs failure. */
+.sm__fork {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+/* Caption under the diagram restating the idempotency invariant. */
+.sm-note {
+  margin-top: 0.55rem;
+}
+
+/* ═══════════════════════════════════════════
+   Two-column compare (heartbeat states · retry tiers · terminal homes)
+   ═══════════════════════════════════════════ */
+.duo {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+  margin-top: 0.4rem;
+}
+
+.duo__col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.65rem 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--duo-c, var(--accent));
+  border-radius: var(--radius-md);
+}
+
+.duo__col--live {
+  --duo-c: var(--s3);
+}
+.duo__col--dead {
+  --duo-c: var(--s1);
+}
+.duo__col--short {
+  --duo-c: var(--s2);
+}
+.duo__col--long {
+  --duo-c: var(--s4);
+}
+
+.duo__h {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--duo-c, var(--accent));
+}
+
+.duo__t {
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--text-dim);
+}
+
+.duo__d {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+@media (max-width: 680px) {
+  .duo {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   Reliability defaults — a compact spec grid
+   ═══════════════════════════════════════════ */
+.spec {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.3rem 0.9rem;
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+}
+
+.spec__k {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.spec__v {
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* ═══════════════════════════════════════════
+   DLQ policy — per-module terminal homes
+   ═══════════════════════════════════════════ */
+.dlq {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.45rem;
+}
+
+.dlq__row {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-items: baseline;
+  gap: 0.7rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.dlq__home {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--s3);
+}
+
+.dlq__d {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* Tighter bullet rhythm for in-block rule lists, matching the kit. */
+.lc-rules {
+  margin-top: 0.4rem;
+}

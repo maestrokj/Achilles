@@ -1,0 +1,209 @@
+/* Redis keys — instance cards (durable vs cache), ephemeral-key list, and the
+   key-namespace registry table for the redis-keys workzone page.
+   Loaded by _workzone/redis-keys.html on top of module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Instance cards — two physically separated Redis roles, side by side ── */
+.rk-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.rk-inst {
+  padding: 0.9rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.rk-inst--durable {
+  border-left: 3px solid var(--s1);
+}
+
+.rk-inst--cache {
+  border-left: 3px solid var(--accent-muted);
+}
+
+.rk-inst__name {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.15rem;
+}
+
+.rk-inst__pol {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  margin-bottom: 0.6rem;
+}
+
+.rk-inst__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+.rk-inst__list b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ── Ephemeral keys — one row per TTL-bearing key, condition chip + meaning ── */
+.rk-eph {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.rk-key {
+  display: grid;
+  grid-template-columns: 11rem 1fr;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.55rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.rk-key__ns {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.rk-key__d {
+  font-size: 0.84rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+.rk-key__d b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ── Registry table — namespace → purpose → instance → TTL → owner ── */
+.rk-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.rk-tbl th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.rk-tbl td {
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+  vertical-align: top;
+  line-height: 1.45;
+}
+
+.rk-tbl tr:last-child td {
+  border-bottom: none;
+}
+
+.rk-tbl__ns {
+  font-family: var(--mono);
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.rk-tbl__inst {
+  white-space: nowrap;
+}
+
+.rk-tbl__inst--durable {
+  color: var(--s1);
+  font-weight: 600;
+}
+
+.rk-tbl__inst--cache {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .rk-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══════════ ВОДОРАЗДЕЛ ═══════════ */
+
+/* ── Водораздел Redis ⟂ Postgres — two-column split under the decision-box ── */
+.cw-axis {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--grid-gap);
+  margin-top: 0.9rem;
+}
+.cw-axis__col {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: 1rem 1.1rem;
+  border-top: var(--border-w) solid var(--accent-muted);
+}
+.cw-axis__col--redis {
+  border-top-color: var(--s1);
+}
+.cw-axis__col--pg {
+  border-top-color: var(--s3);
+}
+.cw-axis__h {
+  font-weight: 700;
+  letter-spacing: var(--heading-spacing);
+  margin-bottom: 0.15rem;
+}
+.cw-axis__d {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin: 0 0 0.6rem;
+}
+.cw-axis__list {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+.cw-axis__tag {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  border: var(--border-w) solid var(--accent-muted);
+  border-radius: 0.3rem;
+  padding: 0 0.3rem;
+  margin-left: 0.25rem;
+  vertical-align: middle;
+}
+
+@media (max-width: 720px) {
+  .cw-axis {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,633 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Knowledge Store: тесты</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Knowledge Store</a>
+        <h1 class="header__title">Тесты</h1>
+        <div class="header__sub">knowledge-store · workzone</div>
+      </div>
+
+      <!-- ── Overview band: решения + стек ── -->
+      <div class="test-overview">
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Принятые решения</div>
+          <div class="decision-box">
+            <strong>Одна база — тестируем одним SQL, не моками проекций</strong>
+            Несущая опора дизайна — тело, вектора и граф в одном Postgres, права
+            на обходе одним JOIN. Поэтому ядро покрытия — интеграция против
+            настоящего Postgres с <code>pgvector</code>: ACL pre-filter, обход
+            графа и upsert проверяются на живой СУБД, а не на подменённом
+            хранилище. Моками закрываем только чистую логику без БД
+            (chunking, fusion, decay).
+          </div>
+          <div class="decision-box">
+            <strong>Тип задаёт уровень, приоритет — маркеры</strong>
+            Unit — детерминированная логика без СУБД, на каждом PR. Integration
+            и API — против тестового Postgres+pgvector в Docker, отдельным шагом.
+            P0 держит несущие инварианты (ACL не утекает, upsert идемпотентен),
+            P1 — доводку и режимы; приоритет ортогонален типу
+            (<code>pytest -m p0</code>).
+          </div>
+          <div class="decision-box">
+            <strong>Граница покрытия совпадает с границей модуля</strong>
+            KS отвечает за retrieval и хранение: примитивы, fusion, ACL-фильтр,
+            lifecycle. RAG поверх (rerank, упаковка, вызов LLM) — за Query
+            Engine, здесь не тестируется. Захват прав и контракт Entity — за
+            Harvester; на стыке проверяем лишь, что пришедшее корректно
+            персистится и читается под правами.
+          </div>
+        </div>
+
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Стек и инфраструктура</div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Имеется <span class="iter done">done</span></span>
+            <span>pytest, pytest-asyncio, pytest-cov, httpx</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">База</span>
+            <span
+              >testcontainers — тестовый Postgres с расширением
+              <code>pgvector</code> (вектора + recursive SQL в одной СУБД);
+              миграции Alembic накатываются на старте контейнера</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Фабрики</span>
+            <span
+              >factory_boy для <code>Entity</code> / <code>chunks</code> /
+              <code>entity_edge</code> и пятёрки ACL — сборка графа и прав сцены
+              без прохода через Harvester</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Эмбеддинг</span>
+            <span
+              >фейковая модель эмбеддингов (детерминированный вектор по тексту) —
+              чтобы поиск по близости был воспроизводим, без реального инференса
+              в авто-прогоне</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Прочее</span>
+            <span
+              >time-machine (давность для staleness decay), шаги Curation Pass
+              вызовом напрямую — без поднятия планировщика</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Маркеры</span>
+            <span
+              ><code>@pytest.mark.unit</code> / <code>@pytest.mark.integration</code> /
+              <code>@pytest.mark.api</code> — по типу;
+              <code>@pytest.mark.p0</code> / <code>p1</code> — по приоритету,
+              ортогонально типу</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Unit ═══ Чистая логика без СУБД — детерминированно, каждый PR. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--unit">Unit</span>
+        <span class="test-sec__title">Чистая логика без СУБД</span>
+        <span class="test-sec__meta">детерминированно · каждый PR</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3" /><path d="M8.12 8.12 12 12" /><path d="M20 4 8.12 15.88" /><circle cx="6" cy="18" r="3" /><path d="M14.8 14.8 20 20" /></svg></span><span class="name">test_chunking.py</span></div>
+            <div class="test-card__sub">Резка тела на фрагменты, ordinal, контент-хеш</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#chunks">→ chunks</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">тело → фрагменты</span><span class="test-case__e">длинный <code>body</code> режется на куски; короткий — один фрагмент; пустой — ни одного</span></div>
+              <div class="test-case"><span class="test-case__k">ordinal по порядку</span><span class="test-case__e">фрагменты нумеруются подряд от начала текста — <code>UNIQUE (entity_id, ordinal)</code> держится</span></div>
+              <div class="test-case"><span class="test-case__k">content_hash на фрагмент</span><span class="test-case__e">хеш считается по тексту куска; одинаковый текст → одинаковый хеш</span></div>
+              <div class="test-case"><span class="test-case__k">переэмбеддинг только при смене текста</span><span class="test-case__e">правка одного фрагмента → его хеш меняется, у соседних прежний; переэмбеддится только изменённый</span></div>
+              <div class="test-case"><span class="test-case__k">token_count</span><span class="test-case__e">длина куска в токенах проставляется; режим уважает бюджет токенов на фрагмент</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 14 4 4-4 4" /><path d="m18 2 4 4-4 4" /><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22" /><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2" /><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45" /></svg></span><span class="name">test_fusion.py</span></div>
+            <div class="test-card__sub">Слияние четырёх ранжированных списков в один</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="hybrid-search.html#fusion">→ Слияние списков</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">четыре списка → один</span><span class="test-case__e">vector / lexical / graph / sql сливаются в единый ранжированный результат на сконструированных списках</span></div>
+              <div class="test-case"><span class="test-case__k">общий ключ — сущность</span><span class="test-case__e">фрагментные хиты (vector / lexical) сворачиваются к родителю по <code>entity_id</code>, лучший фрагмент остаётся при сущности; одна сущность из нескольких списков дедуплицируется</span></div>
+              <div class="test-case"><span class="test-case__k">RRF по обратному рангу</span><span class="test-case__e">вес позиции, а не сырого балла (несравнимого у разных парадигм); общий для нескольких списков кандидат поднимается</span></div>
+              <div class="test-case"><span class="test-case__k">взвешенное слияние</span><span class="test-case__e">веса примитивов сдвигают итоговый порядок предсказуемо</span></div>
+              <div class="test-case"><span class="test-case__k">детерминированность</span><span class="test-case__e">те же входы → тот же выход бит-в-бит; тай-брейк стабилен</span></div>
+              <div class="test-case"><span class="test-case__k">частичные входы</span><span class="test-case__e">один примитив пуст / дал меньше — слияние не падает, остальные учитываются</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico">∅</span><span class="name">test_emptiness.py</span></div>
+            <div class="test-card__sub">Производное свойство is_empty — есть ли что искать</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="hybrid-search.html#emptiness">→ Пустой индекс</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">нет фрагментов → is_empty</span><span class="test-case__e">в <code>chunks</code> ни строки → <code>is_empty</code> истинно; источник истины — наличие фрагментов для поиска, не число источников или сущностей</span></div>
+              <div class="test-case"><span class="test-case__k">первый фрагмент → переключение</span><span class="test-case__e">принят первый <code>chunk</code> → <code>is_empty</code> ложно; свойство меняется само, без отдельной команды или флага</span></div>
+              <div class="test-case"><span class="test-case__k">эмбеддер назначен, фрагментов нет → всё ещё пусто</span><span class="test-case__e">назначенный <code>harvester_embedding</code> при нулевых <code>chunks</code> базу непустой не делает — пустота определяется фрагментами, не готовностью приёма</span></div>
+              <div class="test-case"><span class="test-case__k">производное, не хранимый флаг</span><span class="test-case__e">отдельной колонки-состояния нет; <code>is_empty</code> вычисляется из наличия <code>chunks</code> (реализация вправе кэшировать), вручную не выставляется — как <code>is_available()</code> у SMTP</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 17h6v-6" /><path d="m22 17-8.5-8.5-5 5L2 7" /></svg></span><span class="name">test_staleness_decay.py</span></div>
+            <div class="test-card__sub">Decay-функция занижения trust_score</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="lifecycle.html#staleness">→ Staleness &amp; trust decay</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">авторитет — база</span><span class="test-case__e">при равных давности и спросе источник с более высоким <code>authority_tier</code> (<code>high</code> &gt; <code>normal</code> &gt; <code>low</code>) даёт больший <code>trust_score</code>; уровень читается JOIN по <code>source_id</code></span></div>
+              <div class="test-case"><span class="test-case__k">давность → ниже</span><span class="test-case__e">давний <code>source_updated_at</code> даёт меньший <code>trust_score</code>, свежий — выше (time-machine)</span></div>
+              <div class="test-case"><span class="test-case__k">частота обращений</span><span class="test-case__e">невостребованное опускается; запрашиваемое держит вес; спрос читается JOIN из <code>access_counter</code> (<code>hits</code> · <code>last_accessed_at</code>), давно не запрашиваемое затухает к нейтрали</span></div>
+              <div class="test-case"><span class="test-case__k">монотонность</span><span class="test-case__e">функция не растёт со старением; без скачков и отрицательных значений</span></div>
+              <div class="test-case"><span class="test-case__k">только вес, не доступ</span><span class="test-case__e">decay меняет <code>trust_score</code>, не трогает <code>status</code> / <code>is_deleted</code> — устаревшее остаётся видимым</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="16" y="16" width="6" height="6" rx="1" /><rect x="2" y="16" width="6" height="6" rx="1" /><rect x="9" y="2" width="6" height="6" rx="1" /><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3" /><path d="M12 12V8" /></svg></span><span class="name">test_traversal_builder.py</span></div>
+            <div class="test-card__sub">Построитель recursive-CTE обхода графа</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="hybrid-search.html#primitives">→ примитив graph</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">глубина 1–3</span><span class="test-case__e">собранный recursive-CTE ограничивает обход заданной глубиной шагов</span></div>
+              <div class="test-case"><span class="test-case__k">защита от циклов</span><span class="test-case__e">цикл в рёбрах не зацикливает обход — посещённые узлы не повторяются</span></div>
+              <div class="test-case"><span class="test-case__k">направление и rel_type</span><span class="test-case__e">обход по <code>src→dst</code> с фильтром по виду связи строится корректно</span></div>
+              <div class="test-case"><span class="test-case__k">слот под ACL JOIN</span><span class="test-case__e">шаблон оставляет место для JOIN <code>entity_acl</code> на посещённых id — права лягут в тот же запрос</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P0 ═══ Несущие инварианты против Postgres+pgvector. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p0">Integration · P0</span>
+        <span class="test-sec__title">Несущие инварианты против Postgres + pgvector</span>
+        <span class="test-sec__meta">testcontainers · отдельный шаг CI</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg></span><span class="name">test_acl_prefilter.py</span></div>
+            <div class="test-card__sub">ACL pre-filter одним SQL — неразрешённое не доходит</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="hybrid-search.html#acl-prefilter">→ ACL применяется один раз</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">vector под правами</span><span class="test-case__e">поиск по близости над <code>chunks</code> возвращает только фрагменты разрешённых сущностей — отбор тем же SQL, до ранжирования</span></div>
+              <div class="test-case"><span class="test-case__k">lexical под правами</span><span class="test-case__e">полнотекстовый поиск (<code>text_tsv</code> + GIN) фильтруется тем же ACL JOIN — точное слово из неразрешённой сущности не утекает</span></div>
+              <div class="test-case"><span class="test-case__k">фрагмент наследует ACL</span><span class="test-case__e">chunk своего ACL не имеет; доступ резолвится через <code>entity_id</code> → <code>entity_acl</code></span></div>
+              <div class="test-case"><span class="test-case__k">грант группе vs прямой</span><span class="test-case__e">видно через членство (<code>group_membership</code>) ИЛИ прямой грант (<code>entity_acl.source_principal_id</code>); цепочка резолва от <code>users</code></span></div>
+              <div class="test-case"><span class="test-case__k">public — wildcard на строке</span><span class="test-case__e">грант <code>scope='public'</code> (оба principal/group <code>NULL</code>) виден всем — и пользователю без членств, и анониму по правилам источника; в фильтр уходит как <code>scope='public'</code>, без синтетической группы</span></div>
+              <div class="test-case"><span class="test-case__k">scope ↔ поля согласованы</span><span class="test-case__e">CHECK <code>scope IN (group/principal/public)</code> плюс согласованность: <code>group</code> → заполнен <code>source_group_id</code>, <code>principal</code> → <code>source_principal_id</code>, <code>public</code> → оба <code>NULL</code>; кривая комбинация отвергается БД</span></div>
+              <div class="test-case"><span class="test-case__k">отозванное не утекает</span><span class="test-case__e">убрали из группы / сняли грант → сущность исчезает из выдачи без отдельного post-фильтра</span></div>
+              <div class="test-case"><span class="test-case__k">пустой доступ</span><span class="test-case__e">пользователь без личностей / членств → пустая выдача, не ошибка и не утечка</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="16" y="16" width="6" height="6" rx="1" /><rect x="2" y="16" width="6" height="6" rx="1" /><rect x="9" y="2" width="6" height="6" rx="1" /><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3" /><path d="M12 12V8" /></svg></span><span class="name">test_graph_traversal.py</span></div>
+            <div class="test-card__sub">Обход entity_edge под тем же ACL JOIN</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#graph">→ entity_edge</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">обход 1–3 шага</span><span class="test-case__e">recursive SQL от стартовых узлов приносит ближний контекст: тред, иерархию, упоминания</span></div>
+              <div class="test-case"><span class="test-case__k">единый ACL на обходе</span><span class="test-case__e">обход покрыт тем же JOIN <code>entity_acl</code> — узлы без доступа не попадают в результат, без отдельной проекции прав</span></div>
+              <div class="test-case"><span class="test-case__k">недоступный узел рвёт путь</span><span class="test-case__e">путь через неразрешённую сущность не «перепрыгивает» её и не утекает дальше</span></div>
+              <div class="test-case"><span class="test-case__k">цикл в графе</span><span class="test-case__e">реальный цикл рёбер на живой БД не зацикливает CTE</span></div>
+              <div class="test-case"><span class="test-case__k">fanout-cap на шаг</span><span class="test-case__e">хаб-узел с тысячами рёбер: cap на fanout ограничивает число потомков, разворачиваемых с одного узла за шаг — обход не взрывается в десятки тысяч рёбер; отсечка срабатывает <em>до</em> ACL JOIN, а не после</span></div>
+              <div class="test-case"><span class="test-case__k">отсев по weight</span><span class="test-case__e">рёбра ниже порога <code>weight</code> отбрасываются из обхода — слабые связи не тянутся в контекст; фильтр применяется <em>до</em> ACL, наравне с fanout-cap сдерживая раздувание с хаб-узла</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 19H4.815a1.83 1.83 0 0 1-1.57-.881 1.785 1.785 0 0 1-.004-1.784L7.196 9.5" /><path d="M11 19h8.203a1.83 1.83 0 0 0 1.556-.89 1.784 1.784 0 0 0 0-1.775l-1.226-2.12" /><path d="m14 16-3 3 3 3" /><path d="M8.293 13.596 7.196 9.5 3.1 10.598" /><path d="m9.344 5.811 1.093-1.892A1.83 1.83 0 0 1 11.985 3a1.784 1.784 0 0 1 1.546.888l3.943 6.843" /><path d="m13.378 9.633 4.096 1.098 1.097-4.096" /></svg></span><span class="name">test_entity_upsert.py</span></div>
+            <div class="test-card__sub">Идемпотентность upsert по ключу источника</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#entities">→ entities</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">один ключ — одна строка</span><span class="test-case__e">по <code>UNIQUE (source_id, source_type, source_entity_id)</code> повторный upsert обновляет, не плодит дубли</span></div>
+              <div class="test-case"><span class="test-case__k">проекции в порядке</span><span class="test-case__e">тело → <code>chunks</code> → <code>entity_edge</code> в одной транзакции; FK держатся</span></div>
+              <div class="test-case"><span class="test-case__k">смена content_hash</span><span class="test-case__e">правка <code>body</code> → переэмбеддинг затронутых фрагментов; неизменные не переэмбеддятся</span></div>
+              <div class="test-case"><span class="test-case__k">синхронизация набора фрагментов</span><span class="test-case__e">укоротили текст → лишние <code>chunks</code> удалены, осиротевших нет (CASCADE по <code>entity_id</code>)</span></div>
+              <div class="test-case"><span class="test-case__k">автор → SET NULL</span><span class="test-case__e">удаление <code>source_principal</code> обнуляет <code>entities.author_principal_id</code> (ON DELETE SET NULL) — сущность жива; удаление <code>source</code> уносит всё содержимое по CASCADE</span></div>
+              <div class="test-case"><span class="test-case__k">status — только из словаря</span><span class="test-case__e">непустое значение <code>status</code> вне (<code>draft</code>/<code>final</code>/<code>archived</code>) отвергается CHECK; <code>NULL</code> допустим — до шага classify</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></span><span class="name">test_soft_delete.py</span></div>
+            <div class="test-card__sub">is_deleted прячет из выдачи, не удаляет физически</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#entities">→ entities</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">скрыта из выдачи</span><span class="test-case__e"><code>is_deleted = true</code> → запись и её фрагменты выпадают из всех четырёх примитивов, строка физически жива</span></div>
+              <div class="test-case"><span class="test-case__k">фрагменты несут зеркало флага</span><span class="test-case__e">денормализованный <code>chunks.is_deleted</code> ставится в той же транзакции; частичные HNSW/GIN (<code>WHERE NOT is_deleted</code>) исключают удалённое из обхода индекса</span></div>
+              <div class="test-case"><span class="test-case__k">отдельная ось от status</span><span class="test-case__e">soft-delete не трогает <code>status</code> (<code>draft</code>/<code>final</code>/<code>archived</code>) — оси независимы</span></div>
+              <div class="test-case"><span class="test-case__k">восстановление</span><span class="test-case__e">снятие маркера возвращает запись в выдачу с прежним статусом</span></div>
+              <div class="test-case"><span class="test-case__k">deleted_at ставит reconciliation</span><span class="test-case__e">момент исчезновения проставляется при пропаже из источника, не в инкременте</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3" /><circle cx="6" cy="6" r="3" /><path d="M6 21V9a9 9 0 0 0 9 9" /></svg></span><span class="name">test_identity_bridge.py</span></div>
+            <div class="test-card__sub">Авто-связь identity↔users по точному email</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="acl-identity.html#identity">→ identity ↔ users</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">связь с обеих сторон</span><span class="test-case__e">Auth заводит <code>users</code> → KS ставит <code>identity.user_id</code> по точному <code>lower(email)</code>; Harvester апсёртит <code>identity</code> → KS досвязывает по <code>users</code>; обе точки держит KS</span></div>
+              <div class="test-case"><span class="test-case__k">нормализация регистра</span><span class="test-case__e"><code>ALICE@CORP</code> ↔ <code>alice@corp</code> связываются — свод по <code>UNIQUE (lower(email))</code>, коллизий регистра нет</span></div>
+              <div class="test-case"><span class="test-case__k">мост 1:1</span><span class="test-case__e">partial unique <code>(user_id) WHERE user_id IS NOT NULL</code> — одна <code>identity</code> на <code>users</code>; повторная связь идемпотентна, второй привязки не плодит</span></div>
+              <div class="test-case"><span class="test-case__k">нет совпадения → NULL</span><span class="test-case__e">email не нашёлся (другой адрес / отсутствует) → <code>user_id = NULL</code>, личность остаётся unmatched под ручную привязку в Admin, не ошибка</span></div>
+              <div class="test-case"><span class="test-case__k">связь синхронна</span><span class="test-case__e">мост ставится в момент создания/апсёрта, не ждёт ближайшей sync-волны — на первый же запрос доступ резолвится через <code>user_id</code></span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P1 ═══ Curation Pass, refresh, журнал, recall, backup. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">Integration · P1</span>
+        <span class="test-sec__title">Curation Pass, refresh, журнал, recall, backup</span>
+        <span class="test-sec__meta">testcontainers · отдельный шаг CI</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9" /><path d="m18 15 4-4" /><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5" /></svg></span><span class="name">test_curation_pass.py</span></div>
+            <div class="test-card__sub">Шаги доводки графа по уже собранной базе</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="lifecycle.html#curation-pass">→ Curation Pass</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">cross-source ребро</span><span class="test-case__e">упоминание материализуется в <code>entity_edge</code> с <code>origin = curation</code>, когда оба узла уже в графе; заявка <code>entity_ref</code> до того, после материализации строка удаляется</span></div>
+              <div class="test-case"><span class="test-case__k">forward-ссылка внутри источника</span><span class="test-case__e">отложенная ссылка на ещё не загруженную цель того же источника ждёт заявкой в <code>entity_ref</code>; прогон материализует ребро (<code>origin = curation</code>) после того, как цель приходит следующим инкрементом — заявка снимается</span></div>
+              <div class="test-case"><span class="test-case__k">цель-user резолвится в тело</span><span class="test-case__e">заявка с <code>target_kind = user</code> (напр. author → личность) гасится записью <code>author_principal_id</code> в тело сущности; <code>entity_edge</code> при этом не создаётся — не всякая заявка становится ребром</span></div>
+              <div class="test-case"><span class="test-case__k">мёрж нод</span><span class="test-case__e">две сущности, признанные одним объектом, схлопываются: рёбра переносятся, дубль помечен <code>duplicate_of</code></span></div>
+              <div class="test-case"><span class="test-case__k">нечёткое сведение личностей</span><span class="test-case__e">несведённые <code>source_principal</code> под разными email сопоставляются, <code>identity_id</code> проставляется; мост к <code>users</code> досвязывается по разным email</span></div>
+              <div class="test-case"><span class="test-case__k">decay пишет trust_score</span><span class="test-case__e">шаг staleness заносит занижённый <code>entities.trust_score</code> в БД</span></div>
+              <div class="test-case"><span class="test-case__k">retention <span class="iter v2">v2</span></span><span class="test-case__e">по политике: архивация прячет из горячей выдачи, удаление вычищает физически вместе с <code>chunks</code> по CASCADE</span></div>
+              <div class="test-case"><span class="test-case__k">шаги идемпотентны</span><span class="test-case__e">повторный прогон не вредит; частичный сбой одного шага не рушит остальные</span></div>
+              <div class="test-case"><span class="test-case__k">несведённое — на разбор</span><span class="test-case__e">что нечётко связать не удалось, остаётся unmatched (<code>identity_id = NULL</code>) для ручного разбора, не выбрасывается</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg></span><span class="name">test_embedding_refresh.py</span></div>
+            <div class="test-card__sub">Переэмбеддинг по событию смены модели</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="lifecycle.html#embedding-refresh">→ Embedding refresh</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">смена модели → перегенерация</span><span class="test-case__e">рассинхрон <code>chunks.embedding_model</code> с текущей моделью → массовый прогон пересчитывает <code>chunks.embedding</code></span></div>
+              <div class="test-case"><span class="test-case__k">обновление embedding_model</span><span class="test-case__e">после прогона <code>embedding_model</code> у фрагментов = текущая модель платформы</span></div>
+              <div class="test-case"><span class="test-case__k">неизменная модель — пусто</span><span class="test-case__e">модель не менялась → прогон ничего не пересчитывает (индекс уже консистентен)</span></div>
+              <div class="test-case"><span class="test-case__k">вне цепочки расписания</span><span class="test-case__e">триггерит событие, не таймер; обычная загрузка эмбеддит лишь изменённый текст по <code>content_hash</code></span></div>
+              <div class="test-case"><span class="test-case__k">смена размерности — не этот путь</span><span class="test-case__e">этот прогон покрывает смену модели при той же размерности N (построчный пересчёт); смена самой N (<code>halfvec(N)</code>) — миграция (новая колонка → <code>CREATE INDEX CONCURRENTLY</code> → атомарный своп), не in-place refresh, и сюда не входит</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M12 11h4" /><path d="M12 16h4" /><path d="M8 11h.01" /><path d="M8 16h.01" /></svg></span><span class="name">test_curation_runs.py</span></div>
+            <div class="test-card__sub">Control-plane: видимость прогона</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="lifecycle.html#curation-runs">→ curation_runs</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">строка на прогон</span><span class="test-case__e">старт пишет <code>running</code> + <code>started_at</code>; финал — <code>succeeded</code> / <code>failed</code> + <code>finished_at</code></span></div>
+              <div class="test-case"><span class="test-case__k">статистика в steps</span><span class="test-case__e">какие шаги отработали и с какими значениями — гибким <code>JSONB</code>: рёбер материализовано, дублей сведено, сущностей занижено</span></div>
+              <div class="test-case"><span class="test-case__k">провал в error</span><span class="test-case__e">сбой → <code>state = failed</code> + краткая причина в <code>error</code>; уже прогнанные шаги отражены в <code>steps</code></span></div>
+              <div class="test-case"><span class="test-case__k">CHECK на state</span><span class="test-case__e">значение вне (<code>queued</code>/<code>running</code>/<code>succeeded</code>/<code>failed</code>/<code>cancelled</code>) отвергается БД</span></div>
+              <div class="test-case"><span class="test-case__k">один активный прогон</span><span class="test-case__e">второй незавершённый прогон отвергается singleton partial unique index — на платформе максимум один <code>queued</code>/<code>running</code></span></div>
+              <div class="test-case"><span class="test-case__k">отмена → cancelled</span><span class="test-case__e">отмена running-прогона (UI «Отменить») терминализует его в <code>cancelled</code> + <code>finished_at</code>, освобождает singleton-замок; следующий прогон стартует свежим</span></div>
+              <div class="test-case"><span class="test-case__k">CHECK на trigger</span><span class="test-case__e">значение вне (<code>schedule</code>/<code>model_change</code>/<code>manual</code>) отвергается БД; событийный переэмбеддинг пишется строкой <code>trigger = model_change</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span><span class="name">test_coordination.py</span></div>
+            <div class="test-card__sub">Взаимное исключение полос: доставка ∥ доводка</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="lifecycle.html#coordination">→ Координация полос</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">разрушительный шаг → sync в очередь</span><span class="test-case__e">пока мёрж/retention держит замок, прогон затронутого источника встаёт в <code>queued</code>, не падает, и стартует по завершении шага</span></div>
+              <div class="test-case"><span class="test-case__k">добавочное идёт параллельно</span><span class="test-case__e">материализация рёбер / decay / refresh не блокируют upsert Harvester — конкурентная запись переживается, рёбра не осиротевают (<code>ON CONFLICT DO NOTHING</code>)</span></div>
+              <div class="test-case"><span class="test-case__k">мёрж под конкуренцией</span><span class="test-case__e">upsert слитой сущности во время мёржа не оставляет осиротевших рёбер — досводятся следующим прогоном, <code>duplicate_of</code> консистентен</span></div>
+              <div class="test-case"><span class="test-case__k">протухший heartbeat отпускает замок</span><span class="test-case__e">держатель умер, не закрыв прогон → по протуханию <code>heartbeat_at</code> замок отбирается, новый прогон стартует; fencing отсекает запоздалую запись</span></div>
+              <div class="test-case"><span class="test-case__k">refresh без замка полосы</span><span class="test-case__e">при активном переэмбеддинге новые <code>chunks</code> пишутся текущей моделью; смешанные поколения <code>embedding_model</code> сходятся, приём не встаёт</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></svg></span><span class="name">test_hnsw_recall.py</span></div>
+            <div class="test-card__sub">Недобор HNSW: <code>is_deleted</code> снимает частичный индекс, ACL-JOIN — на ручной замер</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#chunks">→ chunks</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">is_deleted — вне обхода</span><span class="test-case__e">денормализованный <code>chunks.is_deleted</code> + частичный HNSW (<code>WHERE NOT is_deleted</code>) держит удалённое вне индекса — этот предикат недобора не даёт, он не post-фильтр</span></div>
+              <div class="test-case"><span class="test-case__k">ACL-JOIN недобирает</span><span class="test-case__e">жёсткий ACL приходит JOIN-ом на <code>entities</code> → top-K приближённого HNSW частью отсекается уже после скана: разрешённых кандидатов меньше запрошенного, без ошибки</span></div>
+              <div class="test-case"><span class="test-case__k">iterative_scan ACL не лечит</span><span class="test-case__e"><code>hnsw.iterative_scan</code> (pgvector 0.8.0+) добирает только по условиям на самой <code>chunks</code>; предикат через JOIN на <code>entities</code> им не компенсируется — потому ACL-recall не закрывается автоматически</span></div>
+              <div class="test-case"><span class="test-case__k">метрика — косинус</span><span class="test-case__e">на сконструированных нормализованных векторах порядок близости идёт по косинусу (класс операторов <code>vector_cosine_ops</code>), не по L2-дефолту pgvector — метрика зафиксирована как контракт, а не унаследована случайно от индекса</span></div>
+              <div class="test-case"><span class="test-case__k">точное значение — вручную</span><span class="test-case__e">тест ловит сам факт недобора под ACL и границу лечения; абсолютный recall под реальные данные — за ручным замером ниже</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 16h.01" /><path d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /><path d="M21.946 12.013H2.054" /><path d="M6 16h.01" /></svg></span><span class="name">test_backup_restore.py</span></div>
+            <div class="test-card__sub">Цикл резервного копирования и восстановления</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="lifecycle.html#backup">→ Backup &amp; restore</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">снимок целостен</span><span class="test-case__e">одна база → тело, вектора, граф и права в бэкапе одной согласованной точкой</span></div>
+              <div class="test-case"><span class="test-case__k">restore возвращает всё</span><span class="test-case__e">после восстановления три проекции и ACL совпадают с исходными; поиск и обход работают</span></div>
+              <div class="test-case"><span class="test-case__k">вектора переживают цикл</span><span class="test-case__e"><code>chunks.embedding</code> и HNSW-индекс восстанавливаются — близость считается как до бэкапа</span></div>
+              <div class="test-case"><span class="test-case__k">журнал снимка</span><span class="test-case__e">снятие пишет строку <code>backup_snapshots</code>: <code>running</code> + <code>started_at</code> → <code>succeeded</code> + <code>finished_at</code> + <code>size_bytes</code> + <code>location</code>; CHECK на <code>state</code> отвергает чужое значение</span></div>
+              <div class="test-case"><span class="test-case__k">ротация по retention_count</span><span class="test-case__e">снимков сверх <code>backup_settings.retention_count</code> → самый старый удаляется и из журнала, и из хранилища</span></div>
+              <div class="test-case"><span class="test-case__k">зависший снимок не запирает расписание</span><span class="test-case__e">воркер умер, оставив снимок в <code>running</code> → по протуханию <code>heartbeat_at</code> (~90с) сторож жнёт его в <code>failed</code>, замок single-flight отпускается, следующий по расписанию стартует</span></div>
+              <div class="test-case"><span class="test-case__k">один активный снимок</span><span class="test-case__e">partial unique <code>WHERE state = 'running'</code>: второй бэкап поверх незакрытого отклоняется, параллельного дампа нет</span></div>
+              <div class="test-case"><span class="test-case__k">креды write-only</span><span class="test-case__e"><code>destination_creds_enc</code> хранится зашифрованным, в API-ответе и data export не возвращается (как <code>api_key_enc</code>)</span></div>
+              <div class="test-case"><span class="test-case__k">настройки — singleton</span><span class="test-case__e"><code>backup_settings</code> CHECK (<code>id = 1</code>): вторая строка отвергается; приложение читает/обновляет, не создаёт</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ API P1 ═══ Retrieval-эндпоинты и контроль доступа. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">API · P1</span>
+        <span class="test-sec__title">Retrieval-эндпоинты — HTTP-контракт</span>
+        <span class="test-sec__meta">httpx · ASGI-приложение · Postgres+pgvector · <a href="../../api/index.html#conventions" class="xref-badge">→ HTTP API</a> <a class="xref-badge" href="../../api/_workzone/tests.html#conformance">→ Conformance</a></span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg></span><span class="name">test_api_retrieval.py</span></div>
+            <div class="test-card__sub">Четыре примитива по отдельности и собранный hybrid</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="hybrid-search.html#primitives">→ Четыре примитива</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">примитивы как tools</span><span class="test-case__e">vector / lexical / graph / sql вызываются по отдельности → ранжированный список своей парадигмы</span></div>
+              <div class="test-case"><span class="test-case__k">собранный hybrid</span><span class="test-case__e">один вызов → fused-результат (fusion внутри KS), готовый под RAG-retrieval</span></div>
+              <div class="test-case"><span class="test-case__k">форма запроса и валидация</span><span class="test-case__e">кривой параметр (глубина обхода вне 1–3, неизвестный фильтр) → <code>422</code>, не <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">RAG здесь не происходит</span><span class="test-case__e">эндпоинт отдаёт кандидатов; rerank / упаковка / вызов LLM — за Query Engine, наружу не выставлены</span></div>
+              <div class="test-case"><span class="test-case__k">предел top-K</span><span class="test-case__e">примитив возвращает не более <code>K</code> попаданий; <code>K</code> ограничен серверным потолком — запрос сверх потолка усечён до него, не безлимит</span></div>
+              <div class="test-case"><span class="test-case__k">форма ответа retrieval</span><span class="test-case__e">список попаданий с <code>score</code> и id chunk/entity, порядок по убыванию релевантности; пустой результат → <code>200</code> с пустым списком, не <code>404</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span><span class="name">test_api_access.py</span></div>
+            <div class="test-card__sub">Выдача всегда ACL-фильтрована</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="acl-identity.html#resolution">→ Резолв-джойн</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">фильтр по вызывающему</span><span class="test-case__e">retrieval всегда сужен правами вызывающего; два пользователя на тот же запрос видят разное</span></div>
+              <div class="test-case"><span class="test-case__k">неразрешённое не утекает</span><span class="test-case__e">недоступная сущность не приходит ни в одном примитиве, ни в fused, ни в обходе графа</span></div>
+              <div class="test-case"><span class="test-case__k">аноним</span><span class="test-case__e">без токена → <code>401</code> (параметризовано по всем retrieval-роутам)</span></div>
+              <div class="test-case"><span class="test-case__k">нет «голых» роутов</span><span class="test-case__e">каждый retrieval-эндпоинт реально за guard и ACL-фильтром — параметризованный аудит покрытия</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ API P1 ═══ HTTP-обёртка над прогонами обслуживания KS. Доменную
+           логику покрывают Integration-тесты выше (curation / refresh / backup);
+           здесь — только контракт HTTP: асинхронный запуск, коды, доступ, замок
+           разрушительных операций. Свод, которому подчиняется, — HTTP API. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">API · P1</span>
+        <span class="test-sec__title">KS-admin — HTTP-контракт прогонов</span>
+        <span class="test-sec__meta">httpx · ASGI-приложение · <a href="../../api/index.html#conventions" class="xref-badge">→ HTTP API</a> <a class="xref-badge" href="../../api/_workzone/tests.html#conformance">→ Conformance</a></span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></svg></span><span class="name">test_api_admin_ops.py</span></div>
+            <div class="test-card__sub">Запуск обслуживания и статус источников по HTTP</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="lifecycle.html#staleness">→ Доводка и refresh</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">запуск прогона → 202</span><span class="test-case__e">reindex / re-embed / backup «сейчас» → <code>202</code> + id прогона; строка <code>curation_runs</code> / <code>backup_snapshots</code> в <code>queued</code>, задача в SAQ</span></div>
+              <div class="test-case"><span class="test-case__k">статус источников</span><span class="test-case__e">GET → срез по источникам: состояние, счётчики сущностей/фрагментов, отметка последнего прогона</span></div>
+              <div class="test-case"><span class="test-case__k">restore из снапшота</span><span class="test-case__e">восстановление из <code>backup_snapshots</code> → <code>202</code>; неизвестный снапшот → <code>404</code></span></div>
+              <div class="test-case"><span class="test-case__k">замок разрушительных</span><span class="test-case__e">мёрж/retention под замком целевых полос — конкурентный запуск → <code>409</code>, не порча данных</span></div>
+              <div class="test-case"><span class="test-case__k">повторный запуск под замком → 409</span><span class="test-case__e">второй <code>POST</code> reindex / re-embed / backup, пока прогон уже <code>queued</code>/<code>running</code> → <code>409 CONFLICT</code> (single-flight по <code>curation_runs</code> / <code>backup_snapshots</code>) — не второй прогон и не <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">валидация как 422</span><span class="test-case__e">кривой параметр прогона / расписания → <code>422</code>, не <code>500</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span><span class="name">test_api_admin_access.py</span></div>
+            <div class="test-card__sub">Прогоны обслуживания — только под ролью</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">только Owner/Admin</span><span class="test-case__e">Owner/Admin запускает прогон / читает статус → <code>200</code>/<code>202</code>; Member → <code>403</code></span></div>
+              <div class="test-case"><span class="test-case__k">аноним</span><span class="test-case__e">без токена → <code>401</code> (параметризовано по всем admin-роутам KS)</span></div>
+              <div class="test-case"><span class="test-case__k">нет «голых» роутов</span><span class="test-case__e">каждый admin-эндпоинт реально за guard роли — параметризованный аудит покрытия</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Manual ═══ Замер recall на реальных данных — вне авто-теста. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Manual</span>
+        <span class="test-sec__title">Замер recall на реальных данных — вне CI</span>
+        <span class="test-sec__meta">ручной замер · не замкнуть в авто-тест</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          Абсолютный recall приближённого индекса HNSW под жёстким
+          <a href="acl-identity.html#resolution" class="xref-page">ACL-фильтром</a>
+          зависит от распределения реальных данных и формы прав — общим оценкам из
+          бенчмарков доверять нельзя, а синтетика его не воспроизводит. Авто-тест
+          ловит лишь <em>факт</em> недобора и <em>границу</em> лечения:
+          <code>hnsw.iterative_scan</code> добирает по условиям на самой
+          <code>chunks</code>, но ACL приходит JOIN-ом на <code>entities</code> и
+          итеративным сканом не компенсируется — потому само значение, что
+          ACL-фильтр не роняет полноту ниже приемлемого, снимается вручную на
+          представительном корпусе. Назначение — поднять recall под фактическую
+          нагрузку параметрами индекса (<code>m</code>, <code>ef_search</code>),
+          раз iterative_scan JOIN-предикат не закрывает, — не в авто-прогоне.
+        </p>
+      </div>
+
+      <!-- ═══ Структура ═══ Каталог тестов: уровень задаётся папкой, приоритет
+           — маркерами. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Structure</span>
+        <span class="test-sec__title">Файловая структура тестов</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          Разделение по типу: <code>unit/</code> — чистая логика без СУБД, идёт
+          на каждом PR. <code>integration/</code> и <code>api/</code> — против
+          тестового Postgres с <code>pgvector</code> в Docker, отдельным, более
+          редким шагом. Приоритет (P0–P1) ортогонален каталогам и задаётся
+          маркерами (<code>pytest -m p0</code>). Живой замер recall остаётся
+          ручным инструментом и в авто-прогон не попадает.
+        </p>
+        <div class="test-tree">
+          <ul>
+            <li>
+              <span class="test-tree__row"><code>tests/knowledge_store/</code><span class="d">каталог модуля</span></span>
+              <ul>
+                <li><span class="test-tree__row"><code>conftest.py</code><span class="d">testcontainers Postgres+pgvector · фабрики Entity/chunks/edge + пятёрки ACL · фейковая модель эмбеддингов · шаги Curation Pass напрямую</span></span></li>
+                <li>
+                  <span class="test-tree__row"><code>unit/</code><span class="d">чистая логика без СУБД</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_chunking · test_fusion · test_staleness_decay · test_traversal_builder</code><span class="d">резка, слияние, decay, построитель обхода</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>integration/</code><span class="d">против Postgres+pgvector</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_acl_prefilter · test_identity_bridge · test_graph_traversal · test_entity_upsert · test_soft_delete</code><span class="d">P0 — несущие инварианты: ACL, мост личностей, обход, upsert, soft-delete</span></span></li>
+                    <li><span class="test-tree__row"><code>test_curation_pass · test_embedding_refresh · test_curation_runs · test_coordination · test_hnsw_recall · test_backup_restore</code><span class="d">P1 — доводка, refresh, журнал, координация полос, recall, backup</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>api/</code><span class="d">HTTP-контракт — httpx + ASGI + Postgres+pgvector</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_api_retrieval.py</code><span class="d">примитивы как tools + собранный hybrid</span></span></li>
+                    <li><span class="test-tree__row"><code>test_api_access.py</code><span class="d">выдача всегда ACL-фильтрована</span></span></li>
+                  </ul>
+                </li>
+                <li><span class="test-tree__row"><code>manual/</code><span class="d">вне CI — живой замер recall на реальных данных</span></span></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Agent Engine: Модель данных</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="data-model.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Agent Engine</a>
+        <h1 class="header__title">Модель данных</h1>
+        <div class="header__sub">agent-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        Agent Engine хранит <strong>определения агентов</strong> и
+        <strong>журнал прогонов</strong>, плюс тонкую связку
+        <a href="#agent-tools" class="xref-anchor">agent_tools</a> — выбор
+        опциональных инструментов. Личность агента не
+        отдельная сущность, а FK на владельца (<a href="#agents" class="xref-anchor"
+          >agents</a>); недельный бюджет не таблица-счётчик, а
+        <strong>сумма по</strong> <a href="#agent-runs" class="xref-anchor"
+          >agent_runs</a>. Знания живут в Knowledge Store, потолок недельного
+        бюджета — в platform_settings; из чужого здесь хранятся две ссылки —
+        <code>user_id</code> владельца и <code>model_id</code> выбранной модели,
+        всё прочее
+        <a href="#boundary" class="xref-anchor">читается у соседей на лету</a>.
+      </p>
+
+      <!-- ════════════════ AGENTS ════════════════ -->
+      <div class="section" id="agents">
+        <div class="section__title">Определение агента: <code>agents</code></div>
+        <p class="desc">
+          Что сотрудник завёл: имя, <a href="runtime.html#prompt-composition" class="xref-page"
+            >промт</a> (его слой композиции), <a href="execution.html#schedule" class="xref-page"
+            >расписание</a> и два замка — выключатель владельца и
+          липкий замок админа. FK на владельца несёт двойную службу: и каскад
+          удаления, и <a href="identity.html#owner-rights" class="xref-page"
+            >личность</a>, под которой агент читает базу.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--ae">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Агент</span>
+              <span class="stk-layer__role">Что завёл сотрудник — промт, расписание, стопы.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">agents</span>
+                  <span class="dm-tbl__sub">определения агентов</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → users</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">user_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">владелец · CASCADE · его ACL = личность агента перед KS</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">name</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">имя агента — для списка «мои агенты»</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">description</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">короткое описание — подзаголовок карточки агента · опционально · не <code>prompt</code>: человеку, не модели</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">prompt</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">слой владельца · композируется под платформенным prompt в рантайме</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">schedule</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">простое расписание — <a href="#schedule-shape" class="xref-anchor">размеченное объединение</a> (интервал / календарь) · NULL = только ручной запуск · имя по смыслу, не <code>meta</code></td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">model_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → agent_models (core), ON DELETE SET NULL">FK→agent_models</span
+                        ><span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">модель прогона · выбор владельца из <a href="../../ai-foundation/_workzone/data-model.html#ai-models" class="xref-module">разрешённого списка</a> · <code>SET NULL</code>: сняли модель из списка → <code>NULL</code> = агент остановлен, владелец выбирает заново</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">enabled</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="server_default=true">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">выключатель владельца · <code>true</code> = агент рабочий (расписание + ручной); <code>false</code> — полный стоп</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">admin_paused</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="server_default=false">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">липкий замок админа · владелец снять не может (<a href="governance.html#admin-pause" class="xref-page">два замка</a>)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">next_run_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">вычисленный следующий слот · NULL = только ручной / выключен владельцем / заперт админом · планировщик сканирует по нему</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">meta</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">гибкие атрибуты агента</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · правка промта, расписания, стопов</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Личность агента — это FK на владельца, не отдельная модель</span>
+                </div>
+                <div class="stk-dec__d">
+                  Агент <strong>и есть</strong> его владелец перед базой:
+                  <code>user_id</code> ведёт прямо к ACL создателя, и тем же
+                  ребром идёт каскад. Отдельной таблицы личностей, сервисных
+                  аккаунтов, выбора «чей доступ» — нет; <span class="iter v2">v2</span>,
+                  <a href="identity.html#owner-rights" class="xref-page">полная модель личности</a>.
+                  Связать дёшево: личность сотрудника уже сведена с учёткой
+                  мостом <code>identity.user_id</code> в
+                  <a href="../../knowledge-store/_workzone/acl-identity.html#identity" class="xref-module"
+                    >модели личностей</a>.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Два замка — оба должны быть открыты</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>enabled</code> — выключатель владельца,
+                  <code>admin_paused</code> — замок админа; это
+                  <strong>разные оси</strong>, а не одно поле состояния. Агент
+                  стартует — по расписанию или вручную — только если включён
+                  владельцем <em>и</em> не заперт админом. Замок админа липкий:
+                  владелец правит свой флаг, чужой — нет. Деактивация владельца не
+                  заводит третьей оси: она пишет тот же <code>enabled=false</code>,
+                  и вернуть его вправе только сам владелец
+                  (<a href="governance.html#lifecycle" class="xref-page">жизненный
+                    цикл</a>).
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Модель — ссылка на разрешённый список, без неявного дефолта</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>model_id</code> ведёт на строку
+                  <a href="../../ai-foundation/_workzone/data-model.html#ai-models" class="xref-module"
+                    >agent_models</a> — список chat-моделей, что admin разрешил
+                  агентам. Владелец выбирает из него; при создании поле
+                  проставляется (преднабор — дефолт списка). Неявного дефолта в
+                  рантайме <strong>нет</strong>: <code>NULL</code> значит не
+                  «взять дефолт», а «модели нет — агент остановлен». Сюда ведут
+                  два пути: модель ещё не выбрана или admin снял её из списка —
+                  <code>ON DELETE SET NULL</code> обнуляет ссылку, и
+                  <code>model_id IS NOT NULL</code> становится четвёртым условием
+                  <a href="governance.html#gate" class="xref-page">старта</a>.
+                  Ссылка на строку списка, не на каталог моделей, нарочно: снятие
+                  гасит агента сразу, без сверки «ещё ли модель в списке», и
+                  повторное добавление не оживляет его молча — владелец
+                  подтверждает выбор.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full" id="schedule-shape">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><code>schedule</code> — размеченное объединение по <code>type</code>, не свободный JSON</span>
+                </div>
+                <div class="stk-dec__d">
+                  Форму поля держит backend (Pydantic v2, дискриминатор
+                  <code>type</code>) — <a href="../../../README.md" class="xref-anchor">источник
+                  истины</a>, surface-редактор получает её типизированно. Два
+                  варианта. Интервал —
+                  <code>{ "type": "interval", "every_hours": N }</code>, период
+                  «каждые N часов». Календарь —
+                  <code>{ "type": "calendar", "cadence": "daily" | "weekly", "weekday": 0–6, "time": "HH:MM" }</code>:
+                  <code>weekday</code> (0 = понедельник) значим лишь для
+                  <code>weekly</code>, <code>time</code> — локальное время
+                  <a href="execution.html#schedule" class="xref-page">владельца</a>.
+                  <code>NULL</code> — расписания нет, агент чисто ручной.
+                  Кодировку дня и формат времени берём <strong>те же</strong>, что
+                  у платформенного <a href="../../admin-panel/_workzone/data-model.html#singleton" class="xref-module"
+                    >curation_*</a> (<code>weekday 0–6</code>, <code>'HH:MM'</code>) —
+                  второй диалект расписаний не заводим.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ AGENT RUNS ════════════════ -->
+      <div class="section" id="agent-runs">
+        <div class="section__title">Журнал прогонов: <code>agent_runs</code></div>
+        <p class="desc">
+          Строка на каждый прогон — и состоявшийся, и отклонённый. Машина
+          состояний (<code>queued → running → succeeded</code> / <code>failed</code>)
+          плюс <strong>выход</strong> агента и расход токенов. Журнал — дом
+          результата (<a href="runtime.html#output" class="xref-page">выход</a>)
+          и источник недельного бюджета: его <code>tokens_used</code> суммируются
+          в потолок.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--run">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Прогон</span>
+              <span class="stk-layer__role">Один запуск — исход, выход, расход.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">agent_runs</span>
+                  <span class="dm-tbl__sub">журнал прогонов</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → agents</span>
+                    <span class="dm-badge dm-badge--flag">state machine</span>
+                    <span class="dm-badge dm-badge--uniq">один активный на агента</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">agent_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → agents, ON DELETE CASCADE">FK→agents</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">чей прогон · CASCADE · история по нему</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">trigger</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (manual | scheduled)">CHECK</span>
+                      </td>
+                      <td class="dm-note">как стартовал · <code>manual</code> · <code>scheduled</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">state</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (queued | running | succeeded | failed | skipped)">CHECK</span>
+                      </td>
+                      <td class="dm-note"><code>queued</code> · <code>running</code> · <code>succeeded</code> · <code>failed</code> · <code>skipped</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">reason</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (budget_exceeded | already_running | iteration_cap | error | stale)">CHECK</span>
+                      </td>
+                      <td class="dm-note">почему <code>skipped</code> / <code>failed</code> · машинный код, не свободный текст · <code>skipped</code>: <code>budget_exceeded</code> · <code>already_running</code> · <code>failed</code>: <code>iteration_cap</code> · <code>error</code> · <code>stale</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">output</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">финальный ответ агента · весь выход, читается на экране агента</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">tokens_used</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="server_default=0">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">расход прогона · суммируется в недельный <a href="governance.html#budget" class="xref-page">бюджет</a></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">error</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">деталь сбоя при <code>failed</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">started_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">когда вошёл в <code>running</code> · NULL у <code>skipped</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">finished_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">когда завершился · окно недельного бюджета считается по нему</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">heartbeat_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">живость воркера прогона · протухание отпускает замок зависшего <code>running</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> · постановка в очередь</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Прогон — машина состояний, но журнал несёт только created_at</span>
+                </div>
+                <div class="stk-dec__d">
+                  Строка живёт переходами: <code>queued</code> на постановке,
+                  <code>running</code> на старте, терминал на финале — это
+                  in-place <code>UPDATE</code>. Но ход прогона несут доменные вехи
+                  <code>started_at</code> / <code>finished_at</code> /
+                  <code>heartbeat_at</code> (heartbeat ~30&nbsp;с — точнее
+                  служебного <code>updated_at</code>), поэтому отдельный
+                  <code>updated_at</code> избыточен: журнал прогона несёт только
+                  <code>created_at</code>. Единый паттерн run-journal с
+                  <code>sync_runs</code> (Harvester) и <code>curation_runs</code> /
+                  <code>backup_snapshots</code> (Knowledge&nbsp;Store).
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Один активный прогон на агента — замок в БД, не только проверка в коде</span>
+                </div>
+                <div class="stk-dec__d">
+                  Замок — partial unique index
+                  <code>UNIQUE (agent_id) WHERE state IN ('queued','running')</code>:
+                  у агента максимум один незавершённый прогон. Гонку (ручной
+                  запуск совпал с наступившим слотом, два воркера схватили строку)
+                  гасит сама база — второй <code>INSERT</code> незавершённого
+                  прогона упирается в замок; движок ловит отказ и пишет
+                  терминальный <code>skipped</code> с
+                  <code>reason=already_running</code> (это состояние вне предиката
+                  замка, записи не мешает). Умер воркер, не закрыв прогон, — без
+                  присмотра строка зависла бы в <code>running</code> навсегда: и
+                  агента бы заперла, и токены держала вне бюджета. Её разбирает
+                  <code>heartbeat_at</code>: протухший прогон жнётся в
+                  <code>failed</code> с <code>reason=stale</code>, замок
+                  отпускается, агент снова стартует. Тот же замок и тот же
+                  heartbeat несут <code>sync_runs</code> Harvester и
+                  <a href="../../knowledge-store/_workzone/lifecycle.html#curation-runs" class="xref-module"
+                    >curation_runs</a> Knowledge Store — единый паттерн журналов
+                  прогонов по платформе. Порог протухания — <strong>константа
+                  модуля</strong> (proximity principle), не magic-число в коде
+                  жатвы: воркер бьёт <code>heartbeat_at</code> раз в ~30 с, прогон
+                  считается зависшим после ~90 с тишины (три пропуска) — тот же
+                  порядок, что у журналов-прогонов соседей.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Бюджет производный — сумма по <code>tokens_used</code>, не счётчик</span>
+                </div>
+                <div class="stk-dec__d">
+                  Отдельной таблицы расхода нет: недельный потолок сверяется
+                  <code>SUM(tokens_used)</code> по прогонам всех агентов владельца,
+                  где <code>finished_at</code> попал в текущую неделю (календарную,
+                  воскресенье 00:00 в зоне организации —
+                  <a href="governance.html#budget" class="xref-page">бюджет</a>).
+                  Окно по <code>finished_at</code> значит, что расход ещё идущего
+                  прогона входит в сумму лишь на финале: стартующий следом видит
+                  его нулём, и в пределах недели возможен небольшой перебег
+                  потолка, сходящий на нет по мере завершения прогонов. Для
+                  редких личных прогонов перебег узок и приемлем. Такой объём
+                  (личные агенты, редкие прогоны) сумма тянет без агрегата;
+                  материализованный счётчик — оптимизация на потом. Лимит при
+                  этом здесь не хранится — он платформенный, в
+                  <code>platform_settings</code> (<a href="#boundary" class="xref-anchor">граница</a>).
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><code>skipped</code> — это запись, а не отсутствие прогона</span>
+                </div>
+                <div class="stk-dec__d">
+                  Строка <code>state=skipped</code> пишется, лишь когда движок
+                  взялся стартовать прогон, но рантайм-ворота закрылись:
+                  недельный бюджет выбран (<code>budget_exceeded</code>) или
+                  прошлый прогон агента ещё идёт (<code>already_running</code>).
+                  Оба невидимы из стоячей настройки агента — потому и нужна
+                  запись: отказ виден в журнале («лимит превышён»), а не теряется
+                  молчанием; <code>tokens_used = 0</code>, цикла не было. Замки же
+                  гасят агента <em>раньше</em> ворот: при выключателе владельца
+                  или замке админа <a href="#agents" class="xref-anchor">next_run_at</a>
+                  обнулён, планировщик агента не сканирует, кнопка ручного
+                  запуска недоступна — durable-стоп строк не плодит, он виден
+                  <a href="../../admin-panel/_wireframes/agents.html" class="xref-module">статусом агента</a>,
+                  не потоком <code>skipped</code>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ AGENT TOOLS ════════════════
+           Тонкая связка: какой опциональный инструмент владелец доцепил агенту.
+           Ядро 3 KS — locked, в таблице не лежит. Рантайм фильтрует выбор по
+           tools.agents_allowed; снятие/удаление → агент на ядре (мягкая
+           деградация). -->
+      <div class="section" id="agent-tools">
+        <div class="section__title">Выбор инструментов: <code>agent_tools</code></div>
+        <p class="desc">
+          Какие <strong>опциональные</strong> инструменты владелец доцепил
+          агенту поверх ядра — тонкая связка многие-ко-многим между
+          <a href="#agents" class="xref-anchor">agents</a> и каталогом
+          (<a href="../../ai-foundation/_workzone/data-model.html#tools" class="xref-module">tools</a>).
+          Ядро из трёх <a href="runtime.html#tools" class="xref-page">KS-инструментов</a>
+          locked и в таблице <strong>не лежит</strong> — оно у каждого агента по
+          умолчанию; строки здесь только про выбор сверх него.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--run">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Связка</span>
+              <span class="stk-layer__role">Опциональные инструменты, выбранные владельцем.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">agent_tools</span>
+                  <span class="dm-tbl__sub">выбор инструментов агента</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → agents</span>
+                    <span class="dm-badge dm-badge--fk">FK → tools</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (agent, tool)</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">agent_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → agents, ON DELETE CASCADE">FK→agents</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">чей выбор · CASCADE · уходит вместе с агентом</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">tool_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → tools, ON DELETE CASCADE">FK→tools</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">какой инструмент из <a href="../../ai-foundation/_workzone/data-model.html#tools" class="xref-module">каталога</a> · CASCADE</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> · связь-выбор append-only, без <code>updated_at</code></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Снятие инструмента — мягкая деградация, не стоп</span>
+                </div>
+                <div class="stk-dec__d">
+                  Снять допуск можно двумя путями, и оба не валят агент. Админ
+                  убрал инструмент из allowlist (<code>tools.agents_allowed =
+                  false</code>) — строка связки остаётся, но рантайм её
+                  <strong>не подаёт</strong> в набор, фильтруя выбор по текущему
+                  флагу на старте прогона. Удалили же сам инструмент из каталога
+                  (или агента целиком) — связку чистит <code>ON DELETE
+                  CASCADE</code>. В обоих случаях агент
+                  <strong>продолжает на ядре</strong> KS, в
+                  <a href="governance.html#gate" class="xref-page">гейт старта</a>
+                  это не входит — в отличие от снятой модели, что гасит прогон.
+                  Запись и MCP-источники инструментов — <span class="iter v2">v2</span>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ BOUNDARY ════════════════ -->
+      <div class="section" id="boundary">
+        <div class="section__title">Граница: что хранит движок, что у соседей</div>
+        <p class="desc">
+          Agent Engine держит <strong>агентов и прогоны</strong> — и только. Всё
+          остальное, чего касается агент, принадлежит соседям: учётка и личность —
+          Auth и Knowledge Store, реестр моделей и потолок бюджета — Admin, сами
+          знания — Knowledge Store. Из чужого здесь хранятся
+          <strong>две ссылки</strong> — <code>user_id</code> владельца и
+          <code>model_id</code> выбранной модели; потолок бюджета не лежит даже
+          ссылкой — движок читает его из platform_settings на старте каждого
+          прогона.
+        </p>
+
+        <div class="dm-border">
+          <div class="dm-border__col dm-border__col--here">
+            <div class="dm-border__head">
+              <span class="dm-border__who">Agent Engine</span>
+              <span class="dm-border__act">хранит</span>
+            </div>
+            <p class="dm-border__d">
+              <code>agents</code> (определения) и <code>agent_runs</code> (журнал
+              с выходом и расходом). Личность не хранит — берёт ACL по
+              <code>user_id</code>. Модель не хранит — ссылается
+              <code>model_id</code> на разрешённый список. Недельный расход не
+              хранит агрегатом — суммирует из прогонов. Потолок не хранит — читает
+              из <code>platform_settings</code>. Знания не хранит — читает из KS под правами.
+            </p>
+          </div>
+          <div class="dm-border__seam">▸</div>
+          <div class="dm-border__col dm-border__col--there">
+            <div class="dm-border__head">
+              <span class="dm-border__who">Соседи</span>
+              <span class="dm-border__act">владеют</span>
+            </div>
+            <p class="dm-border__d">
+              <code>users</code> и личности — Auth и
+              <a href="../../knowledge-store/_workzone/acl-identity.html#identity" class="xref-module"
+                >Knowledge Store</a>; разрешённые модели
+              (<a href="../../ai-foundation/_workzone/data-model.html#ai-models" class="xref-module"
+                >agent_models</a>) и потолок токенов
+              (<code>platform_settings</code>) — Admin; тело знаний, граф, векторы
+              — Knowledge Store, откуда агент только читает.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

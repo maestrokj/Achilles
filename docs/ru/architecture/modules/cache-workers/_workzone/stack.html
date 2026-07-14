@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Cache &amp; Workers: Стек и структура</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../swimlane.css" />
+    <link rel="stylesheet" href="stack.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Cache &amp; Workers</a>
+        <h1 class="header__title">Стек и структура</h1>
+        <div class="header__sub">cache-workers · workzone</div>
+      </div>
+
+      <!-- ── cross-cutting: draft notice ── -->
+      <!-- ════════════ ДОРОЖКА: BACKEND ════════════ -->
+      <div class="section" id="stack">
+        <div class="swl-lane swl-lane--be">
+          <div class="swl-lane__rail">
+            <span class="swl-lane__tag">Backend</span>
+          </div>
+          <div class="swl-lane__body">
+            <!-- col: stack -->
+            <div class="swl-col">
+              <div class="mod-label swl-col__head"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg> стек — библиотеки</div>
+
+              <div class="swl-grp">
+                <div class="swl-grp__head">
+                  <span class="swl-grp__label">Очередь и воркеры</span>
+                  <a class="xref-badge xref-badge--page" href="queues.html#worker"
+                    >→ Воркер-топология</a
+                  >
+                </div>
+                <div class="swl-grp__pills">
+                  <span class="swl-pill" data-tip="постановка задач в очередь поверх Redis">SAQ · очередь</span>
+                  <span class="swl-pill" data-tip="пул процессов, разобранный по трём лейнам — разный параллелизм на роль">SAQ воркеры</span>
+                </div>
+              </div>
+
+              <div class="swl-grp">
+                <div class="swl-grp__head">
+                  <span class="swl-grp__label">Планировщик</span>
+                  <a class="xref-badge xref-badge--page" href="scheduling.html#cron"
+                    >→ Планировщик</a
+                  >
+                </div>
+                <div class="swl-grp__pills">
+                  <span class="swl-pill" data-tip="встроенный cron SAQ — расписания живут рядом с очередью, отдельного планировщика не заводим">SAQ cron (CronJob)</span>
+                </div>
+              </div>
+
+              <div class="swl-grp">
+                <div class="swl-grp__head">
+                  <span class="swl-grp__label">Rate-limit</span>
+                  <a class="xref-badge xref-badge--page" href="rate-limit.html#primitive"
+                    >→ Общий примитив</a
+                  >
+                </div>
+                <div class="swl-grp__pills">
+                  <span class="swl-pill" data-tip="счётчик + окно одной атомарной операцией на стороне Redis — без гонок между воркерами">Lua-скрипт (атомарно)</span>
+                </div>
+              </div>
+
+              <div class="swl-grp">
+                <div class="swl-grp__head">
+                  <span class="swl-grp__label">Хранилище / состояние</span>
+                </div>
+                <div class="swl-grp__pills">
+                  <span class="swl-pill" data-tip="два независимых пула: durable (очереди, состояние задач) и cache (эфемерный кэш)">redis-py · async pools</span>
+                  <a class="xref-badge xref-badge--page" href="redis-keys.html#instances"
+                    >→ Два инстанса</a
+                  >
+                </div>
+                <div class="swl-grp__pills">
+                  <span class="swl-pill swl-pill--std" data-tip="партиал-UNIQUE замок единственности и heartbeat живут в Postgres модулей-потребителей, не в Redis">SQLAlchemy 2.0 · asyncpg</span>
+                  <a class="xref-badge xref-badge--page" href="lifecycle.html#uniqueness"
+                    >→ Единственность</a
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- col: structure -->
+            <div class="swl-col">
+              <div class="mod-label swl-col__head">
+                <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.55l-.42-.85a1 1 0 0 0-.92-.6H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M3 5a2 2 0 0 0 2 2h3" /><path d="M3 3v13a2 2 0 0 0 2 2h3" /></svg> структура — файлы · инфраструктурный слой
+              </div>
+<pre class="file-tree">
+infra/             <span class="dim">общий слой · не домен с сущностями</span>
+├── *.py           <span class="dim">тонкий клиент, пулы Redis (durable + cache)</span>
+├── worker/        <span class="dim">SAQ-приложение, регистрация задач по лейнам</span>
+├── scheduler/     <span class="dim">singleton-сервис cron</span>
+├── rate_limit.py  <span class="dim">Lua-примитив окна / счётчика</span>
+└── lifecycle.py   <span class="dim">heartbeat · retry · reaping helpers</span>
+</pre>
+
+              <details class="swl-note">
+                <summary>Слой, а не модуль-домен</summary>
+                <div class="swl-note__body">
+                  Код у слоя есть, но он <b>не моделируется как домен</b> с
+                  собственными сущностями и миграциями: это общий сервис плюс
+                  тонкий клиент, который импортируют остальные модули. Поэтому
+                  пакет живёт в общем <code>achilles/infra/</code> — туда, откуда
+                  его естественно импортировать
+                  (<code>from achilles.infra.worker import …</code>).
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════ ОРКЕСТРАЦИЯ КОНТЕЙНЕРОВ ════════════ -->
+      <div class="section" id="structure">
+        <h2 class="stk-h2">Оркестрация контейнеров</h2>
+        <p class="stk-lead">
+          Один образ <code>backend</code> запускается в разных ролях. API
+          масштабируется отдельно; воркеры разнесены по
+          <a href="queues.html#lanes" class="xref-page">трём лейнам</a> с разным
+          параллелизмом, а планировщик и кэш — отдельные сервисы.
+        </p>
+        <table class="stk-svc">
+          <thead>
+            <tr>
+              <th>Сервис</th>
+              <th>Роль</th>
+              <th>Лейн / команда</th>
+              <th>Реплики</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>api</code></td>
+              <td>HTTP · стрим ответов и push-канал уведомлений (SSE)</td>
+              <td>uvicorn</td>
+              <td>≥ 1, масштабируется отдельно</td>
+            </tr>
+            <tr>
+              <td><code>worker-interactive</code></td>
+              <td>фоновые задачи на пути живого запроса</td>
+              <td>SAQ · interactive</td>
+              <td>≥ 1, умеренный параллелизм</td>
+            </tr>
+            <tr>
+              <td><code>worker-background</code></td>
+              <td>тяжёлые отложенные прогоны</td>
+              <td>SAQ · background</td>
+              <td>≥ 1, высокий параллелизм</td>
+            </tr>
+            <tr>
+              <td><code>worker-agents</code></td>
+              <td>прогоны автономных агентов</td>
+              <td>SAQ · agents</td>
+              <td>≥ 1, ограниченный</td>
+            </tr>
+            <tr class="stk-svc--single">
+              <td><code>scheduler</code></td>
+              <td>
+                cron-сервис ·
+                <a href="scheduling.html#cron" class="xref-page">singleton</a>
+              </td>
+              <td>SAQ cron</td>
+              <td>ровно 1</td>
+            </tr>
+            <tr>
+              <td><code>redis-durable</code></td>
+              <td>очереди, состояние задач, замки</td>
+              <td>Redis</td>
+              <td>1</td>
+            </tr>
+            <tr>
+              <td><code>redis-cache</code></td>
+              <td>эфемерный кэш запросов</td>
+              <td>Redis</td>
+              <td>1</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="stk-foot">
+          Разделение очередей и кэша на
+          <a href="redis-keys.html#instances" class="xref-page"
+            >два инстанса Redis</a
+          >
+          — чтобы вытеснение кэша по памяти не затрагивало долговечные очереди.
+        </p>
+      </div>
+
+      <!-- ════════════ ДОРОЖКА: FRONTEND ════════════ -->
+      <div class="swl-lane swl-lane--fe">
+        <div class="swl-lane__rail">
+          <span class="swl-lane__tag">Frontend</span>
+        </div>
+        <div class="swl-lane__body swl-lane__body--note">
+          <div class="swl-col">
+            <div class="swl-fe-note">
+              <span class="swl-fe-note__ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.67 19a2 2 0 0 0 1.416-.588l6.154-6.172a6 6 0 0 0-8.49-8.49L5.586 9.914A2 2 0 0 0 5 11.328V18a1 1 0 0 0 1 1z" /><path d="M16 8 2 22" /><path d="M17.5 15H9" /></svg></span>
+              <div>
+                <b>Своего фронтенда у Cache &amp; Workers нет.</b>
+                Состояние очередей, воркеров и Redis администратор видит на
+                дашборде мониторинга
+                <a href="../../admin-panel/_wireframes/dashboard.html#system-health" class="xref-badge"
+                  >→ Admin Panel</a
+                >.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

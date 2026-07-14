@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Users</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Users</h1>
+        <div class="header__sub">
+          admin panel · wireframes · management
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Screen renders in the shell's content area">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--keep" href="../../shared-ui/_wireframes/loading-states.html#keep-previous" title="Page or filter change — previous rows stay (keep-previous)">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">User management: list, invitations, and linking to source accounts across three tabs.</p>
+
+      <!-- ═══ “List” tab ═══ -->
+      <div class="section" id="users-tabs">
+        <div class="section__title">
+          “List” tab
+          <a href="../../auth-security/_workzone/authentication.html#user-lifecycle" class="xref-badge">→ Auth &amp; Security</a>
+          <a href="../../auth-security/_workzone/data-model.html#data-model" class="xref-badge">→ Auth &amp; Security</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">“list” tab</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/users
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/users · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-row wf-spread">
+                  <span class="wf-title">Users</span>
+                  <div class="wf-row">
+                    <button class="wf-btn">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+
+                      Export <span class="wf-annot">1</span></button>
+                    <a class="wf-btn" href="../../auth-security/_features/user-onboarding/bulk-invite-upload.html">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+
+                      Import <span class="wf-annot">2</span></a>
+                    <button class="wf-btn wf-btn--primary">
+
+                      Invite
+                      <span class="wf-annot wf-annot--on-accent">3</span></button>
+                  </div>
+                </div>
+                <div class="wf-tabs">
+                  <span class="wf-tab wf-tab--active">List</span>
+                  <span class="wf-tab">Invitations</span>
+                  <span class="wf-tab">Account linking</span>
+                </div>
+                <div class="wf-input wf-input--sm">
+                  <span class="wf-input__icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                  </span>
+                  Search by name or email
+                </div>
+                <div class="wf-filters">
+                  <span class="wf-filter">Role <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Status <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Last sign-in <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-annot">4</span>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last sign-in</th><th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="wf-rowlink">
+                      <td><a href="user-card.html" class="wf-userlink">Anna Orlova</a> <span class="wf-annot">5</span></td>
+                      <td>anna@company.com</td>
+                      <td><span class="wf-chip">Owner</span></td>
+                      <td><span class="wf-chip wf-chip--ok">active</span></td>
+                      <td>5 min ago</td>
+                      <td>⋯</td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><a href="user-card.html" class="wf-userlink">Dmitry Sokolov</a></td>
+                      <td>dmitry@company.com</td>
+                      <td><span class="wf-chip">Admin</span> <span class="wf-annot">6</span></td>
+                      <td><span class="wf-chip wf-chip--ok">active</span></td>
+                      <td>yesterday</td>
+                      <td>⋯</td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><a href="user-card.html" class="wf-userlink">Igor Lebedev</a></td>
+                      <td>igor@company.com</td>
+                      <td><span class="wf-chip">Member</span></td>
+                      <td><span class="wf-chip wf-chip--ok">active</span></td>
+                      <td>3 days ago</td>
+                      <td>⋯ <span class="wf-annot">7</span></td>
+                    </tr>
+                    <tr class="wf-rowlink wf-table__row--muted">
+                      <td><a href="user-card.html" class="wf-userlink">Maria Kim</a></td>
+                      <td>maria@company.com</td>
+                      <td><span class="wf-chip">Member</span></td>
+                      <td><span class="wf-chip">deactivated</span> <span class="wf-annot">8</span></td>
+                      <td>a month ago</td>
+                      <td>⋯</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="wf-pager">
+                  <span class="wf-pager__count">1–50 of 128</span>
+                  <div class="wf-pager__pages">
+                    <span class="wf-page wf-page--nav wf-page--off">‹</span>
+                    <span class="wf-page wf-page--active">1</span>
+                    <span class="wf-page">2</span>
+                    <span class="wf-page">3</span>
+                    <span class="wf-page wf-page--nav">›</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">⋯ actions menu · Owner</div>
+              <div class="wf-pop">
+                <button class="wf-btn">⋯</button>
+                <div class="wf-menu">
+                  <span class="wf-menu__item">Change role</span>
+                  <span class="wf-menu__item"
+                    ><span class="wf-guarded"
+                      >Deactivate<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action is protected by a confirmation"><span class="wf-guard__icon"></span></a></span
+                  ></span>
+                  <span class="wf-menu__item">Reset password</span>
+                  <hr class="wf-menu__sep" />
+                  <span class="wf-menu__item wf-menu__item--danger"
+                    ><span class="wf-guarded"
+                      >Delete<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#type-to-confirm" title="Action is protected by a confirmation"><span class="wf-guard__icon"></span></a></span
+                  ></span>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">export</div>
+              <div class="wf-pop">
+                <button class="wf-btn">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                  Export
+                </button>
+                <div class="wf-menu">
+                  <span class="wf-menu__item">CSV <span class="wf-menu__why">for spreadsheets</span></span>
+                  <span class="wf-menu__item">JSON <span class="wf-menu__why">for integrations</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">filter · role</div>
+              <div class="wf-pop">
+                <span class="wf-filter" tabindex="0">Role <span class="wf-filter__caret">▾</span></span>
+                <div class="wf-menu">
+                  <span class="wf-opt"><span class="wf-opt__box"></span> Owner</span>
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> Admin</span>
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> Member</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              “Export” downloads the current list (respecting search and filters) as CSV or JSON; secrets are excluded from the export.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              “Import” — bulk onboarding: upload a batch of emails behind the same SMTP gate as “Invite”. The wizard lives in
+              <a href="../../auth-security/_features/user-onboarding/index.html" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              “Invite” opens a modal (email + role). Until SMTP is configured the button is disabled — the reason shows in the hover tooltip (<a href="#invites-no-smtp" class="xref-anchor">smtp not configured</a>).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Filters — facets Role · Status · Last sign-in. Search and filter behavior is
+              <a href="../_workzone/list-controls.html#facets" class="xref-page">shared across all lists</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Clicking a row opens the
+              <a href="user-card.html" class="xref-page">user card</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              Roles: Owner manages everyone, Admin manages Members only. The sole Owner cannot be demoted or deactivated (guard). Rules in
+              <a href="../../auth-security/_workzone/authentication.html#user-lifecycle" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              ⋯ opens the row menu: change role · deactivate / reactivate · reset password · delete. The set depends on permissions: only the Owner sees “Delete” (with confirmation); self-deactivation is disallowed.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              Deactivated: sign-in is blocked; sessions and API keys are not restored on reactivation —
+              <a href="../../auth-security/_workzone/authentication.html#user-lifecycle" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              “Last sign-in” — schema in the
+              <a href="../../auth-security/_workzone/data-model.html#data-model" class="xref-module">data model</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Invitations ═══ -->
+      <div class="section" id="invites">
+        <div class="section__title">
+          Invitations
+          <a href="../../auth-security/_workzone/authentication.html#user-lifecycle" class="xref-badge">→ Auth &amp; Security</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">“invitations” tab</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-tabs">
+                  <span class="wf-tab">List</span>
+                  <span class="wf-tab wf-tab--active">Invitations</span>
+                  <span class="wf-tab">Account linking</span>
+                </div>
+                <div class="wf-input wf-input--sm">
+                  <span class="wf-input__icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                  </span>
+                  Search by email
+                </div>
+                <div class="wf-filters">
+                  <span class="wf-filter">Status <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Role <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-annot">1</span>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr><th>Email</th><th>Role</th><th>Status</th><th></th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>colleague@company.com</td>
+                      <td><span class="wf-chip">Member</span></td>
+                      <td><span class="wf-chip wf-chip--warn">pending</span></td>
+                      <td><a class="wf-a">Resend</a> <span class="wf-sep">·</span> <span class="wf-guarded"
+                          ><a class="wf-a wf-a--danger">Revoke</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action is protected by a confirmation"><span class="wf-guard__icon"></span></a
+                        ></span>
+                        <span class="wf-annot">2</span></td>
+                    </tr>
+                    <tr>
+                      <td>igor@company.com</td>
+                      <td><span class="wf-chip">Member</span></td>
+                      <td><span class="wf-chip wf-chip--ok">accepted</span></td>
+                      <td></td>
+                    </tr>
+                    <tr class="wf-table__row--muted">
+                      <td>old@company.com</td>
+                      <td><span class="wf-chip">Admin</span></td>
+                      <td><span class="wf-chip wf-chip--err">expired</span></td>
+                      <td><a class="wf-a">Resend</a></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-backdrop">
+            <div class="wf-gallery">
+              <div class="wf-frame">
+                <div class="wf-stage__caption">“invite” modal</div>
+                <div class="wf-screen wf-screen--modal">
+                  <div class="wf-body">
+                    <div class="wf-stack">
+                      <span class="wf-title">Invite user</span>
+                      <div class="wf-field">
+                        <span class="wf-label">Email</span>
+                        <div class="wf-input wf-input--focus">colleague@company.com</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Role</span>
+                        <div class="wf-input">
+                          Member
+                          <span class="wf-input__action">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                          </span>
+                        </div>
+                      </div>
+                      <button class="wf-btn wf-btn--primary wf-btn--block">
+
+                        Send invitation
+                        <span class="wf-annot wf-annot--on-accent">3</span></button>
+                      <span class="wf-hint">The invitation link is valid for 48 hours</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame wf-frame--center" id="invites-no-smtp">
+              <div class="wf-stage__caption">smtp not configured · tooltip</div>
+              <div class="wf-pop">
+                <button class="wf-btn wf-btn--primary wf-btn--disabled">
+                  Invite <span class="wf-annot">4</span>
+                </button>
+                <div class="wf-tip">
+                  Invitations are sent by email. Set up the mail server
+                  to invite users.
+                  <a class="wf-a" href="platform-settings.html#smtp">Configure SMTP →</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Search by email and filters (Status · Role), statuses pending · accepted · expired. Behavior is
+              <a href="../_workzone/list-controls.html#search" class="xref-page">shared across all lists</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              “Resend” issues a new link, “Revoke” invalidates the current one. On an expired link the invitee sees the
+              <a href="../../auth-security/_wireframes/status-screen.html" class="xref-module">status screen</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              The invitation is sent by email; on the receiving end is the
+              <a href="../../auth-security/_wireframes/invite-accept.html" class="xref-module">Invite Accept</a> screen. Token mechanics — <a href="../../auth-security/_workzone/authentication.html#user-lifecycle" class="xref-module">invite flow</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Email is the only invitation channel: until SMTP is configured, “Invite” and “Resend” are disabled, with the reason in the hover tooltip. The link leads to
+              <a href="platform-settings.html#smtp" class="xref-page">settings</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ “Account linking” tab ═══ -->
+      <div class="section" id="identity-mapping">
+        <div class="section__title">
+          “Account linking” tab
+          <a href="../../knowledge-store/_workzone/acl-identity.html#source-principal" class="xref-badge">→ Knowledge Store</a>
+          <a href="../../harvester/_workzone/acl-identity.html#identity" class="xref-badge">→ Harvester</a>
+          <a href="../../auth-security/_workzone/authorization.html#identity" class="xref-badge">→ Auth &amp; Security</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">“identity mapping” tab</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-tabs">
+                  <span class="wf-tab">List</span>
+                  <span class="wf-tab">Invitations</span>
+                  <span class="wf-tab wf-tab--active">Account linking</span>
+                </div>
+                <div class="wf-input wf-input--sm">
+                  <span class="wf-input__icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                  </span>
+                  Search by user
+                </div>
+                <div class="wf-filters">
+                  <span class="wf-filter">Source <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Link status <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-annot">1</span>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr><th>User</th><th>Jira</th><th>Slack</th><th>Confluence</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><span class="wf-idcell"><a href="user-card.html" class="wf-userlink">Anna Orlova</a><span class="wf-idcell__email">anna@company.com</span></span></td>
+                      <td><a class="wf-chip wf-chip--ok"
+                          >anna@… <span class="wf-chip__edit"
+                            ><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                        ></a></td>
+                      <td><a class="wf-chip wf-chip--ok"
+                          >@anna <span class="wf-chip__edit"
+                            ><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                        ></a></td>
+                      <td><a class="wf-chip wf-chip--ok"
+                          >anna@… <span class="wf-chip__edit"
+                            ><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                        ></a></td>
+                    </tr>
+                    <tr>
+                      <td><span class="wf-idcell"><a href="user-card.html" class="wf-userlink">Dmitry Sokolov</a><span class="wf-idcell__email">dmitry@company.com</span></span></td>
+                      <td><a class="wf-chip wf-chip--ok"
+                          >dmitry@… <span class="wf-chip__edit"
+                            ><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                        ></a> <span class="wf-annot">2</span></td>
+                      <td><a class="wf-chip"
+                          >@dmitri <span class="wf-chip__pin" title="Pinned manually"
+                            ><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22" /><path d="M5 17h14l-1.5-3V7a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7Z" /></svg></span> <span class="wf-chip__edit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                        ></a></td>
+                      <td><span class="wf-chip wf-chip--warn">unmatched</span> <a class="wf-a">Link</a> <span class="wf-annot">3</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-frame">
+            <div class="wf-stage__caption">link popover · slack</div>
+            <div class="wf-pop">
+              <a class="wf-chip" tabindex="0"
+                >@dmitri <span class="wf-chip__edit"
+                  ><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+              ></a>
+              <div class="wf-menu">
+                <div class="wf-input wf-input--sm">
+                  <span class="wf-input__icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                  </span>
+                  Slack account
+                </div>
+                <span class="wf-menu__item">@dmitri <span class="wf-menu__why">current · manual</span></span>
+                <span class="wf-menu__item">@dmitry.s <span class="wf-menu__why">likely</span></span>
+                <span class="wf-menu__item">@d.sokolov</span>
+                <hr class="wf-menu__sep" />
+                <span class="wf-menu__item wf-menu__item--danger"
+                  ><span class="wf-guarded"
+                    >Unlink<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action is protected by a confirmation"><span class="wf-guard__icon"></span></a></span
+                ></span>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Search by user and filters (Source · Link status: matched · unmatched · manual). Behavior is
+              <a href="../_workzone/list-controls.html#search" class="xref-page">shared across all lists</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Every cell is clickable (pencil on hover) — a click opens the link popover, so the admin can override even a confident auto-match. A manually chosen link is no longer overwritten by auto-matching (pin marker); “Unlink” returns the cell to unmatched.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Auto-matching is conservative: whatever fails to match on exact email stays unmatched. “Link” opens a search over the source's accounts for manual linking; fuzzy resolution is v2. The algorithm lives in
+              <a href="../../auth-security/_workzone/authorization.html#identity" class="xref-module">Auth &amp; Security</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

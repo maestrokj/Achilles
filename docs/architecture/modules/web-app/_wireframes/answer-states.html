@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Web App: Answer states</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Web App</a>
+        <h1 class="header__title">Answer states</h1>
+        <div class="header__sub">
+          web app · wireframes
+          <a class="in-shell" href="layout.html"><span class="in-shell__frame"></span>shell</a>
+        </div>
+      </div>
+
+      <p class="desc">
+        The same thread, the same message frame — but not every answer is grounded.
+        The model answers <strong>in its own words</strong>, and our layer stitches a
+        short badge under its answer: whether the knowledge base was searched and how it
+        ended — empty, no access, or partly hidden. The badge carries safe coordinates:
+        the source system and who to ask for access (the record's author, as an email).
+        No red — the user got an answer; and for a conversational request Achilles
+        replies like an ordinary assistant, with no badge at all. Four states — each
+        with its own address.
+      </p>
+
+      <p class="wf-subtitle wf-legend__lead">
+        The shell is the same everywhere — the thread and the message frame from
+        <strong>assistant-ui</strong>
+        (<a href="../_workzone/stack.html#shell" class="xref-page">chat shell</a>);
+        what changes is our layer — the content of the assistant's message.
+      </p>
+
+      <!-- ═══ Wireframe ═══ Each state is a separately addressable .wf-state block
+           (screen on the left, note on the right): a link leads straight to the
+           right variant rather than to a general block. The content is embedded in
+           the assistant's message. -->
+      <div class="section">
+        <div class="section__title">Four states</div>
+        <div class="wf-stage">
+          <div class="wf-statelist">
+            <!-- ── State 1: "not found" ── -->
+            <div class="wf-state" id="not-found">
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/chat
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/chat · authenticated user</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-card"><span class="wf-text">What's the SLA for refunds under the Acme contract?</span></div>
+                    <div class="wf-row">
+                      <span class="wf-avatar">A</span>
+                      <span class="wf-label">Achilles</span>
+                    </div>
+                    <div class="wf-card wf-stack wf-stack--tight">
+                      <span class="wf-text">
+                        I searched, but nothing in the knowledge base matched your
+                        query. Try rephrasing, or check whether the relevant source
+                        has been added.
+                      </span>
+                      <div class="wf-kbnote">
+                        <span class="wf-kbnote__icon" aria-hidden="true"></span>
+                        <div class="wf-kbnote__body">
+                          <span class="wf-kbnote__head">Knowledge base search — nothing found</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="wf-state__doc">
+                <span class="wf-state__name">not found</span>
+                <p class="wf-text">
+                  No context for an answer was found — the model says so honestly
+                  instead of guessing from general knowledge, and the badge confirms
+                  it: the base was searched, nothing relevant. No coordinates — there's
+                  nothing to name.
+                </p>
+              </div>
+            </div>
+
+            <!-- ── State 2: "no access" ── -->
+            <div class="wf-state" id="no-access">
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/chat
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/chat · authenticated user</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-card"><span class="wf-text">Show the salary grid for the sales team for Q2.</span></div>
+                    <div class="wf-row">
+                      <span class="wf-avatar">A</span>
+                      <span class="wf-label">Achilles</span>
+                    </div>
+                    <div class="wf-card wf-stack wf-stack--tight">
+                      <span class="wf-text">
+                        This data exists in the base, but it's protected by access
+                        rights — I can't show its contents. For access, reach out to
+                        the record's owner.
+                      </span>
+                      <div class="wf-kbnote">
+                        <span class="wf-kbnote__icon" aria-hidden="true"></span>
+                        <div class="wf-kbnote__body">
+                          <span class="wf-kbnote__head">Knowledge base search — no access</span>
+                          <div class="wf-kbnote__coords">
+                            <span class="wf-chip">Confluence</span>
+                            <span class="wf-kbnote__ask">ask</span>
+                            <span class="wf-kbnote__contact">anna.petrova@acme.com</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="wf-state__doc">
+                <span class="wf-state__name">no access</span>
+                <p class="wf-text">
+                  Something relevant exists, but it's hidden by access rights entirely
+                  — not a line of content. The badge carries safe coordinates: the
+                  source system and who to ask for access — the record's author, as an
+                  email.
+                </p>
+                <a href="../../query-engine/_workzone/retrieval.html#identity" class="xref-module">→ Query Engine</a>
+              </div>
+            </div>
+
+            <!-- ── State 3: access-hint ── -->
+            <div class="wf-state" id="access-hint">
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/chat
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/chat · authenticated user</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-card"><span class="wf-text">When was the Acme contract signed and who approved the terms?</span></div>
+                    <div class="wf-row">
+                      <span class="wf-avatar">A</span>
+                      <span class="wf-label">Achilles</span>
+                    </div>
+                    <div class="wf-card wf-stack wf-stack--tight">
+                      <span class="wf-text">
+                        The Acme contract was signed on March 14, 2026. Data on the
+                        terms approval exists, but it's protected by access rights — I
+                        can't show it.
+                      </span>
+                      <div class="wf-kbnote">
+                        <span class="wf-kbnote__icon" aria-hidden="true"></span>
+                        <div class="wf-kbnote__body">
+                          <span class="wf-kbnote__head">Some data is hidden by access rights</span>
+                          <div class="wf-kbnote__coords">
+                            <span class="wf-chip">Confluence</span>
+                            <span class="wf-kbnote__ask">ask</span>
+                            <span class="wf-kbnote__contact">r.kuznetsov@acme.com</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="wf-state__doc">
+                <span class="wf-state__name">access-hint</span>
+                <p class="wf-text">
+                  The answer is assembled from what's available, and beneath it the
+                  same badge about the hidden part: the fact, the source system and
+                  the author contact — without a title or content. An automatic
+                  "Request access" button — <span class="iter v2">v2</span>.
+                </p>
+                <a href="../../query-engine/_workzone/grounding.html#access-hints" class="xref-module">→ Query Engine</a>
+              </div>
+            </div>
+
+            <!-- ── State 4: conversational answer ── -->
+            <div class="wf-state" id="conversational">
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/chat
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/chat · authenticated user</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-card"><span class="wf-text">Help me word an email to a client about pushing the deadline.</span></div>
+                    <div class="wf-row">
+                      <span class="wf-avatar">A</span>
+                      <span class="wf-label">Achilles</span>
+                    </div>
+                    <div class="wf-card">
+                      <span class="wf-text">
+                        Of course. Here's a short version: "Hello! We're writing to let
+                        you know the project timeline is shifting by a week; the new
+                        date is …"
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="wf-state__doc">
+                <span class="wf-state__name">conversational</span>
+                <p class="wf-text">
+                  The model didn't touch the base — an ordinary assistant, no sources
+                  or citations. The grounding contract doesn't apply to it.
+                </p>
+                <a href="../../query-engine/_workzone/grounding.html#modes" class="xref-module">→ Query Engine</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

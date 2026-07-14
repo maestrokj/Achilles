@@ -1,0 +1,126 @@
+<!doctype html>
+<!--
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  FEATURE: api-keys — issuing a machine access key to the platform.    │
+  │                                                                       │
+  │  Topology = CONVERGENCE, not a journey: three doors lead into one     │
+  │  dialog. Self-issuance (profile) and Owner/Admin issuance (key list   │
+  │  and employee card) converge on api-key-create-modal. So this is ONE  │
+  │  feature with two lines (self-issuance / issuance), and the second    │
+  │  issuance door — the card — is drawn as a branch off the issuance     │
+  │  line.                                                                │
+  │                                                                       │
+  │  OWNS api-key-create-modal.html — the only node exclusive to this     │
+  │  feature (orphan test: remove the feature — the dialog has no home).  │
+  │  Entry points — profile / key list / card — are only entry points,    │
+  │  they don't make the dialog shared. So the modal is a plain           │
+  │  .flow-stop (local node), and the entry-point screens are shared      │
+  │  (_wireframes / admin-panel), --shared. Don't copy the key mechanic   │
+  │  (hash, binding, expiry, rate limit, search contract on issuance) —   │
+  │  only links to workzone. README → "Features".                         │
+  └─────────────────────────────────────────────────────────────────────┘
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: API keys</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · feature-flow kit (no wireframe
+         kit — screens link out) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../feature-flow.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../index.html">← Auth / Security</a>
+        <h1 class="header__title">API keys</h1>
+        <div class="header__sub">auth / security · features</div>
+      </div>
+
+      <!-- ═══ Description ═══ Product only: what the feature is and who enters
+           from where. Don't put the key mechanic and search contract here —
+           links to workzone. -->
+      <p class="desc">
+        Issuing an API key — machine (headless) access to the platform: it
+        authenticates the <a href="../../../public-api/index.html#auth" class="xref-module">Public API</a>, and in the next version —
+        <a href="../../../mcp/index.html#auth" class="xref-module">MCP</a> <span class="iter v2">v2</span>. The feature's peculiarity isn't the length of the path but its shape: one
+        creation dialog, into which <b>three doors</b> lead. A user issues a key
+        for themselves from their own profile (self-issuance, without choosing a
+        user); an Owner / Admin issues a key for an employee from the shared key
+        list or from a specific employee's card (issuance, with typeahead). All
+        doors converge on one
+        <a href="api-key-create-modal.html#api-key-create" class="xref-page">creation dialog</a>,
+        which exists as a single copy. Self-issuance is the main path,
+        administrator issuance is auxiliary; a key is never wider than its owner's
+        permissions.
+      </p>
+
+      <!-- ═══ Flow · self-issuance ═══ A user issues a key for themselves.
+           The profile is a shared screen (--shared, _wireframes), the dialog is a
+           node of this feature (plain stop). The line is short: door → dialog;
+           "shown once" is a state of the dialog, not a screen (altitude rule); it
+           lives in its legend. -->
+      <div class="section">
+        <div class="section__title">Flow · self-issuance (user)</div>
+        <div class="flow">
+          <div class="flow-stop flow-stop--shared">
+            <a class="flow-stop__name" href="../../_wireframes/profile-account.html">Profile Account</a>
+            <span class="flow-stop__role">start · own account</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">"Create key" · without choosing a user</span>
+          </div>
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="api-key-create-modal.html#api-key-create">API Key Create</a>
+            <span class="flow-stop__role">dialog · self-issuance form</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Flow · issuance ═══ Owner/Admin issues a key for an employee.
+           The main entry — the shared key list; the second door — the employee
+           card — is drawn as a branch (a targeted entry, the same dialog, the user
+           prefilled). .flow--branch reserves the space. -->
+      <div class="section">
+        <div class="section__title">Flow · issuance (Owner / Admin)</div>
+        <div class="flow flow--branch">
+          <div class="flow-stop flow-stop--shared">
+            <a
+              class="flow-stop__name"
+              href="../../../admin-panel/_wireframes/api-keys.html#api-keys"
+              >API Keys</a
+            >
+            <span class="flow-stop__role">start · oversight, issuance to an employee</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">"Create key" · employee search</span>
+            <div class="flow-branch">
+              <span class="flow-branch__label">targeted</span>
+              <span class="flow-branch__elbow"></span>
+              <span class="flow-branch__stop"></span>
+              <a
+                class="flow-branch__name"
+                href="../../../admin-panel/_wireframes/user-card.html#user-card"
+                >User Card</a
+              >
+              <span class="flow-branch__role">from the card · employee prefilled</span>
+            </div>
+          </div>
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="api-key-create-modal.html#api-key-create">API Key Create</a>
+            <span class="flow-stop__role">dialog · issuance form + picker</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

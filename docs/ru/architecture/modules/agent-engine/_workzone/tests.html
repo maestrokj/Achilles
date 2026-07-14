@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Agent Engine: Тест-кейсы</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Agent Engine</a>
+        <h1 class="header__title">Тест-кейсы</h1>
+        <div class="header__sub">agent-engine · workzone</div>
+      </div>
+
+      <!-- ── Overview band: решения + стек ── -->
+      <div class="test-overview">
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Принятые решения</div>
+          <div class="decision-box">
+            <strong>Цикл — на поддельной модели</strong>
+            Агентный цикл (думает → зовёт инструмент → читает результат)
+            проверяется детерминированно: фейковый chat-client с записанной
+            последовательностью tool-call'ов и фейковые инструменты. Реальная
+            модель и провайдер — вне CI, ручная отладка; в автоматический прогон
+            идёт только воспроизводимый дубль.
+          </div>
+          <div class="decision-box">
+            <strong>Инструменты — контракт к KS, не его повтор</strong>
+            <code>search</code> · <code>graph</code> · <code>sql</code> тестируем
+            как <em>вызовы</em> примитивов Knowledge Store под ACL личности
+            владельца: правильный инструмент выбран по намерению, права режут на
+            стороне KS. Саму выдачу, ранжирование и слияние держит и проверяет
+            Knowledge Store — здесь не дублируем.
+          </div>
+          <div class="decision-box">
+            <strong>Бюджет, стопы, каскады — доменные тесты</strong>
+            Ядро безопасности модуля: недельная сумма по
+            <code>tokens_used</code>, два замка (выключатель владельца
+            <code>enabled</code> и липкий <code>admin_paused</code>) плюс
+            условие модели (<code>model_id IS NOT NULL</code>; снятие из списка →
+            <code>SET NULL</code> → стоп), деактивация учётки →
+            <code>enabled=false</code> агентам, запись
+            <code>skipped</code> на рантайм-отказе (<code>budget_exceeded</code> /
+            <code>already_running</code>) и <em>молчание</em> планировщика при
+            закрытом замке, FK-каскады от агента и от учётки. Здесь же —
+            что наружу это отражается ровными кодами, не <code>500</code>.
+          </div>
+        </div>
+
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Стек и инфраструктура</div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Имеется <span class="iter done">done</span></span>
+            <span>pytest, pytest-asyncio, pytest-cov, httpx</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Дубли модели</span>
+            <span
+              >фейковый chat-client (записанные последовательности tool-call'ов)
+              + фейковые инструменты <code>search</code> / <code>graph</code> /
+              <code>sql</code></span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Время</span>
+            <span
+              >time-machine — расписание, <code>next_run_at</code>, окно
+              недельного бюджета</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Прочее</span>
+            <span
+              >factory_boy (<code>agents</code> / <code>agent_runs</code>),
+              SAQ-обработчик вызовом напрямую — без поднятия воркера</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Маркеры</span>
+            <span
+              ><code>@pytest.mark.unit</code> / <code>@pytest.mark.integration</code> —
+              по типу; <code>@pytest.mark.p0</code> / <code>p1</code> — по
+              приоритету, ортогонально типу</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Unit ═══ Агентный цикл и композиция промта на поддельной модели. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--unit">Unit</span>
+        <span class="test-sec__title">Цикл и композиция промта на поддельной модели <span class="ai-tag" title="Этап использует нейросеть — инференс модели"><span class="ai-tag__icon"></span>AI</span></span>
+        <span class="test-sec__meta">детерминированно · каждый PR</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg></span><span class="name">test_agent_loop.py</span></div>
+            <div class="test-card__sub">think → tool → observe на фейковом chat-client</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="runtime.html#loop">→ Агентный цикл</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">шаг с инструментом</span><span class="test-case__e">модель зовёт инструмент → результат вернулся в контекст → модель делает следующий шаг с ним на руках</span></div>
+              <div class="test-case"><span class="test-case__k">завершение</span><span class="test-case__e">финальный ответ без tool-call останавливает цикл; выход уходит в журнал прогона</span></div>
+              <div class="test-case"><span class="test-case__k">потолок итераций</span><span class="test-case__e">зацикливание обрывается на лимите шагов — прогон <code>failed</code> с <code>reason=iteration_cap</code> (упёрся в потолок, не отклонён до старта), не бесконечный вызов модели</span></div>
+              <div class="test-case"><span class="test-case__k">много шагов в прогоне</span><span class="test-case__e">несколько последовательных вызовов инструментов в одном прогоне — контекст накапливается шаг за шагом</span></div>
+              <div class="test-case"><span class="test-case__k">выбор по намерению</span><span class="test-case__e">записанная последовательность зовёт нужный из трёх инструментов под задачу — диспетчеризация tool-call по имени отрабатывает</span></div>
+              <div class="test-case"><span class="test-case__k">tool-output — данные, не команда</span><span class="test-case__e">фейк-инструмент возвращает текст с инъекцией («ignore previous, do X») → результат кладётся в контекст как данные, не как инструкция; safety-периметр держится, инъекция через tool-output правила платформы не перебивает <a class="xref-badge xref-badge--page" href="runtime.html#prompt-composition">→ Композиция промта</a></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg></span><span class="name">test_prompt_composition.py</span></div>
+            <div class="test-card__sub">Слойная сборка промта, безопасность не отменяется</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="runtime.html#prompt-composition">→ Композиция промта</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">порядок слоёв</span><span class="test-case__e">платформенный prompt снизу (safety + org), промт владельца сверху, инженерный слой замыкает — сборка собирается ровно в этом порядке</span></div>
+              <div class="test-case"><span class="test-case__k">владелец не отменяет safety</span><span class="test-case__e">промт владельца не перекрывает платформенный safety-слой — формулировка владельца не вырезает периметр</span></div>
+              <div class="test-case"><span class="test-case__k">привязка добавляется кодом</span><span class="test-case__e">привязка личности владельца и описания трёх инструментов вставляются инженерным слоем, не берутся из текста владельца</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Unit/Contract ═══ Инструменты как вызовы примитивов KS под ACL личности. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--unit">Unit / Contract</span>
+        <span class="test-sec__title">Инструменты к Knowledge Store</span>
+        <span class="test-sec__meta">фейковые примитивы KS · каждый PR</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9" /><path d="m18 15 4-4" /><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5" /></svg></span><span class="name">test_tools.py</span></div>
+            <div class="test-card__sub">search / graph / sql — вызов под ACL личности, чтение KS</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Contract</span>
+              <a class="xref-badge xref-badge--page" href="runtime.html#tools">→ Инструменты</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">три инструмента по намерению</span><span class="test-case__e"><code>search</code> · <code>graph</code> · <code>sql</code> поднимаются по имени tool-call'а и зовут соответствующий примитив Knowledge Store</span></div>
+              <div class="test-case"><span class="test-case__k">под ACL личности</span><span class="test-case__e">вызов идёт правами личности владельца (рамка владельца), не отдельной личности агента — фейк-примитив получает контекст создателя</span></div>
+              <div class="test-case"><span class="test-case__k">права режет KS</span><span class="test-case__e">отсечение по правам — pre-filter на стороне Knowledge Store, не пост-фильтр в агенте; здесь проверяем, что контекст ACL передан, выдачу держит KS</span></div>
+              <div class="test-case"><span class="test-case__k">только чтение</span><span class="test-case__e">агент в Knowledge Store ничего не пишет — все три инструмента read-only, мутирующего примитива им не дано (<a class="xref-page" href="identity.html#ks-boundary">граница чтения KS</a>)</span></div>
+              <div class="test-case"><span class="test-case__k">пустая база → ядро не подано</span><span class="test-case__e">Knowledge Store пуст (is_empty) → харнесс не вносит ядро <code>search</code> · <code>graph</code> · <code>sql</code> в набор, хотя оно locked; «locked» = не отключается вручную, не «есть при любом состоянии базы»; агент стартует и деградирует на внешних инструментах либо честно сообщает об отсутствии данных — пустая база в <a class="xref-page" href="governance.html#gate">гейт готовности</a> не входит</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P0 ═══ Жизненный цикл прогона: состояния, учёт, timestamps. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p0">Integration · P0</span>
+        <span class="test-sec__title">Жизненный цикл прогона</span>
+        <span class="test-sec__meta">БД · отдельный шаг CI</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12h-5" /><path d="M15 8h-5" /><path d="M19 17V5a2 2 0 0 0-2-2H4" /><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3" /></svg></span><span class="name">test_run_lifecycle.py</span></div>
+            <div class="test-card__sub">Состояния agent_runs, замок одного активного прогона, учёт расхода, метки времени</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#agent-runs">→ Прогоны агента</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">путь успеха</span><span class="test-case__e"><code>queued</code> → <code>running</code> → <code>succeeded</code>; <code>output</code> записан в строку прогона</span></div>
+              <div class="test-case"><span class="test-case__k">провал</span><span class="test-case__e">прогон уходит в <code>failed</code>, <code>error</code> заполнен; отличается от <code>skipped</code></span></div>
+              <div class="test-case"><span class="test-case__k">учёт токенов</span><span class="test-case__e"><code>tokens_used</code> проставлен по факту прогона — основа недельной суммы бюджета</span></div>
+              <div class="test-case"><span class="test-case__k">timestamps работы</span><span class="test-case__e"><code>started_at</code> / <code>finished_at</code> проставлены на старте и завершении; <code>created_at</code> / <code>updated_at</code> — server_default + триггер</span></div>
+              <div class="test-case"><span class="test-case__k">skipped без старта</span><span class="test-case__e">не стартовавший прогон (<code>skipped</code>) не имеет <code>started_at</code> — он отклонён до запуска, не оборван в работе</span></div>
+              <div class="test-case"><span class="test-case__k">один активный прогон</span><span class="test-case__e">второй незавершённый прогон агента отвергается partial unique index <code>UNIQUE (agent_id) WHERE state IN ('queued','running')</code> — гонку (ручной запуск совпал с наступившим слотом) гасит сама база, не только проверка в коде</span></div>
+              <div class="test-case"><span class="test-case__k">протухший heartbeat → stale</span><span class="test-case__e">воркер умер, не закрыв <code>running</code> → по протуханию <code>heartbeat_at</code> прогон жнётся в <code>failed</code> с <code>reason=stale</code>, замок отпускается, агент стартует снова — зомби его не запирает</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P1 ═══ Бюджет, расписание, контроль, изоляция полосы. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">Integration · P1</span>
+        <span class="test-sec__title">Бюджет, расписание, контроль, изоляция</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2" /><circle cx="12" cy="12" r="2" /><path d="M6 12h.01M18 12h.01" /></svg></span><span class="name">test_budget.py</span></div>
+            <div class="test-card__sub">Недельный токен-лимит на пользователя</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="governance.html#budget">→ Недельный бюджет</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">недельная сумма</span><span class="test-case__e">расход = <code>SUM(tokens_used)</code> по всем агентам владельца за текущую неделю (по <code>finished_at</code>), а не на агента</span></div>
+              <div class="test-case"><span class="test-case__k">превышение → skipped</span><span class="test-case__e">лимит исчерпан → прогон не стартует, пишется <code>skipped</code> с <code>reason=budget_exceeded</code>, <code>tokens_used=0</code></span></div>
+              <div class="test-case"><span class="test-case__k">сброс недели</span><span class="test-case__e">смена недельного окна → расход обнуляется, агенты владельца снова стартуют</span></div>
+              <div class="test-case"><span class="test-case__k">лимит из настроек</span><span class="test-case__e">значение лимита берётся из <code>platform_settings</code>, в модуле не хранится — меняется централизованно</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></svg></span><span class="name">test_scheduling.py</span></div>
+            <div class="test-card__sub">Ручной + интервал/календарь, next_run_at, постановка в очередь</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="execution.html#schedule">→ Расписание</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">только ручной</span><span class="test-case__e"><code>schedule</code> <code>NULL</code> → агент запускается лишь вручную, планировщик его не трогает</span></div>
+              <div class="test-case"><span class="test-case__k">интервал</span><span class="test-case__e">интервальное расписание считает следующий <code>next_run_at</code> от прошлого запуска</span></div>
+              <div class="test-case"><span class="test-case__k">календарь (time-machine)</span><span class="test-case__e">календарный график — ежедневно / еженедельно в <code>HH:MM</code> — даёт верный <code>next_run_at</code></span></div>
+              <div class="test-case"><span class="test-case__k">пояс владельца</span><span class="test-case__e">календарный <code>HH:MM</code> резолвится против <code>users.timezone</code> владельца (при <code>NULL</code> — org-default <code>platform_settings.timezone</code>), затем хранится UTC</span></div>
+              <div class="test-case"><span class="test-case__k">постановка в очередь</span><span class="test-case__e">планировщик по наступлению <code>next_run_at</code> ставит прогон в фоновую очередь с <code>trigger=scheduled</code></span></div>
+              <div class="test-case"><span class="test-case__k">overlap не плодит</span><span class="test-case__e">слот (или ручной запуск) поверх ещё <code>running</code>/<code>queued</code> прогона нового цикла не создаёт — строка <code>skipped</code>, <code>reason=already_running</code></span></div>
+              <div class="test-case"><span class="test-case__k">ручной без расписания</span><span class="test-case__e">«Запустить сейчас» (<code>trigger=manual</code>) расписания не требует — работает и при <code>schedule=NULL</code>; замки (<code>enabled</code>, <code>admin_paused</code>) при этом всё равно чтятся</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg></span><span class="name">test_governance.py</span></div>
+            <div class="test-card__sub">Два замка (enabled · admin_paused), деактивация, каскады учётки</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="governance.html#admin-pause">→ Два замка</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">admin_paused липкий</span><span class="test-case__e">владелец снять <code>admin_paused</code> не может — только администратор; попытка владельца не меняет флаг</span></div>
+              <div class="test-case"><span class="test-case__k">условия старта</span><span class="test-case__e">агент стартует — по расписанию или вручную — лишь при <code>enabled</code>, не <code>admin_paused</code>, бюджете в пределах И <code>model_id IS NOT NULL</code>; оси независимы</span></div>
+              <div class="test-case"><span class="test-case__k">снятая модель → стоп</span><span class="test-case__e">admin убрал модель из <code>agent_models</code> → <code>ON DELETE SET NULL</code> обнуляет <code>agents.model_id</code> → агента нет в скане (<code>next_run_at</code> обнулён), запуск недоступен, записи <code>skipped</code> нет — как при закрытом замке; на дефолт не откатывается</span></div>
+              <div class="test-case"><span class="test-case__k">закрытый замок — тихо, без строки</span><span class="test-case__e">при <code>enabled=false</code> или <code>admin_paused=true</code> агента нет в скане планировщика (<code>next_run_at</code> обнулён) и кнопка ручного запуска недоступна — прогон не идёт и записи <code>skipped</code> не появляется; durable-стоп журнала не копит</span></div>
+              <div class="test-case"><span class="test-case__k">деактивация → enabled=false</span><span class="test-case__e">деактивация учётки владельца гасит <code>enabled</code> всем его агентам; реактивация флаг не возвращает — оживляет только сам владелец вручную</span></div>
+              <div class="test-case"><span class="test-case__k">удаление → каскад</span><span class="test-case__e">удаление учётки → <code>agents</code> и за ними <code>agent_runs</code> уходят по <code>ON DELETE CASCADE</code></span></div>
+              <div class="test-case"><span class="test-case__k">баннер — на surface</span><span class="test-case__e">«приостановлен администратором» рисуется на стороне surface из флага; домен лишь держит <code>admin_paused</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3" /><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" /><circle cx="18" cy="5" r="3" /></svg></span><span class="name">test_isolation.py</span></div>
+            <div class="test-card__sub">Фоновая полоса: свой пул, отдельный потолок LLM, read-only</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="execution.html#lane">→ Фоновая полоса</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">отдельный пул воркеров</span><span class="test-case__e">прогоны идут фоновой полосой со своим пулом, не на пути живого чата — нагрузка агентов не влезает в интерактивный путь</span></div>
+              <div class="test-case"><span class="test-case__k">отдельный потолок LLM</span><span class="test-case__e">лимит одновременных вызовов модели у фоновой полосы отделён от потолка живого чата (<a class="xref-page" href="execution.html#concurrency">параллелизм</a>)</span></div>
+              <div class="test-case"><span class="test-case__k">read-only параллельно записям</span><span class="test-case__e">чтение Knowledge Store идёт параллельно записям графа без блокировок — агент не встаёт в очередь за загрузкой данных</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ API P1 ═══ HTTP-контракт эндпоинтов владельца и админа. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">API · P1</span>
+        <span class="test-sec__title">Эндпоинты — HTTP-контракт</span>
+        <span class="test-sec__meta">httpx · ASGI · БД · <a href="../../api/index.html#surface-map" class="xref-badge">→ HTTP API</a> <a class="xref-badge" href="../../api/_workzone/tests.html#conformance">→ Conformance</a></span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg></span><span class="name">test_api_agents.py</span></div>
+            <div class="test-card__sub">CRUD своих агентов, запуск, чтение журнала</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#agents">→ Модель агента</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">CRUD своих</span><span class="test-case__e">создание / правка / удаление своих агентов по HTTP — имя, описание, промт, модель, расписание, флаг <code>enabled</code></span></div>
+              <div class="test-case"><span class="test-case__k">выбор модели</span><span class="test-case__e"><code>model_id</code> из <a class="xref-module" href="../../ai-foundation/_workzone/data-model.html#ai-models">разрешённого списка</a> сохраняется и применяется в прогоне; при создании поле проставляется (преднабор — дефолт списка)</span></div>
+              <div class="test-case"><span class="test-case__k">модель не из списка → 422</span><span class="test-case__e"><code>model_id</code> вне <code>agent_models</code> (или embedding-тип) → <code>422</code>, не <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">запустить сейчас</span><span class="test-case__e">«Запустить сейчас» → <code>202</code> + id прогона; создан <code>agent_run</code> (<code>trigger=manual</code>, <code>queued</code>), задача в SAQ</span></div>
+              <div class="test-case"><span class="test-case__k">повторный /run под активным прогоном</span><span class="test-case__e">второй <code>POST /agents/{id}/run</code>, пока прогон агента уже <code>running</code> → <code>409 CONFLICT</code> (single-flight, не задваивает прогон); согласовано с доменным <code>already_running → skipped</code></span></div>
+              <div class="test-case"><span class="test-case__k">/run по несуществующему агенту → 404</span><span class="test-case__e">неизвестный <code>{id}</code> → <code>404</code>, не <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">/run при исчерпанном бюджете</span><span class="test-case__e">бюджет агента выбран → <code>POST /run</code> не стартует прогон: <code>409</code> (или доменный <code>skipped</code> с причиной <code>budget_exceeded</code>) — зафиксирован HTTP-исход, не <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">CHECK наружу как 422</span><span class="test-case__e">невалидный <code>trigger</code> / <code>state</code> не из формы, пустое <code>name</code> → <code>422</code>, не <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">форма schedule → 422</span><span class="test-case__e"><code>schedule</code> — размеченное объединение по <code>type</code> (<code>interval</code> / <code>calendar</code>), <code>weekday</code> 0–6, <code>time</code> <code>HH:MM</code>; кривой на входе отбит валидацией: (а) неизвестный <code>type</code>; (б) <code>calendar</code> без <code>time</code>; (в) <code>weekday</code> вне 0–6 → <code>422</code>, не <code>500</code> <a class="xref-badge xref-badge--page" href="data-model.html#schedule-shape">→ Форма расписания</a></span></div>
+              <div class="test-case"><span class="test-case__k">чтение журнала</span><span class="test-case__e">GET прогонов агента с <code>output</code>, <code>tokens_used</code> и исходом; <code>skipped</code> с <code>reason</code> отдаётся отлично от <code>failed</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" /></svg></span><span class="name">test_api_admin.py</span></div>
+            <div class="test-card__sub">Реестр всех агентов, профиль read-only, замок админа</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="governance.html#admin-pause">→ Два замка</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">список всех</span><span class="test-case__e">админ видит ВСЕ агенты платформы — поиск и фильтры по владельцу / состоянию</span></div>
+              <div class="test-case"><span class="test-case__k">оба замка в реестре</span><span class="test-case__e">реестр отдаёт и выключатель владельца (<code>enabled</code>, read-only для админа), и <code>admin_paused</code> — сводный статус строки виден админу</span></div>
+              <div class="test-case"><span class="test-case__k">профиль read-only</span><span class="test-case__e">админ открывает профиль чужого агента только на чтение: владелец, промт, расписание, прогоны</span></div>
+              <div class="test-case"><span class="test-case__k">замок / снятие</span><span class="test-case__e">админ ставит и снимает <code>admin_paused</code> на любом агенте; выключатель <code>enabled</code> владельца не трогает</span></div>
+              <div class="test-case"><span class="test-case__k">без удаления чужого</span><span class="test-case__e">админский роут не удаляет чужого агента — удаление остаётся за владельцем (или каскадом учётки)</span></div>
+              <div class="test-case"><span class="test-case__k">владелец не снимает чужой admin_paused</span><span class="test-case__e">владелец на админском действии над <code>admin_paused</code> → <code>403</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="16" r="1" /><rect x="3" y="10" width="18" height="12" rx="2" /><path d="M7 10V7a5 5 0 0 1 10 0v3" /></svg></span><span class="name">test_api_access.py</span></div>
+            <div class="test-card__sub">Владелец видит своё, роли и аутентификация на каждом роуте</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="governance.html#admin-pause">→ Два замка</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">только свои</span><span class="test-case__e">владелец управляет лишь своими агентами; чужой агент в его роутах не виден и не правится</span></div>
+              <div class="test-case"><span class="test-case__k">member заблокирован</span><span class="test-case__e">member на чужого агента или на админский роут → <code>403 FORBIDDEN</code></span></div>
+              <div class="test-case"><span class="test-case__k">аноним</span><span class="test-case__e">без токена → <code>401 UNAUTHORIZED</code> (параметризовано по всем роутам)</span></div>
+              <div class="test-case"><span class="test-case__k">истёкший токен</span><span class="test-case__e">просроченный access JWT → <code>401</code></span></div>
+              <div class="test-case"><span class="test-case__k">роуты за guard</span><span class="test-case__e">каждый эндпоинт Agent Engine реально под guard — параметризованный аудит покрытия; сквозную механику RBAC / JWT держит Auth &amp; Security, здесь проверяем лишь, что роуты за ним</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Структура ═══ Каталог тестов: уровень — назначением, приоритет — маркерами. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Structure</span>
+        <span class="test-sec__title">Файловая структура тестов</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          Разделение задаётся назначением, не папками. <code>unit/</code> идёт на
+          каждом PR детерминированно — поддельная модель и фейковые примитивы,
+          без сети и БД. <code>integration/</code> и <code>api/</code> — отдельным,
+          более редким шагом на поднятой БД: первый проверяет домен (прогоны,
+          бюджет, контроль, полоса), второй — HTTP-контракт на ASGI-приложении.
+          Реальная модель и провайдер остаются вне CI, ручной отладкой.
+          Приоритет (P0–P1) ортогонален каталогам и задаётся маркерами
+          (<code>pytest -m p0</code>).
+        </p>
+        <div class="test-tree">
+          <ul>
+            <li>
+              <span class="test-tree__row"><code>tests/agent_engine/</code><span class="d">каталог модуля</span></span>
+              <ul>
+                <li><span class="test-tree__row"><code>conftest.py</code><span class="d">фейковый chat-client · фейковые инструменты search/graph/sql · time-machine · фабрики agents/agent_runs · SAQ напрямую</span></span></li>
+                <li>
+                  <span class="test-tree__row"><code>unit/</code><span class="d">цикл и инструменты на поддельной модели — каждый PR, детерминированно</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_agent_loop.py · test_prompt_composition.py</code><span class="d">think→tool→observe, слойная сборка промта</span></span></li>
+                    <li><span class="test-tree__row"><code>test_tools.py</code><span class="d">search/graph/sql как вызовы примитивов KS под ACL личности</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>integration/</code><span class="d">домен на поднятой БД</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_run_lifecycle.py</code><span class="d">состояния прогона, замок одного активного + жатва stale по heartbeat, учёт токенов, timestamps</span></span></li>
+                    <li><span class="test-tree__row"><code>test_budget · test_scheduling · test_governance · test_isolation</code><span class="d">недельный бюджет, расписание, замки и каскады, фоновая полоса</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>api/</code><span class="d">HTTP-контракт эндпоинтов — httpx + ASGI + БД</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_api_agents · _admin · _access</code><span class="d">CRUD и запуск, админский реестр и замок, роли и аутентификация</span></span></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

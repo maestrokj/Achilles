@@ -1,0 +1,576 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Platform settings</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Platform settings</h1>
+        <div class="header__sub">
+          admin panel · wireframes · settings
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Screen renders inside the shell content area">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Screen loading — skeleton">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">Organization-wide settings: profile, defaults, sessions, integrations, maintenance.</p>
+
+      <!-- ═══ Organization and defaults ═══ -->
+      <div class="section" id="org-defaults">
+        <div class="section__title">
+          Organization and defaults
+          <a href="../_workzone/locale.html#locale-resolution" class="xref-badge xref-badge--page">→ Language and region</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">organization · defaults</div>
+          <div class="wf-screen">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/settings
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/settings · Owner (Admin — read-only)</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-stack">
+                  <span class="wf-label">Organization</span>
+                  <div class="wf-field">
+                    <span class="wf-label">Name</span>
+                    <div class="wf-input">Acme Corp</div>
+                  </div>
+                  <div class="wf-field">
+                    <span class="wf-label">Description</span>
+                    <div class="wf-input">Acme corporate knowledge base</div>
+                    <span class="wf-hint">optional</span>
+                  </div>
+                  <div class="wf-row">
+                    <div class="wf-card wf-row">
+                      <a class="wf-avatar" title="Replace logo">AC</a>
+                      <span class="wf-text">Logo</span>
+                    </div>
+                    <div class="wf-card wf-row">
+                      <span class="wf-text">Accent</span>
+                      <span class="wf-chip wf-chip--warn">#B86030</span>
+                    </div>
+                  <span class="wf-annot">1</span>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <div class="wf-stack">
+                  <span class="wf-label">Defaults</span>
+                  <div class="wf-field">
+                    <span class="wf-label">Timezone</span>
+                    <div class="wf-input">
+                      Europe/Moscow
+                      <span class="wf-input__action">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                      </span>
+                      <span class="wf-annot">2</span>
+                    </div>
+                  </div>
+                  <div class="wf-row">
+                    <div class="wf-field">
+                      <span class="wf-label">UI language</span>
+                      <div class="wf-input wf-input--sm">EN ▾</div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Date format</span>
+                      <div class="wf-input wf-input--sm">DD.MM.YYYY ▾</div>
+                    </div>
+                  </div>
+                </div>
+
+                <button class="wf-btn wf-btn--primary wf-btn--block">Save</button>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Branding — the logo and accent apply to the header and the login screen.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              The organization timezone (IANA) is the default for displaying dates; users override it in their profile. Language and date format are org defaults too.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Session and Auth ═══ -->
+      <div class="section" id="session-auth">
+        <div class="section__title">
+          Session and Auth
+          <a href="../../auth-security/_workzone/authentication.html#tokens-sessions" class="xref-badge">→ Auth &amp; Security</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">session · auth</div>
+          <div class="wf-screen">
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-stack">
+                  <span class="wf-label">Sessions</span>
+                  <div class="wf-row">
+                    <div class="wf-field">
+                      <span class="wf-label">Access TTL</span>
+                      <div class="wf-input wf-input--sm">15 min</div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Refresh TTL</span>
+                      <div class="wf-input wf-input--sm">30 days</div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Session cap</span>
+                      <div class="wf-input wf-input--sm">90 days</div>
+                    </div>
+                    <span class="wf-annot">1</span>
+                  </div>
+                  <div class="wf-row">
+                    <div class="wf-field">
+                      <span class="wf-label">Sessions per user <span class="iter v2">v2</span></span>
+                      <div class="wf-input wf-input--sm">5</div>
+                    </div>
+                    <span class="wf-annot">2</span>
+                  </div>
+                </div>
+
+                <div class="wf-stack">
+                  <span class="wf-label">MFA <span class="iter v2">v2</span></span>
+                  <div class="wf-field">
+                    <div class="wf-input">
+                      Require MFA: Admin + Owner only
+                      <span class="wf-input__action">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                      </span>
+                      <span class="wf-annot">3</span>
+                    </div>
+                    <span class="wf-hint">all / Admin + Owner only / optional</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Org-level TTL override on top of the defaults from
+              <a href="../../auth-security/_workzone/authentication.html#tokens-sessions" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Concurrent session limit <span class="iter v2">v2</span> — when exceeded, the oldest session ends; the user-facing screen is <a href="../../auth-security/_wireframes/session-management.html" class="xref-module">session management</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Org-level MFA requirement <span class="iter v2">v2</span>; the TOTP mechanics are the <a href="../../auth-security/_features/mfa/index.html" class="xref-module">MFA</a> feature.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Mail server (SMTP) ═══ -->
+      <div class="section" id="smtp">
+        <div class="section__title">
+          Mail server (SMTP)
+          <a href="../../auth-security/_features/password-recovery/index.html" class="xref-badge">→ Password recovery</a>
+          <a href="users.html#invites" class="xref-badge xref-badge--page">→ Invitations</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">smtp</div>
+          <div class="wf-screen">
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-stack">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-label">Outbound mail</span>
+                    <span class="wf-row">
+                      <span class="wf-chip wf-chip--ok">configured · checked yesterday</span>
+                      <span class="wf-annot">1</span>
+                    </span>
+                  </div>
+                  <div class="wf-row">
+                    <div class="wf-field">
+                      <span class="wf-label">Host</span>
+                      <div class="wf-input">smtp.company.com</div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Port</span>
+                      <div class="wf-input wf-input--sm">587</div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Encryption</span>
+                      <div class="wf-input wf-input--sm">STARTTLS ▾</div>
+                    </div>
+                  </div>
+                  <div class="wf-row">
+                    <div class="wf-field">
+                      <span class="wf-label">Username</span>
+                      <div class="wf-input">no-reply@company.com</div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Password</span>
+                      <div class="wf-input">
+                        ••••••••
+                        <span class="wf-annot">2</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="wf-field">
+                    <span class="wf-label">Sender address (From)</span>
+                    <div class="wf-input">Achilles &lt;no-reply@company.com&gt;</div>
+                  </div>
+                </div>
+
+                <div class="wf-row">
+                  <button class="wf-btn">Test connection</button>
+                  <button class="wf-btn wf-btn--primary">Save</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              SMTP is an optional integration; without it,
+              <a href="../../auth-security/_features/password-recovery/index.html" class="xref-module">password recovery</a>
+              and
+              <a href="users.html#invites-no-smtp" class="xref-page">invitations</a> degrade. The chip shows the result of the last connection test.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Password is write-only: never returned to the UI or an export. “Test connection” sends a test email to the admin’s address (<a href="../../email/_workzone/delivery.html#modes" class="xref-module">Email</a>).
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Slack assistant ═══ -->
+      <div class="section" id="slack">
+        <div class="section__title">
+          Slack assistant
+          <a href="../../slack/index.html#connect" class="xref-badge">→ Slack</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">slack</div>
+          <div class="wf-screen">
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-stack">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-label">Slack bot</span>
+                    <span class="wf-row">
+                      <span class="wf-chip wf-chip--ok">connected · checked today</span>
+                      <span class="wf-toggle wf-toggle--on"></span>
+                      <span class="wf-annot">1</span>
+                    </span>
+                  </div>
+                  <div class="wf-field">
+                    <span class="wf-label">Workspace</span>
+                    <div class="wf-input">company.slack.com</div>
+                  </div>
+                  <div class="wf-row">
+                    <div class="wf-field">
+                      <span class="wf-label">Bot token</span>
+                      <div class="wf-input">
+                        xoxb-••••••••
+                        <span class="wf-annot">2</span>
+                      </div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Signing secret</span>
+                      <div class="wf-input">••••••••</div>
+                    </div>
+                  </div>
+                  <div class="wf-row wf-spread">
+                    <span class="wf-label">Auto-link by email</span>
+                    <span class="wf-row">
+                      <span class="wf-toggle wf-toggle--on"></span>
+                      <span class="wf-annot">3</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div class="wf-row">
+                  <button class="wf-btn">Test connection</button>
+                  <button class="wf-btn wf-btn--primary">Save</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Conversational bot: employees ask about company knowledge in direct messages — an inbound surface, separate from the outbound
+              <a href="notifications.html#channels" class="xref-page">delivery channels</a>. The toggle shuts the bot off in one move —
+              <a class="xref-module" href="../../slack/index.html#three-slacks">don’t confuse the three Slacks</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Bot token and signing secret are write-only: never returned to the UI or an export. “Test connection” pings Slack (<code>auth.test</code>); the chip shows the result of the last check.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Recognizes an employee by their provisioned workspace email and links them automatically (<a class="xref-module" href="../../auth-security/_workzone/data-model.html#identity-mapping">identity_mapping</a>). Where the workspace lets users edit their own email, turn this off: only on-demand code linking remains (<a class="xref-module" href="../../auth-security/_workzone/authentication.html#messenger-link">messenger linking</a>).
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              If the email doesn’t match or auto-link is off, the bot offers to link the account with a code.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Telegram assistant ═══ -->
+      <div class="section" id="telegram">
+        <div class="section__title">
+          Telegram assistant
+          <a href="../../telegram/index.html#connect" class="xref-badge">→ Telegram</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">telegram</div>
+          <div class="wf-screen">
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-stack">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-label">Telegram bot</span>
+                    <span class="wf-row">
+                      <span class="wf-chip wf-chip--ok">connected · checked today</span>
+                      <span class="wf-toggle wf-toggle--on"></span>
+                      <span class="wf-annot">1</span>
+                    </span>
+                  </div>
+                  <div class="wf-field">
+                    <span class="wf-label">Bot</span>
+                    <div class="wf-input">@achilles_bot</div>
+                  </div>
+                  <div class="wf-row">
+                    <div class="wf-field">
+                      <span class="wf-label">Bot token</span>
+                      <div class="wf-input">
+                        12345:•••••••
+                        <span class="wf-annot">2</span>
+                      </div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Webhook secret</span>
+                      <div class="wf-input">
+                        ••••••••
+                        <span class="wf-annot">3</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="wf-row">
+                  <button class="wf-btn">Test connection</button>
+                  <button class="wf-btn wf-btn--primary">Save</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              The toggle is the bot’s master switch: it closes the inbound surface in one move without touching the token.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Bot token (issued by <code>@BotFather</code>) is write-only: never returned to the UI or an export. “Test connection” pings Telegram (<code>getMe</code>); the chip shows the result of the last check.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Achilles generates the webhook secret itself on connection (<code>setWebhook</code>) — the admin never enters it manually; it authenticates inbound updates.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              Sign-in and identity linking happen on the Auth screen: Telegram has no provisioned email, so there is no auto-match — only on-demand code linking.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Mattermost assistant ═══ -->
+      <div class="section" id="mattermost">
+        <div class="section__title">
+          Mattermost assistant
+          <a href="../../mattermost/index.html#connect" class="xref-badge">→ Mattermost</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">mattermost</div>
+          <div class="wf-screen">
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-stack">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-label">Mattermost bot</span>
+                    <span class="wf-row">
+                      <span class="wf-chip wf-chip--ok">connected · @achilles</span>
+                      <span class="wf-toggle wf-toggle--on"></span>
+                      <span class="wf-annot">1</span>
+                    </span>
+                  </div>
+                  <div class="wf-field">
+                    <span class="wf-label">Server URL</span>
+                    <div class="wf-input">https://mattermost.company.com</div>
+                  </div>
+                  <div class="wf-field">
+                    <span class="wf-label">Bot token</span>
+                    <div class="wf-input">
+                      ••••••••
+                      <span class="wf-annot">2</span>
+                    </div>
+                  </div>
+                  <div class="wf-row">
+                    <span class="wf-hint">Listening for direct messages.</span>
+                    <span class="wf-annot">3</span>
+                  </div>
+                </div>
+
+                <div class="wf-row">
+                  <button class="wf-btn">Test connection</button>
+                  <button class="wf-btn wf-btn--primary">Save</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              The toggle is the bot’s master switch: it closes the inbound surface in one move without touching the token. Turning it on checks the server live first; a refusal rolls the switch back.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Bot token (a Mattermost bot account token) is write-only: never returned to the UI or an export. “Test connection” pings the server (<code>users/me</code>); the chip shows the result of the last check and the bot’s handle.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              A quiet status line: whether the bot’s listener is currently connected to the server; “not connected” means messages aren’t being received.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              Sign-in and identity linking happen on the Auth screen: Mattermost is linked by an on-demand code only, like Telegram — no auto-match.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Integrations and maintenance ═══ -->
+      <div class="section" id="integrations-maintenance">
+        <div class="section__title">Integrations and maintenance</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">integrations · maintenance</div>
+          <div class="wf-screen">
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-stack">
+                  <span class="wf-label">Integrations</span>
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-text">
+                      Delivery channels — Slack and webhooks<br />
+                      <span class="wf-hint">live together with the organization’s notifications</span>
+                    </span>
+                    <a href="notifications.html#channels" class="wf-a">Configure</a>
+                  </div>
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-text">
+                      MCP server<br />
+                      <span class="wf-hint">lets external AI assistants (Claude Code and others) connect to the knowledge base; the switch closes the integration for everyone at once</span>
+                    </span>
+                    <span class="wf-row">
+                      <span class="wf-guarded"
+                        ><span class="wf-toggle wf-toggle--on"></span><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action requires confirmation"><span class="wf-guard__icon"></span></a
+                      ></span>
+                      <span class="wf-annot">1</span>
+                    </span>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <div class="wf-stack">
+                  <span class="wf-label">Maintenance
+                    <a class="xref-badge xref-badge--page" href="../_workzone/maintenance.html#maintenance">→ Mechanics</a></span>
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-text">
+                      Maintenance mode<br />
+                      <span class="wf-hint">users see a full-screen placeholder; sync and agents are paused</span>
+                    </span>
+                    <span class="wf-row">
+                      <span class="wf-guarded"
+                        ><span class="wf-toggle"></span><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action requires confirmation"><span class="wf-guard__icon"></span></a
+                      ></span>
+                      <span class="wf-annot">2</span>
+                    </span>
+                  </div>
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-text">
+                      Data export <span class="iter v2">v2</span><br />
+                      <span class="wf-hint">configuration as JSON, without credentials</span>
+                    </span>
+                    <span class="wf-row">
+                      <button class="wf-btn">Export</button>
+                      <span class="wf-annot">3</span>
+                      </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              The MCP server is open by default; the Owner locks the door with a confirmation — external assistants are rejected, while API keys stay alive. The surface and its mechanics —
+              <a class="xref-module" href="../../mcp/index.html#governance">MCP</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              The Owner enables maintenance mode with a confirmation; users see a full-screen placeholder —
+              <a class="xref-page" href="../_workzone/maintenance.html#maintenance">mode mechanics</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Data export — settings, data sources, and agents as JSON for backup and migration; credentials are not exported.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              Delivery channels (Slack, webhooks) and the notification matrix are on the
+              <a href="notifications.html#channels" class="xref-page">Notifications</a> screen.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

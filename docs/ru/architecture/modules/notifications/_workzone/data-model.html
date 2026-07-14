@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Notifications: модель данных</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="data-model.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Notifications</a>
+        <h1 class="header__title">Модель данных</h1>
+        <div class="header__sub">notifications · workzone</div>
+      </div>
+
+      <p class="desc">
+        Пять таблиц в <code>core</code>: каналы, маршруты, личные настройки,
+        журнал событий и доставка. Один диспетчер пишет событие, разводит его по
+        двум моделям адресации и журналирует доставку — механика
+        <a href="dispatcher.html#dispatch" class="xref-page">в диспетчере</a>,
+        витрины (ленты) у
+        <a href="../../web-app/_wireframes/notification-feed.html" class="xref-module">Web App</a>
+        и
+        <a href="../../admin-panel/_wireframes/notification-feed.html" class="xref-module">Admin Panel</a>.
+      </p>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ── L1 · Таблицы уведомлений ── -->
+          <div class="stk-layer stk-layer--notif" id="notifications-data">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Таблицы</span>
+              <span class="stk-layer__role"
+                >Каналы · маршруты · личные настройки · лента · доставка.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">notification_channels</span>
+                  <span class="dm-tbl__sub">куда доставляем</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--flag">seed: in_app · email</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">kind</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (in_app | email | webhook)">CHECK</span>
+                      </td>
+                      <td class="dm-note">тип канала · <a href="#notif-channels" class="xref-anchor">→ Slack — пресет</a></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">preset</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (slack | generic) · только при kind=webhook">CHECK</span>
+                      </td>
+                      <td class="dm-note">формат payload вебхука · <code>NULL</code> у встроенных</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">name</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">подпись пилюли канала в матрице</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">url_enc</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">endpoint вебхука · write-only, <a href="../../auth-security/_workzone/protection.html#crypto-core" class="xref-module">AES-256-GCM</a> · <code>NULL</code> у встроенных</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">secret_enc</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">HMAC-secret подписи тела (generic) · write-only, AES-256-GCM · опционален, <code>NULL</code> у встроенных и Slack</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">is_builtin</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                      </td>
+                      <td class="dm-note"><code>true</code> у in_app / email · неудаляемы</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">enabled</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT true">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (kind <> 'in_app' OR enabled) — in_app выключить нельзя">CHECK</span>
+                      </td>
+                      <td class="dm-note"><code>false</code> = канал на паузе: маршруты целы, доставка стоит · in_app — CHECK всегда <code>true</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">last_test_ok</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">результат кнопки «Test» · <code>NULL</code> = не проверяли</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">last_test_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">meta</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="server_default '{}'">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">пресет-специфика (канал Slack, заголовки)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">notification_routes</span>
+                  <span class="dm-tbl__sub">матрица тип × канал · defaults</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → notification_channels</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE(event_type, channel_id)</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">event_type</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--uq" title="UNIQUE(event_type, channel_id)">UNIQUE*</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (sync | security | budget | system | discovery | agent | account)">CHECK</span>
+                      </td>
+                      <td class="dm-note">категория · <a href="../../admin-panel/_wireframes/notifications.html#routing" class="xref-badge">→ Матрица</a></td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">channel_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → notification_channels, ON DELETE CASCADE">FK→channels</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">столбец матрицы</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">enabled</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT true">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (enabled OR NOT locked) — залоченный маршрут нельзя выключить">CHECK</span>
+                      </td>
+                      <td class="dm-note">пилюля канала в матрице · ортогонально паузе канала · <a href="#notif-critical" class="xref-anchor">→ Замок</a></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">locked</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">in-app × security · sync — <code>true</code>: этот маршрут выключить нельзя</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">notification_prefs</span>
+                  <span class="dm-tbl__sub">личное сужение · профиль</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → users</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE(user_id, event_type)</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">user_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">любой пользователь · <a href="../../auth-security/_workzone/data-model.html#data-model" class="xref-module">users</a></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">event_type</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--uq" title="UNIQUE(user_id, event_type)">UNIQUE*</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (sync | security | budget | system | discovery | agent | account)">CHECK</span>
+                      </td>
+                      <td class="dm-note">категория</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">in_app_enabled</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT true">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">личный тумблер in-app по типу · свободный opt-out</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">email_enabled</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span>
+                      </td>
+                      <td class="dm-note">личный тумблер email по типу · значение при INSERT пишет код из <a href="#notif-defaults" class="xref-anchor">каталога типа</a>, не колоночный DEFAULT (личные типы — opt-in <code>false</code>)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · строки нет = дефолт каталога</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">notifications</span>
+                  <span class="dm-tbl__sub">событие · лента in-app · аудит</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--flag">журнал · дедуп серии в окне</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">event_type</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (sync | security | budget | system | discovery | agent | account)">CHECK</span>
+                      </td>
+                      <td class="dm-note">категория · <a href="dispatcher.html#catalog" class="xref-page">каталог</a></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">severity</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (info | warning | critical)">CHECK</span>
+                      </td>
+                      <td class="dm-note">чип серьёзности · ортогонален типу</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">target_user_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                        ><span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">адресат targeted-события (agent · account) · <code>NULL</code> = broadcast по роли · <a href="#notif-addressing" class="xref-anchor">→ Две модели</a></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">title</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">заголовок · i18n-ключ (<code>agent.run_failed</code>), не готовая строка</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">body</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">тело · i18n-ключ · <code>NULL</code> = только заголовок</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">title_params</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="server_default '{}'">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">параметры подстановки для title / body (<code>{agent:"Sales watch"}</code>) · рендер на языке читателя</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">модуль-источник (harvester · auth · agent_engine · knowledge_store · admin)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_ref</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">диплинк на сущность (<code>agent/7</code> · <code>run/42</code> · <code>source/17</code>)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">meta</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="server_default '{}'">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">payload действия (Discovery: контейнер для «в scope»)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">dedup_key</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span><span class="dm-c dm-c--idx">IDX</span></td>
+                      <td class="dm-note">ключ схлопывания серии · <code>NULL</code> = не дедупится · <a href="dispatcher.html#throttle" class="xref-page">→ Тротлинг</a></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">dedup_count</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 1">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">счётчик серии «×N» · растёт при повторе в окне</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">last_seen_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">момент последнего события серии · сравнивается с окном дедупа</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> · первое событие серии</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · мутирует при инкременте дедупа</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">notification_deliveries</span>
+                  <span class="dm-tbl__sub">доставка по каналам · read-state</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → notifications · channels · users</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE(notification_id, channel_id, user_id)</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE(notification_id, channel_id) WHERE user_id IS NULL</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">notification_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → notifications, ON DELETE CASCADE">FK→notifications</span
+                        ><span class="dm-c dm-c--uq" title="UNIQUE(notification_id, channel_id, user_id) · идемпотентность: повтор диспетчера/ретрай SAQ апдейтит строку, не плодит">UNIQUE*</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">какое событие · ключ идемпотентности доставки</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">channel_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → notification_channels, ON DELETE SET NULL">FK→channels</span
+                        ><span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">in_app · email · webhook · webhook-канал удалён → <code>NULL</code>, строка доставки цела (аудит)</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">user_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                        ><span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">личный адресат (in_app / email) · <code>NULL</code> у webhook</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">state</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (queued | sent | failed | read)">CHECK</span>
+                      </td>
+                      <td class="dm-note">статус доставки · <code>read</code> только у in_app</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">error</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">причина <code>failed</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">sent_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">момент отправки</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">read_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">in_app: когда прочитано · unread = <code>NULL</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · state мутирует</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full" id="notif-addressing">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Две модели адресации — их разводит одна колонка <code>target_user_id</code></span>
+                  <a class="xref-badge xref-badge--page" href="dispatcher.html#addressing"
+                    >→ Диспетчер</a
+                  >
+                </div>
+                <div class="dm-cmp">
+                  <div class="dm-cmp__col dm-cmp__col--b">
+                    <div class="dm-cmp__h">broadcast <code>target_user_id = NULL</code></div>
+                    <div class="dm-cmp__row"><span class="dm-cmp__k">Адресат</span>срез по роли: <code>users</code> с <code>owner</code>/<code>admin</code> и <code>status=active</code>, вычисляется запросом — повысили до Admin → в адресатах, сняли роль → выбыл</div>
+                    <div class="dm-cmp__row"><span class="dm-cmp__k">Типы</span><code>sync</code> · <code>security</code> · <code>budget</code> · <code>system</code> · <code>discovery</code></div>
+                    <div class="dm-cmp__row"><span class="dm-cmp__k">Webhook</span>да — у доставки <code>user_id = NULL</code></div>
+                  </div>
+                  <div class="dm-cmp__col dm-cmp__col--t">
+                    <div class="dm-cmp__h">targeted <code>target_user_id = N</code></div>
+                    <div class="dm-cmp__row"><span class="dm-cmp__k">Адресат</span>один пользователь, любой — включая member</div>
+                    <div class="dm-cmp__row"><span class="dm-cmp__k">Типы</span><code>agent</code> (прогон, governance) · <code>account</code> (роль, временный пароль)</div>
+                    <div class="dm-cmp__row"><span class="dm-cmp__k">Webhook</span>нет — личные типы по вебхукам не идут</div>
+                  </div>
+                </div>
+                <div class="stk-dec__d">
+                  Колонка аддитивна: старые типы пишут <code>NULL</code> и идут прежним путём,
+                  ветка targeted — одно условие в диспетчере; <code>deliveries.user_id</code>
+                  уже per-user, схему доставки менять не пришлось. Отдельной таблицы
+                  получателей нет, личное сужение хранит <code>notification_prefs</code>
+                  (per-user × тип, флаги <code>in_app</code> и <code>email</code>). Внешнего
+                  адресата-человека не заводим принципиально — его роль играет webhook-канал,
+                  а не строка-получатель вне системы ролей
+                  (<a href="../../auth-security/_wireframes/profile-account.html#notifications" class="xref-module">личные настройки</a>).
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full" id="notif-channels">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Slack — пресет вебхука, не отдельная сущность</span>
+                  <a class="xref-badge" href="../../admin-panel/_wireframes/notifications.html#channels"
+                    >→ Экран каналов</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Один <code>notification_channels</code> держит все каналы — сценарии
+                  «Slack» и «любой инструмент» сходятся в одну таблицу, матрица
+                  <code>notification_routes</code> ссылается на каналы единообразно по
+                  <code>channel_id</code>.
+                </div>
+                <ul class="stk-dec__list">
+                  <li>in_app · email — <code>is_builtin</code>-строки из миграции: неудаляемы, in_app не выключить</li>
+                  <li>webhook — обычная строка с <code>preset</code> (slack · generic), выбирающим формат <a href="dispatcher.html#payload" class="xref-page">payload</a>; выделенной колонки у Slack нет</li>
+                  <li>webhook — канал только broadcast-типов: у него <code>user_id = NULL</code>, личные типы по нему не расходятся</li>
+                  <li>это <strong>исходящие оповещения</strong> в канал — разговорный <a href="../../slack/index.html#three-slacks" class="xref-module">Slack-бот</a> отдельная сущность: входящая и личная</li>
+                </ul>
+              </div>
+
+              <div class="stk-dec stk-dec--full" id="notif-defaults">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Дефолт канала — в каталоге типа; email юзерских типов opt-in</span>
+                  <a class="xref-badge xref-badge--page" href="dispatcher.html#catalog"
+                    >→ Каталог</a
+                  >
+                </div>
+                <div class="dm-formula">
+                  доставка по каналу = <code>routes.enabled</code> ∧ (<code>prefs.&lt;канал&gt;_enabled</code> либо дефолт каталога)
+                  <span class="dm-formula__note">— одна формула для broadcast и targeted</span>
+                </div>
+                <dl class="dm-map">
+                  <dt>платформенные</dt>
+                  <dd>sync · security · budget · system · discovery → in-app + email</dd>
+                  <dt>agent · account</dt>
+                  <dd>только in-app; email <strong>opt-in</strong> — юзер включает сам в профиле</dd>
+                </dl>
+                <div class="stk-dec__d">
+                  Строки <code>notification_prefs</code> нет — берётся дефолт
+                  <a href="dispatcher.html#catalog" class="xref-page">каталога типа</a>, не
+                  глобальный «оба включены». Так member по умолчанию видит колокольчик, но
+                  писем не получает, пока не захочет.
+                </div>
+              </div>
+
+              <div class="stk-dec" id="notif-critical">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Что нельзя выключить централизованно</span>
+                </div>
+                <div class="stk-dec__d">
+                  Гарантирован один маршрут — <strong>in-app</strong> для
+                  <code>security</code> и <code>sync</code>: критичный тип всегда виден хотя
+                  бы в ленте, один администратор не оставит организацию без сигнала.
+                </div>
+                <ul class="stk-dec__list">
+                  <li>Замок: маршруты in_app × security и in_app × sync засеяны <code>locked=true</code>; <code>CHECK (enabled OR NOT locked)</code> не даёт выключить</li>
+                  <li>Уровень <strong>организационный</strong>, только in-app: email и webhook этих типов, как и все каналы прочих типов — свободны</li>
+                  <li>Личная отписка всегда доступна (<code>notification_prefs</code>); <code>agent</code> · <code>account</code> замком не держатся</li>
+                </ul>
+              </div>
+
+              <div class="stk-dec" id="notif-journal">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Событие — журнал, доставка — состояние</span>
+                </div>
+                <ul class="stk-dec__list">
+                  <li><code>notifications</code> — журнал, ~append-only; единственная мутация: <strong>дедуп серии</strong> в окне (тот же <code>dedup_key</code> → <code>dedup_count++</code>, <code>last_seen_at</code>), за окном иммутабельно</li>
+                  <li>Текст — <strong>i18n-ключи</strong> <code>title</code> · <code>body</code> + <code>title_params</code>, рендер на языке читателя, не заморожённая строка</li>
+                  <li><code>notification_deliveries</code> — состояние (queued → sent → read); лента in-app = <code>notifications</code> ⋈ свои deliveries, unread = <code>read_at IS NULL</code></li>
+                  <li>Удаление: событие → каскад deliveries; юзер → свои личные строки (broadcast-факт цел); webhook-канал → <code>channel_id = NULL</code> (аудит жив)</li>
+                </ul>
+                <div class="stk-dec__d">
+                  Диспетчер и источники событий — <a href="dispatcher.html#dispatch" class="xref-page">в механике</a>.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ── L2 · Миграция ── -->
+          <div class="stk-layer stk-layer--migration" id="migration">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Миграция</span>
+              <span class="stk-layer__role">Создаёт таблицы и засевает каналы и маршруты.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><code>alembic/versions/NNN_core_notifications.py</code></span>
+                </div>
+                <div class="stk-dec__d">
+                  Создаёт пять таблиц в порядке зависимостей:
+                  <code>notification_channels</code> →
+                  <code>notification_routes</code> · <code>notification_prefs</code> ·
+                  <code>notifications</code> → <code>notification_deliveries</code>.
+                </div>
+                <ul class="stk-dec__list">
+                  <li><code>INSERT</code> двух встроенных каналов (<code>is_builtin</code>: in_app, email)</li>
+                  <li>Засев <strong>полной</strong> матрицы <code>routes</code> — строка на каждую клетку <code>тип × встроенный канал</code> (<code>enabled=true</code>); webhook у targeted-типов <code>agent</code> · <code>account</code> не засевается</li>
+                  <li>Клетки in_app × security и in_app × sync — <code>locked=true</code> (<a href="#notif-critical" class="xref-anchor">что нельзя выключить</a>)</li>
+                  <li><code>downgrade()</code> сносит таблицы в обратном порядке</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

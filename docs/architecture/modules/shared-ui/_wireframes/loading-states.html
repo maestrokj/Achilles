@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Shared UI: Loading and waiting</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Shared UI</a>
+        <h1 class="header__title">Loading and waiting</h1>
+        <div class="header__sub">shared ui · wireframes · shared component</div>
+      </div>
+
+      <p class="desc">
+        A vocabulary of waiting mechanisms inside a live screen: the mechanism fits the form of the wait, not the type of screen. A full collapse is a separate pattern,
+        <a href="system-screens.html" class="xref-page">system stubs</a>.
+      </p>
+
+      <!-- ═══ Which mechanism when ═══ The core of the pattern: the selection rule.
+           An overview table — which mechanism for which form of wait. Below, each
+           mechanism is broken out into its own block with its wireframe; the screen
+           badges lead straight to the right block (#skeleton · #keep-previous · #spinner ·
+           #progress · #error). -->
+      <div class="section" id="mechanisms">
+        <h2 class="section__title">Which mechanism when</h2>
+        <ul class="wf-legend">
+          <li class="wf-legend__item">
+            The content shape is known, the data is not yet there → <strong>skeleton</strong>
+          </li>
+          <li class="wf-legend__item">
+            Content is already on screen, the slice changes → <strong>keep-previous</strong>
+          </li>
+          <li class="wf-legend__item">
+            The area is tiny or the shape is unknown → <strong>spinner</strong>
+          </li>
+          <li class="wf-legend__item">
+            The whole screen changes → <strong>a bar at the top</strong>
+          </li>
+          <li class="wf-legend__item">
+            The request failed, the frame is alive → <strong>an inline error with retry</strong>
+          </li>
+        </ul>
+      </div>
+
+      <!-- ═══ Skeleton ═══ Cold start, the content shape is known. -->
+      <div class="section" id="skeleton">
+        <h2 class="section__title">
+          Skeleton — cold start
+          <a href="../../web-app/_wireframes/grounded-answer.html#answer" class="xref-badge">→ Web App</a>
+        </h2>
+        <p class="desc">The frame right away, the body — placeholders in the shape of the coming content: swapping in the data causes no layout jump.</p>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">skeleton · cold start</div>
+              <div class="wf-screen wf-screen--wide">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/admin/users
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">first render · no data yet</span>
+                      <span class="wf-urltip__body">The frame and table header right away; the body — placeholders</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <span class="wf-title">Users</span>
+                    <table class="wf-table">
+                      <thead>
+                        <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last sign-in</th></tr>
+                      </thead>
+                      <tbody>
+                        <tr><td><div class="wf-line wf-skel wf-line--w80"></div></td><td><div class="wf-line wf-skel wf-line--full"></div></td><td><div class="wf-line wf-skel wf-line--w40"></div></td><td><div class="wf-line wf-skel wf-line--w40"></div></td><td><div class="wf-line wf-skel wf-line--w60"></div></td></tr>
+                        <tr><td><div class="wf-line wf-skel wf-line--w60"></div></td><td><div class="wf-line wf-skel wf-line--w80"></div></td><td><div class="wf-line wf-skel wf-line--w40"></div></td><td><div class="wf-line wf-skel wf-line--w60"></div></td><td><div class="wf-line wf-skel wf-line--w40"></div></td></tr>
+                        <tr><td><div class="wf-line wf-skel wf-line--full"></div></td><td><div class="wf-line wf-skel wf-line--w60"></div></td><td><div class="wf-line wf-skel wf-line--w60"></div></td><td><div class="wf-line wf-skel wf-line--w40"></div></td><td><div class="wf-line wf-skel wf-line--w60"></div></td></tr>
+                        <tr><td><div class="wf-line wf-skel wf-line--w80"></div></td><td><div class="wf-line wf-skel wf-line--full"></div></td><td><div class="wf-line wf-skel wf-line--w40"></div></td><td><div class="wf-line wf-skel wf-line--w60"></div></td><td><div class="wf-line wf-skel wf-line--w40"></div></td></tr>
+                        <tr><td><div class="wf-line wf-skel wf-line--w60"></div></td><td><div class="wf-line wf-skel wf-line--w80"></div></td><td><div class="wf-line wf-skel wf-line--w40"></div></td><td><div class="wf-line wf-skel wf-line--w40"></div></td><td><div class="wf-line wf-skel wf-line--w60"></div></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Keep-previous ═══ Content is already on screen, the slice changes. The
+           shared list mechanics of the admin panel live in list-controls (section badge). -->
+      <div class="section" id="keep-previous">
+        <h2 class="section__title">
+          Keep-previous — slice transition
+          <a href="../../admin-panel/_workzone/list-controls.html#loading" class="xref-badge">→ Admin Panel</a>
+        </h2>
+        <p class="desc">The previous rows are dimmed, a thin bar under the header; the new slice replaces them in place, without flashing to empty.</p>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">keep-previous · page transition</div>
+              <div class="wf-screen wf-screen--wide">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/admin/users?page=2
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">content was already there · the next slice is arriving</span>
+                      <span class="wf-urltip__body">Previous rows dimmed, a bar on top, replaced in place</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-progress"></div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <span class="wf-title">Users</span>
+                    <div class="wf-dim">
+                      <table class="wf-table">
+                        <thead>
+                          <tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last sign-in</th></tr>
+                        </thead>
+                        <tbody>
+                          <tr><td>Anna Orlova</td><td>anna@company.com</td><td><span class="wf-chip">Owner</span></td><td><span class="wf-chip wf-chip--ok">active</span></td><td>5 min ago</td></tr>
+                          <tr><td>Dmitry Sokolov</td><td>dmitry@company.com</td><td><span class="wf-chip">Admin</span></td><td><span class="wf-chip wf-chip--ok">active</span></td><td>yesterday</td></tr>
+                          <tr><td>Igor Lebedev</td><td>igor@company.com</td><td><span class="wf-chip">Member</span></td><td><span class="wf-chip wf-chip--ok">active</span></td><td>3 days ago</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div class="wf-pager">
+                      <span class="wf-pager__count">51–100 of 128</span>
+                      <div class="wf-pager__pages">
+                        <span class="wf-page wf-page--nav">‹</span>
+                        <span class="wf-page">1</span>
+                        <span class="wf-page wf-page--active">2</span>
+                        <span class="wf-page">3</span>
+                        <span class="wf-page wf-page--nav">›</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Spinner ═══ The shape is unknown or the area is tiny. -->
+      <div class="section" id="spinner">
+        <h2 class="section__title">Spinner — a small zone</h2>
+        <p class="desc">A button in progress, an inline check, a short action in a modal. We do not load a whole list this way — that is skeleton.</p>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <div class="wf-frame wf-frame--center">
+              <div class="wf-stage__caption">spinner · button and small zone</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-body">
+                  <div class="wf-stack wf-center">
+                    <button class="wf-btn wf-btn--primary">
+                      <span class="wf-spinner"></span> Saving…
+                    </button>
+                    <div class="wf-row">
+                      <span class="wf-spinner"></span>
+                      <span class="wf-subtitle">Checking the connection…</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Bar ═══ The whole screen changes (the router's pending state). -->
+      <div class="section" id="progress">
+        <h2 class="section__title">Bar — the whole screen changes</h2>
+        <p class="desc">A thin bar under the header while the next route loads. It lives at the shell level (<code>layout</code>), not on the content screens.
+        </p>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">bar · transition between screens</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/admin/settings
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">transition to a new route</span>
+                      <span class="wf-urltip__body">A bar under the header while the next screen loads</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-progress"></div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-line wf-skel wf-line--w40"></div>
+                    <div class="wf-line wf-skel wf-line--full"></div>
+                    <div class="wf-line wf-skel wf-line--w80"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Inline error ═══ The request failed, the screen frame is alive. -->
+      <div class="section" id="error">
+        <h2 class="section__title">Inline error — retry</h2>
+        <p class="desc">
+          A block with the cause and “Retry” in the data area, the screen frame alive. A full collapse —
+          a <a href="system-screens.html#server-error" class="xref-page">system stub</a>; an invisible background failure — a <a href="toasts.html#error" class="xref-page">toast</a>.
+        </p>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">inline error · retry</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/admin/users
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">the request failed · the screen frame is alive</span>
+                      <span class="wf-urltip__body">The error in the data area, the rest of the screen in place</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <span class="wf-title">Users</span>
+                    <div class="wf-alert wf-alert--error">
+                      <div class="wf-stack wf-stack--tight">
+                        <strong>Could not load the list</strong>
+                        The server did not respond. Check the connection and retry.
+                        <span><button class="wf-btn">Retry</button></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Rules ═══ Shared across all mechanisms: threshold, accessibility,
+           implementation with the stack's built-in means. -->
+      <div class="section">
+        <h2 class="section__title">Rules</h2>
+        <ul class="wf-legend">
+          <li class="wf-legend__item">
+            <strong>~200&nbsp;ms threshold</strong> — we do not show an indicator if the response arrived faster: otherwise the screen would flash with a loader.</li>
+          <li class="wf-legend__item">
+            <strong>The frame does not jump</strong> — the heading, filters, and pagination render right away; only the data area changes.</li>
+          <li class="wf-legend__item">
+            <strong>Accessibility</strong> — the loading zone carries
+            <code>aria-busy</code>, the inline error — <code>role="alert"</code>,
+            so a screen reader announces the state change.
+          </li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

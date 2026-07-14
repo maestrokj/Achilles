@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Web App: уведомления — лента</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Web App</a>
+        <h1 class="header__title">Уведомления — лента</h1>
+        <div class="header__sub">
+          web app · макеты · уведомления
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Экран рендерится в контентной области каркаса">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--keep" href="../../shared-ui/_wireframes/loading-states.html#keep-previous" title="Смена страницы или фильтра — прежние строки остаются (keep-previous)">
+              <span class="in-load__icon"></span>загрузка
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">
+        Что сотрудник читает по клику на колокольчик: личные уведомления — прогоны
+        его агентов и события учётки. Тот же
+        <a href="../../notifications/_workzone/dispatcher.html#dispatch" class="xref-module">диспетчер</a>, что у админов, своя витрина; адресация —
+        <a href="../../notifications/_workzone/dispatcher.html#addressing" class="xref-module">targeted</a> на этого пользователя.
+      </p>
+
+      <!-- ═══ Колокольчик и панель ═══ -->
+      <div class="section" id="bell">
+        <div class="section__title">
+          Колокольчик и панель
+          <a href="layout.html#appbar" class="xref-page">→ Шапка</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">in-app · вход в ленту</div>
+          <div class="wf-gallery">
+
+            <!-- ── Колокольчик в шапке ── -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">шапка — колокольчик</div>
+              <div class="wf-screen">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/chat
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/chat · авторизованный пользователь</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-appbar">
+                  <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                  <span class="wf-appbar__spacer"></span>
+                  <span class="wf-chip">RU</span>
+                  <a class="wf-bell" href="#panel" title="Уведомления — лента">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+                    <span class="wf-bell__count">2</span>
+                  </a>
+                  <span class="wf-annot">1</span>
+                  <span class="wf-avatar">ДС</span>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-line wf-line--w60"></div>
+                    <div class="wf-line wf-line--full"></div>
+                    <div class="wf-line wf-line--w80"></div>
+                    <div class="wf-line wf-line--w40"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Панель уведомлений ── -->
+            <div class="wf-frame wf-frame--center" id="panel">
+              <div class="wf-stage__caption">панель · по клику на колокольчик</div>
+              <div class="wf-menu wf-menu--panel">
+                <div class="wf-notipanel__head">
+                  <span class="wf-row">
+                    <span class="wf-label">Уведомления</span>
+                    <span class="wf-chip">2 новых</span>
+                  </span>
+                  <span class="wf-row">
+                    <a class="wf-a" href="#inbox">Прочитать все <span class="wf-annot">2</span></a>
+                    <a class="wf-input__action" href="../../auth-security/_wireframes/profile-account.html#notifications" title="Личные настройки уведомлений">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+                    </a>
+                  </span>
+                </div>
+
+                <div class="wf-notipanel__body">
+                  <!-- Agent · warning · прогон провалился -->
+                  <div class="wf-noti wf-noti--unread">
+                    <span class="wf-noti__dot"></span>
+                    <div class="wf-noti__main">
+                      <div class="wf-row wf-spread">
+                        <span class="wf-row">
+                          <span class="wf-label">Agent</span>
+                          <span class="wf-chip wf-chip--warn">warning</span>
+                          <span class="wf-annot">3</span>
+                        </span>
+                        <span class="wf-noti__time">8 мин</span>
+                      </div>
+                      <span class="wf-noti__title">Агент «Sales watch»: прогон провалился</span>
+                      <a class="wf-a" href="agent-editor.html">agent_engine · run/318</a>
+                    </div>
+                  </div>
+
+                  <!-- Agent · warning · actionable — модель снята -->
+                  <div class="wf-noti wf-noti--unread">
+                    <span class="wf-noti__dot"></span>
+                    <div class="wf-noti__main">
+                      <div class="wf-row wf-spread">
+                        <span class="wf-row">
+                          <span class="wf-label">Agent</span>
+                          <span class="wf-chip wf-chip--warn">warning</span>
+                        </span>
+                        <span class="wf-noti__time">2 ч</span>
+                      </div>
+                      <span class="wf-noti__title">Модель агента «Risk daily» снята администратором</span>
+                      <div class="wf-row wf-spread">
+                        <span class="wf-hint">агент остановлен, пока не выберете другую</span>
+                        <a class="wf-btn wf-btn--primary" href="agent-editor.html">Выбрать модель <span class="wf-annot wf-annot--on-accent">4</span></a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="wf-notipanel__foot">
+                  <a class="wf-a" href="#inbox">Показать все <span class="wf-annot">5</span></a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Колокольчик с unread-счётчиком — число непрочитанных in-app у текущего пользователя (доставки с <code>read_at IS NULL</code>). Счётчик обновляется мгновенно push-каналом (SSE), опрос — фоновый добор. Канал in-app залочён включённым, поэтому колокольчик есть у каждого — <a href="../../notifications/_workzone/data-model.html#notif-journal" class="xref-module">лента = notifications ⋈ свои deliveries</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Панель — хвост последних событий, по клику открывается из колокольчика. «Прочитать все» проставляет <code>read_at</code> всем доставкам пользователя разом; шестерёнка ведёт в личные <a href="../../auth-security/_wireframes/profile-account.html#notifications" class="xref-module">настройки уведомлений</a> (тумблеры in-app / email по типу).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Тип слева (Agent · Account) — категория личного события; severity-чип — серьёзность. Источник кликабелен: диплинк из <code>source_ref</code> ведёт на сущность — прогон, агента, профиль.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Единственный actionable-случай у сотрудника — снятая модель: кнопка ведёт в <a href="agent-editor.html" class="xref-page">редактор агента</a>, выбрать модель из доступных. Прочие личные события — информирующие, с диплинком «куда смотреть».
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              «Показать все» ведёт на <a href="#inbox" class="xref-anchor">полный экран</a> — история, фильтры, отметка прочтения по одному. В панели — только верхушка.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              Лента личная: сюда падают только <a href="../../notifications/_workzone/dispatcher.html#addressing" class="xref-module">targeted</a>-события этого пользователя (его агенты, его учётка). Организационные алерты (sync · security · budget) — у администраторов в <a href="../../admin-panel/_wireframes/notification-feed.html" class="xref-module">Admin Panel</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Лента — полный экран ═══ -->
+      <div class="section" id="inbox">
+        <div class="section__title">
+          Полный экран — Inbox
+          <a href="../../notifications/_workzone/data-model.html#notifications-data" class="xref-badge">→ Модель данных</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">notification inbox</div>
+          <div class="wf-screen wf-screen--wide wf-screen--pops">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/inbox
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/inbox · авторизованный пользователь</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-row wf-spread">
+                  <span class="wf-row">
+                    <span class="wf-title">Уведомления</span>
+                    <span class="wf-chip">лента</span>
+                  </span>
+                  <span class="wf-row">
+                    <button class="wf-btn">Прочитать все</button>
+                    <a class="wf-input__action" href="../../auth-security/_wireframes/profile-account.html#notifications" title="Личные настройки уведомлений">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+                    </a>
+                  </span>
+                </div>
+
+                <div class="wf-input wf-input--sm">
+                  <span class="wf-input__icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                  </span>
+                  Поиск по заголовку или агенту
+                </div>
+                <div class="wf-filters">
+                  <span class="wf-filter">Тип <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Severity <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter wf-filter--on">Непрочитанные <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Период <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-annot">6</span>
+                </div>
+
+                <span class="wf-label">Сегодня</span>
+
+                <!-- Agent · warning · failed · unread · ⋯ -->
+                <div class="wf-noti wf-noti--unread">
+                  <span class="wf-noti__dot"></span>
+                  <div class="wf-noti__main">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-label">Agent</span>
+                        <span class="wf-chip wf-chip--warn">warning</span>
+                        <span class="wf-annot">7</span>
+                      </span>
+                      <span class="wf-noti__time">14:10 · 8 мин назад</span>
+                    </div>
+                    <span class="wf-noti__title">Агент «Sales watch»: прогон провалился</span>
+                    <span class="wf-text">Прогон упёрся в потолок итераций и был остановлен — последний ответ не получен.</span>
+                    <div class="wf-row wf-spread">
+                      <a class="wf-a" href="agent-editor.html">agent_engine · run/318 <span class="wf-annot">8</span></a>
+                      <span class="wf-pop">
+                        <button class="wf-btn">⋯</button>
+                        <div class="wf-menu">
+                          <span class="wf-menu__item">Отметить прочитанным <span class="wf-annot">9</span></span>
+                          <span class="wf-menu__item">Открыть агента</span>
+                        </div>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Agent · info · бюджет · unread -->
+                <div class="wf-noti wf-noti--unread">
+                  <span class="wf-noti__dot"></span>
+                  <div class="wf-noti__main">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-label">Agent</span>
+                        <span class="wf-chip">info</span>
+                      </span>
+                      <span class="wf-noti__time">09:30 · сегодня</span>
+                    </div>
+                    <span class="wf-noti__title">Недельный бюджет токенов исчерпан — агенты ждут сброса недели</span>
+                    <a class="wf-a" href="my-agents.html">agent_engine · budget</a>
+                  </div>
+                </div>
+
+                <!-- Agent · warning · модель снята · actionable · unread -->
+                <div class="wf-noti wf-noti--unread">
+                  <span class="wf-noti__dot"></span>
+                  <div class="wf-noti__main">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-label">Agent</span>
+                        <span class="wf-chip wf-chip--warn">warning</span>
+                      </span>
+                      <span class="wf-noti__time">08:05 · сегодня</span>
+                    </div>
+                    <span class="wf-noti__title">Модель агента «Risk daily» снята администратором</span>
+                    <div class="wf-row wf-spread">
+                      <span class="wf-hint">агент остановлен, пока не выберете другую</span>
+                      <a class="wf-btn wf-btn--primary" href="agent-editor.html">Выбрать модель</a>
+                    </div>
+                  </div>
+                </div>
+
+                <span class="wf-label">Ранее</span>
+
+                <!-- Account · info · роль · read · ⋯ -->
+                <div class="wf-noti wf-noti--read">
+                  <span class="wf-noti__dot"></span>
+                  <div class="wf-noti__main">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-label">Account</span>
+                        <span class="wf-chip">info</span>
+                      </span>
+                      <span class="wf-noti__time">вчера, 16:20</span>
+                    </div>
+                    <span class="wf-noti__title">Ваша роль изменена: member → admin</span>
+                    <div class="wf-row wf-spread">
+                      <a class="wf-a" href="../../auth-security/_wireframes/profile-account.html">auth · профиль</a>
+                      <span class="wf-pop">
+                        <button class="wf-btn">⋯</button>
+                        <div class="wf-menu">
+                          <span class="wf-menu__item">Отметить непрочитанным <span class="wf-annot">10</span></span>
+                          <span class="wf-menu__item">Открыть профиль</span>
+                        </div>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Account · warning · временный пароль · read -->
+                <div class="wf-noti wf-noti--read">
+                  <span class="wf-noti__dot"></span>
+                  <div class="wf-noti__main">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-label">Account</span>
+                        <span class="wf-chip wf-chip--warn">warning</span>
+                      </span>
+                      <span class="wf-noti__time">3 дня назад</span>
+                    </div>
+                    <span class="wf-noti__title">Выдан временный пароль — смените его при входе</span>
+                    <a class="wf-a" href="../../auth-security/_wireframes/profile-account.html">auth · профиль</a>
+                  </div>
+                </div>
+
+                <!-- Agent · info · пауза · read -->
+                <div class="wf-noti wf-noti--read">
+                  <span class="wf-noti__dot"></span>
+                  <div class="wf-noti__main">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-label">Agent</span>
+                        <span class="wf-chip">info</span>
+                      </span>
+                      <span class="wf-noti__time">4 дня назад</span>
+                    </div>
+                    <span class="wf-noti__title">Агент «Risk daily» приостановлен администратором</span>
+                    <a class="wf-a" href="agent-editor.html">agent_engine · agent/12</a>
+                  </div>
+                </div>
+
+                <div class="wf-pager">
+                  <span class="wf-pager__count">1–20 из 47</span>
+                  <div class="wf-pager__pages">
+                    <span class="wf-page wf-page--nav wf-page--off">‹</span>
+                    <span class="wf-page wf-page--active">1</span>
+                    <span class="wf-page">2</span>
+                    <span class="wf-page">3</span>
+                    <span class="wf-page wf-page--nav">›</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <!-- ── Фасет: тип ── -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">фильтр · тип</div>
+              <div class="wf-pop">
+                <span class="wf-filter" tabindex="0">Тип <span class="wf-filter__caret">▾</span></span>
+                <div class="wf-menu">
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> Agent</span>
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> Account</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Пустое состояние ── -->
+            <div class="wf-frame wf-frame--center">
+              <div class="wf-stage__caption">пусто — всё прочитано</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-body">
+                  <div class="wf-stack wf-center">
+                    <span class="wf-check">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    </span>
+                    <span class="wf-title">Всё чисто</span>
+                    <span class="wf-text">Новых уведомлений нет. Прочитанные — в фильтре «Период».</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              Фасеты Тип · Severity · Непрочитанные · Период — поведение единое для всех списков. «Непрочитанные» — частый дефолт; снять, чтобы увидеть историю. Тип здесь — два личных: Agent · Account.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              Severity-чип = <code>notifications.severity</code> (warning · info), цвет из <a href="../../notifications/_workzone/dispatcher.html#catalog" class="xref-module">каталога событий</a>. Тип слева — категория (Agent · Account).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              Источник кликабелен — диплинк на сущность из <code>source_ref</code>: прогон, агент, профиль. Уводит туда, где разобраться, прямо из ленты.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">9</span>
+              «Отметить прочитанным» пишет <code>read_at</code> в <a href="../../notifications/_workzone/data-model.html#notifications-data" class="xref-module">собственную доставку</a> — у каждого своя лента и свой read-state. Само событие — append-only, его не правят и не удаляют.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">10</span>
+              Прочитанное гаснет (приглушённая карточка, без акцентной полосы), но остаётся в истории; «Отметить непрочитанным» возвращает в счётчик. Группировка по дню — Сегодня · Ранее.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              Канал email по личным типам по умолчанию выключен — opt-in: in-app виден сразу, письма приходят, только если включить их в <a href="../../auth-security/_wireframes/profile-account.html#notifications" class="xref-module">профиле</a> (<a href="../../notifications/_workzone/data-model.html#notif-defaults" class="xref-module">дефолт каталога</a>).
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

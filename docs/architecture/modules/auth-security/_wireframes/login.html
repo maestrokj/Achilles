@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Login</h1>
+        <div class="header__sub">
+          auth / security · wireframes · public
+          <a class="in-load in-load--spinner" href="../../shared-ui/_wireframes/loading-states.html#spinner" title="Waiting for an action — spinner">
+            <span class="in-load__icon"></span>loading
+          </a>
+        </div>
+      </div>
+
+      <p class="desc">
+        Signing in to the platform with email and password.
+        <span class="iter v2">v2</span>: with MFA enabled, a code-entry step is added after the password — not to be confused with <a href="../_features/mfa/index.html" class="xref-page">setting up MFA</a>.
+      </p>
+
+      <div class="section">
+        <div class="section__title">Wireframe</div>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <!-- State: default -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">default</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/login
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/login · public</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                      <h2 class="wf-title">Sign in</h2>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Email</span>
+                      <div class="wf-input">you@company.com</div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Password</span>
+                      <div class="wf-input wf-input--focus">
+                        ••••••••••
+                        <span class="wf-input__action" title="Show password">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="wf-row wf-spread">
+                      <div class="wf-row">
+                        <span class="wf-checkbox"></span>
+                        <span class="wf-text">Remember me<span class="wf-annot">1</span>
+                        </span>
+                      </div>
+                      <a class="wf-a" href="../_features/password-recovery/forgot-password.html">Forgot password?</a>
+                    </div>
+
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Sign in</button>
+
+                    <div class="wf-row">
+                      <hr class="wf-divider wf-divider--grow" />
+                      <span class="wf-hint">or</span>
+                      <hr class="wf-divider wf-divider--grow" />
+                    </div>
+
+                    <button class="wf-btn wf-btn--ghost wf-btn--block wf-btn--disabled">
+                      Sign in with SSO <span class="wf-annot">2</span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- State: error -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">error</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/login
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/login · public</span>
+                      </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                      <h2 class="wf-title">Sign in</h2>
+                    </div>
+
+                    <div class="wf-alert wf-alert--error wf-row">
+
+                      Invalid credentials. Please try again.
+                      <span class="wf-annot">3</span></div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Email</span>
+                      <div class="wf-input">you@company.com</div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Password</span>
+                      <div class="wf-input wf-input--focus">
+                        ••••••••••
+                        <span class="wf-input__action" title="Hide password">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20C5 20 1 12 1 12a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="wf-row wf-spread">
+                      <div class="wf-row">
+                        <span class="wf-checkbox"></span>
+                        <span class="wf-text">Remember me</span>
+                      </div>
+                      <a class="wf-a" href="../_features/password-recovery/forgot-password.html">Forgot password?</a>
+                    </div>
+
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Sign in</button>
+
+                    <div class="wf-row">
+                      <hr class="wf-divider wf-divider--grow" />
+                      <span class="wf-hint">or</span>
+                      <hr class="wf-divider wf-divider--grow" />
+                    </div>
+
+                    <button class="wf-btn wf-btn--ghost wf-btn--block wf-btn--disabled">
+                      Sign in with SSO
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- State: session expired -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">session expired</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/login?reason=session-expired
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/login · public</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                      <h2 class="wf-title">Sign in</h2>
+                    </div>
+
+                    <div class="wf-alert wf-row">
+
+                      Your session has expired — sign in again to continue.
+                      <span class="wf-annot">4</span></div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Email</span>
+                      <div class="wf-input">you@company.com</div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Password</span>
+                      <div class="wf-input wf-input--focus">
+                        ••••••••••
+                        <span class="wf-input__action" title="Show password">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="wf-row wf-spread">
+                      <div class="wf-row">
+                        <span class="wf-checkbox"></span>
+                        <span class="wf-text">Remember me</span>
+                      </div>
+                      <a class="wf-a" href="../_features/password-recovery/forgot-password.html">Forgot password?</a>
+                    </div>
+
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Sign in</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- State: too many attempts -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">too many attempts</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/login
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/login · public</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                      <h2 class="wf-title">Sign in</h2>
+                    </div>
+
+                    <div class="wf-alert wf-alert--error wf-row">
+
+                      Too many sign-in attempts. Try again in 15 minutes.
+                      <span class="wf-annot">5</span></div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Email</span>
+                      <div class="wf-input">you@company.com</div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Password</span>
+                      <div class="wf-input">••••••••••</div>
+                    </div>
+
+                    <div class="wf-row wf-spread">
+                      <div class="wf-row">
+                        <span class="wf-checkbox"></span>
+                        <span class="wf-text">Remember me</span>
+                      </div>
+                      <a class="wf-a" href="../_features/password-recovery/forgot-password.html">Forgot password?</a>
+                    </div>
+
+                    <button class="wf-btn wf-btn--primary wf-btn--block wf-btn--disabled">Sign in</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              “Remember me” — extends the session lifetime. Mechanics —
+              <a href="../_workzone/authentication.html#remember-me" class="xref-page">Remember me</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              SSO <span class="iter v2">v2</span> — the button is always visible, inactive until a provider is configured. Mechanics — <a href="../_workzone/authentication.html#sso-oidc" class="xref-page">SSO / OIDC</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              A single error block — one message for every sign-in failure, so account existence is not disclosed. Brute-force protection —
+              <a href="../_workzone/protection.html#brute-force" class="xref-page">defense line</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Session expired — a neutral notice on forced logout, shown until sign-in.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Too many attempts — the sign-in button is blocked until the rate-limit window ends. Separate from an input error. Brute-force protection —
+              <a href="../_workzone/protection.html#brute-force" class="xref-page">defense line</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,517 @@
+/* AI Foundation — tool catalog workzone visuals.
+   Diagram groups, top-down:
+   · tc-hero — the mental model: model ← tool-schema → tool, and the line
+     "catalog manages the SET, the harness executes the call".
+   · tc-vs — two-up comparison cards (tool vs prompt; chat vs agent surface),
+     mirroring conversation.css's cv-route paths so forks read alike.
+   · tc-src — the three origin kinds as type-cards (preset · custom · mcp).
+   · tc-flags — the two independent admit toggles (chat / agents), default OFF,
+     echoing governance.css's gv-who pills.
+   · tc-status — probe-result pills (active · error · unchecked).
+   · tc-recipe + tc-ide — the build-your-own-tool recipe and the warm-dark
+     editor (annotated tool-class skeleton + package tree), mirroring the
+     Harvester custom-connector block so the two extensibility stories read
+     alike.
+   Reuses module.css primitives; adds only the page-bespoke pieces above.
+   Loaded by _workzone/tool-catalog.html on top of ../../module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ════════ MENTAL MODEL ════════ */
+
+/* Concept poster: what a tool is (model ← tool-schema → callable function) and
+   where the catalog sits (manages the set, not the call). Nodes/edges mirror
+   the harness hn-flow so the two read as one visual language. */
+.tc-hero {
+  background: var(--tint-6);
+  border: 1.5px solid var(--accent-muted);
+  border-radius: var(--radius-md);
+  padding: 1rem 1rem 0.85rem;
+  margin: 0 0 2rem;
+}
+
+.tc-flow {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.tc-node {
+  flex: 0 1 13rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-align: center;
+  padding: 0.65rem 0.7rem;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+}
+.tc-node--model {
+  border-color: var(--accent);
+}
+.tc-node--tool {
+  border-color: var(--s2);
+}
+.tc-node__g {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+.tc-node__t {
+  font-weight: 700;
+  font-size: 0.84rem;
+  color: var(--text);
+}
+.tc-node__s {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+
+.tc-edge {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 5.5rem;
+  gap: 0.1rem;
+}
+.tc-edge__arr {
+  color: var(--accent);
+  font-weight: 700;
+  font-family: var(--mono);
+}
+.tc-edge__lbl {
+  font-size: 0.66rem;
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.25;
+}
+
+/* Footer line: the catalog's actual job vs what it delegates. */
+.tc-hero__foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem 1.1rem;
+  margin-top: 0.85rem;
+  padding-top: 0.7rem;
+  border-top: 1px dashed var(--border);
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+.tc-hero__foot b {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* ════════ TWO-UP COMPARISON ════════ */
+
+/* Side-by-side cards for a fork (tool vs prompt; chat vs agent). Coloured top
+   edge per column, same idiom as cv-route__path. */
+.tc-vs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+  margin: 0.3rem 0 0;
+}
+.tc-vs__col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--text-muted);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.85rem;
+}
+.tc-vs__col--accent {
+  border-top-color: var(--accent);
+}
+.tc-vs__col--alt {
+  border-top-color: var(--s2);
+}
+.tc-vs__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+.tc-vs__name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+.tc-vs__kind {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.tc-vs__lines {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+}
+.tc-vs__line {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+  padding-left: 0.85rem;
+  position: relative;
+}
+.tc-vs__line::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.5em;
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 50%;
+  background: var(--accent-muted);
+}
+/* A cycle chip — names the loop shape of a surface (one round vs agentic loop). */
+.tc-vs__cycle {
+  align-self: flex-start;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--tint-8);
+  border: 1px solid var(--tint-15);
+  border-radius: var(--pill-radius);
+  padding: 0.15rem 0.5rem;
+}
+/* Takeaway line under the pair — the one decision the fork turns on. */
+.tc-vs__take {
+  margin-top: 0.7rem;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.tc-vs__take b {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* ════════ ORIGIN TYPE-CARDS ════════ */
+
+/* The three origin kinds as a card row; type lives in code, instance in the DB.
+   The lead line states that split, the cards enumerate the kinds. */
+.tc-origin {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  margin: 0.3rem 0 0.7rem;
+}
+.tc-origin b {
+  color: var(--accent);
+  font-family: var(--mono);
+  font-weight: 700;
+}
+.tc-src {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+}
+.tc-src__card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent-muted);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.75rem;
+}
+.tc-src__card--v2 {
+  border-top-color: var(--text-muted);
+  border-style: dashed;
+}
+.tc-src__name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+}
+.tc-src__desc {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* ════════ ADMIT TOGGLES ════════ */
+
+/* The two independent admit flags, one per surface, both default OFF. The
+   rendered switch shows the default state at a glance; gv-who in governance.css
+   is the pill cousin of this. */
+.tc-flags {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin: 0.3rem 0 0;
+}
+.tc-flag {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-muted);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.85rem;
+}
+.tc-flag__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin-bottom: 0.4rem;
+}
+.tc-flag__name {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+.tc-flag__col {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+.tc-flag__desc {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+.tc-flag__who {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* The switch — a track with a knob; --on slides the knob right and greens it.
+   Here both render OFF, the page's whole point (admit is opt-in). */
+.tc-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: none;
+}
+.tc-switch__track {
+  position: relative;
+  width: 2rem;
+  height: 1.1rem;
+  border-radius: 999px;
+  background: var(--tint-15);
+  border: 1px solid var(--border);
+}
+.tc-switch__knob {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+.tc-switch__lbl {
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.tc-switch--on .tc-switch__track {
+  background: var(--s3-pale);
+  border-color: var(--s3);
+}
+.tc-switch--on .tc-switch__knob {
+  left: auto;
+  right: 1px;
+  background: var(--s3);
+}
+.tc-switch--on .tc-switch__lbl {
+  color: var(--s3);
+}
+
+/* ════════ PROBE STATUS PILLS ════════ */
+
+/* The three probe outcomes as legend pills — what tools.status can read after
+   a "Протестировать" press. */
+.tc-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.3rem 0 0;
+}
+.tc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--pill-radius);
+  padding: 0.2rem 0.6rem;
+}
+.tc-pill__dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+.tc-pill--active {
+  color: var(--s3);
+  border-color: var(--s3);
+}
+.tc-pill--active .tc-pill__dot {
+  background: var(--s3);
+}
+.tc-pill--error {
+  color: var(--s1);
+  border-color: var(--s1);
+}
+.tc-pill--error .tc-pill__dot {
+  background: var(--s1);
+}
+
+/* ════════ CUSTOM TOOL RECIPE ════════ */
+
+/* ════════ CUSTOM TOOL RECIPE ════════ */
+
+/* Three two-word steps as a legend above the code skeleton; numbers echo the
+   # n · markers in the snippet's comments. */
+.tc-recipe {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0 0.75rem;
+  padding: 0;
+}
+
+.tc-recipe__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.75rem 0.3rem 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.tc-recipe__step b {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--accent);
+  background: var(--tint-15);
+  border-radius: 50%;
+}
+
+/* ════════ IDE BLOCK ════════ */
+
+/* Warm-dark editor: the tool-class skeleton on top, the package tree (where
+   the file lands) below. Same palette as the connector IDE so the two
+   extensibility blocks read as one story; local --ide-* tokens keep it in
+   one place. */
+.tc-ide {
+  --ide-bg: #2a2018;
+  --ide-pane: #322820;
+  --ide-fg: #e9dcc9;
+  --ide-dim: #9a8872;
+  --ide-kw: #e0905c;
+  --ide-add: #e8b070;
+  --ide-border: #443628;
+
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  background: var(--ide-border);
+  border: 1px solid var(--ide-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.tc-ide__pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--ide-bg);
+}
+
+.tc-ide__tab {
+  padding: 0.5rem 1rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ide-dim);
+  background: var(--ide-pane);
+  border-bottom: 1px solid var(--ide-border);
+}
+
+.tc-code,
+.tc-tree {
+  margin: 0;
+  padding: 0.95rem 1.15rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  line-height: 1.7;
+  color: var(--ide-fg);
+  background: var(--ide-bg);
+  overflow-x: auto;
+}
+
+.tc-code .kw {
+  color: var(--ide-kw);
+  font-weight: 700;
+}
+
+.tc-code .cm,
+.tc-tree .cm {
+  color: var(--ide-dim);
+}
+
+/* The file being added — the one new line in the tree. */
+.tc-tree__new {
+  display: block;
+  color: var(--ide-add);
+  font-weight: 700;
+}
+
+/* Deploy caveat, pinned right beside the pseudocode so it can't be missed. */
+.tc-warn {
+  display: block;
+  margin-top: 0.7rem;
+  padding: 0.35rem 0.6rem;
+  border-left: 2px solid var(--ide-kw);
+  background: rgba(224, 144, 92, 0.12);
+  color: var(--ide-fg);
+  font-weight: 700;
+}
+
+/* ════════ RESPONSIVE ════════ */
+
+/* Collapse the two-/three-up grids to a single column on narrow screens. */
+@media (max-width: 640px) {
+  .tc-vs,
+  .tc-flags,
+  .tc-src {
+    grid-template-columns: 1fr;
+  }
+}

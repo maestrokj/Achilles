@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: API Key Create</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit (feature-local screen,
+         one level deeper than _wireframes/ — see README → Styling) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../wireframe.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="index.html">← API-ключи</a>
+        <h1 class="header__title">API Key Create</h1>
+        <div class="header__sub">
+          auth / security · фичи · API-ключи
+          <a class="in-load in-load--spinner" href="../../../shared-ui/_wireframes/loading-states.html#spinner" title="Ожидание действия — спиннер">
+            <span class="in-load__icon"></span>загрузка
+          </a>
+        </div>
+      </div>
+
+      <div class="desc">
+
+        Единый диалог выпуска API-ключа для всех точек вызова. Механика —
+        <a href="../../_workzone/authentication.html#api-keys" class="xref-page">API-ключи</a>.
+        </div>
+
+      <!-- Standalone-модалка (wf-stage--backdrop), две независимые части по
+           точке вызова: самовыпуск пользователем и выдача Owner/Admin. -->
+      <div class="section" id="api-key-create">
+        <div class="section__title">Макет</div>
+
+        <!-- ── Часть 1: самовыпуск (пользователь) ─────────────────────── -->
+        <p class="note">
+          <strong>Самовыпуск.</strong> Ключ на себя, из своего профиля.</p>
+        <div class="wf-stage wf-stage--backdrop">
+          <div class="wf-gallery">
+            <!-- форма самовыпуска -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">форма</div>
+              <div class="wf-screen wf-screen--modal">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <span class="wf-title">
+                      Создать API-ключ <span class="wf-annot">1</span>
+                    </span>
+                    <div class="wf-field">
+                      <span class="wf-label">Доступ</span>
+                      <div class="wf-row">
+                        <span class="wf-chip wf-chip--ok">read-only</span>
+                        <span class="wf-hint">запись через ключ недоступна</span>
+                        <span class="wf-annot">2</span>
+                      </div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Источники</span>
+                      <div class="wf-row">
+                        <span class="wf-chip wf-chip--ok">все доступные</span>
+                        <span class="wf-hint">или выбрать вручную</span>
+                      </div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Срок действия</span>
+                      <div class="wf-input">
+                        90 дней
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                      <span class="wf-hint">
+
+                        30 / 90 / 365 дней / бессрочный
+                        <span class="wf-annot">3</span></span>
+                    </div>
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Создать</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ключ создан (одноразовый показ — общий для обеих частей) -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">ключ создан</div>
+              <div class="wf-screen wf-screen--modal">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <span class="wf-title">Ключ создан</span>
+                    <div class="wf-alert">
+                      Полное значение видно один раз — скопируйте и сохраните в надёжном месте. <span class="wf-annot">4</span></div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-code">ach_7f2k9xQ…vD3w</span>
+                      <button class="wf-copybtn">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                        Копировать
+                      </button>
+                    </div>
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Готово</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Заголовок диалога. Самовыпуск — из своего
+              <a href="../../_wireframes/profile-account.html" class="xref-page">профиля</a>, поля пользователя нет.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Скоуп ключа: «Доступ» (read-only) и «Источники» (по умолчанию все доступные, сужаются вручную). Потолок прав —
+              <a href="../../_workzone/authentication.html#api-keys" class="xref-page">API-ключи</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Срок действия — пресет или бессрочный.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Значение показывается один раз — скопировать можно только здесь.
+            </li>
+          </ol>
+        </div>
+
+        <!-- ── Часть 2: выдача (Owner / Admin) ─────────────────────────── -->
+        <p class="note">
+          <strong>Выдача — Owner / Admin.</strong> Ключ на сотрудника, из
+          <a href="../../../admin-panel/_wireframes/api-keys.html#api-keys" class="xref-module">списка ключей</a>
+          или
+          <a href="../../../admin-panel/_wireframes/user-card.html#user-card" class="xref-module">карточки</a>. Финал — тот же одноразовый показ значения.
+        </p>
+        <div class="wf-stage wf-stage--backdrop">
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">форма · выдача на пользователя</div>
+              <div class="wf-screen wf-screen--modal">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <span class="wf-title">Создать API-ключ</span>
+                    <div class="wf-field">
+                      <span class="wf-label">Пользователь</span>
+                      <!-- Поиск-подсказки во всю ширину поля (wf-pop--block) -->
+                      <div class="wf-pop wf-pop--block">
+                        <div class="wf-input" tabindex="0">
+                          Соко
+                          <span class="wf-input__action">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                          </span>
+                        </div>
+                        <div class="wf-menu">
+                          <span class="wf-menu__item">Дмитрий Соколов <span class="wf-menu__why">dmitry@company.com</span></span>
+                          <span class="wf-menu__item">Ольга Соколовская <span class="wf-menu__why">olga.s@company.com</span></span>
+                        </div>
+                      </div>
+                      <span class="wf-annot">1</span>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Доступ</span>
+                      <div class="wf-row">
+                        <span class="wf-chip wf-chip--ok">read-only</span>
+                        <span class="wf-hint">не шире прав сотрудника</span>
+                        <span class="wf-annot">2</span>
+                      </div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Источники</span>
+                      <div class="wf-row">
+                        <span class="wf-chip wf-chip--ok">все доступные</span>
+                        <span class="wf-chip">Jira</span>
+                        <span class="wf-chip">Slack</span>
+                        <span class="wf-hint">или выбрать вручную</span>
+                      </div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Срок действия</span>
+                      <div class="wf-input">
+                        90 дней
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                    </div>
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Создать</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Выбор пользователя — поиск-подсказки по имени или email. Механика подсказок —
+              <a href="../../_workzone/authentication.html#api-keys" class="xref-page">API-ключи</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Скоуп — права <b>сотрудника</b>, не администратора; шире его роли ключ не выдать.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

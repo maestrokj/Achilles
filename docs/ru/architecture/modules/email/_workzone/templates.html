@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Email: Шаблоны писем</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../email.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Email</a>
+        <h1 class="header__title">Шаблоны писем</h1>
+        <div class="header__sub">email · workzone</div>
+      </div>
+
+      <p class="desc">
+        Общий layout, две языковые версии, в основе каждого — короткий текст и одна
+        ссылка-действие.
+      </p>
+
+      <!-- ═══ Общий layout ═══ Один каркас на все письма. -->
+      <div class="section" id="layout">
+        <h2 class="section__title">Общий layout</h2>
+        <p class="desc">
+          Один каркас на все письма — три части, минимум оформления (письма
+          должны открываться где угодно):
+        </p>
+        <ul class="notes">
+          <li class="note">
+            <strong>Шапка</strong> — отправитель из <code>from_address</code>
+            («Achilles &lt;no-reply@…&gt;») и название продукта.
+          </li>
+          <li class="note">
+            <strong>Тело</strong> — приветствие, одно-два предложения сути,
+            <b>кнопка-действие</b> и та же ссылка обычным текстом ниже (на случай
+            клиента, который не покажет кнопку).
+          </li>
+          <li class="note">
+            <strong>Подвал</strong> — строка «почему вы получили это письмо» и
+            что делать, если это не вы.
+          </li>
+          <li class="note">
+            Каждое письмо — <b>HTML и текстовая версия</b> разом
+            (<code>multipart/alternative</code>): часть клиентов и спам-фильтры
+            требуют plain-text.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ═══ i18n ═══ Язык письма и где живут тексты. -->
+      <div class="section" id="i18n">
+        <h2 class="section__title">Языки RU / EN</h2>
+        <ul class="notes">
+          <li class="note">
+            <strong>Какой язык.</strong> Сброс и тест — язык адресата (его
+            профиль); приглашение — язык организации по умолчанию (приглашаемого
+            ещё нет в системе).
+          </li>
+          <li class="note">
+            <strong>Где тексты.</strong> Письма рендерит бэкенд, поэтому их
+            строки — <b>серверные шаблоны</b> по языку, отдельные от фронтовых
+            локалей <code>react-i18next</code>. Принцип тот же — типизированные
+            ключи, ни одной строки в коде.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ═══ Приглашение ═══ Полное превью RU | EN — заодно образец layout. -->
+      <div class="section" id="invite">
+        <h2 class="section__title">Приглашение</h2>
+        <p class="desc">
+          Имя пригласившего и роль — подставляются. Ссылка действует 48 часов;
+          по клику — регистрация (имя + пароль). Механика токена —
+          <a href="../../auth-security/_workzone/authentication.html#invite-flow" class="xref-module">Auth&nbsp;/&nbsp;Security</a>.
+        </p>
+        <div class="eml-mails">
+          <div class="eml-mail">
+            <div class="eml-mail__bar">
+              <span class="eml-mail__from">Achilles &lt;no-reply@…&gt;</span>
+              <span class="eml-mail__lang">RU</span>
+            </div>
+            <div class="eml-mail__body">
+              <span class="eml-mail__subj">Анна Иванова приглашает вас в Achilles</span>
+              Здравствуйте! Анна Иванова приглашает вас в рабочее пространство
+              Achilles в роли «Аналитик». Чтобы создать аккаунт, перейдите по
+              ссылке ниже — она действует 48 часов.
+              <span class="eml-mail__btn">Принять приглашение</span>
+              <span class="eml-mail__link">https://achilles…/invite/&lt;token&gt;</span>
+              <p class="eml-mail__foot">
+                Не ждали приглашения? Это письмо можно спокойно проигнорировать.
+              </p>
+            </div>
+          </div>
+          <div class="eml-mail">
+            <div class="eml-mail__bar">
+              <span class="eml-mail__from">Achilles &lt;no-reply@…&gt;</span>
+              <span class="eml-mail__lang">EN</span>
+            </div>
+            <div class="eml-mail__body">
+              <span class="eml-mail__subj">Anna Ivanova invited you to Achilles</span>
+              Hi there! Anna Ivanova has invited you to the Achilles workspace as
+              an Analyst. To create your account, use the link below — it's valid
+              for 48 hours.
+              <span class="eml-mail__btn">Accept invitation</span>
+              <span class="eml-mail__link">https://achilles…/invite/&lt;token&gt;</span>
+              <p class="eml-mail__foot">
+                Weren't expecting this? You can safely ignore this email.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Сброс пароля ═══ Компактная спецификация. -->
+      <div class="section" id="reset">
+        <h2 class="section__title">Сброс пароля</h2>
+        <dl class="eml-spec">
+          <dt>Тема</dt>
+          <dd>Сброс пароля в Achilles · Reset your Achilles password</dd>
+          <dt>Тело</dt>
+          <dd>
+            «Мы получили запрос на сброс пароля. Чтобы задать новый — перейдите
+            по ссылке ниже, она действует 1 час».
+          </dd>
+          <dt>Действие</dt>
+          <dd>Кнопка «Задать новый пароль» + ссылка текстом</dd>
+          <dt>Ссылка</dt>
+          <dd>
+            Одноразовая, действует 1 час; повторный запрос гасит прежнюю.
+            Механика —
+            <a href="../../auth-security/_workzone/authentication.html#forgot-password" class="xref-module">Auth&nbsp;/&nbsp;Security</a>.
+          </dd>
+          <dt>Подвал</dt>
+          <dd>«Если вы не запрашивали сброс — проигнорируйте письмо, пароль останется прежним».</dd>
+        </dl>
+      </div>
+
+      <!-- ═══ Тестовое ═══ Без ссылки — только подтверждение конфига. -->
+      <div class="section" id="test">
+        <h2 class="section__title">Тестовое</h2>
+        <dl class="eml-spec">
+          <dt>Тема</dt>
+          <dd>Achilles — проверка SMTP · Achilles SMTP test</dd>
+          <dt>Тело</dt>
+          <dd>
+            «Вы видите это письмо — значит, отправка почты настроена верно».
+            Ни кнопки, ни ссылки.
+          </dd>
+          <dt>Кому</dt>
+          <dd>
+            На адрес текущего администратора, по кнопке «Проверить соединение» —
+            <a href="../../admin-panel/_wireframes/platform-settings.html#smtp" class="xref-module">Admin Panel</a>.
+          </dd>
+        </dl>
+      </div>
+    </div>
+  </body>
+</html>

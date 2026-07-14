@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Query Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="query-engine.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <!-- ═══ Header ═══ -->
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← К схеме</a>
+        <h1 class="header__title">Query Engine</h1>
+        <div class="header__sub">диалог · RAG по запросу · grounding</div>
+      </div>
+
+      <!-- ═══ Описание ═══ Оркестратор диалога, не только RAG. Ход ведёт
+           chat-модель с инструментом search_knowledge; retrieval опционален.
+           Сам поиск и ACL — у KS, не здесь. -->
+      <p class="desc">
+        Оркестратор пользовательского <strong>диалога</strong> — не только RAG.
+        Ход ведёт <strong>chat-модель</strong>, выбранная пользователем; у неё в
+        руках инструмент <code>search_knowledge</code> (когда база непуста), и она
+        решает на каждом
+        сообщении, обращаться ли к базе. Разговор — отвечает из себя; вопрос к
+        знаниям — зовёт поиск и строит ответ на найденном, со стримингом и
+        цитированием. Сам retrieval (поиск и ACL pre-filter) принадлежит
+        <a href="../knowledge-store/_workzone/hybrid-search.html" class="xref-module"
+          >Knowledge Store</a
+        >; Query Engine его не делает — вызывает инструментом.
+      </p>
+
+      <!-- ═══ Сигнатурная диаграмма ═══ Постер из четырёх столпов: один взгляд,
+           без чтения. 01 Диалог — QE владеет беседой (stateful), surface'ы —
+           тонкие клиенты. 02 Модель решает — chat-модель ведёт ход, держит один
+           инструмент search_knowledge; развилка разговор/grounding. 03 RAG-маршрут
+           — пять шагов Embed→Retrieve→Rerank→Augment→Generate, шов владения на
+           ленте (Embed/Retrieve — KS, дальше — QE). 04 Grounding — контракт
+           ответа. Лента-сноска несёт вторичное (один вызов без петли · Agent
+           Engine минует QE · стриминг). Глубину держит workzone. -->
+      <div class="section">
+        <div class="qe-arch">
+        <h2 class="section__title">Архитектура</h2>
+        <p class="qe-pillars__sub">Четыре столпа модуля</p>
+
+        <div class="qe-pillars">
+          <!-- Столп 1 — ДИАЛОГ: QE владеет ходом, stateful; surface'ы тонкие. -->
+          <div class="qe-pillar qe-pillar--dialog">
+            <span class="qe-pillar__num">01</span>
+            <div class="qe-pillar__glyph">⟨ ⟩</div>
+            <h3 class="qe-pillar__title">Диалог</h3>
+            <p class="qe-pillar__lead">
+              Query Engine — <b>оркестратор беседы</b>, а не только RAG. Держит
+              состояние; surface'ы — тонкие клиенты.
+            </p>
+            <div class="qe-pillar__spacer"></div>
+            <div class="qe-chips">
+              <span class="qe-chip">conversations</span>
+              <span class="qe-chip">messages</span>
+              <span class="qe-chip">retrieval_trace</span>
+              <span class="qe-chip">access_counter</span>
+            </div>
+          </div>
+
+          <!-- Столп 2 — МОДЕЛЬ РЕШАЕТ: ведёт ход, один инструмент, развилка. -->
+          <div class="qe-pillar qe-pillar--model">
+            <span class="qe-pillar__num">02</span>
+            <div class="qe-pillar__glyph">✦</div>
+            <h3 class="qe-pillar__title">Модель решает</h3>
+            <p class="qe-pillar__lead">
+              Ход ведёт <b>chat-модель</b>
+              <span class="ai-tag" title="Этап использует нейросеть — инференс модели"
+                ><span class="ai-tag__icon"></span>AI</span
+              >
+              — один инструмент в руках.
+            </p>
+            <span class="qe-tool">search_knowledge</span>
+            <div class="qe-fork">
+              <div class="qe-branch qe-branch--talk">
+                <span class="qe-branch__key">↩</span>
+                <span><b>Разговор</b> — отвечает из себя, без цитат</span>
+              </div>
+              <div class="qe-branch qe-branch--know">
+                <span class="qe-branch__key">⇲</span>
+                <span><b>К знаниям</b> — зовёт <code>search_knowledge</code></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Столп 3 — RAG-МАРШРУТ: пять шагов, шов владения KS|QE на ленте. -->
+          <div class="qe-pillar qe-pillar--rag">
+            <span class="qe-pillar__num">03</span>
+            <div class="qe-pillar__glyph">▸▸▸</div>
+            <h3 class="qe-pillar__title">RAG-маршрут</h3>
+            <p class="qe-pillar__lead">
+              Один вызов — пять шагов. Граница владения проходит по ленте.
+            </p>
+            <div class="qe-rag">
+              <div class="qe-precheck">◇ <b>точный кэш?</b> → мимо ленты</div>
+              <div class="qe-belt">
+                <span class="qe-step qe-step--ks">Embed</span>
+                <span class="qe-belt__arr">›</span>
+                <span class="qe-step qe-step--ks">Retrieve</span>
+                <span class="qe-belt__arr">›</span>
+                <span class="qe-step qe-step--qe">Rerank</span>
+                <span class="qe-belt__arr">›</span>
+                <span class="qe-step qe-step--qe">Augment</span>
+                <span class="qe-belt__arr">›</span>
+                <span class="qe-step qe-step--qe">Generate</span>
+              </div>
+              <div class="qe-owners">
+                <span class="qe-owner qe-owner--ks"
+                  ><span class="qe-owner__dot"></span><b>KS</b><span>·2</span></span
+                >
+                <span class="qe-owner qe-owner--qe"
+                  ><span class="qe-owner__dot"></span><b>QE</b><span>·3</span></span
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Столп 4 — GROUNDING: контракт ответа из трёх обещаний. -->
+          <div class="qe-pillar qe-pillar--ground">
+            <span class="qe-pillar__num">04</span>
+            <div class="qe-pillar__glyph"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg></div>
+            <h3 class="qe-pillar__title">Grounding</h3>
+            <p class="qe-pillar__lead">Контракт ответа — три обещания.</p>
+            <div class="qe-vows">
+              <div class="qe-vow">
+                <span class="qe-vow__mark">✓</span>
+                <span><b>Только из найденного</b> — не из памяти модели</span>
+              </div>
+              <div class="qe-vow">
+                <span class="qe-vow__mark">¶</span>
+                <span><b>Цитата на запись</b> — каждое утверждение</span>
+              </div>
+              <div class="qe-vow">
+                <span class="qe-vow__mark">∅</span>
+                <span>Честное <b>«не нашёл»</b> вместо догадки</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- лента-сноска — вторичные факты -->
+        <div class="qe-foot">
+          <span class="qe-foot__item"
+            ><span class="qe-foot__g">↻</span
+            ><span>один опциональный вызов <b>без петли</b></span></span
+          >
+          <span class="qe-foot__item"
+            ><span class="qe-foot__g">⤳</span
+            ><span><b>Agent Engine</b> минует Query Engine</span></span
+          >
+          <span class="qe-foot__item"
+            ><span class="qe-foot__g">⇉</span
+            ><span>ответ: <b>answer + citations</b>, стриминг</span></span
+          >
+        </div>
+        </div>
+      </div>
+
+      <!-- audit: intentional — тематические inline-ярлыки cross-ссылок («забота
+           retrieval-слоя», «staleness-decay», «резолв-джойн», «грант ACL» и т.п.)
+           по всему модулю приняты как норма: README §Cross-references просит имя
+           цели, но практика корпуса (auth-security, knowledge-store) де-факто
+           использует тематические ярлыки для inline-ссылок. Не дефект этого модуля;
+           если правило инфорсить — отдельным корпусным проходом + правкой README. -->
+
+      <!-- ═══ API ═══ Полные пути контракта модуля под версией. -->
+      <section class="section" id="api">
+        <div class="section__title">API</div>
+        <ul class="api-list">
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/conversations</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/conversations/{id}</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/conversations/{id}/messages · SSE</span></li>
+          <li><span class="api-list__m">PATCH</span><span class="api-list__p">/api/v1/messages/{id}/feedback</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/chat/models</span></li>
+        </ul>
+      </section>
+
+      <!-- ═══ Workzone ═══ -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Проектирование</span>
+        </div>
+        <p class="workzone-hint">
+          Детальные решения по проектированию модуля.
+        </p>
+
+        <div class="wz-nav">
+          <a class="wz-link" href="_workzone/rag-pipeline.html">
+            <span>RAG-маршрут</span>
+          </a>
+          <a class="wz-link" href="_workzone/conversation.html">
+            <span>Диалог</span>
+          </a>
+          <a class="wz-link" href="_workzone/grounding.html">
+            <span>Grounding и цитирование</span>
+          </a>
+          <a class="wz-link" href="_workzone/retrieval.html">
+            <span>Граница с Knowledge Store</span>
+          </a>
+          <a class="wz-link" href="_workzone/protection.html">
+            <span>Защита и приватность</span>
+          </a>
+          <a class="wz-link" href="_workzone/data-model.html">
+            <span>Модель данных</span>
+          </a>
+          <a class="wz-link" href="_workzone/stack.html">
+            <span>Стек</span>
+          </a>
+          <a class="wz-link" href="_workzone/tests.html">
+            <span>Тесты</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ═══ Макеты (wireframes) ═══ У Query Engine нет своего фронтенда:
+           диалог и ответ рендерят surface'ы. Экраны чата живут в Web App;
+           здесь указатель, а контракт ответа — в workzone (grounding). -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Макеты</span>
+          <span class="workzone-title">Surface'ы</span>
+        </div>
+        <p class="workzone-hint">
+          Своего фронтенда у модуля нет — диалог и ответ рендерят surface'ы как
+          тонкие клиенты единого API. Экраны чата (ответ с заземлением,
+          состояния ответа) живут в
+          <a href="../web-app/index.html" class="xref-module">Web App</a>; сам
+          контракт заземления — в workzone,
+          <a href="_workzone/grounding.html" class="xref-page">Grounding</a>.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

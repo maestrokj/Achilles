@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Knowledge Store</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Knowledge Store</h1>
+        <div class="header__sub">
+          admin panel · wireframes · data
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="The screen renders inside the shell's content area">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Screen load — skeleton">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">
+        Observe the
+        <a href="../../knowledge-store/index.html" class="xref-module">Knowledge Store</a>
+        and manage what the admin sets on top of it.
+      </p>
+
+      <!-- ═══ Storage state — metrics ═══ -->
+      <div class="section" id="storage-metrics">
+        <div class="section__title">Storage state</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">graph metrics</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/knowledge-store
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/knowledge-store · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-row wf-spread">
+                  <span class="wf-title">Knowledge store</span>
+                  <div class="wf-input wf-input--sm">All sources ▾ <span class="wf-annot">1</span></div>
+                </div>
+                <div class="wf-row">
+                  <div class="wf-stat">
+                    <span class="wf-stat__num">1.24M</span>
+                    <span class="wf-stat__label">Entities</span>
+                    <span class="wf-stat__sub">graph nodes · entities</span>
+                  </div>
+                  <div class="wf-stat">
+                    <span class="wf-stat__num">4.81M</span>
+                    <span class="wf-stat__label">Chunks</span>
+                    <span class="wf-stat__sub">chunks · vector + lexical</span>
+                  </div>
+                  <div class="wf-stat">
+                    <span class="wf-stat__num">918k</span>
+                    <span class="wf-stat__label">Edges</span>
+                    <span class="wf-stat__sub">edges · entity_edge</span>
+                  </div>
+                  <div class="wf-stat wf-stat--muted">
+                    <span class="wf-stat__num">3.1k</span>
+                    <span class="wf-stat__label">Unresolved edges <span class="wf-annot">2</span></span>
+                    <span class="wf-stat__sub">refs · entity_ref</span>
+                  </div>
+                  <div class="wf-stat">
+                    <span class="wf-stat__num">38 GB</span>
+                    <span class="wf-stat__label">Vector volume</span>
+                    <span class="wf-stat__sub">pgvector · HNSW</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              A per-source filter on the counts — each source's contribution; the whole graph by default.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Edge refs whose second node has not arrived yet — closed by
+              <a href="../../knowledge-store/_workzone/lifecycle.html#edge-materialization" class="xref-module">edge materialization</a>. A growing tail signals an under-collected graph, not an error.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ════════════════════════════════════════════════════════════════
+           GRAPH CURATION (id="knowledge-store").
+           Inbound links from Knowledge Store · Lifecycle point here:
+           #curation-pass (Admin sets the cadence) and the shared semantic
+           anchor. Inside — the run panel (id="curation-run", the target of the
+           link from #coordination and from the AI models screen) and the
+           curation schedule.
+           ════════════════════════════════════════════════════════════════ -->
+      <div class="section" id="knowledge-store">
+        <div class="section__title">
+          Graph curation
+          <a href="../../knowledge-store/_workzone/lifecycle.html#curation-pass" class="xref-badge">→ Knowledge Store</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">curation run · re-embedding in progress</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <!-- Current run panel -->
+                <div class="wf-stack" id="curation-run">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-label">Curation run</span>
+                    <span class="wf-row">
+                      <button class="wf-btn wf-btn--disabled">⟳ Run now</button>
+                      <span class="wf-annot">1</span>
+                    </span>
+                  </div>
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-spinner"></span>
+                        <span class="wf-chip wf-chip--warn">running · 62%</span>
+                        <span class="wf-chip">model change <span class="wf-annot">2</span></span>
+                      </span>
+                      <span class="wf-row">
+                        <span class="wf-text">started 8 min ago</span>
+                        <span class="wf-guarded"
+                          ><a class="wf-a">Cancel run</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action protected by confirmation"><span class="wf-guard__icon"></span></a
+                        ></span>
+                        <span class="wf-annot">3</span>
+                      </span>
+                    </div>
+                    <hr class="wf-divider" />
+                    <div class="wf-runcell">
+                      <span class="wf-text">
+                        Re-embedding chunks
+                        <span class="ai-tag" title="This step uses a neural network — model inference"><span class="ai-tag__icon"></span>AI</span>
+                        — 8.2k of 13.1k <span class="wf-annot">4</span>
+                      </span>
+                      <span class="wf-runcell__meta">
+                        Embedding 3 Large → Embedding 3 Small
+                      </span>
+                    </div>
+                    <span class="wf-hint">
+                      Search keeps working during the recompute.
+                      <span class="wf-annot">5</span>
+                    </span>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <!-- Curation schedule -->
+                <div class="wf-stack" id="curation-schedule">
+                  <span class="wf-label">Curation schedule</span>
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text">
+                        When to run the platform pass
+                        <span class="wf-hint">heavy curation is kept to quiet hours · organization time (Europe/Moscow)</span>
+                      </span>
+                      <span class="wf-annot">6</span>
+                    </div>
+                    <hr class="wf-divider" />
+                    <div class="wf-row">
+                      <div class="wf-field">
+                        <span class="wf-label">Frequency</span>
+                        <div class="wf-input wf-input--sm">Daily ▾</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Time</span>
+                        <div class="wf-input wf-input--sm">04:00 ▾</div>
+                      </div>
+                    </div>
+                    <span class="wf-hint">↳ every day at 04:00 · next run — today at 04:00</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">run · scheduled (destructive window)</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-body">
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-spinner"></span>
+                        <span class="wf-chip wf-chip--warn">running · 41%</span>
+                        <span class="wf-chip">scheduled</span>
+                      </span>
+                      <span class="wf-guarded"
+                        ><a class="wf-a">Cancel</a>
+                    <a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action protected by confirmation"><span class="wf-guard__icon"></span></a
+                      ></span>
+                    </div>
+                    <hr class="wf-divider" />
+                    <span class="wf-row">
+                      <span class="wf-chip wf-chip--ok">edges ✓</span>
+                      <span class="wf-chip wf-chip--warn">merge ●</span>
+                      <span class="wf-chip">decay</span>
+                      <span class="wf-chip">retention <span class="iter v2">v2</span></span>
+                    </span>
+                    <span class="wf-hint wf-hint--error">
+                      Destructive window (duplicate merge) · sync of affected sources is queued
+                      <span class="wf-annot">7</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">idle · last run</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-body">
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-chip wf-chip--ok">succeeded</span>
+                      <span class="wf-text">today 04:00 · in 6 min</span>
+                    </div>
+                    <hr class="wf-divider" />
+                    <span class="wf-runcell__meta">
+                      edges +1.2k <span class="wf-sep">·</span> merged 84
+                      <span class="wf-sep">·</span> demoted 320
+                    </span>
+                    <span class="wf-hint">next scheduled — tomorrow 04:00 <span class="wf-annot">8</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Kicks off a one-off run outside the schedule. There is one run per platform — while the current one is going, the button is disabled (<a href="../../knowledge-store/_workzone/lifecycle.html#curation-runs" class="xref-module">curation_runs</a>).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              The trigger chip — scheduled, manual, or an embedding-model change.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Cancelling a re-embedding is safe: until the atomic swap the old index is used, while the new vectors are built in a separate column alongside (<a href="../../knowledge-store/_workzone/lifecycle.html#embedding-refresh" class="xref-module">refresh</a>). The run is expensive, so it is behind <a href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" class="xref-module">confirmation</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              A shared activity indicator: which step is running now and how far it has gone. It is referenced by
+              <a href="../../knowledge-store/_workzone/lifecycle.html#coordination" class="xref-module">lane coordination</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Re-embedding is triggered by a
+              <a href="ai-models.html#model-assignment" class="xref-page">change of embedding model</a>. The mechanics — <a href="../../knowledge-store/_workzone/lifecycle.html#embedding-refresh" class="xref-module">embedding refresh</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              A single platform schedule, not per-source: frequency and time. Stored in
+              <a href="../_workzone/data-model.html#data-model" class="xref-page">platform_settings</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              The run's steps are shown as chips. Only the destructive window (duplicate merge and
+              <a href="#retention" class="xref-anchor">retention</a>) pauses writes from affected sources.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              When idle — the outcome of the last run and the time of the next scheduled one.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Retention policy (v2) ═══ -->
+      <div class="section" id="retention">
+        <div class="section__title">
+          Retention policy <span class="iter v2">v2</span>
+        </div>
+        <p class="note">What to keep, archive or delete by entity type and age — deferred to <span class="iter v2">v2</span>. The mechanics — <a href="../../knowledge-store/_workzone/lifecycle.html#retention" class="xref-module">Knowledge Store · Lifecycle</a>.
+        </p>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">retention by type · v2 sketch</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-body">
+              <div class="wf-stack wf-dim">
+                <table class="wf-table">
+                  <thead>
+                    <tr><th>Entity type</th><th>Keep</th><th>Archive after</th><th>Delete after</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Chat messages</td>
+                      <td><span class="wf-chip">forever ▾</span></td>
+                      <td>1 year ▾</td>
+                      <td>—</td>
+                    </tr>
+                    <tr>
+                      <td>Documents</td>
+                      <td><span class="wf-chip">forever ▾</span></td>
+                      <td>—</td>
+                      <td>—</td>
+                    </tr>
+                    <tr>
+                      <td>Tasks / tickets</td>
+                      <td><span class="wf-chip">forever ▾</span></td>
+                      <td>2 years ▾</td>
+                      <td>5 years ▾</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <span class="wf-hint">Sketch — the set of types and the age units settle during v2 design.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Backup & restore (id="backups") ═══
+           id="backups" — target of the inbound link from Knowledge Store ·
+           Lifecycle → Backup & restore. -->
+      <div class="section" id="backups">
+        <div class="section__title">Backup &amp; restore</div>
+        <p class="note">
+          Destination, cadence and retention of snapshots; restore starts from here too. The mechanics —
+          <a href="../../knowledge-store/_workzone/lifecycle.html#backup" class="xref-module">Knowledge Store · Lifecycle</a>.
+        </p>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">backups · schedule · restore</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-stack">
+                  <span class="wf-label">Destination and schedule</span>
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-text">
+                      External storage
+                      <span class="wf-hint">S3-compatible (incl. MinIO) · write-only key, empty = IAM role</span>
+                    </span>
+                    <span class="wf-row">
+                      <div class="wf-input wf-input--sm">s3://acme-achilles-backups ▾</div>
+                      <div class="wf-input wf-input--sm">••••a3f7</div>
+                    </span>
+                  </div>
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-text">
+                      Cadence
+                      <span class="wf-hint">when to take a full database dump</span>
+                    </span>
+                    <span class="wf-row">
+                      <div class="wf-input wf-input--sm">Daily ▾</div>
+                      <div class="wf-input wf-input--sm">02:00 ▾</div>
+                    </span>
+                  </div>
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-text">
+                      Snapshots to keep
+                      <span class="wf-hint">older ones rotate out as new ones accrue</span>
+                    </span>
+                    <div class="wf-input wf-input--sm">14 ▾</div>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <div class="wf-stack">
+                  <span class="wf-label">Latest snapshots</span>
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-row">
+                      <span class="wf-chip wf-chip--ok">ready</span>
+                      <span class="wf-text">today 02:00 · 12.4 GB</span>
+                    </span>
+                    <span class="wf-guarded">
+                      <a class="wf-a">Restore</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#type-to-confirm" title="Action protected by confirmation"><span class="wf-guard__icon"></span></a>
+                      <span class="wf-annot">1</span>
+                    </span>
+                  </div>
+                  <div class="wf-card wf-row wf-spread wf-table__row--muted">
+                    <span class="wf-row">
+                      <span class="wf-chip wf-chip--ok">ready</span>
+                      <span class="wf-text">yesterday 02:00 · 12.3 GB</span>
+                    </span>
+                    <span class="wf-guarded">
+                      <a class="wf-a">Restore</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#type-to-confirm" title="Action protected by confirmation"><span class="wf-guard__icon"></span></a>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              A restore overwrites the current database with the snapshot — irreversible, so it is behind
+              <a href="../../shared-ui/_wireframes/confirm-dialog.html#type-to-confirm" class="xref-module">type-to-confirm</a>. For the duration of the restore the platform goes into maintenance.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

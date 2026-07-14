@@ -1,0 +1,1176 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Harvester: Модель данных</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="data-model.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Harvester</a>
+        <h1 class="header__title">Модель данных</h1>
+        <div class="header__sub">harvester · workzone</div>
+      </div>
+
+      <p class="desc">
+        Страница о том, какие данные течёт сквозь модуль и как они живут во
+        времени. Два контракта несут конвейер —
+        <a href="#raw-item" class="xref-anchor">RawItem</a>
+        <span class="dm-arrow">→</span>
+        <a href="#entity" class="xref-anchor">Entity</a> — затем Entity
+        расходится по <a href="#storage" class="xref-anchor">хранилищам</a>, а
+        четыре решения задают её судьбу после загрузки: что мы помним из
+        <a href="#history" class="xref-anchor">истории</a>, как обходимся с
+        <a href="#deletes" class="xref-anchor">удалениями</a> и
+        <a href="#attachments" class="xref-anchor">вложениями</a>, и где
+        проходит <a href="#cross-source" class="xref-anchor">граница</a> с
+        Knowledge Store. Помимо этого контент-плана модуль держит свой
+        <a href="#operational" class="xref-anchor">контрольный слой</a> —
+        конфигурацию источников и журнал прогонов; его правит через API
+        Admin Panel.
+      </p>
+
+      <!-- ════════════════ КОНТРАКТЫ ════════════════ -->
+      <div class="dm-contracts">
+        <!-- ── RawItem ── -->
+        <div class="mod-card dm-contract" id="raw-item">
+          <div class="dm-contract__head">
+            <code class="dm-contract__name">RawItem</code>
+          </div>
+          <div class="dm-contract__role">Connector → Transform</div>
+          <p class="dm-contract__d">
+            Сырьё источника как есть, вместе с его метаданными. Выход коннектора
+            и вход <a href="pipeline.html#transform" class="xref-page">трансформации</a>:
+            ещё не нормализован, формат каждого источника свой.
+          </p>
+          <ul class="dm-fieldlist">
+            <li>
+              <span class="dm-fieldlist__k">полезная нагрузка</span>
+              <span class="dm-fieldlist__v"
+                >сырой ответ источника — тело тикета, страницы, сообщения как их
+                отдал API</span
+              >
+            </li>
+            <li>
+              <span class="dm-fieldlist__k">идентификаторы</span>
+              <span class="dm-fieldlist__v"
+                >тип и id записи у источника — будущий ключ идемпотентности</span
+              >
+            </li>
+            <li>
+              <span class="dm-fieldlist__k">метаданные сбора</span>
+              <span class="dm-fieldlist__v"
+                >когда и каким прогоном получено, курсор инкремента, отметка
+                источника</span
+              >
+            </li>
+          </ul>
+        </div>
+
+        <div class="dm-contract-arrow"></div>
+
+        <!-- ── Entity ── -->
+        <div class="mod-card dm-contract dm-contract--entity" id="entity">
+          <div class="dm-contract__head">
+            <code class="dm-contract__name">Entity</code>
+          </div>
+          <div class="dm-contract__role">Transform → Loader</div>
+          <p class="dm-contract__d">
+            Нормализованная сущность — единая форма для всего, что собирает
+            модуль. Разные типы внутри источника (тикет, страница, сообщение) —
+            подвиды одной <code>Entity</code> и проходят
+            <a href="pipeline.html#transform" class="xref-page">один конвейер</a>.
+          </p>
+          <ul class="dm-fieldlist">
+            <li>
+              <span class="dm-fieldlist__k">идентичность</span>
+              <span class="dm-fieldlist__v"
+                >ключ идемпотентности <code>source_id + source_type + source_entity_id</code> — по
+                нему
+                <a href="pipeline.html#load" class="xref-page">Loader</a>
+                делает upsert: ровно одна строка на запись источника</span
+              >
+            </li>
+            <li>
+              <span class="dm-fieldlist__k">тип</span>
+              <span class="dm-fieldlist__v"
+                >подвид сущности внутри источника (ticket · page · message)</span
+              >
+            </li>
+            <li>
+              <span class="dm-fieldlist__k">статус</span>
+              <span class="dm-fieldlist__v"
+                ><code>draft</code> · <code>final</code> ·
+                <code>archived</code> — жизненный цикл контента в источнике,
+                выставляет шаг classify. Пропажа записи из источника — отдельная
+                ось (<a href="#deletes" class="xref-anchor">удаления</a>), не
+                значение статуса</span
+              >
+            </li>
+            <li>
+              <span class="dm-fieldlist__k">контент</span>
+              <span class="dm-fieldlist__v"
+                >текст для выдачи и его эмбеддинги — по фрагментам (chunks), не
+                один вектор на запись</span
+              >
+            </li>
+            <li>
+              <span class="dm-fieldlist__k">метаданные</span>
+              <span class="dm-fieldlist__v"
+                >автор, временные метки, ссылки внутри источника и упоминания
+                чужих источников (<code>refs</code>)</span
+              >
+            </li>
+            <li>
+              <span class="dm-fieldlist__k">ACL</span>
+              <span class="dm-fieldlist__v"
+                >права доступа источника, перенесённые вместе с записью —
+                <a href="acl-identity.html#acl" class="xref-page">Harvester их захватывает</a>,
+                а модель и хранение держит
+                <a href="../../knowledge-store/_workzone/acl-identity.html#acl" class="xref-module">Knowledge Store</a></span
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ════════════════ ХРАНИЛИЩА ════════════════ -->
+      <div class="section" id="storage">
+        <div class="section__title">Куда ложится Entity: три проекции хранения</div>
+        <p class="desc">
+          Один логический контракт
+          <a href="#entity" class="xref-anchor">Entity</a> на загрузке расходится
+          по трём парадигмам хранения — это не одна запись в одной базе. Точную
+          раскладку (какое поле в реляционную, векторную или графовую базу) держит
+          <a
+            class="xref-badge"
+            href="../../knowledge-store/_workzone/data-model.html#projections"
+            >→ Knowledge Store</a
+          >; здесь — предварительная картина, уточняемая по факту проектирования
+          хранилища.
+        </p>
+        <div class="dm-store">
+          <div class="dm-store__src"><code>Entity</code></div>
+          <div class="dm-store__fan">
+            <div class="dm-store__col dm-store__col--rel">
+              <div class="dm-store__h">
+                <span class="dm-store__t">Реляционная</span>
+                <span class="dm-store__para">структура · точные фильтры</span>
+              </div>
+              <p class="dm-store__d">
+                Тело записи — идентичность, тип, статус, метаданные, текст для
+                выдачи — и ACL как source of truth прав. Всё, что фильтруют и
+                джойнят точно.
+              </p>
+            </div>
+            <div class="dm-store__col dm-store__col--vec">
+              <div class="dm-store__h">
+                <span class="dm-store__t">Векторная</span>
+                <span class="dm-store__para">смысл · поиск по близости</span>
+              </div>
+              <p class="dm-store__d">
+                Эмбеддинги фрагментов (chunks) — дочерние строки сущности (ключ
+                — её id) с контент-хешем: опора семантического поиска по смыслу,
+                а не по точному совпадению слов.
+              </p>
+            </div>
+            <div class="dm-store__col dm-store__col--graph">
+              <div class="dm-store__h">
+                <span class="dm-store__t">Графовая</span>
+                <span class="dm-store__para">связи · обход</span>
+              </div>
+              <p class="dm-store__d">
+                Сущность как узел и связи внутри источника, что строит конвейер.
+                Упоминания чужих источников (<code>refs</code>) станут рёбрами
+                позже — уже на стороне Knowledge Store.
+              </p>
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          Права на выдаче применяются фильтром: фрагмент наследует ACL своей
+          сущности (ключ — её id), а ACL лежит в реляционной базе рядом с
+          векторами — поэтому отбор по правам идёт тем же запросом, что и поиск
+          по смыслу. Захват прав и членства держит
+          <a href="acl-identity.html#acl" class="xref-page">acl-identity</a>, а их
+          модель и хранение —
+          <a href="../../knowledge-store/_workzone/acl-identity.html#acl" class="xref-module">Knowledge Store</a>.
+        </p>
+      </div>
+
+      <!-- ════════════════ ИСТОРИЯ ════════════════ -->
+      <div class="section" id="history">
+        <div class="section__title">История: что мы помним во времени</div>
+        <p class="desc">
+          Три разных вопроса об изменениях, и на каждый — свой ответ. Их легко
+          смешать, поэтому решение разнесено явно: одно храним сейчас, другое
+          откладываем, третье не храним сознательно.
+        </p>
+        <div class="dm-hist">
+          <!-- Сущность -->
+          <div class="dm-hist__row dm-hist__row--keep">
+            <div class="dm-hist__verdict">
+              <span class="dm-hist__mark">снимок</span>
+            </div>
+            <div class="dm-hist__body">
+              <div class="dm-hist__t">Сущность — текущий снимок</div>
+              <div class="dm-hist__d">
+                Тикет, страница, сообщение: храним последнее состояние. Повторный
+                прогон перезаписывает строку через upsert; прошлых редакций самой
+                сущности не накапливаем.
+              </div>
+            </div>
+          </div>
+          <!-- Обсуждения -->
+          <div class="dm-hist__row dm-hist__row--later">
+            <div class="dm-hist__verdict">
+              <span class="dm-hist__mark">накопление</span>
+              <span class="iter v2">v2</span>
+            </div>
+            <div class="dm-hist__body">
+              <div class="dm-hist__t">Обсуждения — накопительно</div>
+              <div class="dm-hist__d">
+                Комментарии и треды — отдельные накопительные единицы рядом с
+                сущностью, а не перезаписываемое поле. Тред растёт со временем,
+                каждая реплика ценна сама по себе. Отложено в v2.
+              </div>
+            </div>
+          </div>
+          <!-- Changelog полей -->
+          <div class="dm-hist__row dm-hist__row--drop">
+            <div class="dm-hist__verdict">
+              <span class="dm-hist__mark dm-hist__mark--no">не храним</span>
+            </div>
+            <div class="dm-hist__body">
+              <div class="dm-hist__t">Changelog полей — не храним</div>
+              <div class="dm-hist__d">
+                Что поле было <code>Open</code> и стало <code>Done</code>, по
+                шагам — не ведём. Только <code>updated_at</code> отмечает факт
+                изменения; пожизненную ленту правок каждого поля не реконструируем.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ УДАЛЕНИЯ ════════════════ -->
+      <div class="section" id="deletes">
+        <div class="section__title">Удаления</div>
+        <div class="dm-decision dm-decision--soft">
+          <div class="dm-decision__head">
+            <span class="dm-decision__pick">soft-delete · отдельная ось</span>
+          </div>
+          <p class="dm-decision__d">
+            Запись, исчезнувшую в источнике, помечаем удалённой и скрываем из
+            выдачи, но физически храним — это даёт аудит (что было и когда ушло)
+            и восстановление, если запись вернулась или удаление было ошибкой.
+            Маркер удаления — отдельная ось от
+            <a href="#entity" class="xref-anchor">статуса</a>, не его значение:
+            пропажу из источника видит полный скан
+            <a href="sync-modes.html#reconciliation" class="xref-page">reconciliation</a>
+            (в инкремент удаление не приходит) — он и проставляет момент
+            исчезновения. Статус классификации (<code>draft</code> ·
+            <code>final</code> · <code>archived</code>) при этом сохраняется как
+            был, поэтому восстановление однозначно: снимаем маркер — прежний
+            статус возвращается сам. <code>archived</code> остаётся за контентом
+            (автор заархивировал — запись в источнике есть), удаление — за
+            присутствием; держать оба смысла в одном значении нельзя.
+          </p>
+        </div>
+      </div>
+
+      <!-- ════════════════ ВЛОЖЕНИЯ ════════════════ -->
+      <div class="section" id="attachments">
+        <div class="section__title">Вложения</div>
+        <div class="dm-split">
+          <div class="dm-split__col dm-split__col--keep">
+            <div class="dm-split__h">
+              <span class="dm-split__t">Текст</span>
+            </div>
+            <p class="dm-split__d">
+              В v1 берём только то, что уже текст: тело письма, текстовый файл,
+              сообщение с вложением-текстом. Это сразу годится для индексации и
+              эмбеддинга.
+            </p>
+          </div>
+          <div class="dm-split__col dm-split__col--later">
+            <div class="dm-split__h">
+              <span class="dm-split__t">Парсинг файлов</span>
+              <span class="iter v2">v2</span>
+            </div>
+            <p class="dm-split__d">
+              Извлечение текста из PDF и docx, распознавание сканов (OCR) —
+              отдельный слой обработки. Отложено в v2: бинарные вложения пока
+              сохраняются как ссылки, без разбора содержимого.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ CROSS-SOURCE ════════════════ -->
+      <div class="section" id="cross-source">
+        <div class="section__title">Граница cross-source с Knowledge Store</div>
+        <p class="desc">
+          Связи и дедупликацию делят два модуля. Правило границы простое: что
+          можно установить точно и внутри одного источника — делает Harvester;
+          что требует догадки между источниками — отдаёт
+          <a
+            class="xref-badge"
+            href="../../knowledge-store/_workzone/lifecycle.html#curation-pass"
+            >→ Knowledge Store</a
+          >.
+        </p>
+        <div class="dm-border">
+          <!-- Harvester -->
+          <div class="dm-border__col dm-border__col--here">
+            <div class="dm-border__head">
+              <span class="dm-border__who">Harvester</span>
+              <span class="dm-border__tag">точно · внутри источника</span>
+            </div>
+            <ul class="dm-border__list">
+              <li>
+                <strong>Связи внутри источника</strong> — родитель-потомок,
+                ссылки тикета на тикет того же трекера — строит сам, прямо в
+                конвейере.
+              </li>
+              <li>
+                <strong>Ссылки на чужие источники</strong> — сохраняет
+                заявкой (<code>refs</code>), не материализует в рёбра: целевой
+                узел может быть ещё не загружен. Формат —
+                <a href="#refs-format" class="xref-anchor">ниже</a>.
+              </li>
+              <li>
+                <strong>Лёгкая дедупликация</strong> — exact match по
+                <code>source_id + source_type + source_entity_id</code>: повторный прогон узнаёт
+                ту же запись и обновляет её.
+              </li>
+              <li>
+                <strong>Identity по email</strong> — сведение учёток по точному
+                совпадению адреса; явный ключ держит
+                <a href="acl-identity.html#identity" class="xref-page">acl-identity</a>.
+              </li>
+            </ul>
+          </div>
+          <!-- Knowledge Store -->
+          <div class="dm-border__col dm-border__col--there">
+            <div class="dm-border__head">
+              <span class="dm-border__who">Knowledge Store</span>
+              <span class="dm-border__tag">догадка · между источниками</span>
+            </div>
+            <ul class="dm-border__list">
+              <li>
+                <strong>Cross-source рёбра</strong> — связывает узлы из разных
+                источников по явным упоминаниям, когда оба уже в графе.
+              </li>
+              <li>
+                <strong>Нечёткое entity resolution</strong> — сводит сущности
+                по похожести (fuzzy matching), а не по точному ключу.
+              </li>
+              <li>
+                <strong>Глубокая дедупликация</strong> — то, что exact match не
+                поймал: один объект под разными обличьями в разных системах.
+              </li>
+              <li>
+                <strong>«Разные email, тот же человек»</strong> — нечёткое
+                сведение личностей; либо entity resolution здесь, либо ручной разбор в
+                Admin.
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- ── Формат refs ── -->
+        <div class="dm-refs" id="refs-format">
+          <div class="dm-refs__h">
+            <span class="dm-refs__t">Формат <code>refs</code></span>
+            <span class="dm-refs__loc"
+              >таблица <code>entity_ref</code> · Knowledge Store · до материализации</span
+            >
+          </div>
+          <p class="dm-refs__d">
+            <code>refs</code> живут отдельной строкой в таблице
+            <code>entity_ref</code> (дом — Knowledge Store) — заявка на связь,
+            ещё не ребро. Заполняет
+            <a href="pipeline.html#transform" class="xref-page">нормализация</a>;
+            каждая несёт минимум, достаточный, чтобы
+            <a
+              class="xref-badge"
+              href="../../knowledge-store/_workzone/lifecycle.html#curation-pass"
+              >→ Knowledge Store</a
+            >
+            позже разрешил цель и материализовал ребро в
+            <code>entity_edge</code>, даже если целевой узел на момент захвата
+            ещё не загружен.
+          </p>
+          <ul class="dm-refs__fields">
+            <li>
+              <span class="dm-refs__k">relation</span>
+              <span class="dm-refs__v"
+                >тип связи · <code>mentions</code> · <code>blocks</code> ·
+                <code>parent</code> · <code>author</code> ·
+                <code>duplicate</code> · …</span
+              >
+            </li>
+            <li>
+              <span class="dm-refs__k">target_kind</span>
+              <span class="dm-refs__v"
+                >вид цели · <code>issue</code> · <code>page</code> ·
+                <code>user</code> · <code>commit</code> · <code>mr</code> ·
+                <code>message</code></span
+              >
+            </li>
+            <li>
+              <span class="dm-refs__k">target_ref</span>
+              <span class="dm-refs__v"
+                >натуральный идентификатор как он есть в источнике · ключ
+                <code>"PROJ-123"</code> · URL · <code>"@user"</code> ·
+                sha</span
+              >
+            </li>
+            <li>
+              <span class="dm-refs__k">source_hint</span>
+              <span class="dm-refs__v"
+                >предполагаемый источник / коннектор ·
+                <code>jira</code> · <code>gitlab</code> · … ·
+                <code>null</code>, если неизвестен</span
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ════════════════ ГРАНИЦА ПЛОСКОСТЕЙ ════════════════ -->
+      <div
+        class="dm-planes"
+        id="operational"
+        role="separator"
+        aria-label="Граница: выше — поток данных, ниже — контрольный слой"
+      >
+        <div class="dm-planes__zone">
+          <span class="dm-planes__name">Поток данных</span>
+          <span class="dm-planes__sub"
+            >всё выше — то, что <em>течёт</em> сквозь модуль</span
+          >
+        </div>
+        <div class="dm-planes__seam" aria-hidden="true">
+          <span class="dm-planes__node"></span>
+        </div>
+        <div class="dm-planes__zone dm-planes__zone--ctrl">
+          <span class="dm-planes__name">Контрольный слой</span>
+          <span class="dm-planes__sub"
+            >ниже — то, чем модуль <em>управляет</em></span
+          >
+        </div>
+      </div>
+
+      <!-- ════════════════ КОНТРОЛЬНЫЙ СЛОЙ ════════════════ -->
+      <div class="section">
+        <div class="section__title">Источник, прогоны, сбойные items</div>
+        <p class="desc">
+          Три конкретные таблицы, дом которых — Harvester: подключённый
+          источник, журнал его прогонов и очередь сбойных items на разбор.
+          Экраны
+          <a href="../../admin-panel/_wireframes/harvester.html#sync-overview" class="xref-module">Admin Panel</a>
+          (хаб и карточка источника) читают и правят их через API — поведением
+          владеет модуль.
+        </p>
+
+        <div class="stk-stack">
+          <!-- ── Источник ── -->
+          <div class="stk-layer stk-layer--ops" id="sources-table">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Источник</span>
+              <span class="stk-layer__role">Конфигурация подключения.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">sources</span>
+                  <span class="dm-tbl__sub">подключённые источники</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--flag">секреты at-rest</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">name</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">отображаемое имя · «Jira · Acme»</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">connector_type</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">ключ коннектора · набор открытый, без CHECK · → манифест</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">base_url</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">адрес инстанса · у части типов не нужен</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">auth_account</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 'service'">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (service | personal)">CHECK</span>
+                      </td>
+                      <td class="dm-note">под кем · service · personal</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">auth_method</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 'static_token'">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (static_token | oauth)">CHECK</span>
+                      </td>
+                      <td class="dm-note">чем · static_token · oauth <span class="iter v2">v2</span></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">credential_enc</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">шифротекст AES-256-GCM · <code>NULL</code> у Disconnected · → секреты</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">state</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 'active'">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (active | paused | disconnected)">CHECK</span>
+                      </td>
+                      <td class="dm-note">намерение админа · active · paused · disconnected</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">scope_mode</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 'all'">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (all | selected)">CHECK</span>
+                      </td>
+                      <td class="dm-note">всё / только выбранное</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">scope_list</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT '[]'">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">deny-list (all) или allow-list (selected): id контейнеров</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">content_filters</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT '{}'">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">тумблеры «сверх правил» · набор задаёт манифест</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">sync_interval</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">сек · интервал инкремента · override глоб. default · <code>NULL</code> = наследует</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">reconcile_interval</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">сек · каденс reconciliation · override глоб. default · <code>NULL</code> = наследует</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">reconcile_window</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">минута недели старта reconciliation, org-tz · суточная каденс → минута суток (<code>mod 1440</code>) · override глоб. default · <code>NULL</code> = наследует</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">authority_tier</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span><span class="dm-c dm-c--chk" title="CHECK (low | normal | high)">CHECK</span></td>
+                      <td class="dm-note">уровень доверия источнику · <code>low</code> · <code>normal</code> · <code>high</code> · вход <a href="../../knowledge-store/_workzone/lifecycle.html#staleness" class="xref-module">KS decay</a> · числовой множитель выводит код · <code>NULL</code> = <code>default_authority</code> манифеста по типу</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">webhook_enabled</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">канал реал-тайм · DEFAULT <code>false</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">webhook_secret_enc</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">шифротекст HMAC-секрета · → секреты</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">incremental_cursor</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">позиция <code>since</code> прошлого прогона · <code>NULL</code> до первого</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">last_probe_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">время плановой пробы соединения · <code>NULL</code> до первой</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">last_probe_status</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (ok | unreachable | auth_failed)">CHECK</span>
+                      </td>
+                      <td class="dm-note">итог пробы · ok · unreachable · auth_failed</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>server_default=now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec" id="health-derived">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Состояние хранится, здоровье вычисляется</span>
+                  <a class="xref-badge xref-badge--page" href="sources.html#lifecycle"
+                    >→ Жизненный цикл источника</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  В БД лежит <code>state</code> — намерение админа (active · paused
+                  · disconnected). Здоровье (idle · syncing · error) не отдельная
+                  колонка: его выводят из последнего
+                  <a href="#sync-runs-table" class="xref-anchor">прогона</a> и
+                  плановой пробы соединения. Сам итог пробы персистится
+                  (<code>last_probe_at</code> · <code>last_probe_status</code>) —
+                  это единственная грань здоровья, которую из прогона не вывести
+                  (лёгкая проба между прогонами падает отдельно). Бейджи в хабе —
+                  отрисовка двух осей, не третья истина.
+                </div>
+              </div>
+
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Scope и фильтры — политика в JSONB</span>
+                  <a class="xref-badge xref-badge--page" href="connectors.html#manifest"
+                    >→ Манифест коннектора</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <code>scope_mode</code> + <code>scope_list</code> и
+                  <code>content_filters</code> — гибкая политика, не замороженный
+                  снимок: какие объекты scope и какие тумблеры «сверх правил»
+                  доступны, объявляет манифест коннектора, поэтому форма колонок
+                  не фиксирована — отсюда JSONB.
+                </div>
+              </div>
+
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Секреты — крипто-ядро Auth</span>
+                  <a class="xref-badge" href="../../auth-security/_workzone/protection.html#crypto-core"
+                    >→ Крипто-ядро</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <code>credential_enc</code> и <code>webhook_secret_enc</code> —
+                  шифротекст AES-256-GCM; шифр и ключ держит крипто-ядро Auth,
+                  своего хранилища Harvester не заводит. Наружу (API, экспорт)
+                  значения не уходят — UI получает лишь маску.
+                </div>
+              </div>
+
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Глобальный default расписания</span>
+                </div>
+                <div class="stk-dec__d">
+                  Каденс-настройки сбора —
+                  <code>sync_interval</code> (интервал инкремента),
+                  <code>reconcile_interval</code> (частота сверки) и
+                  <code>reconcile_window</code> (когда в неделе её запускать) —
+                  на источнике переопределяют глобальные значения по умолчанию
+                  (<code>NULL</code> = наследует). Дом самих default —
+                  <code>platform_settings</code> (core): один глобальный набор
+                  на платформу, поле источника лишь точечно его перебивает.
+                  Окно — у тяжёлой редкой сверки (ночь / выходной); у
+                  интервального инкремента его нет. Минута хранится смещением без
+                  зоны — час admin задаёт в таймзоне организации
+                  (<code>platform_settings.timezone</code>), планировщик
+                  разворачивает к ближайшему UTC-моменту запуска. Глобальный
+                  дефолт окна — воскресенье 03:00.
+                </div>
+              </div>
+
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Реал-тайм без своих колонок: дедуп и watchdog</span>
+                  <a class="xref-badge xref-badge--page" href="security.html#webhooks"
+                    >→ Webhook'и</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Защита от повторной доставки (один webhook — один раз) не нуждается
+                  в колонке: виденные delivery-id живут эфемерной TTL-памятью в
+                  <a href="../../cache-workers/_workzone/redis-keys.html#blacklist" class="xref-module">Cache &amp; Workers</a>
+                  (Redis), окно дедупа эфемерно. Точку отсчёта watchdog (молчание
+                  webhook-источника дольше окна) тоже не храним отдельно — её даёт
+                  время последнего
+                  <a href="#sync-runs-table" class="xref-anchor">прогона</a>
+                  источника.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ── Прогоны ── -->
+          <div class="stk-layer stk-layer--ops" id="sync-runs-table">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Прогоны синхронизации</span>
+              <span class="stk-layer__role">Журнал прогонов.</span>
+              <a class="xref-badge xref-badge--page" href="reliability.html#sync-run"
+                >→ SyncRun</a
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">sync_runs</span>
+                  <span class="dm-tbl__sub">журнал прогонов</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → sources</span>
+                    <span class="dm-badge dm-badge--flag">один активный на источник</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">source_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → sources, ON DELETE CASCADE">FK→sources</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">CASCADE</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">mode</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (full | incremental | reconciliation)">CHECK</span>
+                      </td>
+                      <td class="dm-note">стратегия выборки · full · incremental · reconciliation</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">trigger</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (connect | schedule | webhook | watchdog | manual)">CHECK</span>
+                      </td>
+                      <td class="dm-note">что инициировало · connect · schedule · webhook · watchdog · manual</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">state</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 'queued'">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (queued | running | succeeded | failed | cancelled)">CHECK</span>
+                      </td>
+                      <td class="dm-note">queued · running · succeeded · failed · cancelled</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">scope</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">подмножество прогона · <code>NULL</code> = весь источник · окно · список items (DLQ) · контейнеры</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">entities_done</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">обработано (N) · итог при succeeded</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">entities_total</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">оценка объёма (M) для прогресса «N из M»</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">checkpoint</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">позиция возобновления внутри прогона</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">error_count</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 0">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">число в DLQ · DEFAULT <code>0</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">error_detail</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">краткая причина провала</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">started_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note"><code>NULL</code> пока queued · длительность = finished − started</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">finished_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">терминальное время</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">heartbeat_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">живость воркера</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Один активный прогон на источник</span>
+                </div>
+                <div class="stk-dec__d">
+                  Замок — partial unique index
+                  <code>UNIQUE (source_id) WHERE state IN ('queued','running')</code>:
+                  один источник несёт максимум один незавершённый прогон, на время
+                  которого карточка под замком. Cancel терминализует прогон
+                  (<code>cancelled</code>) — следующий стартует свежим.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Частичный успех — это succeeded с ошибками</span>
+                </div>
+                <div class="stk-dec__d">
+                  Сбойные items не валят прогон: при них он терминируется как
+                  <code>succeeded</code> с <code>error_count &gt; 0</code> —
+                  данные дошли, часть отложена в
+                  <a href="#dead-letters-table" class="xref-anchor">DLQ</a> на
+                  разбор. <code>failed</code> — это полный провал прогона
+                  (источник недоступен, прогон сорван целиком). Поэтому
+                  <code>state</code> и <code>error_count</code> читаются вместе:
+                  зелёный с пометкой об ошибках — не красный.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Три оси прогона: стратегия · триггер · scope</span>
+                  <a class="xref-badge xref-badge--page" href="sync-modes.html#per-source"
+                    >→ Режимы синхронизации</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Прогон описывают три независимых поля, не одно. <code>mode</code>
+                  — стратегия выборки (<code>full</code> · <code>incremental</code>
+                  · <code>reconciliation</code>, ровно три режима sync-modes):
+                  окно <code>since</code> и агрессивность resolve.
+                  <code>trigger</code> — что подняло прогон. <code>scope</code> —
+                  какое подмножество тянем. Все три живут у прогона, не у
+                  источника: источник держит лишь
+                  <code>incremental_cursor</code> и расписание. Так
+                  <strong>partial re-sync</strong> и <strong>dlq retry</strong> —
+                  не отдельные режимы, а <code>incremental</code> с разными
+                  триггером и scope: первый — <code>watchdog</code> + окно
+                  восстановления, второй — <code>manual</code> + список items из
+                  <a href="#dead-letters-table" class="xref-anchor">DLQ</a>.
+                  «Тип» строки в истории выводится из этой тройки — отдельной
+                  колонкой не хранится. Провал прогона поднимает уведомление тем
+                  же каналом, что и прочие алерты платформы.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Что запустило — здесь, кто запустил — в журнале платформы</span>
+                  <a class="xref-badge" href="../../auth-security/_workzone/protection.html#audit-log"
+                    >→ Audit Log</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <code>trigger</code> несёт <em>что</em> подняло прогон
+                  (connect · schedule · webhook · watchdog · manual) — видно в
+                  истории прогонов, дополняет <code>mode</code>. А <em>кто</em> из
+                  админов запустил ручной прогон или менял конфигурацию
+                  источника, Harvester у себя не дублирует: личность актора,
+                  действие и результат пишет платформенный append-only журнал
+                  админ-действий — его дом Auth &amp; Security. Аудит живёт в
+                  одном месте, а не размазан по таблицам модулей.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Метрики прогона vs объём источника</span>
+                </div>
+                <div class="stk-dec__d">
+                  Числа прогона — его собственные: обработано
+                  (<code>entities_done</code> из оценки <code>entities_total</code>),
+                  «N из M» в прогрессе. А итоговый объём источника (колонка
+                  «Сущностей» в хабе) — не счётчик Harvester, а <code>COUNT</code>
+                  узлов источника в Knowledge Store; своей колонки под него модуль
+                  не заводит.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ── Сбойные items ── -->
+          <div class="stk-layer stk-layer--ops" id="dead-letters-table">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Сбойные items</span>
+              <span class="stk-layer__role">Очередь разбора.</span>
+              <a class="xref-badge xref-badge--page" href="reliability.html#dlq"
+                >→ DLQ</a
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">dead_letters</span>
+                  <span class="dm-tbl__sub">очередь сбойных items</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → sources</span>
+                    <span class="dm-badge dm-badge--fk">FK → sync_runs</span>
+                    <span class="dm-badge dm-badge--flag">одна строка на item</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">source_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → sources, ON DELETE CASCADE">FK→sources</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">CASCADE · очередь живёт, пока жив источник</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">run_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → sync_runs, ON DELETE SET NULL">FK→sync_runs</span
+                        ><span class="dm-c dm-c--null">NULL</span>
+                      </td>
+                      <td class="dm-note">прогон последнего падения · SET NULL переживает чистку журнала</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_type</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">тип записи у источника (ticket · page · message)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_entity_id</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">id записи у источника · что перетягивает повтор</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">reason</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (permission | not_found | malformed | rate_limited | unknown)">CHECK</span>
+                      </td>
+                      <td class="dm-note">категория для разбора · permission · not_found · malformed · rate_limited · unknown</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">error_detail</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">текст ошибки · для диагностики</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">attempts</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 1">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">сколько раз падал · растёт при повторном попадании</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note">впервые отложен</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note">последнее падение · <code>now()</code> + trigger</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Одна строка на сбойный item</span>
+                </div>
+                <div class="stk-dec__d">
+                  Ключ дедупа — <code>UNIQUE (source_id, source_type,
+                  source_entity_id)</code>: тот же item, упавший снова в
+                  следующем прогоне, не плодит дубль, а обновляет строку
+                  (<code>attempts</code>, <code>updated_at</code>, свежая
+                  <code>reason</code>) через upsert. Очередь — снимок
+                  актуально-нерешённого, а не лента всех падений.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Transient или permanent — решает коннектор</span>
+                  <a class="xref-badge xref-badge--page" href="reliability.html#retry"
+                    >→ Ретраи</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Категория <code>reason</code> кодирует разбор, но попадёт ли
+                  item в очередь, зависит от другой оси — преходящая ошибка
+                  (transient) или постоянная (permanent). Эту классификацию
+                  объявляет коннектор: дефолтный HTTP-маппинг (429 · 5xx →
+                  transient; 403 · 404 → permanent) он может переопределить под
+                  специфику своего API. Саму механику попыток и backoff держит
+                  reliability — сюда же приходит лишь то, что ретраи исчерпали.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Уход из очереди — удаление при успехе</span>
+                  <a class="xref-badge xref-badge--page" href="reliability.html#visibility"
+                    >→ Видимость сбоев</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  «Повторить сбойные» запускает <code>incremental</code>-прогон
+                  вручную (<code>trigger=manual</code>) со <code>scope</code> из
+                  нерешённых строк источника — это и есть dlq retry. Item
+                  обработан — строка
+                  <strong>удаляется</strong> (его актуальное состояние теперь в
+                  <a href="#entity" class="xref-anchor">Entity</a> через upsert);
+                  снова упал — остаётся и обновляется; исчез в источнике —
+                  удаляется, разбирать нечего. Это рабочая очередь, не журнал:
+                  аудит «сколько падало и когда» уже несёт
+                  <code>sync_runs.error_count</code>, поэтому решённое чистим без
+                  дублирующей истории.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Счётчик прогона ≠ глубина очереди</span>
+                  <a class="xref-badge" href="../../admin-panel/_wireframes/harvester.html#sync-errors"
+                    >→ Разбор сбойных</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <code>sync_runs.error_count</code> — неизменный снимок: сколько
+                  упало <em>в том</em> прогоне. Счётчик «K в DLQ» в хабе и разбор
+                  по причине — это живой <code>dead_letters</code> источника
+                  (<code>COUNT</code> и <code>GROUP BY reason</code>); по мере
+                  починки он тает, тогда как <code>error_count</code> прогона
+                  остаётся как был. Набор категорий <code>reason</code> —
+                  source of truth бэкенда, UI лишь рисует.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

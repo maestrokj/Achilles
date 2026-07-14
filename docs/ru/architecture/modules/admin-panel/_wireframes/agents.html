@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: AI-агенты</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">AI-агенты</h1>
+        <div class="header__sub">
+          admin panel · макеты · ai
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Экран рендерится в контентной области каркаса">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--keep" href="../../shared-ui/_wireframes/loading-states.html#keep-previous" title="Смена страницы или фильтра — прежние строки остаются (keep-previous)">
+              <span class="in-load__icon"></span>загрузка
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">Надзор за личными агентами всей организации: список со статусами, единственный рычаг — поставить агента на паузу. Конфигурацию правит только владелец в Web App.</p>
+
+      <!-- ═══ Лимиты прогона ═══ Механика фоновой полосы агентов: потолок шагов
+           и параллелизм. Недельный бюджет токенов (расходный лимит) переехал
+           отсюда на экран Расходы AI (usage.html#limits), где живёт рядом с
+           бюджетом чата и расходом по людям. -->
+      <div class="section" id="agent-limits">
+        <div class="section__title">
+          Платформенные лимиты прогона
+          <a href="../../agent-engine/_workzone/runtime.html#loop" class="xref-badge">→ Agent Engine</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">platform_settings · лимиты прогона</div>
+          <div class="wf-screen">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/agents
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/agents · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-card">
+                  <div class="wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text"><b>Потолок шагов прогона</b></span>
+                      <div class="wf-input wf-input--sm">15</div>
+                    </div>
+                    <span class="wf-hint">Сколько шагов «подумать → позвать инструмент → прочитать» агент успевает за один прогон. Предохранитель от зацикливания, не бюджет. <strong>Дефолт 15</strong>; для глубокого ресёрча поднимают до 30.</span>
+                  </div>
+                </div>
+                <div class="wf-card">
+                  <div class="wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text"><b>Одновременных прогонов на платформу</b></span>
+                      <div class="wf-input wf-input--sm">4</div>
+                    </div>
+                    <span class="wf-hint">Сколько прогонов агентов крутится разом во всей организации. Лишние ждут очередь, не отвергаются. Реальный потолок задаёт <strong>TPM-тариф провайдера</strong>.</span>
+                  </div>
+                </div>
+                <div class="wf-row wf-spread">
+                  <span class="wf-hint">Применяется ко всем агентам организации</span>
+                  <button class="wf-btn wf-btn--primary">Сохранить</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              Два платформенных лимита прогона, единых на организацию: потолок
+              <a href="../../agent-engine/_workzone/runtime.html#loop" class="xref-module">шагов прогона</a>
+              и параллелизм <a href="../../agent-engine/_workzone/execution.html#concurrency" class="xref-module">фоновой полосы</a>.
+              Недельный <a href="usage.html#limits" class="xref-page">бюджет токенов</a> — расходный лимит —
+              переехал на экран Расходы AI, к бюджету чата и расходу по людям.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Список всех агентов ═══ -->
+      <div class="section" id="agents">
+        <div class="section__title">
+          Все агенты
+          <a href="../../agent-engine/_workzone/governance.html#admin-pause" class="xref-badge">→ Agent Engine</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">список · все владельцы</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/agents
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/agents · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <span class="wf-title">Все агенты</span>
+                <div class="wf-input wf-input--sm">
+                  <span class="wf-input__icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                  </span>
+                  Поиск по имени и владельцу
+                </div>
+                <div class="wf-filters">
+                  <span class="wf-filter">Статус <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Владелец <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Расписание <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-annot">1</span>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr>
+                      <th>Агент</th><th>Владелец</th><th>Статус</th><th>Расписание</th><th>Последний прогон</th><th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="wf-rowlink">
+                      <td><a href="agent-card.html" class="wf-userlink">Дайджест релизов</a> <span class="wf-annot">2</span></td>
+                      <td><span class="wf-idcell"><a href="user-card.html" class="wf-userlink">Дмитрий Соколов</a><span class="wf-idcell__email">dmitry@company.com</span></span></td>
+                      <td><span class="wf-chip wf-chip--ok">активен</span></td>
+                      <td>каждые 6 ч</td>
+                      <td>
+                        <span class="wf-runcell">
+                          <span>2 часа назад</span>
+                          <span class="wf-runcell__meta">succeeded · 14 с · 38k</span>
+                        </span>
+                      </td>
+                      <td>⋯ <span class="wf-annot">3</span></td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><a href="agent-card.html" class="wf-userlink">Сводка инцидентов</a></td>
+                      <td><span class="wf-idcell"><a href="user-card.html" class="wf-userlink">Анна Орлова</a><span class="wf-idcell__email">anna@company.com</span></span></td>
+                      <td><span class="wf-chip wf-chip--warn">на паузе · админ</span> <span class="wf-annot">4</span></td>
+                      <td>пн 09:00</td>
+                      <td>
+                        <span class="wf-runcell">
+                          <span>3 дня назад</span>
+                          <span class="wf-runcell__meta">succeeded · 22 с · 64k</span>
+                        </span>
+                      </td>
+                      <td>⋯</td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><a href="agent-card.html" class="wf-userlink">Пробелы в документации</a></td>
+                      <td><span class="wf-idcell"><a href="user-card.html" class="wf-userlink">Игорь Лебедев</a><span class="wf-idcell__email">igor@company.com</span></span></td>
+                      <td><span class="wf-chip wf-chip--warn">лимит недели</span></td>
+                      <td>ежедневно 08:00</td>
+                      <td>
+                        <span class="wf-runcell">
+                          <span>вчера</span>
+                          <span class="wf-runcell__meta wf-runcell__meta--err">пропущен · лимит</span>
+                        </span>
+                      </td>
+                      <td>⋯</td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><a href="agent-card.html" class="wf-userlink">Обзор рынка</a></td>
+                      <td><span class="wf-idcell"><a href="user-card.html" class="wf-userlink">Павел Зайцев</a><span class="wf-idcell__email">pavel@company.com</span></span></td>
+                      <td><span class="wf-chip wf-chip--warn">модель снята</span></td>
+                      <td>ежедневно 07:00</td>
+                      <td>
+                        <span class="wf-runcell">
+                          <span>2 дня назад</span>
+                          <span class="wf-runcell__meta">succeeded · 17 с · 44k</span>
+                        </span>
+                      </td>
+                      <td>⋯</td>
+                    </tr>
+                    <tr class="wf-rowlink wf-table__row--muted">
+                      <td><a href="agent-card.html" class="wf-userlink">Черновик отчёта</a></td>
+                      <td><span class="wf-idcell"><a href="user-card.html" class="wf-userlink">Мария Ким</a><span class="wf-idcell__email">maria@company.com</span></span></td>
+                      <td><span class="wf-chip">выключен</span></td>
+                      <td>вручную</td>
+                      <td>
+                        <span class="wf-runcell">
+                          <span>неделю назад</span>
+                          <span class="wf-runcell__meta">succeeded · 9 с · 12k</span>
+                        </span>
+                      </td>
+                      <td>⋯</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="wf-pager">
+                  <span class="wf-pager__count">1–50 из 86</span>
+                  <div class="wf-pager__pages">
+                    <span class="wf-page wf-page--nav wf-page--off">‹</span>
+                    <span class="wf-page wf-page--active">1</span>
+                    <span class="wf-page">2</span>
+                    <span class="wf-page wf-page--nav">›</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">⋯ меню действий · активный агент</div>
+              <div class="wf-pop">
+                <button class="wf-btn">⋯</button>
+                <div class="wf-menu">
+                  <a class="wf-menu__item" href="agent-card.html">Открыть профиль</a>
+                  <hr class="wf-menu__sep" />
+                  <span class="wf-menu__item"
+                    ><span class="wf-guarded"
+                      >Поставить на паузу<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a></span
+                  ></span>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">⋯ меню действий · на паузе</div>
+              <div class="wf-pop">
+                <button class="wf-btn">⋯</button>
+                <div class="wf-menu">
+                  <a class="wf-menu__item" href="agent-card.html">Открыть профиль</a>
+                  <hr class="wf-menu__sep" />
+                  <span class="wf-menu__item">Снять паузу</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Фильтры — фасеты Статус · Владелец · Расписание. Поведение поиска и фильтров —
+              <a href="../_workzone/list-controls.html#facets" class="xref-page">единое для всех списков</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Клик по имени открывает
+              <a href="agent-card.html" class="xref-page">профиль агента</a> (read-only); клик по владельцу — <a href="user-card.html" class="xref-page">карточку пользователя</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              ⋯ открывает меню строки: открыть профиль · поставить на паузу / снять паузу. Пауза — с подтверждением; других действий над чужим агентом у админа в v1 нет.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Статус сводит выключатель владельца, замок администратора, бюджет недели и доступность модели: активен · выключен · на паузе · админ · лимит недели · модель снята · ошибка. Пауза администратора липкая — владелец её не снимет.
+              <a href="../../agent-engine/_workzone/governance.html#gate" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              Массовые действия, правка чужого агента и мгновенный обрыв идущего прогона — <span class="iter v2">v2</span>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

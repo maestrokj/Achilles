@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Notifications: диспетчер</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="dispatcher.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Notifications</a>
+        <h1 class="header__title">Диспетчер</h1>
+        <div class="header__sub">notifications · workzone</div>
+      </div>
+
+      <p class="desc">
+        Как событие из любого модуля доходит до адресата: единый диспетчер
+        собирает событие, разводит его по двум моделям адресации и каналам,
+        журналирует доставку. Схема каналов, маршрутов и ленты —
+        <a href="data-model.html#notifications-data" class="xref-page">в модели данных</a>;
+        экран настроек —
+        <a href="../../admin-panel/_wireframes/notifications.html" class="xref-module">в Admin Panel</a>.
+      </p>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ── L1 · Диспетчер ── -->
+          <div class="stk-layer stk-layer--config" id="dispatch">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Диспетчер</span>
+              <span class="stk-layer__role">источник → адресация → каналы → доставка</span>
+            </div>
+            <div class="stk-layer__body">
+              <!-- Весь тракт одной строкой — читается раньше, чем заметки. -->
+              <div class="dsp-flow">
+                <div class="dsp-flow__step">
+                  <span class="dsp-flow__n">1</span>
+                  <span class="dsp-flow__t">Источник</span>
+                  <span class="dsp-flow__d">модуль зовёт диспетчер в core</span>
+                </div>
+                <div class="dsp-flow__step">
+                  <span class="dsp-flow__n">2</span>
+                  <span class="dsp-flow__t">Событие</span>
+                  <span class="dsp-flow__d">строка <code>notifications</code></span>
+                </div>
+                <div class="dsp-flow__step">
+                  <span class="dsp-flow__n">3</span>
+                  <span class="dsp-flow__t">Адресация</span>
+                  <span class="dsp-flow__d">broadcast / targeted</span>
+                </div>
+                <div class="dsp-flow__step">
+                  <span class="dsp-flow__n">4</span>
+                  <span class="dsp-flow__t">Веер</span>
+                  <span class="dsp-flow__d">маршрут × канал → deliveries</span>
+                </div>
+                <div class="dsp-flow__step">
+                  <span class="dsp-flow__n">5</span>
+                  <span class="dsp-flow__t">Доставка</span>
+                  <span class="dsp-flow__d">in-app сразу + push · email/webhook в очередь</span>
+                </div>
+              </div>
+
+              <!-- Модули не шлют сами — поднимают событие в общий диспетчер. -->
+              <div class="stk-dec stk-dec--full" id="sources">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Источник поднимает событие, не шлёт сам</span>
+                </div>
+                <div class="stk-dec__d">
+                  Модули не знают про email или Slack. При сбое, пороге или
+                  governance-действии они зовут диспетчер в <code>core</code> — тот пишет
+                  строку
+                  <a href="data-model.html#notifications-data" class="xref-page"><code>notifications</code></a>
+                  и дальше ведёт доставку сам. Рождение события и доставка — разные
+                  заботы, циклов между модулями нет.
+                  <ul class="stk-dec__list dsp-rules">
+                    <li><b>Пишут:</b> Harvester · Auth · Agent Engine · Knowledge Store · Admin — полный перечень в <a href="#catalog" class="xref-anchor">каталоге</a> ниже.</li>
+                    <li><b>Строка:</b> тип · severity · источник · ссылка на сущность · <code>target_user_id</code> (при targeted).</li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Две модели адресации: broadcast по роли vs targeted владельцу. -->
+              <div class="stk-dec stk-dec--full" id="addressing">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Две модели адресации — по типу события</span>
+                  <a class="xref-badge xref-badge--page" href="data-model.html#notif-addressing"
+                    >→ Колонка target_user_id</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Тип события несёт свою модель адресации; диспетчер ветвится одним
+                  условием — заполнен ли <code>target_user_id</code>. Старые админские
+                  типы всегда пишут <code>NULL</code> — их путь нетронут.
+                  <div class="addr">
+                    <div class="addr__lane addr__lane--broadcast">
+                      <div class="addr__head">Broadcast</div>
+                      <div class="addr__cond">target_user_id IS NULL</div>
+                      <div class="addr__d">
+                        Адресаты — срез по роли (<a href="#recipients" class="xref-anchor">owner / admin, status=active</a>).
+                        Платформенные сигналы организации.
+                      </div>
+                      <div class="addr__tags">
+                        <span class="addr__tag">sync</span>
+                        <span class="addr__tag">security</span>
+                        <span class="addr__tag">budget</span>
+                        <span class="addr__tag">system</span>
+                        <span class="addr__tag">discovery</span>
+                      </div>
+                    </div>
+                    <div class="addr__lane addr__lane--targeted">
+                      <div class="addr__head">Targeted</div>
+                      <div class="addr__cond">target_user_id = X</div>
+                      <div class="addr__d">
+                        Единственный адресат — конкретный пользователь (владелец агента,
+                        субъект записи). Любая роль, включая member.
+                      </div>
+                      <div class="addr__tags">
+                        <span class="addr__tag">agent</span>
+                        <span class="addr__tag">account</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Веер по каналам: для каждого включённого маршрута — delivery. -->
+              <div class="stk-dec stk-dec--full" id="fanout">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Веер по каналам через маршруты</span>
+                  <a class="xref-badge" href="../../admin-panel/_wireframes/notifications.html#routing"
+                    >→ Матрица</a
+                  >
+                  <a class="xref-badge" href="../../cache-workers/_workzone/queues.html#lanes">→ Cache &amp; Workers</a>
+                </div>
+                <div class="stk-dec__d">
+                  Диспетчер берёт <code>notification_routes</code> этого типа и на каждый
+                  включённый маршрут заводит строку <code>notification_deliveries</code>.
+                  <ul class="stk-dec__list dsp-rules">
+                    <li><b>Маршрут <code>enabled=true</code></b> — иначе тип по этому каналу не уходит. Отдельного «выключателя типа» нет: погашены все маршруты — тип не идёт никому.</li>
+                    <li><b>Канал <code>enabled=false</code></b> пропускается целиком — проверенный webhook держат про запас.</li>
+                    <li><b>Замок:</b> <code>in_app × security</code> и <code>in_app × sync</code> под <code>locked=true</code> — критичный тип нельзя обнулить, он всегда виден в ленте.</li>
+                    <li><b>Личные каналы</b> (in-app, email) ещё сверяются с <a href="#recipients" class="xref-anchor">настройками адресата</a>.</li>
+                  </ul>
+                  <div class="dsp-modes">
+                    <div class="dsp-mode">
+                      <span class="dsp-mode__k">in-app</span>пишется сразу и шлёт сигнал в
+                      <a href="../../cache-workers/_workzone/redis-keys.html#instances" class="xref-module">pub/sub</a>
+                      — колокольчик обновляется мгновенно (push); до клиента сигнал
+                      доезжает по платформенному
+                      <a href="../../api/_workzone/live-updates.html#contract" class="xref-module">потоку живых обновлений</a>.
+                    </div>
+                    <div class="dsp-mode dsp-mode--queue">
+                      <span class="dsp-mode__k">email · webhook</span>в очередь
+                      <a href="../../email/_workzone/delivery.html#modes" class="xref-module">SAQ</a>
+                      — ретраи и тротлинг, чтобы всплеск не забил доставку.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Адресаты личных каналов вычисляются по роли/таргету, не хранятся списком. -->
+              <div class="stk-dec stk-dec--full" id="recipients">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Адресаты минус личный opt-out</span>
+                  <a class="xref-badge" href="../../auth-security/_wireframes/profile-account.html#notifications"
+                    >→ Личные настройки</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Адресаты не хранятся списком — диспетчер вычисляет их на лету и снимает
+                  тех, кто отписался.
+                  <ul class="stk-dec__list dsp-rules">
+                    <li><b>Broadcast →</b> все <a href="../../auth-security/_workzone/data-model.html#data-model" class="xref-module"><code>users</code></a> с ролью <code>owner</code> / <code>admin</code>, динамический срез <code>status = active</code>, не ручной перечень.</li>
+                    <li><b>Targeted →</b> один адресат, <code>target_user_id</code>.</li>
+                    <li><b>Личный opt-out:</b> по каждому сверяется <code>notification_prefs</code> (<code>in_app_enabled</code>, <code>email_enabled</code>) по типу; строки нет — <a href="data-model.html#notif-defaults" class="xref-page">дефолт каталога</a> (у личных типов email выключен, opt-in).</li>
+                    <li><b>Замков на личном уровне нет</b> — отписаться можно от любого типа; организационный замок держит in-app <code>security</code> / <code>sync</code> лишь на уровне организации (<a href="data-model.html#notif-critical" class="xref-page">что нельзя выключить</a>).</li>
+                    <li><b>Webhook персон не имеет</b> — общий endpoint команды; личные настройки не влияют, targeted по нему не идёт.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Серию однотипных сбоев схлопываем в одно уведомление. -->
+              <div class="stk-dec" id="throttle">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Дедуп и тротлинг</span>
+                </div>
+                <div class="stk-dec__d">
+                  Однотипные события в окне схлопываются в одно уведомление с растущим
+                  счётчиком — не <code>N</code> писем на каждую неудачу.
+                  <ul class="stk-dec__list dsp-rules">
+                    <li><b>Ключ дедупа:</b> конкретное событие (не категория <code>event_type</code>) + затронутая сущность (<code>source_ref</code>); для targeted — плюс адресат.</li>
+                    <li><b>Раздельно:</b> «источник отвалился» и «серия сбоев» остаются разными уведомлениями.</li>
+                    <li><b>Окно и пороги</b> в v1 фиксированные; тонкая настройка на инстанс — <span class="iter v2">v2</span>.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Формат webhook определяет preset канала. -->
+              <div class="stk-dec stk-dec--full" id="payload">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Payload вебхука — по пресету канала</span>
+                  <a class="xref-badge" href="../../admin-panel/_wireframes/notifications.html#channels"
+                    >→ Каналы</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <code>preset</code> канала выбирает форму тела POST: Slack получает свой
+                  формат сообщения, generic — нейтральный JSON для любого приёмника (свой
+                  бот, n8n, Teams через Power Automate Workflow):
+                  <div class="pay">{
+  <span class="pay__c">// generic preset — нейтральный JSON</span>
+  "event": "sync.failure_series",
+  "severity": "critical",
+  "title": "Источник Jira: 5 сбоев подряд",
+  "source": "harvester",
+  "source_ref": "source/42",
+  "ts": "2026-05-27T14:30:00Z"
+}</div>
+                  <ul class="stk-dec__list dsp-rules">
+                    <li><b>Endpoint и secret</b> (<code>url_enc</code>, <code>secret_enc</code>) — write-only: в UI и export не возвращаются.</li>
+                    <li><b>«Test»</b> шлёт это же тело с фиктивным событием.</li>
+                    <li><b>Только broadcast</b> идёт по вебхукам — targeted-события личные, каналом команды не расходятся.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ── L2 · Каталог событий ── -->
+          <div class="stk-layer stk-layer--ai" id="catalog">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Каталог событий</span>
+              <span class="stk-layer__role">что поднимает уведомление · по типам</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="cat-cap cat-cap--first">
+                Админ события
+                <span class="cat-cap__aud">broadcast → администраторам</span>
+              </div>
+              <table class="cat">
+                <thead>
+                  <tr>
+                    <th>Событие</th>
+                    <th>Источник</th>
+                    <th>Severity</th>
+                    <th>Условие</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="cat__group"><td colspan="4">Sync</td></tr>
+                  <tr>
+                    <td class="cat__ev">Серия сбоев прогона</td>
+                    <td class="cat__src">harvester</td>
+                    <td><span class="sev sev--crit">critical</span></td>
+                    <td>несколько <code>sync_runs.state=failed</code> подряд по источнику</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Источник отвалился</td>
+                    <td class="cat__src">harvester</td>
+                    <td><span class="sev sev--crit">critical</span></td>
+                    <td>проба источника → <code>last_probe_status ≠ ok</code> (health <code>error</code>)</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Прогон с потерями</td>
+                    <td class="cat__src">harvester</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td><code>succeeded</code> при <code>error_count &gt; 0</code> (часть в DLQ)</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">DLQ накапливается <span class="iter v2">v2</span></td>
+                    <td class="cat__src">harvester</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td>хвост dead-letter растёт сверх порога</td>
+                  </tr>
+
+                  <tr class="cat__group"><td colspan="4">Security</td></tr>
+                  <tr>
+                    <td class="cat__ev">Перебор пароля</td>
+                    <td class="cat__src">auth</td>
+                    <td><span class="sev sev--crit">critical</span></td>
+                    <td>≥ 10 неудачных входов на аккаунт / 15 мин</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Смена ролей</td>
+                    <td class="cat__src">auth</td>
+                    <td><span class="sev sev--crit">critical</span></td>
+                    <td>изменён <code>users.role</code> (owner / admin / member)</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">API-ключ истекает</td>
+                    <td class="cat__src">auth</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td>за 7 дней до <code>expires_at</code></td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Последний Owner <span class="iter v2">v2</span></td>
+                    <td class="cat__src">auth</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td>в системе остался один Owner — риск блокировки</td>
+                  </tr>
+
+                  <tr class="cat__group"><td colspan="4">Budget</td></tr>
+                  <tr>
+                    <td class="cat__ev">Порог расходов AI</td>
+                    <td class="cat__src">admin</td>
+                    <td><span class="sev sev--crit">critical</span></td>
+                    <td><code>SUM(cost)</code> за месяц &gt; <code>ai_monthly_budget</code></td>
+                  </tr>
+
+                  <tr class="cat__group"><td colspan="4">System</td></tr>
+                  <tr>
+                    <td class="cat__ev">Провайдер недоступен</td>
+                    <td class="cat__src">admin</td>
+                    <td><span class="sev sev--crit">critical</span></td>
+                    <td>проверка соединения провайдера → <code>error</code> (здоровье, не расход)</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Сервис degraded / down <span class="iter v2">v2</span></td>
+                    <td class="cat__src">admin</td>
+                    <td><span class="sev sev--crit">critical</span></td>
+                    <td>postgres / redis / n8n не отвечают штатно</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Backup провалился</td>
+                    <td class="cat__src">knowledge_store</td>
+                    <td><span class="sev sev--crit">critical</span></td>
+                    <td>плановый снимок KS завершился ошибкой</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Curation Pass упал</td>
+                    <td class="cat__src">knowledge_store</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td><code>curation_runs.state=failed</code></td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Переэмбеддинг затянулся <span class="iter v2">v2</span></td>
+                    <td class="cat__src">knowledge_store</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td>прогон после смены модели дольше ожидаемого</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Storage у предела <span class="iter v2">v2</span></td>
+                    <td class="cat__src">admin</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td>PG / pgvector приблизились к лимиту</td>
+                  </tr>
+
+                  <tr class="cat__group"><td colspan="4">Discovery</td></tr>
+                  <tr>
+                    <td class="cat__ev">Новый контейнер <span class="iter v2">v2</span></td>
+                    <td class="cat__src">harvester</td>
+                    <td><span class="sev sev--info">info</span></td>
+                    <td>объект за пределами разрешённого scope источника — с действием «в scope»</td>
+                  </tr>
+
+                </tbody>
+              </table>
+
+              <div class="cat-cap cat-cap--user">
+                Общие события
+                <span class="cat-cap__aud">targeted → пользователю</span>
+              </div>
+              <table class="cat">
+                <thead>
+                  <tr>
+                    <th>Событие</th>
+                    <th>Источник</th>
+                    <th>Severity</th>
+                    <th>Условие</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="cat__group cat__group--targeted"><td colspan="4">Agent · targeted → владелец · <a href="../../agent-engine/_workzone/governance.html#admin-pause" class="xref-module">governance</a></td></tr>
+                  <tr>
+                    <td class="cat__ev">Прогон провалился</td>
+                    <td class="cat__src">agent_engine</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td><code>agent_runs.state=failed</code> (<code>reason</code> error / iteration_cap / stale)</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Недельный бюджет исчерпан</td>
+                    <td class="cat__src">agent_engine</td>
+                    <td><span class="sev sev--info">info</span></td>
+                    <td><code>agent_runs.state=skipped</code>, <code>reason=budget_exceeded</code></td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Агент приостановлен админом</td>
+                    <td class="cat__src">agent_engine</td>
+                    <td><span class="sev sev--info">info</span></td>
+                    <td><code>agents.admin_paused</code> → <code>true</code></td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Модель агента снята</td>
+                    <td class="cat__src">agent_engine</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td><code>agents.model_id</code> → <code>NULL</code> (модель убрана из списка)</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Прогон завершён успешно <span class="iter v2">v2</span></td>
+                    <td class="cat__src">agent_engine</td>
+                    <td><span class="sev sev--info">info</span></td>
+                    <td>доставка выхода прогона — отложена вместе с доставкой в чат-тред</td>
+                  </tr>
+
+                  <tr class="cat__group cat__group--targeted"><td colspan="4">Account · targeted → пользователь</td></tr>
+                  <tr>
+                    <td class="cat__ev">Роль изменена админом</td>
+                    <td class="cat__src">auth</td>
+                    <td><span class="sev sev--info">info</span></td>
+                    <td><code>audit_log</code> смены роли (<code>meta</code> old→new)</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Выдан временный пароль</td>
+                    <td class="cat__src">auth</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td><code>users.must_change_password</code> → <code>true</code> (сброс админом)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

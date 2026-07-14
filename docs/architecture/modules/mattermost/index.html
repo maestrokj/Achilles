@@ -1,0 +1,487 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Mattermost</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="mattermost.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <!-- ═══ Header ═══ -->
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← Back to architecture</a>
+        <h1 class="header__title">Mattermost</h1>
+        <div class="header__sub">chat integration · knowledge in the messenger</div>
+      </div>
+
+      <!-- ════════════════ HERO ════════════════
+           Mattermost is an inbound surface — Slack's twin on a self-hosted
+           server: an employee asks the bot, Query Engine answers. The hero
+           states this in one line. -->
+      <header class="mm-hero">
+        <p class="mm-title">Company knowledge — right in&nbsp;your&nbsp;Mattermost&nbsp;chat</p>
+        <p class="mm-lede">
+          An employee messages the bot in a DM — Query&nbsp;Engine answers under
+          their own permissions, with links to sources. Everything the web chat
+          can do, without leaving the messenger.
+        </p>
+      </header>
+
+      <!-- ── Flow of a single message: DM → intake → engine, returning to the thread.
+           The transport is the one big difference from the twins: no HTTP push for
+           DMs, so a singleton WebSocket listener dials out to the server. -->
+      <div
+        class="mm-flow"
+        role="img"
+        aria-label="Flow: an employee messages the bot in Mattermost, a dial-out WebSocket listener picks up the posted event and queues it, Query Engine searches under ACL and assembles an answer, the answer returns as a post in the thread"
+      >
+        <div class="mm-station mm-station--user">
+          <span class="mm-station__tag">employee</span>
+          <span class="mm-station__glyph"><svg class="doc-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M20.46 8.92A9 9 0 1 1 15.08 3.54L14.19 5.99A6.4 6.4 0 1 0 18.02 9.81Z"/><circle cx="17.5" cy="6.5" r="2"/></svg></span>
+          <span class="mm-station__name">Direct message</span>
+          <span class="mm-station__desc">question to the bot in a DM</span>
+        </div>
+
+        <div class="mm-link">
+          <span class="mm-link__rail mm-link__rail--fwd">
+            <span class="mm-link__lbl"><code>posted</code> event · WebSocket (dial-out)</span>
+            <span class="mm-link__wire"></span>
+          </span>
+          <span class="mm-link__rail mm-link__rail--back">
+            <span class="mm-link__wire"></span>
+            <span class="mm-link__lbl">answer as a post in the thread</span>
+          </span>
+        </div>
+
+        <div class="mm-station mm-station--door">
+          <span class="mm-station__tag mm-station__tag--on">door</span>
+          <span class="mm-station__glyph"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5" /><path d="M15 8V2" /><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" /><path d="M9 8V2" /></svg></span>
+          <span class="mm-station__name">Achilles</span>
+          <span class="mm-station__desc">listener · queue · Mattermost&nbsp;id&nbsp;→&nbsp;user_id</span>
+        </div>
+
+        <div class="mm-link mm-link--single">
+          <span class="mm-link__rail mm-link__rail--fwd">
+            <span class="mm-link__lbl">search under ACL</span>
+            <span class="mm-link__wire"></span>
+          </span>
+        </div>
+
+        <div class="mm-station mm-station--engine">
+          <span class="ai-tag" title="This step uses a neural network — model inference"
+            ><span class="ai-tag__icon"></span>AI</span
+          >
+          <span class="mm-station__glyph mm-station__glyph--graph" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none">
+              <line x1="11" y1="14" x2="24" y2="9" /><line x1="11" y1="14" x2="13" y2="28" />
+              <line x1="24" y1="9" x2="30" y2="22" /><line x1="13" y1="28" x2="30" y2="22" />
+              <circle cx="11" cy="14" r="3.4" /><circle cx="24" cy="9" r="2.8" />
+              <circle class="mm-graph__hub" cx="30" cy="22" r="4" /><circle cx="13" cy="28" r="3" />
+            </svg>
+          </span>
+          <span class="mm-station__name">Query Engine</span>
+          <span class="mm-station__desc">searches the base, assembles the answer</span>
+        </div>
+      </div>
+
+      <!-- ── The heart of the concept in one line ── -->
+      <p class="mm-thesis" id="model">
+        Mattermost is one more <strong>thin window</strong> into the same conversation:
+        <strong>Query Engine</strong> does the thinking and searching under the
+        employee's identity, Mattermost merely carries the message in and the answer
+        out. Slack's twin on a <strong>self-hosted server</strong> — the conversation
+        is cut by the thread, and the transport is a dial-out WebSocket instead of
+        a webhook.
+        <a href="../query-engine/_workzone/conversation.html#surface-api" class="xref-module"
+          >One conversation model across all surfaces →</a
+        >
+      </p>
+
+      <!-- ════════════════ CARDS ════════════════ -->
+      <div class="mm-cards">
+        <!-- Connection -->
+        <section class="mm-card" id="connect">
+          <span class="mm-card__num">01</span>
+          <h2 class="mm-card__title">Connection</h2>
+          <p class="mm-card__sub">
+            Admin creates a bot account in Mattermost's <strong>System Console</strong>
+            (Integrations → Bot Accounts) <strong>once</strong> — the server URL and bot token land in
+            <code>mattermost_settings</code>, like SMTP in Email. The screen is
+            <a href="../admin-panel/_wireframes/platform-settings.html#mattermost" class="xref-module"
+              >platform settings</a
+            >, a single toggle turns the bot on. Enabling live-probes the token
+            (<code>GET /api/v4/users/me</code>) and stamps <code>bot_user_id</code> — how the
+            listener tells the bot's own posts apart.
+          </p>
+          <p class="mm-card__foot">
+            Unlike Telegram there's <strong>no public-HTTPS requirement</strong> and no webhook
+            secret at all — the listener dials out, nothing is exposed. A private-LAN server
+            address is expressly fine (deliberately no SSRF guard: Telegram's guard protected
+            the inverse direction, cloud → us).
+          </p>
+        </section>
+
+        <!-- Identity -->
+        <section class="mm-card" id="identity">
+          <span class="mm-card__num">02</span>
+          <h2 class="mm-card__title">Identity</h2>
+          <p class="mm-card__sub">
+            The sender is resolved to an account via
+            <a href="../auth-security/_workzone/data-model.html#identity-mapping" class="xref-module"
+              ><code>identity_mapping</code></a
+            >
+            (<code>source='mattermost'</code>) — the <strong>sign-in</strong> identity. A
+            <code>posted</code> event carries no trustworthy email, so there's no auto-match: only a
+            <a href="../auth-security/_workzone/authentication.html#messenger-link" class="xref-module">link code</a>
+            — whoever signed in on the web gets a code and returns it to the bot. Only an admin creates
+            the account
+            (<a href="../auth-security/_workzone/authentication.html#admission-model" class="xref-module">by invitation</a>) —
+            knowing the bot grants no access.
+          </p>
+          <p class="mm-card__foot">
+            An unlinked user gets a neutral refusal,
+            <a href="../auth-security/_workzone/protection.html#brute-force" class="xref-module">code guessing is rate-limited</a>.
+            From there on it's only <code>user_id</code> → role → ACL.
+          </p>
+        </section>
+
+        <!-- Conversation -->
+        <section class="mm-card" id="conversation">
+          <span class="mm-card__num">03</span>
+          <h2 class="mm-card__title">Conversation</h2>
+          <p class="mm-card__sub">
+            A Mattermost DM has threads, so the boundary is Slack's rule:
+            <a href="../query-engine/_workzone/conversation.html#session-boundary" class="xref-module"
+              >a thread is a conversation</a
+            >. A reply in a thread continues it, a new root message starts a fresh one — no
+            <code>/new</code> command, no active-conversation pointer. Context is truncated by
+            tokens — the engine's shared mechanism.
+          </p>
+          <p class="mm-card__foot">
+            The conversation lives in <code>conversations</code> (key <code>channel_id</code> +
+            <code>root_id</code> in <code>meta</code>; no nested threads — a reply carries the true
+            root's id). Groups · @mention · team channels — <span class="iter v2">v2</span>.
+          </p>
+        </section>
+
+        <!-- Delivery -->
+        <section class="mm-card" id="delivery">
+          <span class="mm-card__num">04</span>
+          <h2 class="mm-card__title">Delivery</h2>
+          <p class="mm-card__sub">
+            Mattermost has no HTTP push for DMs, so nothing dials in: a <strong>singleton
+            WebSocket listener</strong> in the scheduler process (the only 1-replica service)
+            dials out to <code>{base_url}/api/v4/websocket</code>, authenticates with the bot
+            token, and listens for <code>posted</code> events. It only transports — filters
+            structural DMs (not the bot's own post, no system subtype, not another bot),
+            processing goes to the
+            <a href="../cache-workers/_workzone/queues.html#registry" class="xref-module"
+              ><code>interactive</code></a
+            >
+            queue, the answer returns over REST as a post in the thread. It survives restarts
+            and retries.
+          </p>
+          <p class="mm-card__foot">
+            A replayed event is dropped by job id = post id; the per-channel window is
+            <a href="../cache-workers/_workzone/rate-limit.html#consumers" class="xref-module">rate-limited</a>
+            fail-closed. Listener health is a TTL'd Redis key the admin card shows as a quiet
+            "listening / not connected" line; a settings change needs no signal channel — the
+            listener re-reads them every 30&nbsp;s and hangs up when its config changes.
+          </p>
+        </section>
+      </div>
+
+      <!-- ════════════════ WHAT IT LOOKS LIKE ════════════════
+           Literal DM mockup: bot answer with a source link, continuing in the
+           thread. -->
+      <section class="section" id="mockup">
+        <h2 class="section__title">What it looks like</h2>
+        <div class="mm-chat" role="img" aria-label="Mockup of a DM with the Achilles Mattermost bot: employee's question, bot's answer with a source link, hint that a reply in the thread continues the conversation">
+          <div class="mm-chat__bar">
+            <span class="mm-chat__dm">Achilles</span>
+            <span class="mm-chat__hint">bot · direct messages</span>
+          </div>
+
+          <div class="mm-msg mm-msg--user">
+            <span class="mm-msg__av">MK</span>
+            <div class="mm-msg__body">
+              <span class="mm-msg__who">Maxim Kotov <span class="mm-msg__t">14:32</span></span>
+              <p class="mm-msg__text">What's the status of release 4.2 and who owns the ajax bug?</p>
+            </div>
+          </div>
+
+          <div class="mm-msg mm-msg--bot">
+            <span class="mm-msg__av mm-msg__av--bot">A</span>
+            <div class="mm-msg__body">
+              <span class="mm-msg__who">Achilles <span class="mm-msg__app">BOT</span> <span class="mm-msg__t">14:32</span></span>
+              <p class="mm-msg__text">
+                Release 4.2 is in regression testing, ship date planned for Friday. The ajax bug
+                is owned by Dina Safina<span class="mm-cite">1</span>.
+              </p>
+              <div class="mm-src"><span class="mm-cite">1</span> Jira · RELEASE-482 · “4.2 regression”</div>
+              <div class="mm-cmd">Reply in this thread to continue — a new message starts a fresh conversation</div>
+            </div>
+          </div>
+        </div>
+        <p class="mm-chat__note">
+          The answer is scoped to Maxim's permissions: anything he can't see won't appear in it. A
+          reply in the thread continues the conversation, a new root message opens a fresh one.
+        </p>
+
+        <p class="mm-chat__lead">First contact — linking the account with a code:</p>
+        <div class="mm-chat" role="img" aria-label="Mockup of first contact: the bot doesn't recognize the employee, gives a sign-in link, the employee sends the link code, the bot confirms the link to the account">
+          <div class="mm-chat__bar">
+            <span class="mm-chat__dm">Achilles</span>
+            <span class="mm-chat__hint">bot · direct messages</span>
+          </div>
+
+          <div class="mm-msg mm-msg--user">
+            <span class="mm-msg__av">MK</span>
+            <div class="mm-msg__body">
+              <span class="mm-msg__who">Maxim Kotov <span class="mm-msg__t">09:14</span></span>
+              <p class="mm-msg__text">Hi! What's the status of release 4.2?</p>
+            </div>
+          </div>
+
+          <div class="mm-msg mm-msg--bot">
+            <span class="mm-msg__av mm-msg__av--bot">A</span>
+            <div class="mm-msg__body">
+              <span class="mm-msg__who">Achilles <span class="mm-msg__app">BOT</span> <span class="mm-msg__t">09:14</span></span>
+              <p class="mm-msg__text">
+                To continue, confirm your account: sign in at
+                <span class="mm-code">achilles.local/link</span> and send me the code.
+                After that I'll answer under your permissions.
+              </p>
+            </div>
+          </div>
+
+          <div class="mm-msg mm-msg--user">
+            <span class="mm-msg__av">MK</span>
+            <div class="mm-msg__body">
+              <span class="mm-msg__who">Maxim Kotov <span class="mm-msg__t">09:15</span></span>
+              <p class="mm-msg__text"><span class="mm-code">K7P2-9XQ4</span></p>
+            </div>
+          </div>
+
+          <div class="mm-msg mm-msg--bot">
+            <span class="mm-msg__av mm-msg__av--bot">A</span>
+            <div class="mm-msg__body">
+              <span class="mm-msg__who">Achilles <span class="mm-msg__app">BOT</span> <span class="mm-msg__t">09:15</span></span>
+              <p class="mm-msg__text">
+                Done — linked to <strong>maxim@company.com</strong>. Ask away <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M8 14s1.5 2 4 2 4-2 4-2" /><line x1="9" x2="9.01" y1="9" y2="9" /><line x1="15" x2="15.01" y1="9" y2="9" /></svg>
+              </p>
+            </div>
+          </div>
+        </div>
+        <p class="mm-chat__note">
+          The bot replies the same way to everyone — known user or stranger — never revealing that an
+          instance exists. The code is visible only in the signed-in browser and comes back through the
+          bot — a forwarded link can't hijack the account.
+          <a href="../auth-security/_wireframes/messenger-link.html" class="xref-module">Linking screen →</a>
+        </p>
+      </section>
+
+      <!-- ════════════════ WHAT'S IN THE DATABASE ════════════════ -->
+      <section class="section" id="data">
+        <h2 class="section__title">What's in the database</h2>
+        <div class="mm-data">
+          <div class="mm-data__row">
+            <span class="mm-data__tbl">identity_mapping</span>
+            <span class="mm-data__home">Auth · edited</span>
+            <span class="mm-data__role">+ <code>source='mattermost'</code> → sign-in identity bridge</span>
+          </div>
+          <div class="mm-data__row">
+            <span class="mm-data__tbl">link_tokens</span>
+            <span class="mm-data__home">Auth · shared</span>
+            <span class="mm-data__role">one-time link code (signed in on the web → returned to the bot)</span>
+          </div>
+          <div class="mm-data__row">
+            <span class="mm-data__tbl">conversations.meta</span>
+            <span class="mm-data__home">Query Engine</span>
+            <span class="mm-data__role">conversation key <code>channel_id</code> + <code>root_id</code></span>
+          </div>
+          <div class="mm-data__row">
+            <span class="mm-data__tbl">cache:mattermost:listener</span>
+            <span class="mm-data__home">Cache &amp; Workers</span>
+            <span class="mm-data__role">listener health · TTL'd (90&nbsp;s) — an expired key honestly reads "not running"</span>
+          </div>
+        </div>
+
+        <!-- ── mattermost_settings — the only table we own, spelled out ── -->
+        <div class="mm-tbl">
+          <div class="mm-tbl__head">
+            <span class="mm-tbl__name">mattermost_settings</span>
+            <span class="mm-tbl__sub">bot connection · shared core</span>
+            <span class="mm-tbl__badge">singleton · CHECK (id = 1)</span>
+          </div>
+          <table class="mm-fields">
+            <tbody>
+              <tr>
+                <td class="mm-f">id</td>
+                <td class="mm-t">BigInteger</td>
+                <td class="mm-cons">
+                  <span class="mm-c mm-c--pk">PK</span
+                  ><span class="mm-c mm-c--chk" title="CHECK (id = 1)">CHECK</span>
+                </td>
+                <td class="mm-n">always <code>1</code> · singleton</td>
+              </tr>
+              <tr>
+                <td class="mm-f">base_url</td>
+                <td class="mm-t">Text</td>
+                <td class="mm-cons"><span class="mm-c mm-c--null">NULL</span></td>
+                <td class="mm-n">
+                  server address (<code>https://mattermost.company.com</code>) · any API-v4
+                  installation, private LAN fine
+                </td>
+              </tr>
+              <tr>
+                <td class="mm-f">bot_token_enc</td>
+                <td class="mm-t">Text</td>
+                <td class="mm-cons"><span class="mm-c mm-c--null">NULL</span></td>
+                <td class="mm-n">
+                  bot access token from the System Console, AES-256-GCM ciphertext
+                </td>
+              </tr>
+              <tr>
+                <td class="mm-f">bot_user_id</td>
+                <td class="mm-t">Text</td>
+                <td class="mm-cons"><span class="mm-c mm-c--null">NULL</span></td>
+                <td class="mm-n">
+                  from <code>/users/me</code> · stamped only by a successful probe · lets the
+                  listener skip the bot's own posts
+                </td>
+              </tr>
+              <tr>
+                <td class="mm-f">bot_username</td>
+                <td class="mm-t">Text</td>
+                <td class="mm-cons"><span class="mm-c mm-c--null">NULL</span></td>
+                <td class="mm-n">bot's <code>@handle</code> for the UI · from <code>/users/me</code></td>
+              </tr>
+              <tr>
+                <td class="mm-f">enabled</td>
+                <td class="mm-t">Boolean</td>
+                <td class="mm-cons">
+                  <span class="mm-c mm-c--nn">NOT NULL</span
+                  ><span class="mm-c mm-c--def" title="DEFAULT false">DEFAULT</span>
+                </td>
+                <td class="mm-n">master switch · DEFAULT <code>false</code> · off → the bot stays silent</td>
+              </tr>
+              <tr>
+                <td class="mm-f">last_test_ok</td>
+                <td class="mm-t">Boolean</td>
+                <td class="mm-cons"><span class="mm-c mm-c--null">NULL</span></td>
+                <td class="mm-n">last probe verdict: the token answered — delivery health is the listener's connected flag, shown separately</td>
+              </tr>
+              <tr>
+                <td class="mm-f">last_test_at</td>
+                <td class="mm-t">DateTime(tz)</td>
+                <td class="mm-cons"><span class="mm-c mm-c--null">NULL</span></td>
+                <td class="mm-n">when it was tested · feeds the status chip on the screen</td>
+              </tr>
+              <tr>
+                <td class="mm-f">created_at</td>
+                <td class="mm-t">DateTime(tz)</td>
+                <td class="mm-cons">
+                  <span class="mm-c mm-c--def" title="server_default=now()">DEFAULT</span>
+                </td>
+                <td class="mm-n"><code>server_default=now()</code></td>
+              </tr>
+              <tr>
+                <td class="mm-f">updated_at</td>
+                <td class="mm-t">DateTime(tz)</td>
+                <td class="mm-cons">
+                  <span class="mm-c mm-c--def" title="server_default=now()">DEFAULT</span>
+                </td>
+                <td class="mm-n">
+                  <code>server_default=now()</code> · trigger <code>set_updated_at()</code>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="mm-tbl__derived">
+            <code>is_available()</code> — a model property, not a column:
+            <code>enabled</code> and <code>base_url</code> · <code>bot_token_enc</code> ·
+            <code>bot_user_id</code> filled in. <code>bot_user_id</code> plays the "honestly
+            wired" role <code>webhook_secret_enc</code> plays for Telegram — present only after
+            the token really answered.
+          </p>
+          <p class="note">
+            <strong>Honest enable.</strong> Turning the bot on is atomic: Achilles live-probes
+            the token with <code>GET /api/v4/users/me</code> and the switch stays on <em>only</em>
+            if the server answers — a refusal (revoked token, unreachable address) rolls
+            <code>enabled</code> back and answers with the reason, never a green switch with no
+            bot behind it. The probe also stamps <code>bot_user_id</code> and
+            <code>bot_username</code>. "Test connection" reads the same truth — the probe vouches
+            for token + server; delivery is vouched for by the listener's connected flag.
+          </p>
+        </div>
+
+        <p class="mm-tests">
+          <span class="mm-tests__lbl">Checks:</span>
+          <span class="mm-chip">listener filter (own posts · bots · system)</span><span class="mm-chip">identity resolution</span
+          ><span class="mm-chip">post-id dedup</span><span class="mm-chip">thread = conversation</span
+          ><span class="mm-chip">ACL pass-through</span><span class="mm-chip">unlinked user</span
+          ><span class="mm-chip">code guessing limit</span><span class="mm-chip">honest enable</span>
+        </p>
+      </section>
+
+      <!-- ════════════════ API ════════════════ -->
+      <section class="section" id="api">
+        <h2 class="section__title">API</h2>
+        <ul class="api-list">
+          <li><span class="api-list__m">GET · PATCH</span><span class="api-list__p">/api/v1/admin/mattermost</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/admin/mattermost/test</span></li>
+        </ul>
+        <p class="note">There is <strong>no webhook endpoint</strong>: the only inbound path is the dial-out WebSocket, so no anonymous route exists at all.</p>
+      </section>
+
+      <!-- ════════════════ LINKS ════════════════ -->
+      <section class="section" id="links">
+        <h2 class="section__title">Related modules</h2>
+        <ul class="notes">
+          <li class="note">
+            <strong>Auth / Security</strong> — Mattermost sign-in and the
+            <code>identity_mapping</code> → <code>user_id</code> bridge, shared
+            <code>link_tokens</code>, link-code protection.
+            <a href="../auth-security/_workzone/authentication.html#entry-channels" class="xref-badge"
+              >→ Auth / Security</a
+            >
+          </li>
+          <li class="note">
+            <strong>Query Engine</strong> — conversation, search under ACL, conversation boundary at
+            the thread.
+            <a href="../query-engine/_workzone/conversation.html#surface-api" class="xref-badge"
+              >→ Query Engine</a
+            >
+          </li>
+          <li class="note">
+            <strong>Cache &amp; Workers</strong> — queue intake, per-channel rate-limit, the
+            listener health key — no webhook to guard.
+            <a href="../cache-workers/_workzone/queues.html#registry" class="xref-badge"
+              >→ Cache &amp; Workers</a
+            >
+          </li>
+          <li class="note">
+            <strong>Public API</strong> — Mattermost as a reference "on-behalf-of-many" surface
+            on the shared contract.
+            <a href="../public-api/index.html#reference" class="xref-badge">→ Public API</a>
+          </li>
+          <li class="note">
+            <strong>HTTP API</strong> — the <code>/api/v1/admin/mattermost</code> paths on the shared surface map.
+            <a href="../api/index.html#surface-map" class="xref-badge">→ HTTP API</a>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Cache &amp; Workers: job lifecycle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="lifecycle.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Cache &amp; Workers</a>
+        <h1 class="header__title">Job lifecycle</h1>
+        <div class="header__sub">cache-workers · workzone</div>
+      </div>
+
+      <p class="desc">
+        The canonical convention: what happens to a background job from enqueue to
+        terminal — the same for every lane and consumer. Queue and worker topology
+        is on <a href="queues.html#lanes" class="xref-page">queues and workers</a>;
+        where the lock gets its correctness is on the
+        <a href="redis-keys.html#principle" class="xref-page">Redis ⟂ Postgres</a> hard boundary.
+      </p>
+
+      <!-- ═══ Job path ═══ A finite state machine; enqueue is idempotent
+           by job_id, a retry is the same job with the same id. -->
+      <div class="section" id="path">
+        <h2 class="section__title">Job path</h2>
+        <p class="note">
+          Enqueue is <strong>idempotent by <code>job_id</code></strong>: a repeat
+          with the same id spawns no second job. A retry is the same job, the same
+          id, a new attempt — not a second row in the journal.
+        </p>
+
+        <div class="sm">
+          <div class="sm__state sm__state--queued">
+            <span class="sm__name">queued</span>
+            <span class="sm__d">in the queue, waiting for a worker</span>
+          </div>
+          <div class="sm__edge"><span class="sm__lbl">enqueue</span></div>
+          <div class="sm__state sm__state--running">
+            <span class="sm__name">running</span>
+            <span class="sm__d">a worker took it · stamps a heartbeat</span>
+          </div>
+          <div class="sm__edge"><span class="sm__lbl">pick</span></div>
+          <div class="sm__fork">
+            <div class="sm__state sm__state--ok">
+              <span class="sm__name">succeeded</span>
+              <span class="sm__d">outcome in the consumer's row</span>
+            </div>
+            <div class="sm__state sm__state--fail">
+              <span class="sm__name">failed</span>
+              <span class="sm__d">error · into the DLQ policy</span>
+            </div>
+          </div>
+          <div class="sm__edge"><span class="sm__lbl">terminal</span></div>
+          <div class="sm__step">
+            <span class="sm__name">reaping</span>
+            <span class="sm__d">post-terminal · lock released, idempotency window</span>
+          </div>
+        </div>
+        <p class="note sm-note">
+          <strong>enqueue → queued → running → succeeded / failed → reaping.</strong>
+          Terminal and lock release are a separate step (see
+          <a href="#dlq" class="xref-anchor">terminal and DLQ</a>,
+          <a href="#uniqueness" class="xref-anchor">uniqueness</a>); a worker that
+          crashes without cleanup doesn't free the job — the watchdog reaps it (see
+          <a href="#heartbeat" class="xref-anchor">heartbeat</a>).
+        </p>
+      </div>
+
+      <!-- ═══ Heartbeat ═══ A live job's pulse into its own Postgres row; the
+           watchdog sees it go stale → reaps the run and releases the lock. -->
+      <div class="section" id="heartbeat">
+        <h2 class="section__title">Heartbeat and reaping</h2>
+        <p class="note">
+          The heartbeat is a <strong>live job's pulse</strong>: a long run stamps
+          <code>heartbeat_at</code> into its own Postgres row every ~30s. By that
+          pulse the watchdog tells a working job from a dead one.
+        </p>
+        <div class="duo">
+          <div class="duo__col duo__col--live">
+            <div class="duo__h">pulse present</div>
+            <div class="duo__t">job alive</div>
+            <div class="duo__d">
+              <code>heartbeat_at</code> is fresh — the worker is running; the
+              uniqueness lock holds and the next such job waits.
+            </div>
+          </div>
+          <div class="duo__col duo__col--dead">
+            <div class="duo__h">pulse gone stale</div>
+            <div class="duo__t">worker dead</div>
+            <div class="duo__d">
+              No pulse past the threshold → the watchdog reaps the run to
+              <code>failed / stale</code>, the uniqueness lock is released, the slot
+              is free.
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          Without a pulse a crashed job would stay <code>running</code> forever and
+          block the next one — reaping closes that deadlock.
+        </p>
+        <div class="decision-box">
+          <strong>The watchdog lives on the singleton scheduler.</strong>
+          Scanning for stale heartbeats is a periodic pass, not work every worker
+          does: otherwise <code>N</code> replicas would race each other on cleanup.
+          Its home is the same dedicated <a href="scheduling.html#cron" class="xref-page">singleton</a>
+          that ticks cron. The cost of that pairing: while the singleton is down,
+          reaping stalls too — a crashed job's lock isn't released, and that job
+          type waits for the replica to come back. The outage is bounded: on return
+          the watchdog immediately clears the stale work, and cadences are coarse —
+          acceptable for v1.
+        </div>
+        <div class="decision-box">
+          <strong>A planned stop is a graceful drain, not reaping.</strong>
+          The watchdog catches a <em>crash</em>; on an orderly restart (deploy,
+          SIGTERM) a worker drains cleanly: it stops taking new jobs, finishes the
+          ones in flight, then exits. If it doesn't finish in time, the job returns
+          to the queue and is picked up again: at-least-once delivery plus
+          idempotency by <a href="#uniqueness" class="xref-anchor">job_id</a> make
+          the retry safe.
+        </div>
+      </div>
+
+      <!-- ═══ Retries ═══ Two levels: short in-memory in the job, long via
+           defer/re-enqueue that frees the slot. -->
+      <div class="section" id="retry">
+        <h2 class="section__title">Retries</h2>
+        <p class="note">
+          Two levels by pause length — a short one we wait out inside the job, a
+          long one we return to the queue rather than keep a worker sleeping.
+        </p>
+        <div class="duo">
+          <div class="duo__col duo__col--short">
+            <div class="duo__h">short · ≤60s</div>
+            <div class="duo__t">in-memory, queue untouched</div>
+            <div class="duo__d">
+              The pause is tiny — the job waits and retries on its own; the broker
+              and the slot are unchanged. Cheaper than sending the job through the
+              queue and back.
+            </div>
+          </div>
+          <div class="duo__col duo__col--long">
+            <div class="duo__h">long · minutes–hours</div>
+            <div class="duo__t">defer / re-enqueue with delay</div>
+            <div class="duo__d">
+              A large <code>Retry-After</code> — the job returns to the queue with a
+              deferred start, and the worker slot is freed. We don't sleep inside the
+              job.
+            </div>
+          </div>
+        </div>
+        <div class="decision-box">
+          <strong>Reliability defaults are platform-wide, overridable by config.</strong>
+          Error classification decides whether to retry at all: transient (timeout,
+          429, temporary failure) → retry; permanent (validation, 4xx logic) →
+          straight to terminal, no wasted attempts. Backoff is exponential with full
+          jitter (the random spread damps the thundering herd — a synchronized rush
+          of retries after a shared outage), pause capped at ~300s, no more than ~5
+          attempts. The exact numbers are load tuning, not dogma.
+        </div>
+        <div class="spec">
+          <span class="spec__k">classify</span>
+          <span class="spec__v">transient → retry · permanent → terminal at once</span>
+          <span class="spec__k">backoff</span>
+          <span class="spec__v">exp + full jitter · cap ~300s</span>
+          <span class="spec__k">attempts</span>
+          <span class="spec__v">≤ 5, then terminal → DLQ policy</span>
+        </div>
+      </div>
+
+      <!-- ═══ Uniqueness ═══ Lock in Postgres (partial-UNIQUE + heartbeat),
+           NOT in the broker; a critical anchor — many links point here. -->
+      <div class="section" id="uniqueness">
+        <h2 class="section__title">Uniqueness</h2>
+        <p class="note">
+          Mutual exclusion is held by <strong>Postgres, not the broker</strong>:
+          a partial unique index next to the journal plus a
+          <a href="#heartbeat" class="xref-anchor">heartbeat</a>. The lock is
+          correctness-critical — that's why it lives where the system of record is.
+        </p>
+        <div class="decision-box">
+          <strong>The lock = a partial UNIQUE on active states.</strong>
+          <code>UNIQUE … WHERE state IN ('queued','running')</code> — while a job is
+          active, the index won't admit a second one with the same key. A repeat
+          launch (double click, scheduler race, retry) hits the index and gets
+          <code>skipped</code>, not a duplicate. After terminal the row falls out
+          from under the condition — the index is free again.
+        </div>
+        <div class="duo">
+          <div class="duo__col duo__col--live">
+            <div class="duo__h">succeeded · ~24h</div>
+            <div class="duo__t">idempotency window</div>
+            <div class="duo__d">
+              A successful <code>job_id</code> is held for the window, so a repeat
+              enqueue under at-least-once delivery doesn't run the job again.
+            </div>
+          </div>
+          <div class="duo__col duo__col--dead">
+            <div class="duo__h">failed · briefly</div>
+            <div class="duo__t">resubmit allowed</div>
+            <div class="duo__d">
+              A failed <code>job_id</code> is released quickly — an operator or the
+              retry policy is free to resubmit the same work.
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          The window's source of truth is the journal in Postgres; the key in Redis
+          (see <a href="redis-keys.html#blacklist" class="xref-page">ephemeral keys</a>)
+          is only a fast path, duplicating the journal rather than replacing it.
+        </p>
+        <div class="decision-box decision-box--warn">
+          <strong>Rejected: a distributed lock service (Redlock / SETNX).</strong>
+          Mutual exclusion is already held by the partial unique index plus a
+          heartbeat — a Redis lock isn't needed and, without fencing tokens, is
+          dangerous to correctness (a hung holder doesn't lose the lock). The same
+          axis as the <a href="redis-keys.html#principle" class="xref-page">Redis ⟂ Postgres</a> hard boundary.
+        </div>
+      </div>
+
+      <!-- ═══ Terminal and DLQ ═══ Outcome read by the consumer from its Postgres
+           row; DLQ — a table/status at the consumer, Redis only a backstop. -->
+      <div class="section" id="dlq">
+        <h2 class="section__title">Terminal and DLQ</h2>
+        <p class="note">
+          The <strong>consumer reads the terminal</strong>: a run's or delivery's
+          outcome is a status in its own Postgres row, not something lost in the
+          broker. Each consumer's failed jobs settle in its own home, from which a
+          curation pass re-picks them.
+        </p>
+        <div class="dlq">
+          <div class="dlq__row">
+            <span class="dlq__home">DLQ table</span>
+            <span class="dlq__d">
+              <a href="../../harvester/_workzone/reliability.html#dlq" class="xref-module">Harvester</a>
+              — failed items into a dead-letter table; <code>reconcile</code>
+              / dlq-retry re-picks.
+            </span>
+          </div>
+          <div class="dlq__row">
+            <span class="dlq__home">"not delivered" status</span>
+            <span class="dlq__d">
+              <a href="../../email/_workzone/delivery.html#errors" class="xref-module">Email</a>
+              and Notifications — a failure is marked on the delivery row, retry per
+              the retry policy.
+            </span>
+          </div>
+          <div class="dlq__row">
+            <span class="dlq__home">run row</span>
+            <span class="dlq__d">
+              <a href="../../knowledge-store/_workzone/lifecycle.html#curation-runs" class="xref-module">Knowledge Store</a>
+              — the run's terminal (<code>failed</code> with cause and step stats)
+              in <code>curation_runs</code>; the next curation pass reprocesses the
+              graph anew.
+            </span>
+          </div>
+          <div class="dlq__row">
+            <span class="dlq__home">run row</span>
+            <span class="dlq__d">
+              <a href="../../agent-engine/_workzone/data-model.html#agent-runs" class="xref-module">Agent Engine</a>
+              — the run's terminal (<code>failed</code> with cause) in the
+              <code>agent_runs</code> run row.
+            </span>
+          </div>
+        </div>
+        <div class="decision-box decision-box--warn">
+          <strong>Rejected: a durable DLQ queue in Redis.</strong>
+          A failure's durable home is Postgres at the consumer, not a separate queue
+          in the ephemeral layer. A Redis DLQ stays only a transport backstop on the
+          way to that home, not the place where failures are triaged.
+        </div>
+      </div>
+
+      <!-- ═══ Run contract ═══ Unifying the skeleton: shared field vocabulary +
+           watchdog + monitor; the data home and re-pick stay domain-owned. -->
+      <div class="section" id="contract">
+        <h2 class="section__title">Platform run contract</h2>
+        <p class="note">
+          We unify the <strong>contract</strong>. The lifecycle skeleton is one for
+          all consumers; the data home and the meaning of a re-pick are domain-owned.
+          That way the monitor and the watchdog work over any run without collapsing
+          different domains into one store.
+        </p>
+        <div class="spec">
+          <span class="spec__k">state</span>
+          <span class="spec__v"><code>queued · running · succeeded · failed</code> (+ <code>stale</code> as the watchdog's sub-outcome)</span>
+          <span class="spec__k">attempts</span>
+          <span class="spec__v">attempt counter against the retry cap</span>
+          <span class="spec__k">heartbeat_at</span>
+          <span class="spec__v">a live run's pulse; by it the watchdog spots a dead one</span>
+          <span class="spec__k">last_error</span>
+          <span class="spec__v">terminal cause + step stats</span>
+          <span class="spec__k">next_retry_at</span>
+          <span class="spec__v">deferred start of a retry; <code>NULL</code> if none scheduled</span>
+        </div>
+        <div class="duo">
+          <div class="duo__col duo__col--short">
+            <div class="duo__h">shared · platform</div>
+            <div class="duo__t">skeleton — one for all</div>
+            <div class="duo__d">
+              The fields above are a shared vocabulary (mixin), names aligned where
+              applicable. Not every consumer carries all of them: attempt counter and
+              deferred start only for those that retry by counter; KS re-picks with a
+              new run, not a retry. The
+              <a href="#heartbeat" class="xref-anchor">heartbeat → stale</a> watchdog
+              and the <a href="#uniqueness" class="xref-anchor">uniqueness</a> lock
+              are shared by any table under the contract.
+            </div>
+          </div>
+          <div class="duo__col duo__col--long">
+            <div class="duo__h">private · consumer</div>
+            <div class="duo__t">meaning — each its own</div>
+            <div class="duo__d">
+              The row's payload and the meaning of "redo the work" are domain-owned:
+              <a href="#dlq" class="xref-anchor">reconcile / next pass / resend</a>
+              differ per consumer. The data home stays with the consumer — the
+              proximity principle.
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          The monitor reads each run table in its own domain home and merges them in
+          the admin summary <code>(module, job_id, state, attempts, age, error)</code>:
+          one view of "what failed and where" without a central table. A single
+          <code>UNION ALL</code> projection across the run tables is a
+          <span class="iter v2">v2</span> convenience once the run tables grow many.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

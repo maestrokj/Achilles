@@ -1,0 +1,1089 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Cache &amp; Workers: Tests</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Cache &amp; Workers</a>
+        <h1 class="header__title">Tests</h1>
+        <div class="header__sub">cache-workers · workzone</div>
+      </div>
+
+      <div class="section" id="tests">
+        <!-- ── Overview band: decisions + stack ── -->
+        <div class="test-overview">
+          <div class="test-panel">
+            <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Decisions made</div>
+            <div class="decision-box">
+              <strong>We test the layer's conventions, not the libraries</strong>
+              Redis and SAQ as libraries are trusted to their authors — what's
+              checked here are <em>our</em> rules on top of them: task
+              uniqueness, cleanup of stale runs, retries and backoff, cache
+              policy, lane isolation. We don't duplicate the broker's and
+              driver's tests.
+            </div>
+            <div class="decision-box">
+              <strong>Uniqueness and cleanup — on a real DB and fake
+              time</strong>
+              The lock of a single active run is held by a partial-UNIQUE
+              Postgres index, not a check in code — so the test brings up a DB
+              and hits the index. Expiry of <code>heartbeat_at</code> and the
+              TTL/cron windows are driven through a stubbed clock
+              (<code>time-machine</code>), not by real waiting.
+            </div>
+            <div class="decision-box">
+              <strong>Rate-limit Lua — under concurrent load</strong>
+              Token-bucket / sliding-window atomicity is only visible under a
+              race: the test fires parallel requests and checks that not a single
+              one leaked past the limit — a sequential check wouldn't catch that
+              bug.
+            </div>
+          </div>
+
+          <div class="test-panel">
+            <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Stack and infrastructure</div>
+            <div class="test-stack-row">
+              <span class="test-stack-row__lbl"
+                >In place <span class="iter done">done</span></span
+              >
+              <span>pytest, pytest-asyncio</span>
+            </div>
+            <div class="test-stack-row">
+              <span class="test-stack-row__lbl">Redis</span>
+              <span
+                >fakeredis for unit key logic; a running Redis for Lua atomicity
+                and restart survival</span
+              >
+            </div>
+            <div class="test-stack-row">
+              <span class="test-stack-row__lbl">Time</span>
+              <span
+                >time-machine — cache TTL, <code>heartbeat_at</code> expiry,
+                cron windows and next-tick recomputation</span
+              >
+            </div>
+            <div class="test-stack-row">
+              <span class="test-stack-row__lbl">Worker</span>
+              <span
+                >the SAQ handler by direct call — without bringing up a worker or
+                really polling the queue</span
+              >
+            </div>
+            <div class="test-stack-row">
+              <span class="test-stack-row__lbl">Markers</span>
+              <span
+                ><code>@pytest.mark.unit</code> /
+                <code>@pytest.mark.integration</code> — by type;
+                <code>p0</code> / <code>p1</code> — by priority, orthogonal to
+                type</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ Unit ═══ Idempotency of enqueuing a task. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--unit">Unit · P0</span>
+          <span class="test-sec__title">Enqueue idempotency</span>
+          <span class="test-sec__meta">deterministic · every PR</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--unit">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 19H4.815a1.83 1.83 0 0 1-1.57-.881 1.785 1.785 0 0 1-.004-1.784L7.196 9.5" /><path d="M11 19h8.203a1.83 1.83 0 0 0 1.556-.89 1.784 1.784 0 0 0 0-1.775l-1.226-2.12" /><path d="m14 16-3 3 3 3" /><path d="M8.293 13.596 7.196 9.5 3.1 10.598" /><path d="m9.344 5.811 1.093-1.892A1.83 1.83 0 0 1 11.985 3a1.784 1.784 0 0 1 1.546.888l3.943 6.843" /><path d="m13.378 9.633 4.096 1.098 1.097-4.096" /></svg></span
+                ><span class="name">test_enqueue_idempotency.py</span>
+              </div>
+              <div class="test-card__sub">
+                A repeat of the same job_id is dropped, window after terminal
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Unit</span
+                ><span class="test-tag test-tag--p0">P0</span>
+                <a
+                  class="xref-badge xref-badge--page"
+                  href="lifecycle.html#uniqueness"
+                  >→ Uniqueness</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Cases</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">duplicate in queue</span
+                  ><span class="test-case__e"
+                    >a repeat enqueue of the same <code>job_id</code> while the
+                    task is still queued or running is dropped — no second task
+                    appears</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">window after success</span
+                  ><span class="test-case__e"
+                    >the <code>job_id</code> of a completed
+                    <code>succeeded</code> task is held for ~24h (time-machine) —
+                    a repeat within the window is dropped, past the window it goes
+                    through</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">window after failure</span
+                  ><span class="test-case__e"
+                    >after <code>failed</code> the window is short — the task can
+                    be re-enqueued sooner than after a success</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Integration P0 ═══ Uniqueness of the active run + stale cleanup. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p0"
+            >Integration · P0</span
+          >
+          <span class="test-sec__title">Uniqueness and stale cleanup</span>
+          <span class="test-sec__meta">DB · separate CI step</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p0">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span
+                ><span class="name">test_uniqueness_reaping.py</span>
+              </div>
+              <div class="test-card__sub">
+                A second active run is rejected by the index, a stale heartbeat is
+                cleaned up
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Integration</span
+                ><span class="test-tag test-tag--p0">P0</span>
+                <a
+                  class="xref-badge xref-badge--page"
+                  href="lifecycle.html#uniqueness"
+                  >→ Uniqueness</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Cases</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">second active rejected</span
+                  ><span class="test-case__e"
+                    >with a run still active, an attempt at a second is turned
+                    away by the partial-UNIQUE index — the race is absorbed by the
+                    database itself, not by a check in code alone</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">stale heartbeat → stale</span
+                  ><span class="test-case__e"
+                    >a worker died without closing the run → on
+                    <code>heartbeat_at</code> expiry (time-machine) the run is
+                    cleaned up to
+                    <code>failed/stale</code>
+                    (<a class="xref-page" href="lifecycle.html#heartbeat"
+                      >cleanup</a
+                    >)</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">lock released after cleanup</span
+                  ><span class="test-case__e"
+                    >after a stale run is cleaned up the lock is released and the
+                    next run starts — a zombie doesn't lock the task forever</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">reaping stalls with the singleton, drains on return</span
+                  ><span class="test-case__e"
+                    >the reaper lives on the singleton — while it's down, reaping
+                    stalls too and stale runs pile up; on return several
+                    accumulated stale runs are cleaned up in one pass, not one per
+                    tick
+                    (<a class="xref-page" href="lifecycle.html#heartbeat"
+                      >reaper on the singleton</a
+                    >)</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">graceful drain on SIGTERM</span
+                  ><span class="test-case__e"
+                    >a normal stop (not a crash): the worker finishes what it
+                    started, and an unfinished task returns to the queue and is
+                    picked up again — the repeat is safe by <code>job_id</code>
+                    idempotency, not via reaping
+                    (<a class="xref-page" href="lifecycle.html#heartbeat"
+                      >graceful drain</a
+                    >)</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Unit/Integration P0 ═══ Retries and backoff. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p0">Unit · P0</span>
+          <span class="test-sec__title">Retries and backoff</span>
+          <span class="test-sec__meta">logic is deterministic · every PR</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p0">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg></span
+                ><span class="name">test_retry_backoff.py</span>
+              </div>
+              <div class="test-card__sub">
+                Short vs long retry, classification, exp-backoff + jitter
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Unit</span
+                ><span class="test-tag test-tag--p0">P0</span>
+                <a class="xref-badge xref-badge--page" href="lifecycle.html#retry"
+                  >→ Retries</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Cases</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">short retry in-memory</span
+                  ><span class="test-case__e"
+                    >delay ≤60s — a retry within the same slot, without returning
+                    to the queue</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">long — defer/re-enqueue</span
+                  ><span class="test-case__e"
+                    >a delay beyond the threshold → the task is deferred and
+                    re-enqueued, the worker slot is freed for the wait</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">transient vs permanent</span
+                  ><span class="test-case__e"
+                    >a temporary failure is classified as
+                    <code>transient</code> and retried; a permanent one
+                    (<code>permanent</code>) goes to terminal at once, without
+                    attempts</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">exp-backoff + full jitter</span
+                  ><span class="test-case__e"
+                    >the delay grows exponentially with full jitter — two series
+                    of attempts don't coincide in timing</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">cap and attempt ceiling</span
+                  ><span class="test-case__e"
+                    >the delay hits an upper cap; on exhausting the attempt count
+                    the task goes to terminal, it doesn't retry forever</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Integration P1 ═══ Terminal and DLQ. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p1"
+            >Integration · P1</span
+          >
+          <span class="test-sec__title">Terminal and DLQ</span>
+          <span class="test-sec__meta">DB</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p1">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1" /><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" /><path d="M10 12h4" /></svg></span
+                ><span class="name">test_terminal_dlq.py</span>
+              </div>
+              <div class="test-card__sub">
+                Outcome in the consumer's row, failure by policy (not in Redis)
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Integration</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a class="xref-badge xref-badge--page" href="lifecycle.html#dlq"
+                  >→ Terminal and DLQ</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Cases</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">outcome isn't lost</span
+                  ><span class="test-case__e"
+                    >the run's result is written to the Postgres row of the
+                    consumer module — durable, surviving the task's completion in
+                    the broker</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">failure by policy</span
+                  ><span class="test-case__e"
+                    >a failure that has exhausted its attempts is recorded by the
+                    consumer's policy — a DLQ table / a “not delivered” status /
+                    <code>failed-items</code> — not into the durable Redis
+                    queue</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">the queue doesn't accumulate dead work</span
+                  ><span class="test-case__e"
+                    >the Redis queue doesn't accumulate terminal tasks — after
+                    terminal the record of it lives in Postgres, not in the
+                    broker</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Integration P1 ═══ Rate-limit atomicity. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p1"
+            >Integration · P1</span
+          >
+          <span class="test-sec__title">Rate-limit under load</span>
+          <span class="test-sec__meta">running Redis · concurrent</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p1">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4" /><path d="M3.34 19a10 10 0 1 1 17.32 0" /></svg></span
+                ><span class="name">test_rate_limit.py</span>
+              </div>
+              <div class="test-card__sub">
+                Lua atomicity under a race, restart survival
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Integration</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a
+                  class="xref-badge xref-badge--page"
+                  href="rate-limit.html#primitive"
+                  >→ Shared primitive</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Cases</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">nothing leaks past the limit</span
+                  ><span class="test-case__e"
+                    >a batch of parallel requests on token-bucket /
+                    sliding-window — exactly the limit is let through, none over:
+                    Lua counts atomically</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">one shared primitive for all</span
+                  ><span class="test-case__e"
+                    >one primitive serves different keys (provider, source) — the
+                    counters don't cross between keys</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">survives restart</span
+                  ><span class="test-case__e"
+                    >limit state lives in durable Redis — after a process restart
+                    the counter isn't reset, the window continues</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">failure mode on unavailability</span
+                  ><span class="test-case__e"
+                    >redis-durable unavailable at decision time → the primitive
+                    doesn't swallow the failure but hands it to the consumer; the
+                    safe default is fail-closed (protection blocks the guessing),
+                    a relaxation to fail-open is something the consumer declares
+                    deliberately
+                    (<a class="xref-page" href="rate-limit.html#consumers"
+                      >failure mode</a
+                    >)</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Unit/Integration P1 ═══ Cache: TTL and key composition (query + identity). -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p1">Unit · P1</span>
+          <span class="test-sec__title">Cache — TTL and key</span>
+          <span class="test-sec__meta">fakeredis + time-machine</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p1">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></svg></span
+                ><span class="name">test_cache.py</span>
+              </div>
+              <div class="test-card__sub">
+                Hit/miss, separation by key, TTL expiry
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Unit</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a class="xref-badge xref-badge--page" href="caching.html#policy"
+                  >→ Cache policy</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Cases</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">hit / miss</span
+                  ><span class="test-case__e"
+                    >the first request is a miss, it computes and stores; a repeat
+                    with the same key is a hit, the source isn't touched</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">key from query and identity</span
+                  ><span class="test-case__e"
+                    >a different identity or a different query yields a different
+                    key → miss: one user's candidates don't leak to another
+                    through the shared cache
+                    (<a class="xref-page" href="caching.html#key"
+                      >key composition</a
+                    >)</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">TTL expiry</span
+                  ><span class="test-case__e"
+                    >on TTL expiry (time-machine) the entry disappears — the next
+                    request misses and recomputes</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">the cache doesn't insist</span
+                  ><span class="test-case__e"
+                    >the cache is a hint, not the source of truth: on a
+                    discrepancy the trim re-checks against the source, the cached
+                    value isn't imposed</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Integration P1 ═══ Single-flight rebuild of a hot key. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p1"
+            >Integration · P1</span
+          >
+          <span class="test-sec__title">Cache — single-flight</span>
+          <span class="test-sec__meta">running Redis · concurrent miss</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p1">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20H2" /><path d="M11 4.562v16.157a1 1 0 0 0 1.242.97L19 20V5.562a2 2 0 0 0-1.515-1.94l-4-1A2 2 0 0 0 11 4.561z" /><path d="M11 4H8a2 2 0 0 0-2 2v14" /><path d="M14 12h.01" /><path d="M22 20h-3" /></svg></span
+                ><span class="name">test_cache_singleflight.py</span>
+              </div>
+              <div class="test-card__sub">
+                One rebuild per batch of misses, lock in durable
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Integration</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a class="xref-badge xref-badge--page" href="caching.html#policy"
+                  >→ Cache policy</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Cases</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">one computes, the rest wait</span
+                  ><span class="test-case__e"
+                    >a batch of parallel misses on a hot key — the expensive
+                    retrieval runs exactly once, the rest wait for the ready
+                    result, the source isn't rebuilt N times</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">lock in durable, not in cache</span
+                  ><span class="test-case__e"
+                    >the rebuild lock (<code>lock:</code>) lives in
+                    <code>redis-durable</code> — the LRU of the evictable cache
+                    won't drop it under memory, single-flight doesn't fall
+                    apart</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">the lock is released</span
+                  ><span class="test-case__e"
+                    >after a rebuild (success or failure) the lock is released —
+                    the next miss after TTL takes it anew, the key doesn't get
+                    stuck</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Integration P1 ═══ Lane isolation. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p1"
+            >Integration · P1</span
+          >
+          <span class="test-sec__title">Lane isolation</span>
+          <span class="test-sec__meta">separate worker pools</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p1">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3" /><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" /><circle cx="18" cy="5" r="3" /></svg></span
+                ><span class="name">test_lane_isolation.py</span>
+              </div>
+              <div class="test-card__sub">
+                The agents lane doesn't starve interactive, a lane failure stays
+                local
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Integration</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a class="xref-badge xref-badge--page" href="queues.html#lanes"
+                  >→ Three lanes</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Cases</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">the lane cap holds</span
+                  ><span class="test-case__e"
+                    >the <code>agents</code> lane, with its own cap, is saturated
+                    with tasks — the interactive lane is still served, it doesn't
+                    starve</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">a lane failure stays local</span
+                  ><span class="test-case__e"
+                    >a worker failure in one lane doesn't bring down the workers of
+                    another — the topology keeps the lanes apart
+                    (<a class="xref-page" href="queues.html#worker"
+                      >worker topology</a
+                    >)</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Unit P1 ═══ Unfolding cron windows from local time to UTC. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--unit">Unit · P1</span>
+          <span class="test-sec__title">Cron windows — timezone and tick</span>
+          <span class="test-sec__meta">time-machine · deterministic</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--unit">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg></span
+                ><span class="name">test_cron_timezone.py</span>
+              </div>
+              <div class="test-card__sub">
+                Naive window → UTC by zone, NULL → organization's zone
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Unit</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a class="xref-badge xref-badge--page" href="scheduling.html#cron"
+                  >→ Windows in UTC</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Cases</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">org-zone window → UTC</span
+                  ><span class="test-case__e"
+                    >a naive <code>HH:MM</code> is unfolded to UTC via
+                    <code>platform_settings.timezone</code> (IANA) — the tick
+                    lands on the right moment, not on local hours taken as
+                    UTC</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">owner's zone, NULL → org</span
+                  ><span class="test-case__e"
+                    >an agent schedule is computed by the owner's
+                    <code>timezone</code>; <code>NULL</code> falls back to the
+                    organization's zone — not UTC and not the server's zone</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">DST boundary</span
+                  ><span class="test-case__e"
+                    >recomputing the next tick across a daylight-saving transition
+                    (time-machine) doesn't shift the window by an hour or lose a
+                    tick</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Integration P1 ═══ Singleton scheduler. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p1"
+            >Integration · P1</span
+          >
+          <span class="test-sec__title">Singleton scheduler</span>
+          <span class="test-sec__meta">several replicas · one tick</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p1">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></svg></span
+                ><span class="name">test_scheduler_singleton.py</span>
+              </div>
+              <div class="test-card__sub">
+                Cron tick and next_run_at scan: once per N replicas, batch of due
+                runs
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Integration</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a
+                  class="xref-badge xref-badge--page"
+                  href="scheduling.html#cron"
+                  >→ Scheduler</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Cases</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">one tick — one task</span
+                  ><span class="test-case__e"
+                    >a cron tick with N scheduler replicas publishes the task
+                    once, not N times (time-machine on the cron window)</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">double run absorbed</span
+                  ><span class="test-case__e"
+                    >a race of two replicas on one tick is absorbed by the
+                    uniqueness lock — the second publish is turned away
+                    (<a class="xref-page" href="lifecycle.html#uniqueness"
+                      >uniqueness</a
+                    >)</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">next_run_at scan — all due</span
+                  ><span class="test-case__e"
+                    >the second trigger source: one pass over agent schedules
+                    publishes <em>every</em> run whose <code>next_run_at</code>
+                    has already arrived — not the first one found and not one per
+                    tick
+                    (<a class="xref-page" href="scheduling.html#cron"
+                      >two sources</a
+                    >)</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">a missed tick isn't caught up</span
+                  ><span class="test-case__e"
+                    >a tick that fell on the singleton's downtime is
+                    <em>not</em> published retroactively on return — we don't
+                    backfill, we wait for the next window (time-machine skips the
+                    scheduled window)
+                    (<a class="xref-page" href="scheduling.html#cron"
+                      >missed tick</a
+                    >)</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Integration P1 ═══ pub/sub for push notifications. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p1"
+            >Integration · P1</span
+          >
+          <span class="test-sec__title">pub/sub for push notifications</span>
+          <span class="test-sec__meta">fan-out to subscribers · poll fallback</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p1">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0" /><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" /></svg></span
+                ><span class="name">test_pubsub_push.py</span>
+              </div>
+              <div class="test-card__sub">
+                The signal reaches all subscribers, a miss is harmless
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Integration</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a class="xref-badge xref-badge--page" href="redis-keys.html#instances"
+                  >→ pub/sub channel</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Cases</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">fan-out to subscribers</span
+                  ><span class="test-case__e"
+                    >a published signal is received by all hanging subscribers — an
+                    event from one api replica reaches a connection on another</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">a miss is harmless</span
+                  ><span class="test-case__e"
+                    >a subscriber missed a publish (no connection at the moment of
+                    the event) — the next poll catches up the counter, the truth in
+                    Postgres isn't lost</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Integration P1 ═══ Dedup of inbound deliveries. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p1"
+            >Integration · P1</span
+          >
+          <span class="test-sec__title">Dedup of inbound deliveries</span>
+          <span class="test-sec__meta">running Redis · time-machine</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p1">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg></span
+                ><span class="name">test_webhook_dedup.py</span>
+              </div>
+              <div class="test-card__sub">
+                One event — one delivery; receipt window, key in durable
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Integration</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a
+                  class="xref-badge xref-badge--page"
+                  href="redis-keys.html#registry"
+                  >→ Key registry</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Cases</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">a repeat in the window is dropped</span
+                  ><span class="test-case__e"
+                    >the same inbound delivery repeated (<code>dedup:webhook:</code>
+                    / <code>dedup:slack-event:</code> /
+                    <code>dedup:telegram-update:</code>) within the window is
+                    dropped — the event is processed exactly once</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">after TTL it goes through again</span
+                  ><span class="test-case__e"
+                    >on the receipt window's expiry (time-machine) the mark fades —
+                    the same delivery goes through again, it doesn't get stuck
+                    forever</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">key in the durable instance</span
+                  ><span class="test-case__e"
+                    >the dedup key lives in <code>redis-durable</code>, not in the
+                    cache — the LRU won't drop it within the receipt window and a
+                    repeat won't leak through</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">orthogonal to dedup:job:</span
+                  ><span class="test-case__e"
+                    >inbound-delivery dedup (an event) and the idempotency of
+                    <code>dedup:job:</code> (enqueuing a task) — different
+                    namespaces, they don't overlap
+                    (<a class="xref-page" href="redis-keys.html#blacklist"
+                      >one event — one delivery</a
+                    >)</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Integration P1 ═══ Durable memory policy. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p1"
+            >Integration · P1</span
+          >
+          <span class="test-sec__title">Durable memory policy</span>
+          <span class="test-sec__meta">running Redis · maxmemory</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p1">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 19v-3" /><path d="M10 19v-3" /><path d="M14 19v-3" /><path d="M18 19v-3" /><path d="M8 11V9" /><path d="M16 11V9" /><path d="M12 11V9" /><path d="M2 15h20" /><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1.1a2 2 0 0 0 0 3.837V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5.1a2 2 0 0 0 0-3.837Z" /></svg></span
+                ><span class="name">test_memory_policy.py</span>
+              </div>
+              <div class="test-card__sub">
+                noeviction: write rejection instead of silent eviction,
+                backpressure
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Integration</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a
+                  class="xref-badge xref-badge--page"
+                  href="redis-keys.html#instances"
+                  >→ Two instances</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Cases</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">cap → rejection, not eviction</span
+                  ><span class="test-case__e"
+                    >on reaching <code>maxmemory</code> on
+                    <code>redis-durable</code> a new write is rejected with an
+                    error (<code>noeviction</code>) — data isn't dropped
+                    silently</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">producer backpressure</span
+                  ><span class="test-case__e"
+                    >the producer hits the write rejection and slows down — the
+                    instance doesn't grow unbounded and doesn't run into the OOM
+                    killer</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">durable survives pressure, cache goes under LRU</span
+                  ><span class="test-case__e"
+                    >under the same memory pressure a durable key stays put, while
+                    a cache key is evicted by LRU — the roles are separated
+                    physically, not by the policy of one instance</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Structure ═══ Test catalog: level by directory, priority by markers. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--struct">Structure</span>
+          <span class="test-sec__title">Test file structure</span>
+        </div>
+        <div class="test-struct">
+          <p class="test-struct__lead">
+            The split is by type. <code>unit/</code> runs on every PR
+            deterministically — fakeredis and a stubbed clock, without a running
+            DB or real waiting: cache key logic, idempotency, backoff.
+            <code>integration/</code> — as a separate, rarer step on a running
+            DB and Redis: uniqueness and cleanup hit the index, rate-limit is
+            raced concurrently, lanes and the scheduler are checked on real
+            pools. Priority (P0–P1) is orthogonal to the directories and set by
+            markers (<code>pytest -m p0</code>).
+          </p>
+          <div class="test-tree">
+            <ul>
+              <li>
+                <span class="test-tree__row"
+                  ><code>tests/cache_workers/</code
+                  ><span class="d">module directory</span></span
+                >
+                <ul>
+                  <li>
+                    <span class="test-tree__row"
+                      ><code>conftest.py</code
+                      ><span class="d"
+                        >fakeredis / running Redis · time-machine · task and run
+                        factories · SAQ handler directly</span
+                      ></span
+                    >
+                  </li>
+                  <li>
+                    <span class="test-tree__row"
+                      ><code>unit/</code
+                      ><span class="d"
+                        >deterministic, every PR — without a DB or real
+                        waiting</span
+                      ></span
+                    >
+                    <ul>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code>test_enqueue_idempotency.py</code
+                          ><span class="d"
+                            >job_id repeat and the window after terminal</span
+                          ></span
+                        >
+                      </li>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code>test_retry_backoff.py</code
+                          ><span class="d"
+                            >classification, exp-backoff + jitter, cap and
+                            ceiling</span
+                          ></span
+                        >
+                      </li>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code>test_cache.py</code
+                          ><span class="d"
+                            >key composition, isolation by identity, TTL</span
+                          ></span
+                        >
+                      </li>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code>test_cron_timezone.py</code
+                          ><span class="d"
+                            >unfolding a cron window to UTC, NULL → org zone, DST</span
+                          ></span
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <span class="test-tree__row"
+                      ><code>integration/</code
+                      ><span class="d">running DB and Redis</span></span
+                    >
+                    <ul>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code>test_uniqueness_reaping.py</code
+                          ><span class="d"
+                            >uniqueness on the partial-UNIQUE index, stale cleanup
+                            by heartbeat, graceful drain on SIGTERM</span
+                          ></span
+                        >
+                      </li>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code>test_terminal_dlq.py · test_rate_limit.py</code
+                          ><span class="d"
+                            >consumer terminal/DLQ, rate-limit under concurrent
+                            load and failure mode</span
+                          ></span
+                        >
+                      </li>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code>test_cache_singleflight.py</code
+                          ><span class="d"
+                            >one rebuild per batch of misses, lock in
+                            durable</span
+                          ></span
+                        >
+                      </li>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code
+                            >test_lane_isolation.py ·
+                            test_scheduler_singleton.py</code
+                          ><span class="d"
+                            >lane isolation, singleton scheduler across N
+                            replicas</span
+                          ></span
+                        >
+                      </li>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code
+                            >test_webhook_dedup.py ·
+                            test_memory_policy.py</code
+                          ><span class="d"
+                            >dedup of inbound deliveries within the receipt
+                            window, noeviction on durable and backpressure</span
+                          ></span
+                        >
+                      </li>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code>test_pubsub_push.py</code
+                          ><span class="d"
+                            >fan-out of a signal to subscribers, poll catch-up on
+                            a miss</span
+                          ></span
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

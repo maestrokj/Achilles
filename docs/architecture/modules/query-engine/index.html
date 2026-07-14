@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Query Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="query-engine.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <!-- ═══ Header ═══ -->
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← Back to architecture</a>
+        <h1 class="header__title">Query Engine</h1>
+        <div class="header__sub">conversation · RAG on demand · grounding</div>
+      </div>
+
+      <!-- ═══ Description ═══ Conversation orchestrator, not just RAG. The turn is
+           led by a chat model holding the search_knowledge tool; retrieval is
+           optional. Search and ACL belong to KS, not here. -->
+      <p class="desc">
+        Orchestrator of the user <strong>conversation</strong> — not just RAG.
+        The turn is led by a <strong>chat model</strong> chosen by the user; it holds
+        the <code>search_knowledge</code> tool (when the base is non-empty) and decides
+        on each message whether to reach into the base. Small talk — it answers from
+        itself; a knowledge question — it calls search and builds the answer on what it
+        retrieved, with streaming and citations. Retrieval itself (search and the ACL
+        pre-filter) belongs to
+        <a href="../knowledge-store/_workzone/hybrid-search.html" class="xref-module"
+          >Knowledge Store</a
+        >; Query Engine does not do it — it invokes it as a tool.
+      </p>
+
+      <!-- ═══ Signature diagram ═══ A poster of four pillars: grasp at a glance,
+           no reading. 01 Dialog — QE owns the conversation (stateful), surfaces are
+           thin clients. 02 Model decides — the chat model leads the turn, holds one
+           tool search_knowledge; the fork is conversational/grounded. 03 RAG route
+           — five steps Embed→Retrieve→Rerank→Augment→Generate, the ownership seam on
+           the belt (Embed/Retrieve — KS, the rest — QE). 04 Grounding — the answer
+           contract. The footnote ribbon carries the secondary facts (one call without
+           a loop · Agent Engine bypasses QE · streaming). The workzone holds the depth. -->
+      <div class="section">
+        <div class="qe-arch">
+        <h2 class="section__title">Architecture</h2>
+        <p class="qe-pillars__sub">Four pillars of the module</p>
+
+        <div class="qe-pillars">
+          <!-- Pillar 1 — DIALOG: QE owns the turn, stateful; surfaces are thin. -->
+          <div class="qe-pillar qe-pillar--dialog">
+            <span class="qe-pillar__num">01</span>
+            <div class="qe-pillar__glyph">⟨ ⟩</div>
+            <h3 class="qe-pillar__title">Dialog</h3>
+            <p class="qe-pillar__lead">
+              Query Engine is a <b>conversation orchestrator</b>, not just RAG. It
+              holds the state; surfaces are thin clients.
+            </p>
+            <div class="qe-pillar__spacer"></div>
+            <div class="qe-chips">
+              <span class="qe-chip">conversations</span>
+              <span class="qe-chip">messages</span>
+              <span class="qe-chip">retrieval_trace</span>
+              <span class="qe-chip">access_counter</span>
+            </div>
+          </div>
+
+          <!-- Pillar 2 — MODEL DECIDES: leads the turn, one tool, a fork. -->
+          <div class="qe-pillar qe-pillar--model">
+            <span class="qe-pillar__num">02</span>
+            <div class="qe-pillar__glyph">✦</div>
+            <h3 class="qe-pillar__title">Model decides</h3>
+            <p class="qe-pillar__lead">
+              The turn is led by a <b>chat model</b>
+              <span class="ai-tag" title="This step uses a neural network — model inference"
+                ><span class="ai-tag__icon"></span>AI</span
+              >
+              — one tool in hand.
+            </p>
+            <span class="qe-tool">search_knowledge</span>
+            <div class="qe-fork">
+              <div class="qe-branch qe-branch--talk">
+                <span class="qe-branch__key">↩</span>
+                <span><b>Small talk</b> — answers from itself, no citations</span>
+              </div>
+              <div class="qe-branch qe-branch--know">
+                <span class="qe-branch__key">⇲</span>
+                <span><b>To the knowledge</b> — calls <code>search_knowledge</code></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Pillar 3 — RAG ROUTE: five steps, the KS|QE ownership seam on the belt. -->
+          <div class="qe-pillar qe-pillar--rag">
+            <span class="qe-pillar__num">03</span>
+            <div class="qe-pillar__glyph">▸▸▸</div>
+            <h3 class="qe-pillar__title">RAG route</h3>
+            <p class="qe-pillar__lead">
+              One call — five steps. The ownership boundary runs along the belt.
+            </p>
+            <div class="qe-rag">
+              <div class="qe-precheck">◇ <b>exact cache?</b> → skips the belt</div>
+              <div class="qe-belt">
+                <span class="qe-step qe-step--ks">Embed</span>
+                <span class="qe-belt__arr">›</span>
+                <span class="qe-step qe-step--ks">Retrieve</span>
+                <span class="qe-belt__arr">›</span>
+                <span class="qe-step qe-step--qe">Rerank</span>
+                <span class="qe-belt__arr">›</span>
+                <span class="qe-step qe-step--qe">Augment</span>
+                <span class="qe-belt__arr">›</span>
+                <span class="qe-step qe-step--qe">Generate</span>
+              </div>
+              <div class="qe-owners">
+                <span class="qe-owner qe-owner--ks"
+                  ><span class="qe-owner__dot"></span><b>KS</b><span>·2</span></span
+                >
+                <span class="qe-owner qe-owner--qe"
+                  ><span class="qe-owner__dot"></span><b>QE</b><span>·3</span></span
+                >
+              </div>
+            </div>
+          </div>
+
+          <!-- Pillar 4 — GROUNDING: the answer contract, three promises. -->
+          <div class="qe-pillar qe-pillar--ground">
+            <span class="qe-pillar__num">04</span>
+            <div class="qe-pillar__glyph"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg></div>
+            <h3 class="qe-pillar__title">Grounding</h3>
+            <p class="qe-pillar__lead">The answer contract — three promises.</p>
+            <div class="qe-vows">
+              <div class="qe-vow">
+                <span class="qe-vow__mark">✓</span>
+                <span><b>Only from what was retrieved</b> — not from the model's memory</span>
+              </div>
+              <div class="qe-vow">
+                <span class="qe-vow__mark">¶</span>
+                <span><b>A citation per record</b> — for every claim</span>
+              </div>
+              <div class="qe-vow">
+                <span class="qe-vow__mark">∅</span>
+                <span>An honest <b>“not found”</b> over a guess</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- footnote ribbon — secondary facts -->
+        <div class="qe-foot">
+          <span class="qe-foot__item"
+            ><span class="qe-foot__g">↻</span
+            ><span>one optional call <b>without a loop</b></span></span
+          >
+          <span class="qe-foot__item"
+            ><span class="qe-foot__g">⤳</span
+            ><span><b>Agent Engine</b> bypasses Query Engine</span></span
+          >
+          <span class="qe-foot__item"
+            ><span class="qe-foot__g">⇉</span
+            ><span>answer: <b>answer + citations</b>, streamed</span></span
+          >
+        </div>
+        </div>
+      </div>
+
+      <!-- audit: intentional — thematic inline labels on cross-links (“the
+           retrieval layer's concern”, “staleness-decay”, “resolve-join”, “ACL grant”,
+           etc.) throughout the module are accepted as the norm: README §Cross-references
+           asks for the target name, but corpus practice (auth-security, knowledge-store)
+           de facto uses thematic labels for inline links. Not a defect of this module;
+           if the rule is to be enforced, do it in a separate corpus-wide pass plus a
+           README edit. -->
+
+      <!-- ═══ API ═══ Full contract paths of the module under version. -->
+      <section class="section" id="api">
+        <div class="section__title">API</div>
+        <ul class="api-list">
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/conversations</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/conversations/{id}</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/conversations/{id}/messages · SSE</span></li>
+          <li><span class="api-list__m">PATCH</span><span class="api-list__p">/api/v1/messages/{id}/feedback</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/chat/models</span></li>
+        </ul>
+      </section>
+
+      <!-- ═══ Workzone ═══ -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Design</span>
+        </div>
+        <p class="workzone-hint">
+          Detailed design decisions for the module.
+        </p>
+
+        <div class="wz-nav">
+          <a class="wz-link" href="_workzone/rag-pipeline.html">
+            <span>RAG route</span>
+          </a>
+          <a class="wz-link" href="_workzone/conversation.html">
+            <span>Dialog</span>
+          </a>
+          <a class="wz-link" href="_workzone/grounding.html">
+            <span>Grounding and citations</span>
+          </a>
+          <a class="wz-link" href="_workzone/retrieval.html">
+            <span>Boundary with Knowledge Store</span>
+          </a>
+          <a class="wz-link" href="_workzone/protection.html">
+            <span>Protection and privacy</span>
+          </a>
+          <a class="wz-link" href="_workzone/data-model.html">
+            <span>Data model</span>
+          </a>
+          <a class="wz-link" href="_workzone/stack.html">
+            <span>Stack</span>
+          </a>
+          <a class="wz-link" href="_workzone/tests.html">
+            <span>Tests</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ═══ Wireframes ═══ Query Engine has no frontend of its own: the
+           conversation and answer are rendered by the surfaces. Chat screens live in
+           Web App; here a pointer, while the answer contract lives in the workzone
+           (grounding). -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Wireframes</span>
+          <span class="workzone-title">Surfaces</span>
+        </div>
+        <p class="workzone-hint">
+          The module has no frontend of its own — the conversation and answer are
+          rendered by the surfaces as thin clients of one shared API. The chat screens
+          (grounded answer, answer states) live in
+          <a href="../web-app/index.html" class="xref-module">Web App</a>; the grounding
+          contract itself lives in the workzone,
+          <a href="_workzone/grounding.html" class="xref-page">Grounding</a>.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

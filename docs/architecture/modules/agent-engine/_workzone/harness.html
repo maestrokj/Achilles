@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Tool-calling harness: the shared layer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="harness.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Agent Engine</a>
+        <h1 class="header__title">Tool-calling harness</h1>
+        <div class="header__sub">shared layer · Query Engine + Agent Engine</div>
+      </div>
+
+      <p class="desc">
+        Beneath both of our AI engines lies <strong>one mechanism</strong>: a
+        chat model, handed tools, calls them by name and gets the result back
+        into context. Both
+        <a href="../../query-engine/_workzone/rag-pipeline.html#agent-boundary" class="xref-module"
+          >Query Engine</a> and Agent Engine stand on it — which makes the
+        harness <strong>cross-cutting</strong>, owned by no single module and
+        not copied into each. What matters: the shared part is <em>not the
+        loop</em>. The loop is an Agent Engine superstructure; Query Engine runs
+        no loop at all. The shared layer is thinner — it is tool-calling itself,
+        while “how many tools and whether there's a loop” each module sets from
+        above.
+      </p>
+
+      <!-- ════════════════ SHARED PRIMITIVE ════════════════
+           chat client with tool-calling: hands the model tool descriptions,
+           dispatches the requested call by name, puts the result into context.
+           This is the whole shared layer — no loop, no specific tool set,
+           no stop condition: modules add those from above. -->
+      <div class="section" id="primitive">
+        <div class="section__title">The shared primitive: model ↔ tool ↔ context</div>
+        <p class="desc">
+          The harness is a <strong>chat client with tool-calling</strong>. It
+          does exactly three things and nothing more: hands the model
+          descriptions of the available tools, catches the call the model
+          requests and dispatches it <strong>by name</strong>, and returns the
+          tool's result to the model's context. That is where the shared layer
+          ends.
+        </p>
+
+        <div class="hn-core">
+          <div class="hn-flow">
+            <div class="hn-node hn-node--model">
+              <span class="ai-tag" title="This step uses a neural network — model inference"
+                ><span class="ai-tag__icon"></span>AI</span
+              >
+              <span class="hn-node__t">chat model</span>
+              <span class="hn-node__s">in hand — tool descriptions</span>
+            </div>
+            <div class="hn-edge">
+              <span class="hn-edge__arr">──▶</span>
+              <span class="hn-edge__lbl">asks for a call by name + arguments</span>
+            </div>
+            <div class="hn-node hn-node--disp">
+              <span class="hn-node__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z" /></svg></span>
+              <span class="hn-node__t">dispatch by name</span>
+              <span class="hn-node__s">runs the requested tool</span>
+            </div>
+            <div class="hn-edge">
+              <span class="hn-edge__arr">──▶</span>
+              <span class="hn-edge__lbl">result as data, not a command</span>
+            </div>
+            <div class="hn-node hn-node--ctx">
+              <span class="hn-node__g">▤</span>
+              <span class="hn-node__t">context</span>
+              <span class="hn-node__s">the turn accumulates</span>
+            </div>
+          </div>
+          <div class="hn-core__back">
+            ↻ the model reads the result and decides what's next — <b>how many
+            times to repeat is set by the module above</b>, not the harness
+          </div>
+        </div>
+
+        <div class="hn-mech">
+          <div class="hn-mech__item">
+            <div class="hn-mech__h">Tool descriptions</div>
+            <div class="hn-mech__d">
+              the model is told what is available to it and how to call it; the
+              set itself is a
+              <a href="#params" class="xref-anchor">module parameter</a>, and its
+              source is the <a href="../../ai-foundation/_workzone/tool-catalog.html#surfaces" class="xref-module">tool catalog</a>.
+            </div>
+          </div>
+          <div class="hn-mech__item">
+            <div class="hn-mech__h">Dispatch by name</div>
+            <div class="hn-mech__d">
+              the requested call is matched to a handler by name and executed;
+              tool names and bodies belong to the module.
+            </div>
+          </div>
+          <div class="hn-mech__item">
+            <div class="hn-mech__h">Context accumulation</div>
+            <div class="hn-mech__d">
+              the result is returned to the model's window as data; on it the
+              model builds the next step or the final answer.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ TWO PARAMETERIZATIONS ════════════════
+           One harness, two settings along two axes: tool set ×
+           stop condition. QE — search core + catalog presets, stop after
+           one round (no loop). AE — KS core + owner's choice, stop at the
+           iteration cap (loop present). -->
+      <div class="section" id="params">
+        <div class="section__title">One harness — two parameterizations</div>
+        <p class="desc">
+          The modules diverge along exactly two axes: <strong>tool set</strong>
+          and <strong>stop condition</strong>. Everything else is the shared
+          primitive above. Both sides draw their set from the shared
+          <a href="../../ai-foundation/_workzone/tool-catalog.html#surfaces" class="xref-module">tool
+            catalog</a>: chat gets the search core plus the presets enabled in
+          the catalog and answers after one round; Agent Engine gets the three
+          KS cores plus the owner's choice, with a loop up to a cap.
+        </p>
+
+        <div class="hn-fork">
+          <div class="hn-col hn-col--qe">
+            <div class="hn-col__head">
+              <span class="hn-col__who">Query Engine</span>
+              <a class="xref-badge" href="../../query-engine/_workzone/rag-pipeline.html#agent-boundary"
+                >→ boundary</a
+              >
+            </div>
+            <div class="hn-col__axis">
+              <span class="hn-col__k">set</span>
+              <span class="hn-col__v"><code>search_knowledge</code> core + catalog presets</span>
+            </div>
+            <div class="hn-col__axis">
+              <span class="hn-col__k">stop</span>
+              <span class="hn-col__v">one round (1..N in parallel), then answer — <b>no loop</b></span>
+            </div>
+            <p class="hn-col__d">
+              The search core plus the presets the admin enabled; per turn, one
+              round with 1..N calls in parallel (e.g. knowledge + web), then the
+              answer straight away. There is no multi-round loop — the turn stays
+              predictable.
+            </p>
+          </div>
+
+          <div class="hn-fork__axis">
+            <span class="hn-fork__base">shared primitive</span>
+            <span class="hn-fork__split">▴</span>
+          </div>
+
+          <div class="hn-col hn-col--ae">
+            <div class="hn-col__head">
+              <span class="hn-col__who">Agent Engine</span>
+              <a class="xref-badge xref-badge--page" href="runtime.html#loop"
+                >→ agentic loop</a
+              >
+            </div>
+            <div class="hn-col__axis">
+              <span class="hn-col__k">set</span>
+              <span class="hn-col__v">3 KS cores (<code>search</code> · <code>graph</code> · <code>sql</code>) + owner's catalog choice</span>
+            </div>
+            <div class="hn-col__axis">
+              <span class="hn-col__k">stop</span>
+              <span class="hn-col__v">iteration cap — <b>loop present</b></span>
+            </div>
+            <p class="hn-col__d">
+              The model drives the turn itself: it thinks, picks a tool, reads,
+              repeats — until it has an answer or hits the cap. That is the
+              agentic loop.
+            </p>
+          </div>
+        </div>
+
+        <p class="note">
+          <strong>The KS tool set is conditional on how full the store is.</strong>
+          Both columns above get the Knowledge Store core only when the store is
+          non-empty. The harness reads the derived property
+          <a href="../../knowledge-store/_workzone/hybrid-search.html#emptiness" class="xref-module"
+            ><code>is_empty</code></a> and, on an empty index, does not put the KS
+          tools into the model's schema at all — uniformly for chat
+          (<code>search_knowledge</code>) and agent (the
+          <code>search</code> · <code>graph</code> · <code>sql</code> core). This
+          is not a third axis of divergence but a shared filter on the set: a
+          model with no data gets no search and answers from itself. Once the
+          store fills, the tools return on their own, with no configuration or
+          restart.
+        </p>
+      </div>
+
+      <!-- ════════════════ LAYER BOUNDARY ════════════════
+           Via negativa: what the harness shares vs. what stays with the modules.
+           The layer is thin on purpose — the loop, cap, rights, journal, and
+           grounding route are NOT shared. So the reader does not mistake the
+           whole loop for something shared. -->
+      <div class="section" id="layer-boundary">
+        <div class="section__title">The layer boundary: what is shared, what is not</div>
+        <p class="desc">
+          The layer is deliberately thin. The shared primitive drags along
+          neither the loop, nor rights, nor storage — otherwise it would stop
+          being shared. Everything specific stays the home of its own module and
+          references the harness rather than repeating it.
+        </p>
+
+        <div class="hn-split">
+          <div class="hn-split__col hn-split__col--shared">
+            <div class="hn-split__h"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z" /></svg> The harness shares</div>
+            <ul class="hn-split__list">
+              <li>chat client with tool-calling</li>
+              <li>dispatch of a call by name</li>
+              <li>accumulation of the result in context</li>
+            </ul>
+          </div>
+          <div class="hn-split__col">
+            <div class="hn-split__h">Stays in Agent Engine</div>
+            <ul class="hn-split__list">
+              <li>the loop and the <a href="runtime.html#loop" class="xref-page">iteration cap</a></li>
+              <li>the three tools and <a href="runtime.html#tools" class="xref-page">their bodies against KS</a></li>
+              <li><a href="identity.html#owner-rights" class="xref-page">identity rights</a>, the run journal</li>
+              <li>composition of the <a href="runtime.html#prompt-composition" class="xref-page">prompt layers</a></li>
+            </ul>
+          </div>
+          <div class="hn-split__col">
+            <div class="hn-split__h">Stays in Query Engine</div>
+            <ul class="hn-split__list">
+              <li>the <a href="../../query-engine/_workzone/rag-pipeline.html#route" class="xref-module">search route</a> (5 steps)</li>
+              <li>the “one round, no loop” condition</li>
+              <li>context packing and citation</li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="note">
+          The harness is the first resident of the cross-cutting
+          <strong>AI layer</strong>: by nature the
+          <a href="../../knowledge-store/_workzone/embedding-runtime.html" class="xref-module"
+            >shared embedder</a>
+          and the
+          <a href="../../admin-panel/_wireframes/ai-behavior.html#composition" class="xref-module"
+            >platform prompt</a> stand alongside it — the same kind of shared AI
+          machinery. For now each has its own home; the layer gives them a common
+          address without relocating them.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

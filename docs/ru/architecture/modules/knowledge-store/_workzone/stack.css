@@ -1,0 +1,7 @@
+/* Knowledge Store — stack & structure page deltas, on top of the swl-* kit.
+   Backend-only module (one Backend lane). Its only addition is filling the
+   kit's .swl-defer callout with the deferred-engines decision ("не в v1")
+   below the lane — no bespoke CSS; lane, columns, groups, pills, notes and
+   the callout shape all come from modules/swimlane.css.
+   Loaded by _workzone/stack.html on top of ../../swimlane.css.
+   Placement convention: docs/architecture/README.md §Styling. */

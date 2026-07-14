@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Invite Accept</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Invite Accept</h1>
+        <div class="header__sub">
+          auth / security · wireframes · public
+          <a class="in-load in-load--spinner" href="../../shared-ui/_wireframes/loading-states.html#spinner" title="Waiting on an action — spinner">
+            <span class="in-load__icon"></span>loading
+          </a>
+        </div>
+      </div>
+
+      <p class="desc">
+        Creating an account from an invitation issued in
+        <a href="../../admin-panel/_wireframes/users.html#invites" class="xref-module">Admin Panel</a>.</p>
+
+      <!-- ═══ Wireframe ═══ -->
+      <div class="section">
+        <div class="section__title">Wireframe</div>
+        <div class="wf-stage">
+          <div class="wf-frame">
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/invite/9c2f4e…7a
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/invite/&lt;token&gt; · public</span>
+                      <span class="wf-urltip__body">One-time link from email — access without signing in.</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                      <h2 class="wf-title">Accept invitation</h2>
+                      <p class="wf-subtitle">
+                        Anna Petrova is inviting you to Achilles. Create an
+                        account to sign in.
+                      </p>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Email</span>
+                      <div class="wf-input wf-input--locked">
+                        dmitry@company.com
+                        <span class="wf-input__action" title="Field set by the invitation, can't be changed">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                        </span>
+                        <span class="wf-annot">1</span>
+                      </div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Role</span>
+                      <div class="wf-row">
+                        <span class="wf-chip">Member</span>
+                        <span class="wf-annot">2</span>
+                      </div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Full name</span>
+                      <div class="wf-input wf-input--focus">Dmitry Sokolov</div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Password</span>
+                      <div class="wf-input">
+                      ••••••••••••
+                      <span class="wf-input__action" title="Show password">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                      </div>
+                      <div class="wf-meter wf-meter--strong">
+                        <span class="wf-meter__seg"></span>
+                        <span class="wf-meter__seg"></span>
+                        <span class="wf-meter__seg"></span>
+                        <span class="wf-meter__seg"></span>
+                      </div>
+                      <div class="wf-row wf-spread">
+                        <span class="wf-hint">
+                          8 characters minimum <span class="wf-annot">3</span></span>
+                      <span class="wf-hint">Strong <span class="wf-annot">4</span></span>
+                      </div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Repeat password</span>
+                      <div class="wf-input">
+                        ••••••••••••
+                        <span class="wf-input__action" title="Show password">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                      </div>
+                    </div>
+
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Create account</button>
+
+                    <div class="wf-center">
+                      <a class="wf-a" href="login.html">Already have an account? Sign in</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Email is read-only, fixed by the invitation.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              The role is set when the invitation is created —
+              <a href="../_workzone/authentication.html#invite-flow" class="xref-page">Invite flow</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              A policy requirement —
+              <a href="../_workzone/authentication.html#password-policy" class="xref-page">Password policy</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Password-strength indicator as you type.
+            </li>
+            <li class="wf-legend__item">
+              An invalid or already-used token leads to the
+              <a class="wf-a" href="status-screen.html">Status Screen</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

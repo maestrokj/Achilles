@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Инструменты AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Инструменты AI</h1>
+        <div class="header__sub">
+          admin panel · макеты · ai
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Экран рендерится в контентной области каркаса">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Загрузка экрана — каркас (skeleton)">
+              <span class="in-load__icon"></span>загрузка
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">
+        Инструменты, которые платформа даёт моделям как tool-schema. Каждый
+        инструмент живёт на двух поверхностях, и каждая включается отдельно:
+        <strong>чат</strong> и <strong>агенты</strong>. Концепция и роли —
+        <a href="../../ai-foundation/_workzone/tool-catalog.html" class="xref-module">Каталог инструментов</a>.
+        Из коробки оба пресета выключены.
+      </p>
+
+      <!-- ═══ Каталог инструментов ═══ -->
+      <div class="section" id="catalog">
+        <div class="section__title">
+          Каталог инструментов
+          <a href="../../ai-foundation/_workzone/data-model.html#tools" class="xref-badge">→ Модель данных</a>
+          <a href="../../agent-engine/_workzone/harness.html#params" class="xref-badge">→ Tool-calling харнесс</a>
+        </div>
+        <p class="note">
+          Два read-only пресета платформы. По умолчанию выключены: внешний выход
+          открывается осознанно.
+        </p>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">инструменты · реестр</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/ai-tools
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/ai-tools · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-stack wf-stack--tight">
+                  <span class="wf-title">Инструменты AI</span>
+                  <span class="wf-hint">
+                    Две независимые отметки на каждом инструменте —
+                    <strong>В чате</strong> (модель видит его в диалоге) и
+                    <strong>Агентам</strong> (владелец может выбрать его агенту).
+                    Серая пилюля — выключено, клик включает.
+                  </span>
+                </div>
+
+                <!-- ── Веб-поиск ── -->
+                <div class="wf-card wf-row wf-spread">
+                  <div class="wf-row">
+                    <span class="wf-ico">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10Z" /></svg>
+                    </span>
+                    <div class="wf-stack wf-stack--tight">
+                      <span class="wf-row">
+                        <span class="wf-text">Веб-поиск</span>
+                        <span class="wf-hint"><code>web_search</code></span>
+                      </span>
+                      <span class="wf-row">
+                        <span class="wf-hint">Tavily · ключ задан</span>
+                        <span class="wf-chip wf-chip--ok" title="Итог последней проверки работоспособности">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                          проверено · 2 мин
+                        </span>
+                        <a class="wf-chip" tabindex="0" title="Провайдер · ключ · проверка">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" /></svg>
+                          Настроить
+                        </a>
+                        <span class="wf-annot">1</span>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="wf-route">
+                    <span class="wf-pill wf-pill--on">В чате</span>
+                    <span class="wf-pill wf-pill--on">Агентам</span>
+                  </div>
+                </div>
+
+                <!-- ── Загрузка URL ── -->
+                <div class="wf-card wf-row wf-spread">
+                  <div class="wf-row">
+                    <span class="wf-ico">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg>
+                    </span>
+                    <div class="wf-stack wf-stack--tight">
+                      <span class="wf-row">
+                        <span class="wf-text">Загрузка URL</span>
+                        <span class="wf-hint"><code>fetch_url</code></span>
+                      </span>
+                      <span class="wf-row">
+                        <span class="wf-hint">ключ не нужен</span>
+                        <span class="wf-chip" title="Проверка ещё не запускалась">не проверялся</span>
+                        <a class="wf-chip" tabindex="0" title="Проверить доступность egress">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>
+                          Проверить
+                        </a>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="wf-route">
+                    <span class="wf-pill wf-pill--off">В чате</span>
+                    <span class="wf-pill wf-pill--off">Агентам</span>
+                  </div>
+                </div>
+
+                <!-- ── Knowledge Store · ядро ── -->
+                <div class="wf-card wf-row wf-spread">
+                  <div class="wf-row">
+                    <span class="wf-ico">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5v14a9 3 0 0 0 18 0V5" /><path d="M3 12a9 3 0 0 0 18 0" /></svg>
+                    </span>
+                    <div class="wf-stack wf-stack--tight">
+                      <span class="wf-row">
+                        <span class="wf-text">Knowledge Store · ядро</span>
+                        <span class="wf-hint"><code>search</code> · <code>graph</code> · <code>sql</code></span>
+                      </span>
+                      <span class="wf-hint">core · read-only · всегда включено, настройка не требуется <span class="wf-annot">2</span></span>
+                    </div>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <!-- ── MCP · v2 ── -->
+                <div class="wf-card wf-row wf-spread">
+                  <div class="wf-row">
+                    <span class="wf-ico">
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5" /><path d="M9 8V2" /><path d="M15 8V2" /><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z" /></svg>
+                    </span>
+                    <div class="wf-stack wf-stack--tight">
+                      <span class="wf-row">
+                        <span class="wf-text">Внешние MCP-серверы</span>
+                        <span class="iter v2">v2</span>
+                      </span>
+                      <span class="wf-hint">подключение серверов и инструменты записи — следующая итерация</span>
+                    </div>
+                  </div>
+                  <button class="wf-btn wf-btn--disabled">Подключить <span class="wf-annot">3</span></button>
+                </div>
+
+                <span class="wf-hint">
+                  Список — живой реестр типов. Свой инструмент организации,
+                  заведённый <a href="../../ai-foundation/_workzone/tool-catalog.html#custom" class="xref-module">классом в коде</a>,
+                  <a href="../../ai-foundation/_workzone/tool-catalog.html#discovery" class="xref-module">встаёт сюда сам</a>
+                  после рестарта — строкой, как пресеты, выключенным.
+                </span>
+
+                <span class="wf-hint">
+                  Включение инструмента и смена настройки (провайдер, ключ)
+                  пишутся в <a href="audit-log.html" class="xref-page">аудит-журнал</a>
+                  как админ-действие. Лимит / бюджет вызовов
+                  <code>web_search</code> — <span class="iter v2">v2</span>.
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">веб-поиск · «Настроить»</div>
+              <div class="wf-pop">
+                <span class="wf-chip" tabindex="0"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" /></svg> Настроить</span>
+                <div class="wf-menu">
+                  <div class="wf-field">
+                    <span class="wf-label">Провайдер</span>
+                    <span class="wf-input wf-input--sm" tabindex="0">Tavily ▾</span>
+                    <span class="wf-hint">Tavily · Brave · Serper · Google CSE — модель видит один инструмент</span>
+                  </div>
+                  <div class="wf-field">
+                    <span class="wf-label">API-ключ</span>
+                    <div class="wf-input wf-input--sm wf-input--focus">••••f3a1</div>
+                    <span class="wf-hint">вводится один раз — обратно не показывается</span>
+                  </div>
+                  <hr class="wf-divider" />
+                  <div class="wf-row wf-spread">
+                    <button class="wf-btn wf-btn--ghost">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" /><path d="M3 3v5h5" /></svg>
+                      Протестировать
+                    </button>
+                    <span class="wf-chip wf-chip--ok">
+                      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                      провайдер ответил
+                    </span>
+                  </div>
+                  <span class="wf-hint">
+                    пинг провайдера, не реальный запрос модели; итог ложится в
+                    <code>status</code> · <code>last_check_at</code>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              <strong>Настроить</strong> собирает всю настройку инструмента в один
+              поповер: провайдер (Tavily · Brave · Serper · CSE), API-ключ
+              (флаг «задан», не секрет — шифруется
+              <a href="../../auth-security/_workzone/protection.html#crypto-core" class="xref-module">крипто-ядром Auth</a>,
+              наружу не возвращается) и кнопка <strong>Протестировать</strong> —
+              пинг провайдера, итог в
+              <a href="../../ai-foundation/_workzone/data-model.html#tools" class="xref-module"><code>status</code> · <code>last_check_at</code></a>,
+              виден на карточке пилюлей. У <code>fetch_url</code> настраивать
+              нечего — только «Проверить» (доступность egress). Тот же приём, что
+              <a href="ai-models.html#providers" class="xref-page">проверка провайдеров AI-моделей</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Ядро KS — справочная строка: три инструмента всегда доступны
+              чату и агентам, отдельной настройки нет. Снятие <em>добавленного</em>
+              инструмента — <a href="../../ai-foundation/_workzone/tool-catalog.html#surfaces" class="xref-module">мягкая деградация</a>,
+              агент продолжает на ядре.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Подключение внешних MCP-серверов и инструментов записи — <span class="iter v2">v2</span>;
+              кнопка неактивна.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

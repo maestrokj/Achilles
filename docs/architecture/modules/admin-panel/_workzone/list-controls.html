@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Lists — search, filters, pagination</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Lists — search, filters, pagination</h1>
+        <div class="header__sub">admin panel · workzone</div>
+      </div>
+
+      <div class="desc">
+        The panel's table screens (<a
+          class="xref-page"
+          href="../_wireframes/users.html#users-tabs"
+          >users</a
+        >, <a class="xref-page" href="../_wireframes/audit-log.html"
+          >audit</a
+        >, <a class="xref-page" href="../_wireframes/api-keys.html"
+          >API keys</a
+        >, <a class="xref-page" href="../_wireframes/platform-acl.html"
+          >ACL</a
+        >) share the search box, facet filters, and pagination. The behavior is shared; each screen defines only its own (what is searched, which facets) and links
+        here.
+      </div>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ════════ Layer 1: input and launch threshold ════════ -->
+          <div class="stk-layer stk-layer--config" id="search">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Input and launch threshold</span>
+              <span class="stk-layer__role">the user types in the search box</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec" id="server-side">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Search is server-side</span>
+                </div>
+                <div class="stk-dec__d">
+                  The backend runs the search, not the client: the lists are long and paginated,
+                  and the client only sees its own page. The cost is a network call per keystroke,
+                  bounded by the rules below.
+                </div>
+              </div>
+
+              <div class="stk-dec" id="threshold">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Threshold — debounce + minimum characters</span>
+                </div>
+                <div class="stk-dec__d">
+                  The request fires on <b>both</b> conditions: a typing pause of
+                  <b>≈ 300&nbsp;ms</b> (debounce) and <b>≥ 2 significant characters</b>.
+                  A single character makes no call; an empty box resets the search.
+                  The values are shared across all lists; on short dictionaries a screen
+                  may lower the minimum.
+                </div>
+              </div>
+
+              <div class="stk-dec" id="normalize">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Query normalization</span>
+                </div>
+                <div class="stk-dec__d">
+                  Before sending — trim and a case-insensitive comparison.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ Layer 2: query assembly ════════ -->
+          <div class="stk-layer stk-layer--config" id="facets">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Query assembly</span>
+              <span class="stk-layer__role">search, filters, page → one call</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec" id="facet-logic">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Facets: OR within · AND across</span>
+                </div>
+                <div class="stk-dec__d">
+                  Values <b>within</b> one facet combine with <b>OR</b>,
+                  <b>different</b> facets with <b>AND</b> (rows at the intersection).
+                  The number of active facets shows as a counter on the control.
+                </div>
+              </div>
+
+              <div class="stk-dec" id="compose">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Search ∩ filters — one request</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>q</code> and the active facets go in <b>one</b> call, combined with
+                  <b>AND</b>, not two requests. Only the latest is in flight: new
+                  input cancels the stale one (race protection).
+                </div>
+              </div>
+
+              <div class="stk-dec" id="page-params">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Page and sort — in the same request</span>
+                </div>
+                <div class="stk-dec__d">
+                  The page number, its size, and the sort travel in the <b>same</b>
+                  call as <code>q</code> and the facets. Any change to the query —
+                  new text, facet, or sort — <b>resets to page 1</b>:
+                  otherwise you could be left on a page the new
+                  result set no longer has.
+                </div>
+              </div>
+
+              <div class="stk-dec" id="url-state">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">State — in the page URL</span>
+                </div>
+                <div class="stk-dec__d">
+                  Search, facets, page, and sort — in the URL query
+                  parameters: refresh and a shared link preserve the selection.
+                  The URL is the single carrier of this state.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ Layer 3: result and states ════════ -->
+          <div class="stk-layer stk-layer--config" id="result-set">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Result and states</span>
+              <span class="stk-layer__role">what the user sees in response</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec" id="single-set">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">A single set for the whole screen</span>
+                </div>
+                <div class="stk-dec__d">
+                  The result (search&nbsp;∩&nbsp;filters) is <b>one</b> set: the
+                  table, the counter, pagination, and
+                  <a class="xref-page" href="../_wireframes/users.html">export</a>
+                  <span class="iter v2">v2</span> all derive from it. Export downloads <b>the same</b>
+                  as what is shown; there is no download that bypasses the controls.
+                </div>
+              </div>
+
+              <div class="stk-dec" id="pagination">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Pagination — numbered, server-side</span>
+                </div>
+                <div class="stk-dec__d">
+                  The model is <b>offset/limit</b>: the backend returns the page slice and
+                  the overall <b>total</b>. The control is numbered, with jump-to-page
+                  and an <b>“X–Y of N”</b> counter, not “load more”.
+                  The default size is <b>50</b> (options 25 · 50 · 100), a shared value.
+                  A request beyond the range clamps to the boundary page.
+                  Growing append-only feeds (audit) will move to keyset when needed
+                  <span class="iter v2">v2</span>.
+                </div>
+              </div>
+
+              <div class="stk-dec" id="loading">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Loading — skeleton, then previous rows</span>
+                </div>
+                <div class="stk-dec__d">
+                  A cold start of the list — <b>skeleton rows</b> in the table's shape;
+                  a page, facet, or sort change — <b>previous rows stay</b>
+                  (keep-previous), no flash to empty. The shared
+                  vocabulary of loading states and the selection rule are in
+                  <a class="xref-module"
+                    href="../../shared-ui/_wireframes/loading-states.html#mechanisms"
+                    >Shared UI</a
+                  >.
+                </div>
+              </div>
+
+              <div class="stk-dec" id="states">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Empty · clear · error</span>
+                </div>
+                <div class="stk-dec__d">
+                  No matches — “nothing found” with a prompt to reset.
+                  Clear via the cross or <code>Esc</code>; a reset returns the
+                  full list. A failed request — an inline error with retry in the
+                  data area; on a full failure — a system stub.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

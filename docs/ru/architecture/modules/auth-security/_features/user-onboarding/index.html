@@ -1,0 +1,191 @@
+<!doctype html>
+<!--
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  FEATURE: user-onboarding — как сотрудники попадают в систему.         │
+  │                                                                       │
+  │  Карта модели admission: три пути с разным якорем доверия.             │
+  │    · точечный invite  — ручается админ (v1)                            │
+  │    · массовый CSV     — ручается админ, пачкой (v1) — этой фичи UI      │
+  │    · SSO / IdP        — ручается корпоративный IdP, автопровижининг (v2)│
+  │                                                                       │
+  │  OWNS bulk-invite-upload.html + bulk-invite-preview.html — узлы только  │
+  │  этой фичи (orphan-тест: удали фичу — экранам массового импорта негде   │
+  │  жить). Точки входа — users.html (admin), login — лишь двери, остаются   │
+  │  --shared. invite-accept — общий хвост обеих invite-линий.             │
+  │                                                                       │
+  │  Правило высот: модель admission и механика токена — в _workzone       │
+  │  (#admission-model / #invite-flow / #sso-oidc), построчные правила      │
+  │  импорта — на легендах экранов. Карта только связывает/ветвится.        │
+  │  Конвенции: docs/architecture/README.md → "Features".                  │
+  └─────────────────────────────────────────────────────────────────────┘
+-->
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Онбординг пользователей</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · feature-flow kit (no wireframe
+         kit — screens link out) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../feature-flow.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../index.html">← Auth / Security</a>
+        <h1 class="header__title">Онбординг пользователей</h1>
+        <div class="header__sub">auth / security · фичи</div>
+      </div>
+
+      <!-- ═══ Описание ═══ Только продукт: три пути admission и кто откуда
+           заходит. Рамку «кто ручается», политику и механику НЕ здесь —
+           ссылки в workzone (#admission-model / #invite-flow / #sso-oidc). -->
+      <div class="desc">
+        <p>
+          Как сотрудники попадают в систему. Якорь доверия — кто ручается за
+          человека — определяет путь, и путей три:
+        </p>
+        <ul class="desc-list">
+          <li>
+            <b>Точечный инвайт</b> — админ зовёт
+            сотрудника по одному, ссылка-приглашение уходит письмом.
+          </li>
+          <li>
+            <b>Массовый импорт</b> — для первого
+            развёртывания компании, где сотни и тысячи сотрудников, админ заливает
+            список CSV и приглашения уходят пачкой; обе линии сходятся на одном
+            экране
+            <a href="../../_wireframes/invite-accept.html" class="xref-page">принятия приглашения</a>.
+          </li>
+          <li>
+            <b>SSO</b> <span class="iter v2">v2</span> — на масштабе ручается
+            корпоративный IdP: сотрудник входит своей учётной записью, аккаунт
+            создаётся автопровижинингом при первом входе, приглашений нет вовсе.
+          </li>
+        </ul>
+        <p>
+          Полная рамка модели и выбор «пол — контроль, потолок — делегирование» —
+          в
+          <a href="../../_workzone/authentication.html#admission-model" class="xref-page">модели admission</a>.
+        </p>
+      </div>
+
+      <!-- ═══ Зависимости ═══ SMTP — дом сценария без экрана. Доставку (в т.ч.
+           темп массовой рассылки) ведёт транспорт Email — ссылаемся туда, не
+           описываем механику здесь. Механику токена НЕ копируем. -->
+      <div class="section">
+        <div class="section__title">Зависимости</div>
+        <p class="desc">
+          Письмо — единственный канал доставки приглашений, поэтому обе
+          invite-линии требуют настроенного SMTP — секция в
+          <a href="../../../admin-panel/_wireframes/platform-settings.html#smtp" class="xref-module">Admin Panel</a>.
+          Пока SMTP не настроен, «Пригласить» и «Импорт» неактивны. Саму
+          доставку — в том числе безопасный темп массовой рассылки — ведёт
+          транспорт
+          <a href="../../../email/_workzone/delivery.html#throttling" class="xref-module">Email</a>.
+        </p>
+      </div>
+
+      <!-- ═══ Поток · точечный инвайт ═══ Старт — общий экран админки (список
+           пользователей). Модал «Пригласить» (email + роль) — состояние
+           users.html, не отдельный экран (правило высот): он на перегоне.
+           Хвост — общий экран принятия. -->
+      <div class="section">
+        <div class="section__title">Поток · точечный инвайт</div>
+        <div class="flow">
+          <div class="flow-stop flow-stop--shared">
+            <a
+              class="flow-stop__name"
+              href="../../../admin-panel/_wireframes/users.html#users-tabs"
+              >Users</a
+            >
+            <span class="flow-stop__role">общий · старт · админка</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">«Пригласить» · модал email + роль</span>
+          </div>
+          <div class="flow-stop flow-stop--shared">
+            <a class="flow-stop__name" href="../../_wireframes/invite-accept.html">Invite Accept</a>
+            <span class="flow-stop__role">общий · регистрация по ссылке из письма</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Поток · массовый CSV ═══ Та же дверь (Users), но «Импорт» ведёт
+           в мастер из двух локальных экранов: загрузка → превью с валидацией
+           и отправкой. Хвост общий с точечной линией — копию invite-accept не
+           держим. Построчные правила (статусы, идемпотентность, частичный
+           успех) — на легенде превью, не здесь. -->
+      <div class="section">
+        <div class="section__title">Поток · массовый CSV</div>
+        <div class="flow">
+          <div class="flow-stop flow-stop--shared">
+            <a
+              class="flow-stop__name"
+              href="../../../admin-panel/_wireframes/users.html#users-tabs"
+              >Users</a
+            >
+            <span class="flow-stop__role">общий · старт · админка</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">«Импорт» · загрузка списка</span>
+          </div>
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="bulk-invite-upload.html">Bulk Invite · Upload</a>
+            <span class="flow-stop__role">шаг 1 · файл CSV или список текстом</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">файл разобран</span>
+          </div>
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="bulk-invite-preview.html">Bulk Invite · Preview</a>
+            <span class="flow-stop__role">шаг 2 · валидация · роль · отправка</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">отправлено · доставка фоновой очередью</span>
+          </div>
+          <div class="flow-stop flow-stop--shared">
+            <a class="flow-stop__name" href="../../_wireframes/invite-accept.html">Invite Accept</a>
+            <span class="flow-stop__role">общий · регистрация по ссылке из письма</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Поток · SSO ═══ Другая дверь (вход, не админка) и другой якорь:
+           ручается IdP, приглашений нет. Своих экранов нет — это редирект на
+           IdP + автопровижининг; терминал ссылается на механику в workzone.
+           Линия целиком v2. -->
+      <div class="section">
+        <div class="section__title">Поток · SSO <span class="iter v2">v2</span></div>
+        <p class="desc">
+          На масштабе компании приглашения не нужны: вход делегируется
+          корпоративному IdP (Okta, Azure AD, Google Workspace), аккаунт
+          создаётся автопровижинингом при первом входе. Своих экранов путь не
+          добавляет — это редирект на IdP; механика и защита редиректа —
+          <a href="../../_workzone/authentication.html#sso-oidc" class="xref-page">SSO / OIDC</a>.
+        </p>
+        <div class="flow">
+          <div class="flow-stop flow-stop--shared">
+            <a class="flow-stop__name" href="../../_wireframes/login.html">Login</a>
+            <span class="flow-stop__role">общий · «Войти через IdP»</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">редирект на IdP · SAML / OIDC</span>
+          </div>
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="../../_workzone/authentication.html#sso-oidc">Автопровижининг</a>
+            <span class="flow-stop__role">аккаунт из IdP · без приглашения</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

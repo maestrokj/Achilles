@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Shared UI: Toasts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Shared UI</a>
+        <h1 class="header__title">Toasts</h1>
+        <div class="header__sub">shared ui · wireframes · shared component</div>
+      </div>
+
+      <p class="desc">A short pop-up message about the outcome of an action — for what the user would otherwise not see.</p>
+
+      <!-- ═══ When to show ═══ The component's policy: a toast is for what is
+           invisible in place, against “notification blindness”. -->
+      <div class="section">
+        <h2 class="section__title">When to show</h2>
+        <ul class="wf-legend">
+          <li class="wf-legend__item">
+            <strong>✓ Error / failure</strong> — system or background. <em>Form</em> errors — inline at the field.</li>
+          <li class="wf-legend__item">
+            <strong>✓ Background / deferred outcome</strong> — a sync has started, an email is queued.</li>
+          <li class="wf-legend__item">
+            <strong>✓ Change out of view</strong> — an element you have left; a bulk action.</li>
+          <li class="wf-legend__item">
+            <strong>✓ A significant action with no visible trace</strong> — revoking access, sending an invitation.</li>
+          <li class="wf-legend__item">
+            <strong>✕ The result is visible in place</strong> — a toast duplicates it; confirm inline.</li>
+          <li class="wf-legend__item">
+            <strong>✕ Routine, instantly reversible</strong> —
+            a toggle, expanding a block: no feedback needed.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ═══ Variants ═══ Four semantic tones. -->
+      <div class="section">
+        <h2 class="section__title">Variants</h2>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <!-- success -->
+            <div class="wf-frame" id="success">
+              <div class="wf-stage__caption">success</div>
+              <div class="wf-toaststack">
+                <div class="wf-toast wf-toast--success">
+                  <span class="wf-toast__icon">✓</span>
+                  <div class="wf-toast__body">
+                    <div class="wf-toast__title">Saved</div>
+                    Organization settings updated.
+                  </div>
+                  <span class="wf-toast__close">×</span>
+                </div>
+              </div>
+            </div>
+            <!-- error -->
+            <div class="wf-frame" id="error">
+              <div class="wf-stage__caption">error</div>
+              <div class="wf-toaststack">
+                <div class="wf-toast wf-toast--error">
+                  <span class="wf-toast__icon">!</span>
+                  <div class="wf-toast__body">
+                    <div class="wf-toast__title">Could not connect</div>
+                    The SMTP server did not respond (timeout).
+                    <span class="wf-toast__action">Open SMTP settings →</span>
+                  </div>
+                  <span class="wf-toast__close">×</span>
+                </div>
+              </div>
+            </div>
+            <!-- info -->
+            <div class="wf-frame" id="info">
+              <div class="wf-stage__caption">info</div>
+              <div class="wf-toaststack">
+                <div class="wf-toast wf-toast--info">
+                  <span class="wf-toast__icon">i</span>
+                  <div class="wf-toast__body">
+                    <div class="wf-toast__title">Sync started</div>
+                    Source “GitLab” — the result will appear in the log.
+                  </div>
+                  <span class="wf-toast__close">×</span>
+                </div>
+              </div>
+            </div>
+            <!-- warn -->
+            <div class="wf-frame" id="warn">
+              <div class="wf-stage__caption">warn</div>
+              <div class="wf-toaststack">
+                <div class="wf-toast wf-toast--warn">
+                  <span class="wf-toast__icon">!</span>
+                  <div class="wf-toast__body">
+                    <div class="wf-toast__title">Invitation sent</div>
+                    The email is queued — delivery depends on SMTP.
+                  </div>
+                  <span class="wf-toast__close">×</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ol class="wf-legend">
+          <li class="wf-legend__item">
+            <strong>success</strong> — a significant action went through: sent, created, revoked.</li>
+          <li class="wf-legend__item">
+            <strong>error</strong> — the action failed; the cause + an optional link to the fix.</li>
+          <li class="wf-legend__item">
+            <strong>info</strong> — a neutral status: a background task has started.</li>
+          <li class="wf-legend__item">
+            <strong>warn</strong> — done with a caveat.</li>
+        </ol>
+      </div>
+
+      <!-- ═══ Behavior ═══ Position, stack, auto-dismiss. -->
+      <div class="section">
+        <h2 class="section__title">Behavior</h2>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">stack · several in a row</div>
+          <div class="wf-toaststack">
+            <div class="wf-toast wf-toast--success">
+              <span class="wf-toast__icon">✓</span>
+              <div class="wf-toast__body">
+                <div class="wf-toast__title">Role changed</div>
+                Anna Petrova — now Admin.
+              </div>
+              <span class="wf-toast__close">×</span>
+            </div>
+            <div class="wf-toast wf-toast--success">
+              <span class="wf-toast__icon">✓</span>
+              <div class="wf-toast__body">
+                <div class="wf-toast__title">Invitation sent</div>
+                ivan@example.com — valid for 48 hours.
+              </div>
+              <span class="wf-toast__close">×</span>
+            </div>
+          </div>
+        </div>
+        <ul class="wf-legend">
+          <li class="wf-legend__item">
+            <strong>Position</strong> — bottom-right corner, over the content, without shifting the layout.</li>
+          <li class="wf-legend__item">
+            <strong>Auto-dismiss</strong> — ~5 seconds; hover/focus pauses the timer, <code>×</code> closes it manually.
+          </li>
+          <li class="wf-legend__item">
+            <strong>Stack</strong> — in a column, newest at the bottom; over the limit, older ones collapse.</li>
+          <li class="wf-legend__item">
+            <strong>Accessibility</strong> — <code>role="status"</code> or <code>role="alert"</code> (error), <code>aria-live</code> for
+            screen readers.
+          </li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

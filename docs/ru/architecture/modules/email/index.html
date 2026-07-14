@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Email</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="email.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← К схеме</a>
+        <h1 class="header__title">Email</h1>
+        <div class="header__sub">сквозной backend-сервис · доставка почты</div>
+      </div>
+
+      <!-- ═══ Описание ═══ Транспорт, не система уведомлений: чем модуль
+           является (доставка транзакционных писем) и чем НЕ является
+           (мультиканальные уведомления — отдельная система v2 поверх). -->
+      <div class="desc">
+        <p>
+          Почтовое отделение платформы: единственное место, которое умеет
+          <b>составить письмо и отправить его по SMTP</b>. Модули не знают про
+          почтовый сервер — они передают сюда «отправь приглашение такому-то», а
+          транспорт берёт настройки, рендерит шаблон и доставляет.
+        </p>
+      </div>
+
+      <!-- ═══ Архитектура ═══ «Технологическая лента»: потребители собираются в
+           сервис Email (compose|send), он ветвится на два режима доставки
+           (inline / очередь) и сходится в SMTP → ящик. Снизу — служебная шина:
+           singleton smtp_settings + три модуля-сателлита (Auth, Admin, Broker).
+           Дом cross-ссылок на конфиг и крипто-ядро — здесь и в delivery.html. -->
+      <div class="section">
+        <h2 class="section__title">Архитектура</h2>
+        <div class="eml-flow">
+          <span class="eml-flow__cap">Технологическая лента — слева направо</span>
+          <div class="eml-flow__line">
+            <!-- вход: стопка потребителей -->
+            <div class="eml-in">
+              <div class="eml-in__lbl">потребители</div>
+              <div class="eml-req"><b>Приглашение</b><code>invite</code></div>
+              <div class="eml-req"><b>Сброс пароля</b><code>reset</code></div>
+              <div class="eml-req"><b>Тестовое</b><code>test</code></div>
+              <div class="eml-req eml-req--v2">
+                <b>Security-алерты<span class="eml-v2">v2</span></b><code>alerts</code>
+              </div>
+            </div>
+
+            <!-- сбор в шину → ядро -->
+            <div class="eml-join"><i></i></div>
+
+            <!-- ядро + развилка -->
+            <div class="eml-rail">
+              <div class="eml-core">
+                <div class="eml-core__name"><span class="eml-core__glyph"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" /></svg></span>Email</div>
+                <div class="eml-core__role">Почтовое отделение платформы</div>
+                <div class="eml-cams">
+                  <div class="eml-cam"><b>compose</b><span>шаблон + язык → MIME</span></div>
+                  <div class="eml-cam"><b>send</b><span>доставка по SMTP</span></div>
+                </div>
+                <div class="eml-core__helpers">send_invite · send_password_reset · send_test</div>
+              </div>
+
+              <div class="eml-fork">
+                <div class="eml-branch">
+                  <span class="eml-branch__stub"></span><i class="t"></i><i class="b"></i>
+                </div>
+
+                <div class="eml-tracks">
+                  <div class="eml-track eml-track--inline">
+                    <div class="eml-track__top">
+                      <span class="eml-track__name">Inline</span>
+                      <span class="eml-track__sync">синхронно · в запросе</span>
+                    </div>
+                    <div class="eml-track__for">только <b>test</b></div>
+                    <div class="eml-chips">
+                      <span class="eml-chip">таймаут</span>
+                      <span class="eml-chip">вердикт сразу</span>
+                    </div>
+                    <div class="eml-track__note">
+                      пишет <code>last_test_ok</code> / <code>last_test_at</code>
+                    </div>
+                  </div>
+                  <div class="eml-track eml-track--queue">
+                    <div class="eml-track__top">
+                      <span class="eml-track__name">Очередь · SAQ</span>
+                      <span class="eml-track__sync">асинхронно · фон</span>
+                    </div>
+                    <div class="eml-track__for"><b>invite · reset · bulk</b></div>
+                    <div class="eml-chips">
+                      <span class="eml-chip">ретраи · backoff</span>
+                      <span class="eml-chip">тротлинг</span>
+                      <span class="eml-chip">идемпотентность · job_id</span>
+                    </div>
+                    <div class="eml-track__note">потребитель отвечает мгновенно</div>
+                  </div>
+                </div>
+
+                <div class="eml-merge">
+                  <i class="t"></i><i class="b"></i><i class="out"></i>
+                </div>
+
+                <div class="eml-sink">
+                  <div class="eml-smtp"><b>SMTP</b><span>aiosmtplib</span></div>
+                  <span class="eml-sink__to">→</span>
+                  <div class="eml-mbox"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" /></svg><small>ящик</small></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- служебная шина -->
+          <div class="eml-bus">
+            <div class="eml-sat eml-sat--cfg">
+              <div class="eml-sat__name"><code>smtp_settings</code></div>
+              <div class="eml-sat__role">
+                singleton в core, секрет — шифротекстом. Пароль —
+                <a class="xref-module" href="../auth-security/_workzone/protection.html#crypto-core">AES-256-GCM</a>;
+                готовность транспорта — предикат
+                <a class="xref-page" href="_workzone/data-model.html#availability">is_available()</a>.
+                <a class="xref-page" href="_workzone/data-model.html#data-model">Модель данных</a>.
+              </div>
+            </div>
+            <div class="eml-sat">
+              <div class="eml-sat__name">
+                <a class="xref-module" href="../auth-security/_workzone/protection.html#crypto-core">Auth&nbsp;/&nbsp;Security</a>
+              </div>
+              <div class="eml-sat__role">
+                крипто-ядро расшифровывает пароль в момент <code>send</code>; ему же принадлежит механика flows.
+              </div>
+            </div>
+            <div class="eml-sat">
+              <div class="eml-sat__name">
+                <a class="xref-module" href="../admin-panel/_wireframes/platform-settings.html#smtp">Admin&nbsp;Panel</a>
+              </div>
+              <div class="eml-sat__role">
+                экран настроек SMTP и кнопка «Проверить соединение» — запускает inline.
+              </div>
+            </div>
+            <div class="eml-sat">
+              <div class="eml-sat__name">
+                <a class="xref-module" href="../cache-workers/_workzone/queues.html#worker">Cache &amp; Workers</a>
+              </div>
+              <div class="eml-sat__role">
+                общий воркер платформы (<code>SAQ</code> поверх Redis) исполняет очередь.
+              </div>
+            </div>
+          </div>
+
+          <!-- стек -->
+          <div class="eml-foot">
+            <span class="eml-foot__lbl">стек</span>
+            <span class="eml-stk">aiosmtplib</span>
+            <span class="eml-stk">SAQ</span>
+            <span class="eml-stk">Jinja2</span>
+            <span class="eml-stk">email / MIME</span>
+            <span class="eml-stk">Pydantic Settings</span>
+            <span class="eml-stk">Mailpit · dev</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Workzone ═══ -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Проектирование</span>
+        </div>
+        <p class="workzone-hint">
+          Детальные решения по проектированию модуля.
+        </p>
+
+        <div class="wz-nav">
+          <a class="wz-link" href="_workzone/delivery.html">
+            <span>Доставка и сервис</span>
+          </a>
+          <a class="wz-link" href="_workzone/data-model.html">
+            <span>Модель данных</span>
+          </a>
+          <a class="wz-link" href="_workzone/templates.html">
+            <span>Шаблоны писем</span>
+          </a>
+          <a class="wz-link" href="_workzone/stack.html">
+            <span>Стек и структура</span>
+          </a>
+          <a class="wz-link" href="_workzone/tests.html">
+            <span>Тест-кейсы</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

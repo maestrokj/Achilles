@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Query Engine: Conversation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../query-engine.css" />
+    <link rel="stylesheet" href="conversation.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Query Engine</a>
+        <h1 class="header__title">Conversation</h1>
+        <div class="header__sub">query-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        A user query is not a standalone question but a <strong>message in a
+        conversation</strong>, and the conversation belongs to Query Engine: it
+        remembers history, carries context between messages, and holds the
+        session. Yet the turn is driven by the
+        <strong>user's chat model</strong> — it holds the
+        <a href="#route" class="xref-anchor">knowledge-base search</a> tool and
+        decides, on each message, whether to answer on its own or reach into the
+        store. Every surface — Web App, Slack, Telegram, Mattermost, MCP, extension — is just
+        a thin window onto <em>one</em> conversation model; the state lives here,
+        in its own tables (<a href="data-model.html#conversations" class="xref-page"
+          >conversations</a
+        >
+        · <a href="data-model.html#messages" class="xref-page">messages</a>), not
+        on the client.
+      </p>
+
+      <!-- ════════════════ SESSIONS — STATEFUL OWNERSHIP ════════════════ -->
+      <div class="section" id="sessions">
+        <div class="section__title">The conversation belongs to Query Engine</div>
+        <p class="desc">
+          A conversation is <strong>stateful</strong>: the session groups the
+          steps of one exchange, and history accumulates message by message. That
+          state has to live somewhere — and it lives with Query Engine, the only
+          module that sees both the query and the assembled answer. Its data home
+          is its own tables:
+          <a href="data-model.html#conversations" class="xref-page">sessions</a>
+          and <a href="data-model.html#messages" class="xref-page">messages</a>
+          with their answers.
+        </p>
+      </div>
+
+      <!-- ════════════════ SESSION BOUNDARY — WHERE A DIALOGUE BEGINS ════════════════
+           The boundary of a "new" conversation vs a "continuation" = the
+           presence/absence of a reference to the conversation (conversation_id)
+           in the request. Lazy creation on the 1st message; "new chat" / clear /
+           resume are expressions of one primitive (id), not separate API verbs.
+           Conversation management (CRUD) and retention — Web App. -->
+      <div class="section" id="session-boundary">
+        <div class="section__title">Where a conversation begins</div>
+        <p class="desc">
+          A conversation is a <strong>durable thread</strong>, not an ephemeral
+          login session: it lives until deleted and does not expire on idle
+          (a timeout is about signing in, not about the conversation). The line
+          between a “new” conversation and a “continuation” is drawn not by a
+          separate command but by the <strong>presence or absence of a reference
+          to the conversation</strong> (<code>conversation_id</code>) in the
+          request: a message with the reference appends to the existing thread, a
+          message without it opens a new one.
+        </p>
+        <p class="desc">
+          A conversation is created <strong>lazily — on the first message</strong>:
+          we never spin up empty threads; the
+          <a href="data-model.html#conversations" class="xref-page"
+            >conversations</a
+          >
+          row is born when the first message is sent, and its identifier is
+          returned to the client for subsequent turns. The “New chat” button
+          opens nothing on the server — it merely clears the active reference on
+          the client, and the new conversation is born by the first message
+          actually sent.
+        </p>
+        <div class="desc">
+          <p>
+            Hence a single lever across all channels: “new chat”, “clear”, and
+            “resume” are not separate API operations but expressions of the same
+            “which reference the client sends”. What counts as a new conversation
+            is up to the <strong>surface</strong>:
+          </p>
+          <ul class="desc-list">
+            <li>
+              <strong>Web App</strong> — the “New chat” button and the
+              conversation list; clear = resetting the active reference.
+            </li>
+            <li>
+              <strong>Slack</strong> — native threads: a new thread or DM is a new
+              conversation.
+            </li>
+            <li>
+              <strong>Telegram</strong> — DMs without threads: the
+              <code>/new</code> command resets the active reference, and the next
+              message starts a new conversation (intercepted on the surface side,
+              never recorded in history).
+            </li>
+            <li>
+              <strong>Mattermost</strong> — Slack's rule: a new thread or DM is a
+              new conversation.
+            </li>
+            <li>
+              <strong>Browser Extension</strong> — ephemeral, scoped to the page
+              or tab.
+            </li>
+          </ul>
+        </div>
+        <p class="note">
+          Conversation management — listing, renaming, deleting, retention —
+          lives in the Web App shell and is designed alongside it; the data model
+          is ready for it (the cascade runs off <code>conversations</code>). Here
+          we set only the rule for where the boundary of one exchange falls.
+        </p>
+      </div>
+
+      <!-- ════════════════ ROUTE — MODEL DECIDES TO RETRIEVE ════════════════
+           Home of the "decision to search". The chat model drives the turn: it
+           holds the search_knowledge tool and decides per-turn — conversation or
+           grounding. The contract of each mode is at grounding; the full agent
+           loop is at Agent Engine. -->
+      <div class="section" id="route">
+        <div class="section__title">The model decides: answer or search</div>
+        <p class="desc">
+          Not every message is a query to the base. “Thanks”, “rephrase this
+          paragraph”, “what even is an OKR” — ordinary conversation that needs no
+          store. But “what's the deadline for project Ajax” is a question for
+          company knowledge. So the turn is driven by the
+          <strong>chat model</strong>: it holds a toolset —
+          <strong><code>search_knowledge</code></strong> (when the base is
+          non-empty) and, if the admin enabled it,
+          <strong><code>web_search</code></strong> — and it decides, on each
+          message, whether to answer on its own or reach for them. Conversation →
+          it answers without search and without citations. A question for
+          knowledge → it calls the tools — several at once if needed, in
+          <strong>a single round</strong> — and builds the answer on what they
+          return.
+        </p>
+
+        <!-- conversational vs tools — the model holds the toolset and decides -->
+        <div class="cv-route">
+          <div class="cv-route__lead">
+            <span class="cv-route__h">the chat model drives the turn</span>
+            <span class="ai-tag" title="This stage uses a neural network — model inference"
+              ><span class="ai-tag__icon"></span>AI</span
+            >
+            <span class="cv-route__tool">holds
+              <code>search_knowledge</code> · <code>web_search</code></span>
+          </div>
+          <span class="cv-route__split">⟨ need tools? ⟩</span>
+          <div class="cv-route__paths">
+            <div class="cv-route__path cv-route__path--talk">
+              <span class="cv-route__cond">conversation</span>
+              <span class="cv-route__out">answers on its own</span>
+              <span class="cv-route__note">chit-chat · meta-request · general
+                question — no search, no citations</span>
+            </div>
+            <div class="cv-route__path cv-route__path--ground">
+              <span class="cv-route__cond">to the tools</span>
+              <span class="cv-route__out">calls one round
+                (<code>search_knowledge</code> ± <code>web_search</code>)</span>
+              <span class="cv-route__note">answer strictly from what was found ·
+                with a citation to the source</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="note">
+          <strong>Bias toward searching.</strong> On the edge between “is this
+          chit-chat or a query”, the model leans toward searching: an empty
+          search is cheap, while a made-up company fact is expensive — it breaks
+          trust. This holds when there is something to search: with an empty base,
+          <code>search_knowledge</code> is not offered to the model at all
+          (derived from
+          <a href="../../knowledge-store/_workzone/hybrid-search.html#emptiness" class="xref-module"
+            ><code>is_empty</code></a>), the bias does not apply, and the model
+          answers from general knowledge like an ordinary assistant. What
+          grounding means in each mode and how an honest “not found” sounds is
+          held by
+          <a href="grounding.html#modes" class="xref-page">grounding</a>. Which
+          tools the chat gets at all is up to the admin:
+          <code>web_search</code> is off by default, and a disabled tool is not
+          offered to the model
+          (<a href="../../ai-foundation/_workzone/tool-catalog.html#governance" class="xref-module">tool catalog</a>).
+          Where a single round of tools ends and a full agent loop begins is at
+          the <a href="rag-pipeline.html#agent-boundary" class="xref-page"
+            >boundary with Agent Engine</a>.
+        </p>
+      </div>
+
+      <!-- ════════════════ MULTI-TURN — CONTEXT CARRY ════════════════
+           Context carries over; a dependent follow-up is formulated by the model
+           itself into a self-contained query as an argument to search_knowledge —
+           there is no separate condense step, the model already reads the
+           history. -->
+      <div class="section" id="multi-turn">
+        <div class="section__title">
+          Context carry and a self-contained query
+        </div>
+        <p class="desc">
+          Within a session, messages are linked: “and what about his timeline?”
+          only makes sense against the previous message. So, having decided to
+          search, the model formulates a <strong>self-contained query</strong> —
+          understandable without the history — and passes it as an argument to
+          <code>search_knowledge</code>. There is no separate rewriting step: the
+          model already has the conversation history in view, so it fills in the
+          omitted subject itself, in the same move that decides to call search.
+          Without this, “and more?” would go to retrieval as “more” — the vector
+          would catch the phrase, not the topic of the conversation.
+        </p>
+
+        <!-- session/turn timeline -->
+        <div class="cv-timeline" aria-hidden="true">
+          <div class="cv-session">
+            <span class="cv-session__tag">Session</span>
+            <div class="cv-turns">
+              <div class="cv-turn">
+                <span class="cv-turn__n">message 1</span>
+                <span class="cv-turn__q">“What's the status of project Ajax?”</span>
+                <span class="cv-turn__note">self-contained — the model searches
+                  on it as is</span>
+              </div>
+              <span class="cv-turn__seam">↓ history</span>
+              <div class="cv-turn cv-turn--dep">
+                <span class="cv-turn__n">message 2</span>
+                <span class="cv-turn__q">“And what about the timeline?”</span>
+                <span class="cv-turn__note cv-turn__note--rw">the model calls
+                  search_knowledge(“Project Ajax timeline”)</span>
+              </div>
+            </div>
+          </div>
+          <div class="cv-timeline__cap">
+            history carries between messages · a dependent message is formulated
+            by the model itself into a self-contained query to the tool
+          </div>
+        </div>
+
+        <p class="note">
+          What happens on a tool call — embed, search under access rights,
+          packing, grounding generation — is held by the
+          <a href="rag-pipeline.html#route" class="xref-page">search
+            route</a>. How many past turns reach the model in a long exchange is a
+          matter of the
+          <a href="#context-budget" class="xref-anchor">window budget</a>.
+        </p>
+      </div>
+
+      <!-- ════════════════ CONTEXT BUDGET — ONE WINDOW, MANY CLAIMANTS ════════════════
+           The model's window is a shared turn resource: it is split among system,
+           history, message, retrieved context, and the reserve for the answer. Two
+           pushers toward overflow — history (grows over turns, trimmed by QE) and
+           retrieved context (large per turn, trimmed by augment) — are trimmed
+           under ONE cap. Trimming ≠ loss: the verbatim transcript is in messages,
+           facts are re-retrieved from KS. v1 — token-window; running summary is a
+           v2 fork. -->
+      <div class="section" id="context-budget">
+        <div class="section__title">
+          Context-window budget
+        </div>
+        <p class="desc">
+          The chat model's window is not boundless: everything it sees on one
+          turn shares a common token cap. On a grounding turn, the system
+          instructions, the conversation history, the current message, and the
+          retrieved context all land in it at once — and room must still be left
+          for the answer itself. So overflow is not “history too long” but
+          <strong>competition for a single budget</strong>: two consumers grow
+          independently, yet are trimmed under one cap.
+        </p>
+
+        <div class="cb-window">
+          <span class="cb-cap">Context window · one turn</span>
+          <div class="cb-seg">
+            <span class="cb-seg__k">System prompt</span>
+            <span class="cb-seg__v"><a href="../../admin-panel/_wireframes/ai-behavior.html#composition" class="xref-module">platform prompt</a>
+              (safety + organization) + grounding instructions + the
+              <code>search_knowledge</code> description</span>
+            <span class="cb-seg__tag">fixed</span>
+          </div>
+          <div class="cb-seg cb-seg--grow">
+            <span class="cb-seg__k">Conversation history</span>
+            <span class="cb-seg__v">past turns · trimmed by Query Engine
+              (token-window)</span>
+            <span class="cb-seg__tag">grows over turns ▲</span>
+          </div>
+          <div class="cb-seg">
+            <span class="cb-seg__k">Current message</span>
+            <span class="cb-seg__v">the turn's message</span>
+            <span class="cb-seg__tag">always in full</span>
+          </div>
+          <div class="cb-seg cb-seg--ctx">
+            <span class="cb-seg__k">Retrieved context</span>
+            <span class="cb-seg__v">top-K fragments from KS · trimmed by augment
+              to fit the remainder</span>
+            <span class="cb-seg__tag">large per turn ▲</span>
+          </div>
+          <div class="cb-seg cb-seg--reserve">
+            <span class="cb-seg__k">Reserve for the answer</span>
+            <span class="cb-seg__v">room for generation — kept free</span>
+            <span class="cb-seg__tag">protected</span>
+          </div>
+        </div>
+
+        <p class="note">
+          <strong>Trimming the window is not losing memory.</strong> The verbatim
+          transcript lives in
+          <a href="data-model.html#messages" class="xref-page">messages</a>,
+          retrieval snapshots in
+          <a href="data-model.html#retrieval-trace" class="xref-page"
+            >retrieval_trace</a>, and the answer's facts are re-retrieved by a
+          fresh
+          <a href="rag-pipeline.html#route" class="xref-page">retrieval</a> from
+          Knowledge Store on every grounding turn. The window is a working buffer
+          for one call, not storage: what falls out of it stays in the base. That
+          is why history here can be trimmed more boldly than in a pure chatbot,
+          where it is the only memory.
+        </p>
+
+        <div class="decision-box">
+          <strong>Shared cap, token-based trimming.</strong> History and
+          retrieved context share one window budget rather than being trimmed
+          each under its own limit:
+          <a href="rag-pipeline.html#augment" class="xref-page">augment</a>
+          fits fragments into the remainder left by the trimmed history, keeping
+          the reserve for the answer. History is trimmed from the front by tokens
+          — the earliest turns go first, the current message always in full. This
+          does not break coherent follow-up phrasing: as long as the subject is
+          in the window, the model builds a
+          <a href="#multi-turn" class="xref-anchor">self-contained query</a> as
+          before.
+        </div>
+
+        <p class="note">
+          <span class="iter v2">v2</span> — a <strong>running summary</strong> of
+          old turns: when even the trimmed history stops fitting, the earliest
+          turns are collapsed by a separate call into a brief summary, and the
+          window carries “summary + the last verbatim window”. A layer on top of
+          the token-window, not a replacement: it adds memory depth at the cost of
+          an extra call and the risk of losing a low-frequency but important
+          detail across repeated compressions.
+        </p>
+      </div>
+
+      <!-- ════════════════ SURFACE API — ONE DIALOGUE MODEL ════════════════ -->
+      <div class="section" id="surface-api">
+        <div class="section__title">One conversation across all surfaces</div>
+        <p class="desc">
+          There are several entry points into the conversation —
+          <a href="../../web-app/index.html" class="xref-badge">Web App</a>
+          <a href="../../slack/index.html#model" class="xref-badge">Slack</a>
+          <a href="../../telegram/index.html#model" class="xref-badge">Telegram</a>
+          <a href="../../mattermost/index.html#model" class="xref-badge">Mattermost</a>
+          <a href="../../extension/index.html" class="xref-badge">Browser Extension</a> — and all of them are
+          <strong>thin clients</strong>: they render messages and stream the
+          answer, but carry no conversation logic. They share <em>one</em>
+          conversation model through a single internal Query Engine API. Sessions,
+          history, context carry, the decision to search — all on the Query Engine
+          side; the surface only opens a session, sends a message, and displays
+          the answer.
+        </p>
+        <p class="note">
+          This keeps the different channels from diverging in behavior: the
+          conversation rule is implemented once, not copied into each client. A
+          new surface plugs into the same API and gets the same conversation
+          memory for free — including a customer's custom surface through the
+          public contract.
+          <a href="../../public-api/index.html#model" class="xref-module">→ Public API</a>
+        </p>
+        <p class="note">
+          <strong>MCP does not belong here.</strong> It is a surface of a
+          different kind — not a conversation client but a supplier of a search
+          tool to an <em>external</em> model: it holds not a conversation but a
+          tool-call, and returns findings, not a finished answer.
+          <a href="../../mcp/index.html#model" class="xref-module">→ MCP</a>
+        </p>
+      </div>
+
+      <!-- ════════════════ STREAMING — SYNCHRONOUS ════════════════ -->
+      <div class="section" id="streaming">
+        <div class="section__title">Synchronous answer streaming</div>
+        <p class="desc">
+          The answer is delivered <strong>synchronously, as a stream</strong>:
+          the tokens of the
+          <a href="grounding.html#grounding" class="xref-page">grounding</a>
+          answer flow to the surface as they are generated, without queuing a
+          task.
+        </p>
+        <p class="note">
+          <strong>Slack is the exception.</strong> The messenger does not hold the
+          connection and expects an answer within 3 seconds: the stream is
+          assembled on the server and returned as a post in the thread — receipt
+          is acknowledged immediately, processing runs asynchronously through a
+          queue.
+          <a href="../../slack/index.html#delivery" class="xref-module">→ Slack</a>
+        </p>
+      </div>
+
+      <!-- ════════════════ FEEDBACK — THUMBS ════════════════ -->
+      <div class="section" id="feedback">
+        <div class="section__title">Feedback on the answer</div>
+        <p class="desc">
+          Every answer carries a lightweight rating: thumbs up / down. This is not
+          an action on the conversation but a quality signal: was the answer good
+          or off the mark. The rating sits next to the message itself in the
+          <a href="data-model.html#messages" class="xref-page">conversation
+            store</a>
+          — we collect it for the future, to gauge answer quality and tune
+          ranking.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

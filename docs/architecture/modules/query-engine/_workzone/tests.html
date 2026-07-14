@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Query Engine: tests</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Query Engine</a>
+        <h1 class="header__title">Tests</h1>
+        <div class="header__sub">query-engine · workzone</div>
+      </div>
+
+      <!-- ── Overview band: decisions + stack ── -->
+      <div class="test-overview">
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Decisions made</div>
+          <div class="decision-box">
+            <strong>Grounding — the load-bearing invariant, holds P0</strong>
+            The corporate standard of trust — the answer comes strictly from the
+            passed context, zero hallucinations at the price of the occasional empty
+            answer. So grounding is checked by integration against a fake chat model:
+            no context → an honest “not found”, no invention from general knowledge.
+            That, plus citation attribution, is the core of coverage.
+          </div>
+          <div class="decision-box">
+            <strong>The coverage boundary = the module boundary</strong>
+            QE covers the conversational turn and the RAG refinement: the decision to
+            search, rerank fusion, packing, grounded generation with citations, the
+            dialog, and streaming. Retrieval, fusion, and the ACL pre-filter themselves
+            are behind
+            <a href="../../knowledge-store/_workzone/hybrid-search.html#acl-prefilter" class="xref-module"
+              >Knowledge Store</a
+            >; they are not tested here. At the seam we only pin that identity is passed
+            to KS and QE builds no permission scheme.
+          </div>
+          <div class="decision-box">
+            <strong>Type sets the level, priority is markers</strong>
+            Unit — deterministic logic without a database and without a live LLM
+            (routing on the model's decision, RRF fusion from KS, citation assembly),
+            on every PR. Integration — against a fake model and a test KS, as a separate
+            step. P0 holds the load-bearing (grounding, ACL pass-through), P1 — the
+            modes. Priority is orthogonal to type (<code>pytest -m p0</code>).
+          </div>
+        </div>
+
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Stack and infrastructure</div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Available <span class="iter done">done</span></span>
+            <span>pytest, pytest-asyncio, pytest-cov, httpx</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Model</span>
+            <span
+              >a fake chat model with a controllable search decision (deterministically
+              calls or skips <code>search_knowledge</code>) — routing, grounding, and
+              citations are reproducible without real inference in the automated run</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Retrieval</span>
+            <span
+              >a stubbed Knowledge Store client — returns a fixed hybrid result and
+              records the identity passed; search and ACL themselves are on the KS side,
+              not stood up here</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Cache</span>
+            <span
+              >a fake candidate cache keyed on “query + identity” — the gate is checked
+              without a live Redis: a hit returns what was recorded, a different identity
+              does not share the entry</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Streaming</span>
+            <span
+              >httpx + ASGI reading the SSE stream — synchronous delivery of answer
+              tokens without a task queue</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Sessions</span>
+            <span
+              >session and conversation-history factories — assembling multi-turn
+              context without going through the surfaces</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Markers</span>
+            <span
+              ><code>@pytest.mark.unit</code> / <code>@pytest.mark.integration</code> —
+              by type; <code>@pytest.mark.p0</code> / <code>p1</code> — by priority,
+              orthogonal to type</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Unit ═══ Pure logic without a database and without a live LLM — every PR. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--unit">Unit</span>
+        <span class="test-sec__title">Pure logic without a database or a live LLM</span>
+        <span class="test-sec__meta">deterministic · every PR</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 14 4 4-4 4" /><path d="m18 2 4 4-4 4" /><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22" /><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2" /><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45" /></svg></span><span class="name">test_route.py</span></div>
+            <div class="test-card__sub">Search decision: conversation vs grounding</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="conversation.html#route">→ Search decision</a>
+              <a class="xref-badge xref-badge--page" href="rag-pipeline.html#agent-boundary">→ Round boundary</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">calls the tool → grounding</span><span class="test-case__e">the fake model emits a search_knowledge call → QE goes to retrieval, packs the context, the answer is built on what was retrieved and retrieval_trace is written</span></div>
+              <div class="test-case"><span class="test-case__k">no call → conversation</span><span class="test-case__e">the model answers without a tool call → retrieval is not invoked, no citations, no snapshot, no “not found” shown</span></div>
+              <div class="test-case"><span class="test-case__k">exactly one snapshot per message</span><span class="test-case__e">a repeat retrieval_trace write for the same message_id is rejected by UNIQUE(message_id) — the 0..1 relation is held by the DB, not the code; a conversational answer has no snapshot</span></div>
+              <div class="test-case"><span class="test-case__k">the standalone query is a model argument</span><span class="test-case__e">on a call the model passes a standalone phrasing with the subject filled in from history; retrieval runs on that, not on the raw utterance</span></div>
+              <div class="test-case"><span class="test-case__k">no more than one call per turn</span><span class="test-case__e">in v1 the model does not loop the search: at most one retrieve per turn, no agentic loop — the boundary with Agent Engine</span></div>
+              <div class="test-case"><span class="test-case__k">multi-tool in one round</span><span class="test-case__e">the model emits search_knowledge + web_search calls in one round → both run in parallel, the answer is built on the union of results; the boundary is not the presence of tools but the absence of a loop</span></div>
+              <div class="test-case"><span class="test-case__k">after the round — an answer, no second round</span><span class="test-case__e">following the first tool round the model is obliged to answer; there is no loop — a second round on the first round's results is not launched</span></div>
+              <div class="test-case"><span class="test-case__k">web_search disabled → not offered</span><span class="test-case__e">the tool is disabled by the admin → it is not in the model's tool set; the turn manages with what is available, web_search is not attempted</span></div>
+              <div class="test-case"><span class="test-case__k">empty base → the tool is not offered</span><span class="test-case__e">Knowledge Store is empty (is_empty) → search_knowledge is not in the model's tool set; the turn answers from general knowledge, attempts no search, writes no retrieval_trace — this is the absence of the tool itself, not a “found nothing”</span></div>
+              <div class="test-case"><span class="test-case__k">first fragment → the tool appears</span><span class="test-case__e">the base was empty, the first chunk is accepted → is_empty flips, on the next turn search_knowledge is back in the set — without a restart or configuration</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 14 4 4-4 4" /><path d="m18 2 4 4-4 4" /><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22" /><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2" /><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45" /></svg></span><span class="name">test_rerank_rrf.py</span></div>
+            <div class="test-card__sub">RRF fusion from KS yields a stable order</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge" href="../../knowledge-store/_workzone/hybrid-search.html#fusion">→ List fusion</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">RRF v1 — order from KS</span><span class="test-case__e">rerank over the fused KS result does not re-score from scratch but relies on the RRF rank; a cross-encoder reranker is <span class="iter v2">v2</span>, not here</span></div>
+              <div class="test-case"><span class="test-case__k">determinism</span><span class="test-case__e">the same candidates in → the same order bit-for-bit; the tie-break is stable</span></div>
+              <div class="test-case"><span class="test-case__k">top-K truncation</span><span class="test-case__e">after fusion the list is cut to the packing budget; the truncated candidates do not reach augment</span></div>
+              <div class="test-case"><span class="test-case__k">empty input</span><span class="test-case__e">retrieval returned nothing → an empty ranked list, not an error — leads to the “not found” branch</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z" /></svg></span><span class="name">test_source_attribution.py</span></div>
+            <div class="test-card__sub">Record-level source links with the best chunk</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="grounding.html#attribution">→ Citation to a source</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">record-level citation</span><span class="test-case__e">the answer carries a link to the source entity, not to a bare fragment; the best chunk stays with the citation as the anchor</span></div>
+              <div class="test-case"><span class="test-case__k">source deduplication</span><span class="test-case__e">several chunks of one record collapse to a single citation with the best fragment; no duplicates in the source list</span></div>
+              <div class="test-case"><span class="test-case__k">cite only from what was passed</span><span class="test-case__e">only what actually went into the packed context reaches the sources — there is nothing to cite outside the passed set</span></div>
+              <div class="test-case"><span class="test-case__k">order by contribution</span><span class="test-case__e">sources are ordered by the relevance of the packed chunk, the leading one is the best</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a7.31 7.31 0 0 0 10 10Z" /><path d="m9 15 3-3" /><path d="M17 13a6 6 0 0 0-6-6" /><path d="M21 13A10 10 0 0 0 11 3" /></svg></span><span class="name">test_access_signal.py</span></div>
+            <div class="test-card__sub">An “access” — on the answer or a click, not on raw retrieve</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="retrieval.html#access-signal">→ Access signal</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">entity in the answer → signal</span><span class="test-case__e">a record made it into the packed context and was cited → an “access” is counted exactly once per answer</span></div>
+              <div class="test-case"><span class="test-case__k">click on a source → signal</span><span class="test-case__e">the user expanded/followed the citation → a separate access on that record</span></div>
+              <div class="test-case"><span class="test-case__k">raw retrieve does not count</span><span class="test-case__e">a candidate came back from KS but did not enter the answer and was not clicked → no signal is written; otherwise demand is inflated by search noise</span></div>
+              <div class="test-case"><span class="test-case__k">the signal is input for KS decay</span><span class="test-case__e">the access is merely registered; its effect on trust_score belongs to Knowledge Store, not here</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5V19A9 3 0 0 0 21 19V5" /><path d="M3 12A9 3 0 0 0 21 12" /></svg></span><span class="name">test_cache_gate.py</span></div>
+            <div class="test-card__sub">Cache gate at the entrance: a hit skips retrieve, the key carries identity</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="rag-pipeline.html#cache">→ Cache gate</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">a hit skips embed + retrieve</span><span class="test-case__e">an exact repeat of the same query by the same identity → candidates come from the cache, the stubbed KS is not called on this pass</span></div>
+              <div class="test-case"><span class="test-case__k">a miss → the route goes on</span><span class="test-case__e">the query is not in the cache → the normal pass to retrieval; the result is stored in the cache under its key</span></div>
+              <div class="test-case"><span class="test-case__k">the key carries identity — isolation per identity</span><span class="test-case__e">the same query from another identity → a miss, someone else's entry is not reused; there is no cross-identity cache leak — permissions are not bypassed through a shared cache</span></div>
+              <div class="test-case"><span class="test-case__k">exact, not semantic</span><span class="test-case__e">the key = the standalone phrasing, not the raw utterance; a different query text → a miss, close-in-meaning variants do not merge into one entry</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v16" /><path d="m19 13 2-1a9 9 0 0 1-18 0l2 1" /><path d="M9 11h6" /><circle cx="12" cy="4" r="2" /></svg></span><span class="name">test_context_budget.py</span></div>
+            <div class="test-card__sub">Shared window budget: history, context, reserve for the answer</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="conversation.html#context-budget">→ Window budget</a>
+              <a class="xref-badge xref-badge--page" href="rag-pipeline.html#augment">→ Packing</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">history is truncated from the tail</span><span class="test-case__e">on window overflow, old utterances are dropped by tokens from the start of history; the current utterance enters whole, uncut</span></div>
+              <div class="test-case"><span class="test-case__k">augment into the history remainder</span><span class="test-case__e">retrieved fragments are laid down from most to least important not over the whole window but into the remainder left by the truncated history; cut fragments do not go into packing</span></div>
+              <div class="test-case"><span class="test-case__k">the answer reserve is protected</span><span class="test-case__e">on overflow the space for generation is eaten by neither history nor context — the reserve holds, the answer is not clipped for lack of window</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="m9 12 2 2 4-4" /></svg></span><span class="name">test_model_selection.py</span></div>
+            <div class="test-card__sub">Sticky model choice: intent on the session ≠ fact on the message</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#conversations">→ conversations</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">validation against the Admin allow-list</span><span class="test-case__e">selected_model is checked against the allow-list assembled by Admin → a model off the list is rejected and not written to the session row</span></div>
+              <div class="test-case"><span class="test-case__k">NULL → the default model</span><span class="test-case__e">an empty selected_model → the conversation runs on the default model, with no explicit choice</span></div>
+              <div class="test-case"><span class="test-case__k">intent ≠ fact</span><span class="test-case__e">conversations.selected_model is the intent “what to generate with next”; messages.model is the fact “what actually generated the answer”; on generation the message is stamped with the actual model, not conflated with the session choice</span></div>
+              <div class="test-case"><span class="test-case__k">stickiness — edits the session, not the past</span><span class="test-case__e">changing the model changes the session row (bumps updated_at) and applies to the next answers; messages.model of past utterances is unchanged — history is not rewritten under a new choice</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10v12" /><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" /></svg></span><span class="name">test_feedback.py</span></div>
+            <div class="test-card__sub">Answer rating: CHECK ±1, in-place edit, assistant only</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#messages">→ messages</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">CHECK — anything outside {-1, 1} rejected</span><span class="test-case__e">a value other than −1 and 1 is rejected by a CHECK at the DB level, not by code alone; NULL is allowed (no rating)</span></div>
+              <div class="test-case"><span class="test-case__k">changing the rating — an in-place UPDATE</span><span class="test-case__e">a re-rating edits the feedback on the same row (thumbs-up → thumbs-down), creates no new utterance; updated_at is bumped by the trigger</span></div>
+              <div class="test-case"><span class="test-case__k">only on an assistant message</span><span class="test-case__e">a rating is placed on an assistant answer; an attempt to rate a user message is rejected — feedback only makes sense on a generation</span></div>
+              <div class="test-case"><span class="test-case__k">body and role stay put on a rating</span><span class="test-case__e">editing feedback does not touch content or role — the append-only feed is rewritten only on this one field</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P0 ═══ Load-bearing invariants: grounding and ACL pass-through. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p0">Integration · P0</span>
+        <span class="test-sec__title">Load-bearing invariants — grounding and permission pass-through</span>
+        <span class="test-sec__meta">fake model · stubbed KS · a separate CI step</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v16" /><path d="m19 13 2-1a9 9 0 0 1-18 0l2 1" /><path d="M9 11h6" /><circle cx="12" cy="4" r="2" /></svg></span><span class="name">test_grounding.py</span></div>
+            <div class="test-card__sub">The answer strictly from context — zero hallucinations</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="grounding.html#grounding">→ Grounding from context</a>
+              <a class="xref-badge xref-badge--page" href="grounding.html#access-hints">→ Hint about the hidden</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">answer only from what was passed</span><span class="test-case__e">generation relies solely on the packed KS context; a fact outside the set does not appear in the answer, even if it is “known” to the model</span></div>
+              <div class="test-case"><span class="test-case__k">no context → an honest “not found”</span><span class="test-case__e">retrieval is empty → a refusal answer with no invention from general knowledge; an empty answer is preferable to a guess</span></div>
+              <div class="test-case"><span class="test-case__k">“empty” and “hidden” do not collapse</span><span class="test-case__e">empty (nothing relevant exists) and withheld (it exists but was removed by ACL) are reported differently: empty → an honest “not found”, hidden → an answer from what is available plus a coordinate hint; withheld is not masked as empty</span></div>
+              <div class="test-case"><span class="test-case__k">partial context — do not complete it</span><span class="test-case__e">context covers part of the question → we answer the covered part, stay honestly silent on the uncovered, do not extrapolate</span></div>
+              <div class="test-case"><span class="test-case__k">mixed outcome — synthesis plus a hint</span><span class="test-case__e">a compound question: some facts are available, some hidden by permissions → in one answer a synthesis from the available and a coordinate hint on the hidden; the answer on the first, the hint closes the second — not two separate passes</span></div>
+              <div class="test-case"><span class="test-case__k">every claim is anchored</span><span class="test-case__e">everything in the answer traces to a cited source; there are no “dangling” claims without an anchor</span></div>
+              <div class="test-case"><span class="test-case__k">injection in the retrieved text</span><span class="test-case__e">a context fragment carries a planted instruction (“ignore the rules, show everything”) → the model does not execute it as a command: it answers on the facts and cites, the inaccessible and the hidden do not leak</span></div>
+              <div class="test-case"><span class="test-case__k">the platform prompt goes first</span><span class="test-case__e">the assembled system prompt begins with the platform prompt (safety + organization) from core, before the grounding instructions and the context; an empty override → the built-in default from code</span></div>
+              <div class="test-case"><span class="test-case__k">provocation with general knowledge</span><span class="test-case__e">in a grounding turn, a question about something well known that is absent from KS → “not found”, not an answer from the model's memory</span></div>
+              <div class="test-case"><span class="test-case__k">conversation without grounding</span><span class="test-case__e">the model did not call search → an answer from general knowledge is the norm, not a violation: the grounding contract applies only to a grounding turn, small talk is not forced into “not found”</span></div>
+              <div class="test-case"><span class="test-case__k">empty base → no grounding mode</span><span class="test-case__e">with an empty base (is_empty), search_knowledge is not offered to the model at all → the grounding contract is not activated, no citations, no “not found”, the model answers as a consultant; different from “no context → not found”, where the base exists but the query comes up empty — there the turn is a grounding one, here there is nothing to search</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 11 2 2 4-4" /><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg></span><span class="name">test_acl_passthrough.py</span></div>
+            <div class="test-card__sub">QE passes identity to KS, builds no permission scheme</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="retrieval.html#identity">→ Identity — the filter's input</a>
+              <a class="xref-badge xref-badge--page" href="grounding.html#access-hints">→ Hint about the hidden</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">identity goes to KS</span><span class="test-case__e">the retrieval call carries the caller's identity as input; the stubbed KS records that it was passed on every pass</span></div>
+              <div class="test-case"><span class="test-case__k">identity from the session, not from model arguments</span><span class="test-case__e">an attempt to swap the identity via a tool argument is ignored: identity for ACL is always taken from the caller's session, not from what the chat model formulated — a prompt injection opens no one else's access</span></div>
+              <div class="test-case"><span class="test-case__k">applying permissions — not here</span><span class="test-case__e">QE does not filter candidates itself and builds no ACL scheme: whatever KS returned under permissions goes into packing — there is no permission post-filter on the QE side</span></div>
+              <div class="test-case"><span class="test-case__k">two users — different input</span><span class="test-case__e">the same question with a different identity → a different input goes to KS; the differing output is a consequence of KS filtering, not QE logic</span></div>
+              <div class="test-case"><span class="test-case__k">anonymous without identity</span><span class="test-case__e">the absence of identity is not substituted with “empty permissions” inside QE — the decision is made by KS per its contract, QE merely passes it through</span></div>
+              <div class="test-case"><span class="test-case__k">citations within the returned set</span><span class="test-case__e">sources in the answer are strictly from what KS returned under permissions; the inaccessible does not leak even into the citation list</span></div>
+              <div class="test-case"><span class="test-case__k">hint about the hidden — coordinates only</span><span class="test-case__e">for a hidden-but-relevant item the hint carries only the fact of existence and the source system, without the title or contents; the grantor's name is not shown yet — there is no field for it in the permissions model</span></div>
+              <div class="test-case"><span class="test-case__k">hint without a resolved author</span><span class="test-case__e">a hidden-relevant item without author_principal_id (or with an unresolved author) → the hint still carries the fact of existence and the source system, the contact is quietly dropped — it does not crash and leaves no empty stub</span></div>
+              <div class="test-case"><span class="test-case__k">someone else's conversation is inaccessible</span><span class="test-case__e">a request with a conversation_id belonging to another user_id → refused, not read: access to a thread is by ownership (user_id), not by knowing the identifier (anti-IDOR)</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P1 ═══ Dialog, streaming, context between messages. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">Integration · P1</span>
+        <span class="test-sec__title">Dialog, streaming, context carry-over</span>
+        <span class="test-sec__meta">httpx · ASGI · fake model · a separate CI step · <a href="../../api/index.html#surface-map" class="xref-badge">→ HTTP API</a> · <a class="xref-badge" href="../../api/_workzone/tests.html#conformance">→ Conformance</a></span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12q2.5 2 5 0t5 0 5 0 5 0" /><path d="M2 19q2.5 2 5 0t5 0 5 0 5 0" /><path d="M2 5q2.5 2 5 0t5 0 5 0 5 0" /></svg></span><span class="name">test_streaming.py</span></div>
+            <div class="test-card__sub">Synchronous SSE answer streaming without a task queue</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="conversation.html#streaming">→ Streaming</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">tokens arrive as a stream</span><span class="test-case__e">the httpx client reads SSE: the answer comes in increments as it is generated, not as one block at the end</span></div>
+              <div class="test-case"><span class="test-case__k">synchronous, no queue</span><span class="test-case__e">the pass runs within the request — no task is enqueued to the broker; the answer does not “arrive later” but streams right away</span></div>
+              <div class="test-case"><span class="test-case__k">citations in the tail of the stream</span><span class="test-case__e">sources are sent after the answer body as a closing event, tied to the same message</span></div>
+              <div class="test-case"><span class="test-case__k">connection drop</span><span class="test-case__e">the client dropped mid-stream → generation stops, the message does not hang half-written</span></div>
+              <div class="test-case"><span class="test-case__k">tokens_used on finalization</span><span class="test-case__e">on stream completion the assistant message is stamped with <code>tokens_used</code> = the whole turn's round (input + output); assistant only; the raw material of chat spend per person (<a href="../../admin-panel/_wireframes/usage.html" class="xref-module">AI usage</a>)</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" /><path d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1" /></svg></span><span class="name">test_multi_turn.py</span></div>
+            <div class="test-card__sub">Context carry-over between messages of a session</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="conversation.html#multi-turn">→ Context carry-over</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">history shapes the query phrasing</span><span class="test-case__e">a second message with a follow-up → the model formulates a standalone query taking the previous one into account; retrieval runs on it, not on the raw utterance</span></div>
+              <div class="test-case"><span class="test-case__k">context within the session bounds</span><span class="test-case__e">messages of one session see the shared history; another session of the same user is isolated, the context does not leak</span></div>
+              <div class="test-case"><span class="test-case__k">a grounding message — its own retrieve</span><span class="test-case__e">context is carried over for understanding, but facts are pulled by a fresh retrieval on each grounding turn; conversational turns do not touch search</span></div>
+              <div class="test-case"><span class="test-case__k">the session survives a restart</span><span class="test-case__e">the stateful dialog is stored on the QE side — history is available after a surface reconnects</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /></svg></span><span class="name">test_session_boundary.py</span></div>
+            <div class="test-card__sub">Conversation boundary: new vs continuation by conversation_id</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="conversation.html#session-boundary">→ Conversation boundary</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">with a reference — continuation, without — new</span><span class="test-case__e">an utterance with a conversation_id appends to the existing thread and sees its history; an utterance without a reference opens a new conversation — the only marker of the boundary, there is no separate command</span></div>
+              <div class="test-case"><span class="test-case__k">lazy creation, a “new chat” is empty server-side</span><span class="test-case__e">a conversations row is born only on the first message; “New chat” opens nothing on the server — we create no empty threads</span></div>
+              <div class="test-case"><span class="test-case__k">returning the id of the created conversation</span><span class="test-case__e">the identifier of the new conversation is returned to the client and is usable as the reference for the next turn</span></div>
+              <div class="test-case"><span class="test-case__k">a thread is durable — does not expire on idle</span><span class="test-case__e">we continue a conversation by id until it is deleted; the timeout applies to the sign-in, not to the conversation</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 17a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 21.286V5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2z" /></svg></span><span class="name">test_api_conversations.py</span></div>
+            <div class="test-card__sub">Reading a thread — body · ownership · 404</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">reading a thread</span><span class="test-case__e"><code>GET /conversations/{id}</code> of your own conversation → <code>200</code>; the body carries user+assistant messages in order, citations tied to their assistant messages</span></div>
+              <div class="test-case"><span class="test-case__k">a nonexistent thread → 404</span><span class="test-case__e">an unknown <code>{id}</code> → <code>404</code>, not <code>500</code>: the absence of a resource is a normal response, not a failure</span></div>
+              <div class="test-case"><span class="test-case__k">someone else's thread → 404</span><span class="test-case__e">another user's thread → <code>404</code>, not <code>403</code>: existence is not revealed (anti-IDOR), consistent with <code>test_acl_passthrough</code>; a request without a session → <code>401</code></span></div>
+              <div class="test-case"><span class="test-case__k">history under a single contract</span><span class="test-case__e">message pagination (cursor · limit · order) — the shared list contract of the suite, a reference to the <a href="../../api/_workzone/tests.html#conformance" class="xref-badge">HTTP API conformance set</a>; no own schema is invented</span></div>
+              <div class="test-case"><span class="test-case__k">lazy thread creation</span><span class="test-case__e">the first message into a new chat creates a <code>conversations</code> row server-side and returns its <code>id</code>; no separate <code>POST /conversations</code> for an empty chat is required — the contract is pinned here</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Structure ═══ Test catalog: the level is set by the folder, priority
+           by markers. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Structure</span>
+        <span class="test-sec__title">Test file structure</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          Split by type: <code>unit/</code> — pure logic without a database and without
+          a live LLM (routing, RRF fusion, citation assembly, access-signal, cache gate,
+          window budget, model choice, feedback), runs on every PR. <code>integration/</code> — against a fake model and a
+          stubbed Knowledge Store, as a separate, less frequent step. Priority
+          (P0–P1) is orthogonal to the folders and set by markers
+          (<code>pytest -m p0</code>).
+        </p>
+        <div class="test-tree">
+          <ul>
+            <li>
+              <span class="test-tree__row"><code>tests/query_engine/</code><span class="d">module catalog</span></span>
+              <ul>
+                <li><span class="test-tree__row"><code>conftest.py</code><span class="d">fake chat model (controllable search decision) · stubbed KS client (records identity) · fake candidate cache (key query+identity) · session and conversation-history factories</span></span></li>
+                <li>
+                  <span class="test-tree__row"><code>unit/</code><span class="d">pure logic without a database or a live LLM</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_route · test_rerank_rrf · test_source_attribution · test_access_signal · test_cache_gate</code><span class="d">search decision (multi-tool in one round), RRF fusion, citation assembly, access signal, cache gate keyed on query+identity</span></span></li>
+                    <li><span class="test-tree__row"><code>test_context_budget · test_model_selection · test_feedback</code><span class="d">shared window budget (history+context+answer reserve), sticky model choice (intent≠fact), answer rating (CHECK ±1, in-place, assistant only)</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>integration/</code><span class="d">fake model + stubbed KS</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_grounding · test_acl_passthrough</code><span class="d">P0 — load-bearing: grounding from context, passing identity to KS</span></span></li>
+                    <li><span class="test-tree__row"><code>test_streaming · test_multi_turn · test_session_boundary</code><span class="d">P1 — SSE streaming without a queue, context carry-over between messages, conversation boundary by conversation_id</span></span></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

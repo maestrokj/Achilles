@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Email: Delivery and service</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../email.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Email</a>
+        <h1 class="header__title">Delivery and service</h1>
+        <div class="header__sub">email · workzone</div>
+      </div>
+
+      <p class="desc">
+        How sending is built: one service with a clear contract, two call modes
+        and honest handling of delivery failures. The consumer knows nothing
+        about SMTP — it asks to “send the invitation”, and the transport takes
+        care of the rest.
+      </p>
+
+      <!-- ═══ Service interface ═══ Port-adapter: the domain depends on the
+           contract, not on aiosmtplib. High-level per-email helpers. -->
+      <div class="section" id="service">
+        <h2 class="section__title">Service interface</h2>
+        <p class="desc">
+          Inside are two low-level steps: <b>compose</b> (template + data +
+          language → a ready email: subject, HTML and text version) and
+          <b>send</b> (delivery of the ready email over SMTP).
+        </p>
+        <div class="note">
+          <ul class="notes">
+            <li>
+              <strong>send_invite</strong> (email, link, role, language) — the
+              invitation email.
+            </li>
+            <li>
+              <strong>send_password_reset</strong> (email, link, language) — the
+              password-reset email.
+            </li>
+            <li>
+              <strong>send_test</strong> (email, language) — a diagnostic email
+              for the “Test connection” button.
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ═══ Two modes ═══ The inline vs queue fork. -->
+      <div class="section" id="modes">
+        <h2 class="section__title">Inline or queue</h2>
+        <p class="desc">
+          One core of <code>compose</code> + <code>send</code>, two call paths.
+          The choice is by the nature of the scenario, not by convenience.
+        </p>
+        <div class="decision-box">
+          <strong>Decision.</strong> Diagnostics — <b>inline</b> (synchronous):
+          the test email is sent right in the request with a timeout, so the
+          admin sees the verdict at once. Everything else — <b>through the
+          queue</b>: invitations (including bulk), password reset and
+          <a href="../../notifications/_workzone/dispatcher.html#fanout" class="xref-module">alerts</a>
+          are enqueued as a task in SAQ, and a worker sends them in the
+          background.
+        </div>
+        <div class="eml-modes">
+          <div class="mod-card eml-mode eml-mode--inline">
+            <div class="eml-mode__head">
+              <span class="eml-mode__name">Inline</span>
+              <span class="eml-mode__tag">synchronous</span>
+            </div>
+            <div class="eml-mode__body">
+              Sending within the request with a short timeout. The outcome is
+              available at once: the result is written to
+              <code>last_test_ok</code> / <code>last_test_at</code> and reflected
+              by a status chip on the settings screen.
+              <span class="eml-mode__use"><b>Who:</b> the test email only.</span>
+            </div>
+          </div>
+          <div class="mod-card eml-mode eml-mode--queue">
+            <div class="eml-mode__head">
+              <span class="eml-mode__name">Queue · SAQ</span>
+              <span class="eml-mode__tag">asynchronous</span>
+            </div>
+            <div class="eml-mode__body">
+              A task in SAQ on top of Redis (the broker is already there). Emails
+              are sent in the background by the
+              <a href="../../cache-workers/_workzone/queues.html#worker" class="xref-module"
+                >platform's shared worker</a
+              >
+              — with retries, throttling and durability across restarts. The
+              consumer replies instantly, without waiting for delivery.
+              <span class="eml-mode__use"><b>Who:</b> invite · reset · bulk · alerts.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Throttling ═══ The SINGLE home of bulk-send mechanics. Consumers
+           (onboarding, bulk-preview, invite-flow) link HERE, they don't describe
+           the rate themselves (the altitude rule in README). -->
+      <div class="section" id="throttling">
+        <h2 class="section__title">Queue and batch sending <a class="xref-badge" href="../../cache-workers/_workzone/queues.html#registry">→ Cache &amp; Workers</a></h2>
+        <p class="desc">
+          Send rate is governed by the queue worker — not the consumer. It's the
+          worker's responsibility, in one place: drop the tasks in, and the
+          worker works them off at the set rate.
+        </p>
+        <ul class="notes">
+          <li class="note">
+            <strong>Why a rate.</strong> A volley of emails all at once would hit
+            timeouts, and the provider would treat it as a mailout and throttle
+            it or mark it as spam. The worker keeps a safe rate: a send-rate limit
+            and a reasonable batch at a time.
+          </li>
+          <li class="note">
+            <strong>The consumer doesn't batch itself.</strong> However many
+            emails are needed — that's simply that many tasks in the queue. The
+            consumer drops them in and replies at once, without waiting for
+            delivery; accumulating and splitting into batches is the worker's job,
+            in one place.
+          </li>
+          <li class="note">
+            <strong>Parameters are config, not hardcode.</strong> Concurrency,
+            send rate and batch size are set by the worker's settings.
+          </li>
+          <li class="note">
+            <strong>No duplicates — idempotency.</strong> The task is enqueued
+            with a stable <code>job_id</code>: a repeat enqueue of the same send
+            (a request retry, a double click, a repeated enqueue) is dropped while
+            the task is queued or running. A retry on delivery failure is the same
+            task with the same id, not a second email.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ═══ Delivery errors ═══ What we return upward. Anti-enumeration for
+           forgot-password — we swallow the error. -->
+      <div class="section" id="errors">
+        <h2 class="section__title">Delivery errors</h2>
+        <p class="desc">
+          SMTP can go down, time out or reject. What happens depends on the mode
+          and on the type of error.
+        </p>
+        <div class="note">
+          <strong>By mode.</strong>
+          <div class="checklist">
+            <div class="check">
+              <span class="check__rule">inline</span>
+              <span>
+                <span class="check__name">Verdict at once</span>
+                <span class="check__desc">
+                  Failure → a typed error upward; the test screen shows a fail,
+                  and <code>false</code> is written to <code>last_test_ok</code>.
+                </span>
+              </span>
+            </div>
+            <div class="check">
+              <span class="check__rule">queue</span>
+              <span>
+                <span class="check__name">Retries, then not-delivered</span>
+                <span class="check__desc">
+                  A temporary failure → retries with exponential backoff;
+                  exhausted → the task goes to “not delivered”, and the status is
+                  visible to the consumer (for an invite — on the
+                  <a href="../../auth-security/_workzone/authentication.html#admission-model" class="xref-module">admission model</a>).
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="note">
+          <strong>By error type.</strong>
+          <div class="checklist">
+            <div class="check">
+              <span class="check__rule">5xx</span>
+              <span>
+                <span class="check__name">Permanent rejection</span>
+                <span class="check__desc">
+                  Wrong address, mailbox refused — retries are pointless, straight
+                  to “not delivered”.
+                </span>
+              </span>
+            </div>
+            <div class="check">
+              <span class="check__rule">4xx · network</span>
+              <span>
+                <span class="check__name">Temporary failure</span>
+                <span class="check__desc">
+                  Server unavailable, timeout, provider throttle — we retry with
+                  backoff.
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <ul class="notes">
+          <li class="note">
+            <strong>Password reset is a special case.</strong> A delivery failure
+            is <b>not disclosed</b> outward: the response to “forgot your
+            password?” is always the same (anti-enumeration —
+            <a href="../../auth-security/_workzone/authentication.html#forgot-password" class="xref-module">Auth&nbsp;/&nbsp;Security</a>),
+            and the failure goes only to the log and audit.
+          </li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

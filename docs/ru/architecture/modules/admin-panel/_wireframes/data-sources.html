@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Карточка источника</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Карточка источника</h1>
+        <div class="header__sub">
+          admin panel · макеты · данные
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Экран рендерится в контентной области каркаса">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Загрузка экрана — каркас (skeleton)">
+              <span class="in-load__icon"></span>загрузка
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc" id="sources-list">
+        Карточка одного источника — из
+        <a href="harvester.html#sync-overview" class="xref-page">хаба Harvester</a>.
+      </p>
+
+      <!-- ═══ Конфигурация и подключение ═══ -->
+      <div class="section" id="connection-status">
+        <div class="section__title">Конфигурация и подключение</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">карточка источника</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/harvester/sources/jira
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/harvester/sources/:id · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-row wf-spread">
+                  <span class="wf-row">
+                    <span class="wf-title">Jira · Acme</span>
+                    <span class="wf-chip wf-chip--ok">Active</span>
+                    <span class="wf-chip">idle</span>
+                  </span>
+                  <a class="wf-btn wf-btn--primary" href="#sync-wizard">Синхронизировать</a>
+                </div>
+
+                <!-- Конфигурация -->
+                <div class="wf-stack">
+                  <span class="wf-label">Конфигурация</span>
+                  <div class="wf-row">
+                    <div class="wf-field">
+                      <span class="wf-label">Тип</span>
+                      <div class="wf-input wf-input--sm">Jira</div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Base URL</span>
+                      <div class="wf-input">acme.atlassian.net</div>
+                    </div>
+                    <span class="wf-annot">1</span>
+                  </div>
+                </div>
+
+                <!-- Аутентификация -->
+                <div class="wf-stack">
+                  <span class="wf-label">Аутентификация</span>
+                  <div class="wf-row">
+                    <div class="wf-field">
+                      <span class="wf-label">Учётная запись</span>
+                      <div class="wf-input wf-input--sm">Сервисная учётная запись ▾</div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Способ</span>
+                      <div class="wf-input wf-input--sm">Статический токен ▾</div>
+                    </div>
+                    <span class="wf-annot">2</span>
+                  </div>
+                  <div class="wf-field">
+                    <span class="wf-label">Учётные данные</span>
+                    <div class="wf-input">
+                      ••••••••••••
+                      <span class="wf-input__action" title="Зашифровано">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                      </span>
+                      <span class="wf-annot">3</span>
+                    </div>
+                    <span class="wf-hint">полное значение видно только при создании</span>
+                  </div>
+                </div>
+
+                <!-- Test Connection -->
+                <div class="wf-stack" id="test-connection">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-label">Проверка соединения</span>
+                    <button class="wf-btn">Проверить <span class="wf-annot">4</span></button>
+                  </div>
+                  <div class="wf-stack wf-stack--tight">
+                    <div class="wf-row"><span class="wf-chip wf-chip--ok">✓ URL доступен</span></div>
+                    <div class="wf-row"><span class="wf-chip wf-chip--ok">✓ Учётные данные верны</span></div>
+                    <div class="wf-row"><span class="wf-chip wf-chip--ok">✓ Прав достаточно</span></div>
+                  </div>
+                  </div>
+
+                <!-- Scope -->
+                <div class="wf-stack">
+                  <span class="wf-label">Scope</span>
+                  <div class="wf-field">
+                    <div class="wf-input wf-input--sm">Всё, кроме исключённого ▾</div>
+                    <span class="wf-hint">исключены 3 архивных проекта · режим «Только выбранное» — список из каталога</span>
+                  </div>
+                  <span class="wf-annot">5</span>
+                </div>
+
+                <!-- Фильтрация контента -->
+                <div class="wf-stack" id="content-filter">
+                  <span class="wf-label">Фильтрация контента</span>
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <span class="wf-text">Встроенные правила применяются всегда и не настраиваются: пустые сущности, системные события, боты</span>
+                    <hr class="wf-divider" />
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text">Собирать вложения <span class="wf-hint">ссылками в каталог</span></span>
+                      <span class="wf-toggle wf-toggle--on"></span>
+                    </div>
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text">Собирать комментарии и обсуждения</span>
+                      <span class="wf-toggle wf-toggle--on"></span>
+                    </div>
+                  </div>
+                  <span class="wf-annot">6</span>
+                </div>
+
+                <!-- Webhooks -->
+                <div class="wf-stack" id="webhooks">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-label">Webhooks</span>
+                    <span class="wf-toggle wf-toggle--on"></span>
+                  </div>
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text">
+                        Обновления в реальном времени<br />
+                        <span class="wf-hint">дельта приходит сразу, без ожидания опроса</span>
+                      </span>
+                      <span class="wf-chip wf-chip--ok">активен · событие 2 мин назад</span>
+                    </div>
+                    <hr class="wf-divider" />
+                    <div class="wf-field">
+                      <span class="wf-label">Endpoint <span class="wf-hint">— вставить в настройки Jira</span></span>
+                      <div class="wf-input">
+                        achilles.local/harvester/webhooks/jira
+                        <span class="wf-input__action" title="Копировать">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                        </span>
+                      </div>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Секрет подписи</span>
+                      <div class="wf-input">
+                        ••••••••••••
+                        <span class="wf-input__action" title="Зашифровано">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                        </span>
+                      </div>
+                      <div class="wf-row wf-spread">
+                        <span class="wf-hint">регистрация в источнике вручную (авто-провижн — <span class="iter v2">v2</span>)</span>
+                        <span class="wf-guarded"
+                          ><button class="wf-btn wf-btn--ghost">Сменить секрет</button><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                        ></span>
+                      </div>
+                    </div>
+                    <span class="wf-annot">7</span>
+                  </div>
+                </div>
+
+                <!-- Расписание -->
+                <div class="wf-stack">
+                  <span class="wf-label">Расписание</span>
+
+                  <!-- Incremental — наследует глобальный -->
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text">
+                        Incremental sync
+                        <span class="wf-hint">свежесть — подтягивает дельту источника</span>
+                      </span>
+                      <span class="wf-row">
+                        <span class="wf-hint">Своё расписание</span>
+                        <span class="wf-toggle"></span>
+                      </span>
+                    </div>
+                    <div class="wf-row">
+                      <span class="wf-chip">наследует глобальный</span>
+                      <span class="wf-hint">каждые 6 ч</span>
+                    </div>
+                  </div>
+
+                  <!-- Reconciliation — своё расписание -->
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text">
+                        Reconciliation
+                        <span class="wf-hint">гигиена — полная сверка с источником</span>
+                      </span>
+                      <span class="wf-row">
+                        <span class="wf-hint">Своё расписание</span>
+                        <span class="wf-toggle wf-toggle--on"></span>
+                      </span>
+                    </div>
+                    <hr class="wf-divider" />
+                    <div class="wf-row">
+                      <div class="wf-field">
+                        <span class="wf-label">Частота</span>
+                        <div class="wf-input wf-input--sm">Раз в неделю ▾</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">День</span>
+                        <div class="wf-input wf-input--sm">Воскресенье ▾</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Время</span>
+                        <div class="wf-input wf-input--sm">03:00 ▾</div>
+                      </div>
+                      <span class="wf-annot">8</span>
+                    </div>
+                    <span class="wf-hint">↳ каждое воскресенье в 03:00 · время организации (Europe/Moscow)</span>
+                  </div>
+                </div>
+
+                <!-- Авторитет источника -->
+                <div class="wf-stack">
+                  <span class="wf-label">Авторитет источника</span>
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-text">
+                      Вес доверия в ранжировании<br />
+                      <span class="wf-hint">база релевантности — выше у регламентов и вики, ниже у чатов; по умолчанию по типу источника</span>
+                    </span>
+                    <span class="wf-row">
+                      <div class="wf-input wf-input--sm">Высокий ▾</div>
+                      <span class="wf-annot">9</span>
+                    </span>
+                  </div>
+                </div>
+
+                <!-- История синхронизаций -->
+                <div class="wf-fold" id="sync-history">
+                  <button class="wf-fold__head">
+                    <span class="wf-label">История синхронизаций</span>
+                    <span class="wf-fold__caret">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                      </span>
+                    <span class="wf-annot">10</span>
+                  </button>
+                  <div class="wf-fold__body">
+                    <table class="wf-table">
+                      <thead>
+                        <tr>
+                          <th class="wf-th--sort wf-th--sorted">Начат <span class="wf-th__caret">↓</span></th>
+                          <th class="wf-th--sort">Режим <span class="wf-th__caret">↕</span></th>
+                          <th class="wf-th--sort">Длительность <span class="wf-th__caret">↕</span></th>
+                          <th class="wf-th--sort">Сущностей <span class="wf-th__caret">↕</span></th>
+                          <th class="wf-th--sort">Итог <span class="wf-th__caret">↕</span></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>сегодня · 14:30</td>
+                          <td>Incremental</td>
+                          <td>идёт · 8.2k из 13.1k</td>
+                          <td>—</td>
+                          <td><span class="wf-chip wf-chip--warn">running</span></td>
+                        </tr>
+                        <tr>
+                          <td>сегодня · 08:30</td>
+                          <td>Incremental</td>
+                          <td>4 мин</td>
+                          <td>1.2k</td>
+                          <td><span class="wf-chip wf-chip--ok">succeeded</span></td>
+                        </tr>
+                        <tr>
+                          <td>вчера · 23:10</td>
+                          <td>Partial re-sync</td>
+                          <td>1 мин</td>
+                          <td>0.1k</td>
+                          <td><span class="wf-chip wf-chip--ok">succeeded</span></td>
+                        </tr>
+                        <tr>
+                          <td>вчера · 22:00</td>
+                          <td>Incremental</td>
+                          <td>2 мин</td>
+                          <td>0.3k</td>
+                          <td><span class="wf-chip wf-chip--err">failed</span></td>
+                        </tr>
+                        <tr class="wf-table__row--muted">
+                          <td>3 дня назад · 09:00</td>
+                          <td>Full Sync</td>
+                          <td>1 ч 12 мин</td>
+                          <td>48.1k</td>
+                          <td><span class="wf-chip">cancelled</span></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <!-- Lifecycle-действия -->
+                <div class="wf-stack">
+                  <span class="wf-label">Управление</span>
+                  <div class="wf-row">
+                    <button class="wf-btn">Поставить на паузу</button>
+                    <span class="wf-guarded"
+                      ><button class="wf-btn">Отключить</button><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                    ></span>
+                    <span class="wf-guarded"
+                      ><button class="wf-btn wf-btn--danger">Удалить</button><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#type-to-confirm" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                    ></span>
+                    <span class="wf-annot">11</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">test connection · ошибка на шаге 2</div>
+              <div class="wf-screen">
+                <div class="wf-body">
+                  <div class="wf-stack wf-stack--tight">
+                    <div class="wf-row"><span class="wf-chip wf-chip--ok">✓ URL доступен</span></div>
+                    <div class="wf-row"><span class="wf-chip wf-chip--err">✕ Учётные данные верны · токен отозван</span></div>
+                    <div class="wf-row"><span class="wf-chip">— Прав достаточно · не проверялось</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">ротация секрета · новый сгенерирован</div>
+              <div class="wf-screen">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <span class="wf-text">Новый секрет — скопируйте сейчас, позже он будет под маской.</span>
+                    <div class="wf-input">
+                      whsec_8f2a····d41c
+                      <span class="wf-input__action" title="Копировать">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                      </span>
+                    </div>
+                    <div class="wf-row">
+                      <span class="wf-chip wf-chip--ok">новый активен</span>
+                      <span class="wf-chip wf-chip--warn">старый принимается ещё 24 ч</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">источник под замком · syncing</div>
+              <div class="wf-screen">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <span class="wf-row">
+                      <span class="wf-spinner"></span>
+                      <span class="wf-chip wf-chip--warn">syncing · 62%</span>
+                    </span>
+                    <div class="wf-alert">Идёт синхронизация — конфигурация заблокирована. Доступна только отмена.</div>
+                    <div class="wf-row">
+                      <button class="wf-btn wf-btn--disabled">Синхронизировать</button>
+                      <button class="wf-btn">Отменить прогон</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">в очереди за доводкой графа</div>
+              <div class="wf-screen">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <span class="wf-row">
+                      <span class="wf-chip wf-chip--warn">queued · ждёт доводки</span>
+                    </span>
+                    <div class="wf-alert">
+                      Идёт платформенная доводка графа (мёрж сущностей) — запуск
+                      встанет в очередь и стартует по её завершении.
+                      <span class="wf-annot">12</span>
+                    </div>
+                    <div class="wf-row">
+                      <button class="wf-btn wf-btn--disabled">Синхронизировать</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Тип и набор полей задаёт
+              <a href="../../harvester/_workzone/connectors.html#manifest" class="xref-module">манифест коннектора</a>. Base URL — адрес инстанса источника.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Две независимые оси: <b>Учётная запись</b> (сервисная / личная) и <b>Способ</b> (статический токен · OAuth <span class="iter v2">v2</span>). Комбинации — <a href="../../harvester/_workzone/sources.html#authentication" class="xref-module">Harvester</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Учётные данные под маской — полное значение видно только при создании. Хранятся зашифрованными
+              <a href="../../auth-security/_workzone/protection.html#crypto-core" class="xref-module">крипто-ядром Auth</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              «Проверить» гоняет пробу из трёх шагов — связь, креды, права — и даёт вердикт по каждому, чтобы починить ровно оборвавшееся звено. Та же проба идёт по расписанию: провал уводит источник в error и поднимает
+              <a href="notifications.html" class="xref-page">уведомление</a>. Health-check — <a href="../../harvester/_workzone/sources.html#health-check" class="xref-module">Harvester</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Scope — режим, не ручной перечень: «Всё» берёт источник целиком и подхватывает новое, «Только выбранное» — отбор из каталога. Режимы —
+              <a href="../../harvester/_workzone/sources.html#allowlist" class="xref-module">Harvester</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              Базовые правила встроены и не настраиваются. Переключатели «сверх правил» — релевантные типу источника (у Jira вложения и комментарии): вернуть отсеянное или добрать необязательный контент. Набор объявляет
+              <a href="../../harvester/_workzone/connectors.html#manifest" class="xref-module">манифест коннектора</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              Webhooks — источник шлёт событие, коннектор тянет дельту вне опроса; канал один на источник. <b>Endpoint</b> и <b>секрет</b>
+              админ вставляет вручную (авто-провижн — <span class="iter v2">v2</span>). <b>Сменить секрет</b> — за подтверждением, значение видно один раз; ротация с grace-окном идёт без простоя. Приём входящих держит <a href="../../harvester/_workzone/security.html#webhooks" class="xref-module">security</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              По умолчанию расписание <b>наследует</b> глобальный
+              дефолт из
+              <a href="harvester.html#global-settings" class="xref-page">хаба</a>; «Своё расписание» раскрывает поля и пишет override на источник. Инкремент — интервал без окна; у reconciliation override — окно запуска (частота, день, час) в таймзоне организации. Строка под полями разворачивает выбор в живую фразу.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">9</span>
+              Авторитет источника — <b>базовый вес доверия</b> в ранжировании: при равной свежести регламент перевесит реплику в чате. Стартовое значение по типу даёт манифест, здесь админ его переопределяет. Дальше его берёт за базу
+              <a href="../../knowledge-store/_workzone/lifecycle.html#staleness" class="xref-module">Curation Pass</a>
+              — это ранжирующий вес, не фильтр доступа.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">10</span>
+              История прогонов свёрнута по умолчанию — вторична рядом с конфигурацией. Один прогон = одна запись
+              <a href="../../harvester/_workzone/reliability.html#sync-run" class="xref-module">SyncRun</a>: состояние, прогресс «N из M», ошибки. Сортировка — клик по заголовку колонки. Тип <i>Partial re-sync</i> — самовосстановление инкремента; череда таких подряд сигналит, что webhook источника барахлит.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">11</span>
+              <b>Пауза</b> глушит расписание; <b>Отключить</b> — обратимая деактивация с сохранением конфига и данных; <b>Удалить</b> за type-to-confirm предлагает выбор «только конфигурация» / «конфигурация + данные» (необратимо). Состояния — <a href="../../harvester/_workzone/sources.html#lifecycle" class="xref-module">Harvester</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">12</span>
+              Запуск может встать в <code>queued</code> из-за платформенной доводки графа: на её разрушительных шагах синхронизация ждёт и стартует по завершении — не падает. Координация полос — <a href="../../knowledge-store/_workzone/lifecycle.html#coordination" class="xref-module">Knowledge Store</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Мастер подключения ═══ -->
+      <div class="section" id="source-wizard">
+        <div class="section__title">Мастер подключения</div>
+        <p class="desc">
+          Добавление источника из
+          <a href="harvester.html#sync-overview" class="xref-page">хаба</a> — четыре шага в модалке.
+        </p>
+        <div class="wf-stage">
+          <div class="wf-steps">
+            <span class="wf-step wf-step--done">1</span>
+            <span class="wf-step__bar"></span>
+            <span class="wf-step wf-step--done">2</span>
+            <span class="wf-step__bar"></span>
+            <span class="wf-step wf-step--current">3</span>
+            <span class="wf-step__bar"></span>
+            <span class="wf-step">4</span>
+          </div>
+
+          <div class="wf-backdrop">
+            <div class="wf-gallery">
+              <div class="wf-frame">
+                <div class="wf-stage__caption">шаг 1 · тип</div>
+                <div class="wf-screen wf-screen--modal">
+                  <div class="wf-body">
+                    <div class="wf-stack">
+                      <span class="wf-title">Тип источника</span>
+                      <div class="wf-card wf-row wf-spread"><span class="wf-text">Jira</span><span class="wf-checkbox"></span></div>
+                      <div class="wf-card wf-row wf-spread"><span class="wf-text">Confluence</span><span class="wf-checkbox"></span></div>
+                      <div class="wf-card wf-row wf-spread"><span class="wf-text">Slack</span><span class="wf-checkbox"></span></div>
+                      <div class="wf-card wf-row wf-spread"><span class="wf-text">GitLab</span><span class="wf-checkbox"></span></div>
+                      <button class="wf-btn wf-btn--primary wf-btn--block">Дальше</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="wf-frame">
+                <div class="wf-stage__caption">шаг 2 · подключение</div>
+                <div class="wf-screen wf-screen--modal">
+                  <div class="wf-body">
+                    <div class="wf-stack">
+                      <span class="wf-title">Подключение · Jira</span>
+                      <div class="wf-field">
+                        <span class="wf-label">Base URL</span>
+                        <div class="wf-input wf-input--focus">acme.atlassian.net</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Учётная запись</span>
+                        <div class="wf-input wf-input--sm">Сервисная учётная запись ▾</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">API-токен</span>
+                        <div class="wf-input">••••••••••••</div>
+                      </div>
+                      <button class="wf-btn wf-btn--primary wf-btn--block">Дальше</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="wf-frame">
+                <div class="wf-stage__caption">шаг 3 · проба</div>
+                <div class="wf-screen wf-screen--modal">
+                  <div class="wf-body">
+                    <div class="wf-stack">
+                      <span class="wf-title">Проверка соединения</span>
+                      <div class="wf-card wf-stack wf-stack--tight">
+                        <div class="wf-row"><span class="wf-chip wf-chip--ok">✓ URL доступен</span></div>
+                        <div class="wf-row"><span class="wf-chip wf-chip--ok">✓ Учётные данные верны</span></div>
+                        <div class="wf-row"><span class="wf-spinner"></span><span class="wf-chip">Прав достаточно · проверяется</span></div>
+                      </div>
+                      <button class="wf-btn wf-btn--primary wf-btn--block">Дальше</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="wf-frame">
+                <div class="wf-stage__caption">шаг 4 · scope</div>
+                <div class="wf-screen wf-screen--modal">
+                  <div class="wf-body">
+                    <div class="wf-stack">
+                      <span class="wf-title">Scope</span>
+                      <div class="wf-field">
+                        <div class="wf-input wf-input--sm">Всё, кроме исключённого ▾</div>
+                        <span class="wf-hint">или «Только выбранное» — список из каталога</span>
+                      </div>
+                      <div class="wf-input wf-input--sm">
+                        <span class="wf-input__icon">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                        </span>
+                        Поиск по проектам
+                      </div>
+                      <div class="wf-card wf-row wf-spread"><span class="wf-text">PROJ · Acme Platform</span><span class="wf-checkbox"></span></div>
+                      <div class="wf-card wf-row wf-spread"><span class="wf-text">OPS · Operations</span><span class="wf-checkbox"></span></div>
+                      <button class="wf-btn wf-btn--primary wf-btn--block">Подключить</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item wf-legend__item--note">
+              Шаг 1 — типы из
+              <a href="../../harvester/_workzone/connectors.html#registry" class="xref-module">реестра коннекторов</a>; список открытый, кастомный коннектор появляется сам. Шаг 2 — URL и креды по типу. Шаг 3 — та же <a href="#test-connection" class="xref-anchor">проба</a>, при успехе строится каталог объектов. Шаг 4 — выбор контейнеров (проекты / пространства / каналы) и режим scope. После «Подключить» источник появляется в хабе.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Мастер синхронизации ═══ -->
+      <div class="section" id="sync-wizard">
+        <div class="section__title">Мастер синхронизации</div>
+        <p class="desc">Запуск прогона по кнопке «Синхронизировать» — одна модалка.</p>
+        <div class="wf-stage">
+          <div class="wf-backdrop">
+            <div class="wf-gallery">
+              <div class="wf-frame">
+                <div class="wf-stage__caption">модал «синхронизировать»</div>
+                <div class="wf-screen wf-screen--modal">
+                  <div class="wf-body">
+                    <div class="wf-stack">
+                      <span class="wf-title">Синхронизировать · Jira</span>
+                      <div class="wf-field">
+                        <span class="wf-label">Режим прогона</span>
+                        <div class="wf-card wf-row wf-spread"><span class="wf-text">Incremental — только изменённое</span><span class="wf-checkbox"></span></div>
+                        <div class="wf-card wf-row wf-spread"><span class="wf-text">Full Sync — полный повторный сбор</span><span class="wf-checkbox wf-checkbox--on"></span></div>
+                        <div class="wf-alert">Полный повторный сбор крупного источника занимает много времени (~1 ч). Прогон можно отменить в любой момент.</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Scope прогона</span>
+                        <div class="wf-input wf-input--sm">Весь scope источника ▾</div>
+                      </div>
+                      <button class="wf-btn wf-btn--primary wf-btn--block">Запустить</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item wf-legend__item--note">
+              Режим и scope для этого прогона. Предупреждение о длительности — инлайн, только при Full Sync. На время прогона источник под замком; отмена безопасна. Режимы —
+              <a href="../../harvester/_workzone/sync-modes.html#full-sync" class="xref-module">Harvester · sync-modes</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

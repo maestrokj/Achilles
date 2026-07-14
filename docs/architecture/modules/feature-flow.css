@@ -1,0 +1,178 @@
+/* Feature-flow kit (flow-*) — the metro-storyboard primitives for
+   multi-screen feature flows. The happy path as a transit line: stations
+   (.flow-stop) are screen nodes, joined by segments (.flow-seg) labelled
+   with the transition that fires them. The station NAME is the screen
+   link (feature-local sibling, or a shared screen in _wireframes via
+   --shared, shown with a doubled ring). An edge case forks DOWN from the
+   segment where the branch happens (.flow-branch — off the happy path);
+   when a flow has a branch, add .flow--branch to reserve the room it
+   hangs into. Conventions: docs/architecture/README.md §Features.
+   Loaded by _features/<feature>/index.html on top of module.css
+   (parallel to wireframe.css's wf-* kit for screen mockups).
+   Placement convention: docs/architecture/README.md §Styling. */
+
+.flow {
+  display: flex;
+  align-items: center;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  /* Generous padding frames the line and keeps the floating station
+     names/roles (absolutely positioned, they overflow the line band)
+     inside the border. */
+  padding: 2.8rem 4rem 2.4rem;
+  margin: 0.5rem 0 0;
+}
+
+/* Reserve vertical room INSIDE the frame for a downward .flow-branch
+   (absolutely positioned) so it hangs within the border, not past it. */
+.flow--branch {
+  padding-bottom: 6rem;
+}
+
+/* A station — the dot rides the line; name (above) & role (below) float
+   around it so the dots stay co-linear. The name is the screen link. */
+.flow-stop {
+  position: relative;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 4px solid var(--accent);
+  z-index: 1;
+}
+
+/* Station on a SHARED screen (lives in _wireframes) — doubled ring, the
+   "lives elsewhere" cue echoing the dashed shared step it replaces. */
+.flow-stop--shared {
+  border-style: double;
+  border-width: 5px;
+}
+
+.flow-stop__name {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+}
+
+a.flow-stop__name:hover {
+  color: var(--accent);
+}
+
+.flow-stop__role {
+  position: absolute;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+}
+
+/* The line between two stations + the trigger/condition that drives it */
+.flow-seg {
+  position: relative;
+  flex: 1 1 auto;
+  height: 4px;
+  background: var(--accent);
+}
+
+.flow-seg__label {
+  position: absolute;
+  top: -1.4rem;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.56rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+/* Direction cue — the transition flows along the line, left → right */
+.flow-seg__label::before {
+  content: "→";
+  margin-right: 0.3em;
+}
+
+/* Edge-case fork — an L-elbow off the happy path: drops DOWN from the
+   segment's centre, turns RIGHT, ends at the screen. Solid, grey, and
+   thinner (2px) than the metro line (4px) so it reads as secondary. The
+   .flow-branch box is the fork point; everything below hangs off it. */
+.flow-branch {
+  position: absolute;
+  top: 2px; /* centre of the 4px line */
+  left: 50%;
+}
+
+.flow-branch__label {
+  position: absolute;
+  top: 4px;
+  left: 10px; /* in the crook of the elbow, right of the vertical drop */
+  max-width: 7rem;
+  white-space: normal;
+  font-size: 0.56rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+/* The L-elbow: left + bottom borders draw the down-then-right path */
+.flow-branch__elbow {
+  position: absolute;
+  top: 0;
+  left: -1px; /* centre the 2px stroke on the fork x */
+  width: 70px; /* horizontal run */
+  height: 46px; /* vertical drop */
+  border-left: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+}
+
+/* Station at the elbow's far end (bottom-right corner) */
+.flow-branch__stop {
+  position: absolute;
+  top: 46px;
+  left: 70px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 2px solid var(--text-muted);
+  transform: translate(-50%, -50%);
+}
+
+.flow-branch__name {
+  position: absolute;
+  top: 58px;
+  left: 70px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+}
+
+a.flow-branch__name:hover {
+  color: var(--accent);
+}
+
+.flow-branch__role {
+  position: absolute;
+  top: 76px;
+  left: 70px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}

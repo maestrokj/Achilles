@@ -1,0 +1,413 @@
+/* Auth & Security — entry-routing workzone diagrams (rt-*).
+   The `/` gate as a top-down DECISION TREE: the root GET / falls
+   through three questions (empty DB? · session? · role?), each
+   peeling a terminal route off to one side. Guards render as
+   condition→transition cards with an explicit 403 error node.
+   Reuses .mod-role (role chips), .decision-box (SPA note), .iter.
+   Loaded by _workzone/routing.html on top of ../../module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* Routing page: wider than the default 720px so the guard cards sit
+   side by side comfortably, but tighter than the full 1200px canvas. */
+.rt-page {
+  max-width: 840px;
+}
+
+/* ── Decision tree ── */
+/* Shrink-wrap to the tree's real bounding box and center that box, so the
+   right-leaning spine doesn't make the whole figure look shifted right. */
+.rt-tree {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+}
+
+/* Breathing room before the SPA note below the tree */
+.rt-tree + .decision-box {
+  margin-top: 1.8rem;
+}
+
+/* Root node */
+.rt-root {
+  background: var(--text);
+  color: var(--paper);
+  border-radius: 12px;
+  padding: 0.6rem 1.2rem;
+  text-align: center;
+}
+
+.rt-root__r {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 0.98rem;
+  letter-spacing: 0.02em;
+}
+
+.rt-root__s {
+  display: block;
+  font-size: 0.62rem;
+  color: var(--accent-muted);
+  margin-top: 0.12rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Vertical stem connector */
+.rt-stem {
+  width: 2px;
+  height: 22px;
+  background: var(--dot);
+}
+
+/* Question node */
+.rt-q {
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: 999px;
+  padding: 0.45rem 1.2rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rt-q__num {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 50%;
+  width: 1.25rem;
+  height: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Diverging branch row under a question */
+.rt-branches {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2rem;
+  width: 100%;
+}
+
+.rt-branch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  max-width: 360px;
+  position: relative;
+}
+
+/* Horizontal bus: links each branch top to the central stem.
+   ::before = left half + into left gap, ::after = right half + into
+   right gap; halves of adjacent branches meet at the gap midpoint.
+   Outer ends trimmed on first/last child. (gap is 2rem → half = 1rem) */
+.rt-branch::before,
+.rt-branch::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  height: 2px;
+  background: var(--dot);
+}
+
+.rt-branch::before {
+  right: 50%;
+  left: -1rem;
+}
+
+.rt-branch::after {
+  left: 50%;
+  right: -1rem;
+}
+
+.rt-branch:first-child::before,
+.rt-branch:last-child::after {
+  display: none;
+}
+
+.rt-branch--narrow {
+  max-width: 320px;
+}
+
+/* Limb: edge + yes/no/role label + edge */
+.rt-limb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.rt-edge {
+  width: 2px;
+  height: 18px;
+}
+
+.rt-edge--leaf {
+  background: var(--s3);
+}
+
+.rt-edge--cont {
+  background: var(--dot);
+}
+
+.rt-edge--admin {
+  background: var(--s1);
+}
+
+.rt-edge--member {
+  background: var(--s4);
+}
+
+.rt-blabel {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.18rem 0.5rem;
+  border-radius: var(--tag-radius);
+  margin: 0.12rem 0;
+}
+
+.rt-blabel--yes {
+  background: var(--s3);
+  color: #fff;
+}
+
+.rt-blabel--no {
+  background: var(--surface);
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+
+.rt-blabel--role {
+  background: none;
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: center;
+  padding: 0;
+}
+
+/* Leaf wrapped in a link → clickable route (README §Hover: bind to wrapper) */
+.rt-leaf-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.rt-leaf-link:hover .rt-leaf {
+  border-color: var(--accent-muted);
+  transform: translateY(-1px);
+  box-shadow: var(--card-shadow);
+}
+
+/* Leaf — terminal route */
+.rt-leaf {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--s3);
+  border-radius: var(--radius-md);
+  padding: 0.55rem 1rem;
+  text-align: center;
+  min-width: 160px;
+}
+
+.rt-leaf__route {
+  display: block;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--s3);
+}
+
+.rt-leaf__what {
+  display: block;
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  margin-top: 0.18rem;
+}
+
+.rt-leaf--admin {
+  border-top-color: var(--s1);
+}
+
+.rt-leaf--admin .rt-leaf__route {
+  color: var(--s1);
+}
+
+.rt-leaf--member {
+  border-top-color: var(--s4);
+}
+
+.rt-leaf--member .rt-leaf__route {
+  color: var(--s4);
+}
+
+/* Shell badge on a leaf — inline with the "what" line */
+.rt-shell {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background: var(--tint-6);
+  border-radius: var(--pill-radius);
+  padding: 0.1rem 0.4rem;
+  margin-left: 0.35rem;
+  vertical-align: middle;
+}
+
+/* ── Guards: condition→transition cards ── */
+.rt-guards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.rt-guard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--s1);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+}
+
+.rt-guard__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
+  flex-wrap: wrap;
+}
+
+.rt-guard__icon {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 0.66rem;
+  color: #fff;
+  background: var(--s1);
+  border-radius: var(--pill-radius);
+  padding: 0.16rem 0.42rem;
+  letter-spacing: 0.04em;
+}
+
+.rt-guard__title {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.rt-guard__flow {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.6rem;
+}
+
+.rt-chip {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 0.26rem 0.48rem;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.rt-chip--bad {
+  border-color: var(--s1);
+  color: var(--s1);
+}
+
+.rt-chip--ok {
+  border-color: var(--s3);
+  color: var(--s3);
+}
+
+.rt-arrow {
+  color: var(--accent-muted);
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.rt-guard__note {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.rt-guard__note strong {
+  color: var(--text);
+}
+
+/* Code nested in an already-tinted chip drops the chip-in-chip look */
+.rt-chip code {
+  font-size: inherit;
+  color: inherit;
+  background: none;
+  padding: 0;
+}
+
+/* Explicit 403 error-state node */
+.rt-err {
+  margin-top: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--s1);
+  border-radius: var(--radius-md);
+  padding: 0.55rem 0.8rem;
+}
+
+.rt-err__label {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--s1);
+  display: block;
+}
+
+.rt-err__name {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--s1);
+}
+
+.rt-err__sub {
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  display: block;
+  margin-top: 0.1rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .rt-branches {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.9rem;
+  }
+  .rt-branch,
+  .rt-branch--narrow {
+    max-width: 100%;
+  }
+  .rt-guards {
+    grid-template-columns: 1fr;
+  }
+}

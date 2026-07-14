@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Test cases</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Test cases</h1>
+        <div class="header__sub">admin panel · workzone</div>
+      </div>
+
+      <!-- ── Overview band: decisions + stack ── -->
+      <div class="test-overview">
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Accepted decisions</div>
+          <div class="decision-box">
+            <strong>User management API — not tested here</strong>
+            User CRUD, invite, RBAC, audit log are auth-module endpoints, fully
+            covered in
+            <!-- audit: intentional — link to the auth test suite as a whole: the delegated tests are spread across test_invite/test_rbac/test_user_lifecycle/test_audit_log, with no single section anchor for them, nor should there be -->
+            <a href="../../auth-security/_workzone/tests.html" class="xref-module">Auth &amp; Security</a>.
+            Admin tests only its own backend (PlatformSettings) and the frontend
+            behavior on top of the delegated APIs.
+          </div>
+          <div class="decision-box">
+            <strong>Frontend → Testing Library + MSW</strong>
+            Components are tested with React Testing Library (behavior, not
+            implementation); API responses are mocked via MSW (Mock Service
+            Worker) — a single interception layer for network requests.
+          </div>
+          <div class="decision-box">
+            <strong>Notifications backend — tested here</strong>
+            Channels, routes, personal preferences, and the delivery dispatcher
+            are core ORM with CRUD in Admin (like PlatformSettings), so they are
+            covered here. The event <em>sources</em> (sync_runs, brute-force,
+            curation) live and are tested in their own modules — here we verify
+            routing and delivery, not the detector.
+          </div>
+          <div class="decision-box">
+            <strong>System prompt — tested here</strong>
+            <code>prompt_settings</code> is core ORM (singleton) with CRUD in
+            Admin, like PlatformSettings. The defaults for both blocks are seed
+            constants in code, and <code>NULL</code> means “use the default.”
+            Here: storage, the token cap, and reset; injecting the prompt into
+            the model request is owned and tested by Query Engine.
+          </div>
+        </div>
+
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Stack and infrastructure</div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Backend <span class="iter done">done</span></span>
+            <span>pytest, pytest-asyncio, pytest-cov, httpx — shared infrastructure</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Backend</span>
+            <span
+              >testcontainers, factory_boy — shared from auth-security;
+              we add <code>PlatformSettingsFactory</code>,
+              <code>NotificationChannelFactory</code>,
+              <code>PromptSettingsFactory</code></span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Frontend</span>
+            <span
+              >Vitest + React Testing Library + MSW — intercepting fetch and
+              simulating backend responses without a real server</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Markers</span>
+            <span
+              ><code>@pytest.mark.unit</code>, <code>@pytest.mark.integration</code> —
+              shared</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Unit ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--unit">Unit</span>
+        <span class="test-sec__title">Pydantic schemas — validation without a DB</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z" /></svg></span><span class="name">test_settings_schema.py</span></div>
+            <div class="test-card__sub">PlatformSettings DTO — fields and constraints</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">valid settings</span><span class="test-case__e">a full set of valid fields → schema passes</span></div>
+              <div class="test-case"><span class="test-case__k">partial update</span><span class="test-case__e">PATCH schema: only changed fields, the rest Optional</span></div>
+              <div class="test-case"><span class="test-case__k">invalid timezone</span><span class="test-case__e">a non-existent IANA tz (<code>Mars/Olympus</code>) → reject</span></div>
+              <div class="test-case"><span class="test-case__k">invalid locale</span><span class="test-case__e">not one of <code>ru | en</code> → reject</span></div>
+              <div class="test-case"><span class="test-case__k">invalid date_format</span><span class="test-case__e">not one of the allowed formats → reject</span></div>
+              <div class="test-case"><span class="test-case__k">negative TTL</span><span class="test-case__e"><code>@parametrize</code> access / refresh / session_absolute &lt; 0 → reject</span></div>
+              <div class="test-case"><span class="test-case__k">zero TTL</span><span class="test-case__e"><code>@parametrize</code> TTL = 0 → reject (CHECK &gt; 0)</span></div>
+              <div class="test-case"><span class="test-case__k">invalid accent_color</span><span class="test-case__e">not a hex value (<code>red</code>) → reject</span></div>
+              <div class="test-case"><span class="test-case__k">invalid theme</span><span class="test-case__e">not one of <code>dark | light</code> → reject</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0" /><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" /></svg></span><span class="name">test_notification_schema.py</span></div>
+            <div class="test-card__sub">Channels, routes, payload — validation without a DB</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">webhook requires url+preset</span><span class="test-case__e"><code>kind=webhook</code> without <code>url</code>/<code>preset</code> → reject</span></div>
+              <div class="test-case"><span class="test-case__k">builtin no url</span><span class="test-case__e"><code>kind=in_app|email</code> → <code>preset</code>/<code>url</code> not allowed</span></div>
+              <div class="test-case"><span class="test-case__k">invalid event_type</span><span class="test-case__e">a type outside <code>sync|security|budget|system|discovery</code> → reject</span></div>
+              <div class="test-case"><span class="test-case__k">invalid severity</span><span class="test-case__e">not one of <code>info|warning|critical</code> → reject</span></div>
+              <div class="test-case"><span class="test-case__k">slack payload</span><span class="test-case__e">the Slack preset formatter → the expected message shape</span></div>
+              <div class="test-case"><span class="test-case__k">generic payload</span><span class="test-case__e">neutral JSON: event·severity·title·source·ts</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico">✦</span><span class="name">test_prompt_schema.py</span></div>
+            <div class="test-card__sub">prompt_settings DTO — token cap, fields</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">valid override</span><span class="test-case__e"><code>safety_text</code> / <code>org_text</code> within the cap → schema passes</span></div>
+              <div class="test-case"><span class="test-case__k">null = default</span><span class="test-case__e">both fields <code>None</code> allowed → the block takes the built-in default</span></div>
+              <div class="test-case"><span class="test-case__k">over token cap</span><span class="test-case__e">text longer than the limit → reject (the cap protects the window budget)</span></div>
+              <div class="test-case"><span class="test-case__k">blank not null</span><span class="test-case__e">an empty string <code>''</code> ≠ <code>None</code>: either normalized to <code>None</code> (reset) or reject — no “empty” override</span></div>
+              <div class="test-case"><span class="test-case__k">known placeholders ok</span><span class="test-case__e">text with <code>{org_name}</code> / <code>{today}</code> (or without them) → schema passes: both tokens are optional</span></div>
+              <div class="test-case"><span class="test-case__k">unknown placeholder reject</span><span class="test-case__e">an unknown token <code>{foo}</code> → reject: the whitelist is closed, and a literal <code>{…}</code> never leaks into the prompt</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P0 ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p0">Integration · P0</span>
+        <span class="test-sec__title">PlatformSettings API</span>
+        <span class="test-sec__meta"><a href="../../api/index.html#surface-map" class="xref-badge">→ HTTP API</a> <a class="xref-badge" href="../../api/_workzone/tests.html#conformance">→ Conformance</a></span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg></span><span class="name">test_platform_settings.py</span></div>
+            <div class="test-card__sub">CRUD, validation, and singleton integrity</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">GET → defaults</span><span class="test-case__e">GET /admin/settings → 200, every field at its migration default</span></div>
+              <div class="test-case"><span class="test-case__k">PATCH → partial</span><span class="test-case__e">org_name + timezone → 200, other fields unchanged</span></div>
+              <div class="test-case"><span class="test-case__k">PATCH → TTLs</span><span class="test-case__e">access / refresh / session_absolute TTL → values updated in the DB</span></div>
+              <div class="test-case"><span class="test-case__k">PATCH → branding</span><span class="test-case__e">accent_color → 200, value correct</span></div>
+              <div class="test-case"><span class="test-case__k">invalid timezone</span><span class="test-case__e">→ 422 <code>VALIDATION_ERROR</code></span></div>
+              <div class="test-case"><span class="test-case__k">invalid locale</span><span class="test-case__e"><code>locale=fr</code> → 422 <code>VALIDATION_ERROR</code></span></div>
+              <div class="test-case"><span class="test-case__k">negative TTL</span><span class="test-case__e"><code>access_token_ttl=-1</code> → 422 <code>VALIDATION_ERROR</code></span></div>
+              <div class="test-case"><span class="test-case__k">singleton — no POST</span><span class="test-case__e">POST /admin/settings → 405 <code>METHOD_NOT_ALLOWED</code></span></div>
+              <div class="test-case"><span class="test-case__k">singleton — no DELETE</span><span class="test-case__e">DELETE /admin/settings → 405 <code>METHOD_NOT_ALLOWED</code></span></div>
+              <div class="test-case"><span class="test-case__k">updated_at trigger</span><span class="test-case__e">after PATCH, <code>updated_at</code> is strictly greater than before</span></div>
+              <div class="test-case"><span class="test-case__k">curation_frequency enum</span><span class="test-case__e"><code>daily</code> / <code>weekly</code> → 200; anything else (<code>hourly</code>) → 422 (CHECK)</span></div>
+              <div class="test-case"><span class="test-case__k">weekday only weekly</span><span class="test-case__e">a linked CHECK: <code>curation_weekday</code> BETWEEN 0 AND 6 is set only when <code>weekly</code>; when <code>daily</code> it is <code>NULL</code>, non-null → 422; <code>weekday=7</code> → 422</span></div>
+              <div class="test-case"><span class="test-case__k">agent_iteration_cap &gt; 0</span><span class="test-case__e"><code>@parametrize</code> ≤ 0 → 422 (CHECK &gt; 0); positive → 200</span></div>
+              <div class="test-case"><span class="test-case__k">agent_max_concurrency &gt; 0</span><span class="test-case__e"><code>@parametrize</code> ≤ 0 → 422 (CHECK &gt; 0); positive → 200</span></div>
+              <div class="test-case"><span class="test-case__k">mcp_enabled toggle</span><span class="test-case__e">boolean kill switch: PATCH <code>true</code>/<code>false</code> → 200, value in the singleton; non-boolean → 422</span></div>
+              <div class="test-case"><span class="test-case__k">mcp_enabled=false — effect</span><span class="test-case__e">a request to <code>/mcp</code> is rejected before the key is checked — the MCP door is closed</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.4 4.6a2 2 0 0 1 0 2.8l-9 9-3.8 1 1-3.8 9-9a2 2 0 0 1 2.8 0Z" /><path d="M2 22a10 10 0 0 1 8-4" /><circle cx="10" cy="8" r="5" /></svg></span><span class="name">test_maintenance.py</span></div>
+            <div class="test-card__sub">Maintenance mode — stub page, allow-list, pause <a href="maintenance.html#admin-allowlist" class="xref-badge xref-badge--page">→ Maintenance</a></div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">user gets 503</span><span class="test-case__e">mode on → the middleware answers a regular Member with 503 + <code>Retry-After</code> (the outage is temporary)</span></div>
+              <div class="test-case"><span class="test-case__k">owner/admin allowlist</span><span class="test-case__e">Owner and Admin bypass the mode → 200; you cannot lock yourself out — the operator checks the platform before lifting it</span></div>
+              <div class="test-case"><span class="test-case__k">sync + agents paused</span><span class="test-case__e">turning the mode on pauses sync and the background agent lane</span></div>
+              <div class="test-case"><span class="test-case__k">toggle owner-only</span><span class="test-case__e">only Owner turns it on (<code>maintenance_mode</code> in the singleton); Admin/Member PATCH → 403 <code>FORBIDDEN</code></span></div>
+              <div class="test-case"><span class="test-case__k">off restores</span><span class="test-case__e">lifting the mode → regular users get 200 again, sync and agents resume</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0" /><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" /></svg></span><span class="name">test_notifications.py</span></div>
+            <div class="test-card__sub">Channels · routes · dispatcher · delivery</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">seed builtin channels</span><span class="test-case__e">after migration, in_app + email exist, <code>is_builtin</code>, non-deletable</span></div>
+              <div class="test-case"><span class="test-case__k">webhook CRUD</span><span class="test-case__e">create/delete a webhook channel; <code>url_enc</code> / <code>secret_enc</code> are never returned</span></div>
+              <div class="test-case"><span class="test-case__k">delete builtin → reject</span><span class="test-case__e">DELETE in_app/email → 409 <code>CONFLICT</code></span></div>
+              <div class="test-case"><span class="test-case__k">route toggle</span><span class="test-case__e">PATCH a type×channel cell → <code>enabled</code> in the DB</span></div>
+              <div class="test-case"><span class="test-case__k">route locked</span><span class="test-case__e">unset the in_app × security/sync route (<code>locked</code> + CHECK enabled OR NOT locked) → 422 · other routes toggle off freely</span></div>
+              <div class="test-case"><span class="test-case__k">channel mutations — Owner only</span><span class="test-case__e">a non-Owner (Member / Admin) POST / DELETE /admin/notification-channels → 403 <code>FORBIDDEN</code> on the backend (not just frontend read-only); anonymous → 401 <code>UNAUTHORIZED</code></span></div>
+              <div class="test-case"><span class="test-case__k">route edits — Owner only</span><span class="test-case__e">a non-Owner PATCH /admin/notification-routes → 403 <code>FORBIDDEN</code>; anonymous → 401 <code>UNAUTHORIZED</code></span></div>
+              <div class="test-case"><span class="test-case__k">channel listing hides the secret</span><span class="test-case__e">GET /admin/notification-channels → 200; <code>url_enc</code> / <code>secret_enc</code> are returned neither in the list nor in the detail — only a presence flag</span></div>
+              <div class="test-case"><span class="test-case__k">dispatch fan-out</span><span class="test-case__e">event → deliveries to every enabled route (channel not paused)</span></div>
+              <div class="test-case"><span class="test-case__k">type silenced</span><span class="test-case__e">all routes of a type off → the event goes to no one; the locked in_app security/sync cannot be zeroed out</span></div>
+              <div class="test-case"><span class="test-case__k">channel paused</span><span class="test-case__e">channel <code>enabled=false</code> → its deliveries are not created; active channels still deliver</span></div>
+              <div class="test-case"><span class="test-case__k">in_app channel stays on</span><span class="test-case__e">disabling the in_app channel (<code>enabled=false</code>) → reject (CHECK)</span></div>
+              <div class="test-case"><span class="test-case__k">recipients by role</span><span class="test-case__e">personal channels → Owner/Admin only; a new admin is enrolled automatically</span></div>
+              <div class="test-case"><span class="test-case__k">personal opt-out</span><span class="test-case__e"><code>in_app_enabled</code> / <code>email_enabled</code> independently silence their channel per type</span></div>
+              <div class="test-case"><span class="test-case__k">opt-out unrestricted</span><span class="test-case__e">any personal channel can be turned off for any type, including security/sync — there are no personal locks</span></div>
+              <div class="test-case"><span class="test-case__k">dedup series</span><span class="test-case__e">a series with one <code>dedup_key</code> within the window → a single row, <code>dedup_count</code> grows, <code>last_seen_at</code> advances; outside the window — a new row</span></div>
+              <div class="test-case"><span class="test-case__k">discovery action idempotent</span><span class="test-case__e">a repeated “Add to scope” (container already in the allow-list) → no-op; the event holds no state</span></div>
+              <div class="test-case"><span class="test-case__k">in_app read state</span><span class="test-case__e">marking as read → <code>read_at</code>, the unread counter decreases</span></div>
+              <div class="test-case"><span class="test-case__k">email no SMTP</span><span class="test-case__e">SMTP not configured → email delivery <code>failed</code>, in_app delivered</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico">✦</span><span class="name">test_prompt_settings.py</span></div>
+            <div class="test-card__sub">Override, reset, cap, and singleton integrity</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">GET → effective default</span><span class="test-case__e">override empty → the response returns the built-in text of both blocks (effective), not <code>null</code></span></div>
+              <div class="test-case"><span class="test-case__k">is_default flag</span><span class="test-case__e">override empty → <code>is_default=true</code>; after a block PATCH → <code>false</code>; the frontend uses the flag to mark “at default” and dim “Reset”</span></div>
+              <div class="test-case"><span class="test-case__k">localized default</span><span class="test-case__e"><code>locale=en</code> → the effective default in English; <code>ru</code> → in Russian; override empty in both</span></div>
+              <div class="test-case"><span class="test-case__k">unknown placeholder</span><span class="test-case__e">an override with <code>{foo}</code> → 422 <code>VALIDATION_ERROR</code>; <code>{org_name}</code>/<code>{today}</code> → 200</span></div>
+              <div class="test-case"><span class="test-case__k">PATCH org override</span><span class="test-case__e"><code>org_text</code> → 200, saved in the DB; <code>safety_text</code> untouched</span></div>
+              <div class="test-case"><span class="test-case__k">reset → null</span><span class="test-case__e">resetting a block → the column goes <code>NULL</code>, GET returns the built-in default again</span></div>
+              <div class="test-case"><span class="test-case__k">over token cap</span><span class="test-case__e">text longer than the limit → 422 <code>VALIDATION_ERROR</code></span></div>
+              <div class="test-case"><span class="test-case__k">updated_by recorded</span><span class="test-case__e">after PATCH, <code>updated_by</code> = the current admin; <code>updated_at</code> strictly greater</span></div>
+              <div class="test-case"><span class="test-case__k">singleton — no POST/DELETE</span><span class="test-case__e">POST / DELETE /admin/ai-prompt → 405 <code>METHOD_NOT_ALLOWED</code></span></div>
+              <div class="test-case"><span class="test-case__k">access — Owner/Admin edit</span><span class="test-case__e">Owner and Admin PATCH → 200; Member → 403 <code>FORBIDDEN</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></svg></span><span class="name">test_token_usage.py</span></div>
+            <div class="test-card__sub">AI usage — limits, by user, by model</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">PATCH limits</span><span class="test-case__e"><code>agent_weekly_token_budget</code> · <code>chat_weekly_token_budget</code> → 200, values in the singleton</span></div>
+              <div class="test-case"><span class="test-case__k">budget alert</span><span class="test-case__e">PATCH <code>ai_monthly_budget</code> + <code>ai_budget_alert_enabled</code> → 200; enabling the flag without an amount → 422 (CHECK); threshold reached → a Budget notification, the request is not blocked</span></div>
+              <div class="test-case"><span class="test-case__k">zero/negative limit</span><span class="test-case__e"><code>@parametrize</code> ≤ 0 → 422 (CHECK &gt; 0); <code>null</code> → no limit</span></div>
+              <div class="test-case"><span class="test-case__k">list per-user</span><span class="test-case__e">GET /admin/usage → one row per user: agents + chat + total for the week</span></div>
+              <div class="test-case"><span class="test-case__k">agents derived</span><span class="test-case__e">sum = <code>SUM(agent_runs.tokens_used)</code> by <code>agents.user_id</code> over the week window</span></div>
+              <div class="test-case"><span class="test-case__k">chat derived</span><span class="test-case__e">sum = <code>SUM(messages.tokens_used)</code> by <code>conversations.user_id</code>, assistant only</span></div>
+              <div class="test-case"><span class="test-case__k">week window</span><span class="test-case__e">spend outside the current week (before Sun 00:00 org-tz) is not counted</span></div>
+              <div class="test-case"><span class="test-case__k">excludes system spend</span><span class="test-case__e">embedding / RAG (<code>model_usage</code>) is not tied to a user — excluded from the sums</span></div>
+              <div class="test-case"><span class="test-case__k">chat advisory</span><span class="test-case__e">chat over <code>chat_weekly_token_budget</code> → an “over” indicator, the request is not blocked (v1)</span></div>
+              <div class="test-case"><span class="test-case__k">detail breakdown</span><span class="test-case__e">GET /admin/usage/:user → agents by agent, chat by <code>messages.model</code></span></div>
+              <div class="test-case"><span class="test-case__k">by-model spend</span><span class="test-case__e">a breakdown by model from <code>model_usage</code> (model · function, input/output, cost) — org-level, not tied to people; top 5 by cost, the rest behind “Show all”</span></div>
+              <div class="test-case"><span class="test-case__k">company total</span><span class="test-case__e">company total = <code>SUM(model_usage)</code> for week / month / year (all functions, tokens + $); derived, with no counter table; <code>@parametrize</code> over the window</span></div>
+              <div class="test-case"><span class="test-case__k">total ⊇ per-user</span><span class="test-case__e">the “total” is broader than the sum over people — it includes impersonal embedding / RAG; the monthly tile is checked against the <code>ai_monthly_budget</code> threshold</span></div>
+              <div class="test-case"><span class="test-case__k">sort by total</span><span class="test-case__e">the list defaults to descending “Total”; search by name/email</span></div>
+              <div class="test-case"><span class="test-case__k">access — Owner/Admin</span><span class="test-case__e">Owner/Admin GET → 200; Member → 403; PATCH of limits — Owner only</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P1 ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">Integration · P1</span>
+        <span class="test-sec__title">Access control</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg></span><span class="name">test_admin_access.py</span></div>
+            <div class="test-card__sub">Access to admin routes by role</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">Owner GET settings</span><span class="test-case__e">→ 200</span></div>
+              <div class="test-case"><span class="test-case__k">Owner PATCH settings</span><span class="test-case__e">→ 200</span></div>
+              <div class="test-case"><span class="test-case__k">Admin GET settings</span><span class="test-case__e">→ 200 (read-only access)</span></div>
+              <div class="test-case"><span class="test-case__k">Admin PATCH settings</span><span class="test-case__e">→ 403 <code>FORBIDDEN</code></span></div>
+              <div class="test-case"><span class="test-case__k">Member GET settings</span><span class="test-case__e">→ 403 <code>FORBIDDEN</code></span></div>
+              <div class="test-case"><span class="test-case__k">unauthenticated</span><span class="test-case__e">→ 401 <code>UNAUTHORIZED</code></span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Frontend ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--fe">Frontend</span>
+        <span class="test-sec__title">React — admin UI</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1" /><path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z" /><path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z" /></svg></span><span class="name">AdminLayout.test.tsx</span></div>
+            <div class="test-card__sub">Layout, navigation, role visibility</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">Owner → full sidebar</span><span class="test-case__e">all items: Dashboard, Users, Audit Log, Settings</span></div>
+              <div class="test-case"><span class="test-case__k">Admin → restricted</span><span class="test-case__e">Dashboard, Users, Settings (read-only); Audit Log hidden (Owner-only)</span></div>
+              <div class="test-case"><span class="test-case__k">Member → redirect</span><span class="test-case__e">redirected to the main interface, the sidebar is not rendered</span></div>
+              <div class="test-case"><span class="test-case__k">active state</span><span class="test-case__e">the current route is highlighted, a sub-page highlights its parent</span></div>
+              <div class="test-case"><span class="test-case__k">theme toggle</span><span class="test-case__e">a click switches dark/light, value in localStorage</span></div>
+              <div class="test-case"><span class="test-case__k">language toggle</span><span class="test-case__e">a click switches RU/EN, value in localStorage</span></div>
+              <div class="test-case"><span class="test-case__k">logout</span><span class="test-case__e">“Log out” → logout, redirect /login</span></div>
+              <div class="test-case"><span class="test-case__k">logout all</span><span class="test-case__e">“Log out of all devices” → confirmation → logout-all</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5H3" /><path d="M12 19H3" /><path d="M14 3v4" /><path d="M16 17v4" /><path d="M21 12h-9" /><path d="M21 19h-5" /><path d="M21 5h-7" /><path d="M8 10v4" /><path d="M8 12H3" /></svg></span><span class="name">PlatformSettings.test.tsx</span></div>
+            <div class="test-card__sub">Settings form — save, validation, states</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">form pre-fill</span><span class="test-case__e">the form loads current values from the API</span></div>
+              <div class="test-case"><span class="test-case__k">save → PATCH</span><span class="test-case__e">a change + Save → PATCH of changed fields only</span></div>
+              <div class="test-case"><span class="test-case__k">validation errors</span><span class="test-case__e">invalid values → inline errors, no request sent</span></div>
+              <div class="test-case"><span class="test-case__k">success feedback</span><span class="test-case__e">success → toast “Settings saved”</span></div>
+              <div class="test-case"><span class="test-case__k">server error</span><span class="test-case__e">422 → errors from <code>errors[]</code> on the matching fields</span></div>
+              <div class="test-case"><span class="test-case__k">read-only for Admin</span><span class="test-case__e">Admin sees the values, Save is absent / disabled</span></div>
+              <div class="test-case"><span class="test-case__k">locale resolution chain</span><span class="test-case__e">display takes the first one set: personal override → organization default → browser locale; an unset override transparently falls through to the organization level <a href="locale.html#resolution-chain" class="xref-badge xref-badge--page">→ Locale</a></span></div>
+              <div class="test-case"><span class="test-case__k">password policy</span><span class="test-case__e">the “Password policy” section — read-only NIST 800-63B text</span></div>
+              <div class="test-case"><span class="test-case__k">slack write-only secrets</span><span class="test-case__e">bot token and signing secret — write-only, not returned in the response/UI</span></div>
+              <div class="test-case"><span class="test-case__k">slack test connection</span><span class="test-case__e">“Test connection” → ping Slack (<code>auth.test</code>) → status chip</span></div>
+              <div class="test-case"><span class="test-case__k">slack enable toggle</span><span class="test-case__e">toggle → <code>slack_settings.enabled</code>; off → the bot does not respond</span></div>
+              <div class="test-case"><span class="test-case__k">slack auto-link toggle</span><span class="test-case__e">the “Auto-link by email” toggle → off → an unlinked user always gets a code, no auto-match</span></div>
+              <div class="test-case"><span class="test-case__k">telegram write-only secrets</span><span class="test-case__e">bot token write-only; the webhook secret is generated on <code>setWebhook</code>, not entered manually — not returned in the response/UI</span></div>
+              <div class="test-case"><span class="test-case__k">telegram test connection</span><span class="test-case__e">“Test connection” → ping Telegram (<code>getMe</code>) → status chip + <code>bot_username</code></span></div>
+              <div class="test-case"><span class="test-case__k">telegram enable toggle</span><span class="test-case__e">toggle → <code>telegram_settings.enabled</code>; off → the bot does not respond</span></div>
+              <div class="test-case"><span class="test-case__k">telegram — no auto-link</span><span class="test-case__e">no email → no “Auto-link” toggle, always code-linking only</span></div>
+              <div class="test-case"><span class="test-case__k">mattermost write-only secrets</span><span class="test-case__e">bot token — write-only, not returned in the response/UI</span></div>
+              <div class="test-case"><span class="test-case__k">mattermost test connection</span><span class="test-case__e">“Test connection” → ping the server (<code>users/me</code>) → status chip + bot handle</span></div>
+              <div class="test-case"><span class="test-case__k">mattermost enable toggle</span><span class="test-case__e">toggle → <code>mattermost_settings.enabled</code>; enable is atomic — a live probe, refusal → 409 and the switch rolls back; off → the bot does not respond</span></div>
+              <div class="test-case"><span class="test-case__k">mattermost — no auto-link</span><span class="test-case__e">events carry no email → no “Auto-link” toggle, always code-linking only</span></div>
+              <div class="test-case"><span class="test-case__k">loading state</span><span class="test-case__e">before the API responds — skeleton/spinner, the form is not rendered</span></div>
+              <div class="test-case"><span class="test-case__k">network error</span><span class="test-case__e">500 → a message + “Retry”</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><path d="M16 3.128a4 4 0 0 1 0 7.744" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><circle cx="9" cy="7" r="4" /></svg></span><span class="name">UsersPage.test.tsx</span></div>
+            <div class="test-card__sub">User list and invitations</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">list renders</span><span class="test-case__e">table: name, email, role, status from the API</span></div>
+              <div class="test-case"><span class="test-case__k">tab switching</span><span class="test-case__e">switching “List” ↔ “Invitations”</span></div>
+              <div class="test-case"><span class="test-case__k">invite form</span><span class="test-case__e">“Invite” → email + role form, email validation</span></div>
+              <div class="test-case"><span class="test-case__k">actions by role</span><span class="test-case__e">Owner — all actions; Admin — restricted (RBAC matrix)</span></div>
+              <div class="test-case"><span class="test-case__k">deactivated badge</span><span class="test-case__e">a deactivated user is marked, “Reactivate” available</span></div>
+              <div class="test-case"><span class="test-case__k">empty state</span><span class="test-case__e">0 users → “Invite your team”</span></div>
+              <div class="test-case"><span class="test-case__k">revoke invite</span><span class="test-case__e">“Revoke” → confirmation → the invite is removed from the list</span></div>
+              <div class="test-case"><span class="test-case__k">resend invite</span><span class="test-case__e">“Resend” → POST, success toast</span></div>
+              <div class="test-case"><span class="test-case__k">loading state</span><span class="test-case__e">before the API responds — table skeleton</span></div>
+              <div class="test-case"><span class="test-case__k">network error</span><span class="test-case__e">500 → error message</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg></span><span class="name">UserDetailPage.test.tsx</span></div>
+            <div class="test-card__sub">User detail — profile and actions</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">profile renders</span><span class="test-case__e">name, email, role, created date, last login</span></div>
+              <div class="test-case"><span class="test-case__k">Owner → change role</span><span class="test-case__e">role dropdown, save → PATCH, the role updates</span></div>
+              <div class="test-case"><span class="test-case__k">Admin → limited actions</span><span class="test-case__e">actions only on Members, not on Owner/Admin</span></div>
+              <div class="test-case"><span class="test-case__k">deactivate</span><span class="test-case__e">“Deactivate” → modal → status updated</span></div>
+              <div class="test-case"><span class="test-case__k">delete</span><span class="test-case__e">Owner: “Delete” → confirmation modal → DELETE</span></div>
+              <div class="test-case"><span class="test-case__k">reset password</span><span class="test-case__e">“Reset password” → confirmation → success toast</span></div>
+              <div class="test-case"><span class="test-case__k">reactivate</span><span class="test-case__e">deactivated → “Reactivate” available</span></div>
+              <div class="test-case"><span class="test-case__k">self-view</span><span class="test-case__e">own profile → deactivate and delete are hidden</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12h-5" /><path d="M15 8h-5" /><path d="M19 17V5a2 2 0 0 0-2-2H4" /><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3" /></svg></span><span class="name">AuditLogPage.test.tsx</span></div>
+            <div class="test-card__sub">Audit log — table and filters</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">table renders</span><span class="test-case__e">records: actor, action, outcome, date, IP</span></div>
+              <div class="test-case"><span class="test-case__k">filter by action</span><span class="test-case__e">action type (login, role_changed…) → the table filters</span></div>
+              <div class="test-case"><span class="test-case__k">filter by date</span><span class="test-case__e">date range → query params, the table refreshes</span></div>
+              <div class="test-case"><span class="test-case__k">filter by actor</span><span class="test-case__e">actor user → query param, only their actions</span></div>
+              <div class="test-case"><span class="test-case__k">empty state</span><span class="test-case__e">0 records → “No records”</span></div>
+              <div class="test-case"><span class="test-case__k">loading state</span><span class="test-case__e">before the API responds — table skeleton</span></div>
+              <div class="test-case"><span class="test-case__k">network error</span><span class="test-case__e">500 → error message</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0" /><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" /></svg></span><span class="name">NotificationsPage.test.tsx</span></div>
+            <div class="test-card__sub">Channels, type×channel matrix, recipients</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">channels render</span><span class="test-case__e">in-app + email (with SMTP status) + the webhook list</span></div>
+              <div class="test-case"><span class="test-case__k">add webhook</span><span class="test-case__e">“+ Add” → pick a preset (Slack/Generic) → POST, a row in the list</span></div>
+              <div class="test-case"><span class="test-case__k">test webhook</span><span class="test-case__e">“Test” → POST, success/error toast by result</span></div>
+              <div class="test-case"><span class="test-case__k">channel pause toggle</span><span class="test-case__e">email/webhook toggle → PATCH <code>enabled</code>; the in-app toggle is locked (disabled)</span></div>
+              <div class="test-case"><span class="test-case__k">delete webhook guard</span><span class="test-case__e">“Delete” → confirmation → the row is removed</span></div>
+              <div class="test-case"><span class="test-case__k">matrix route toggle</span><span class="test-case__e">clicking a channel pill → PATCH of the route</span></div>
+              <div class="test-case"><span class="test-case__k">matrix in-app locked</span><span class="test-case__e">the in-app pill for security/sync is locked (a lock, a click does not unset it); other pills toggle</span></div>
+              <div class="test-case"><span class="test-case__k">paused channel cell</span><span class="test-case__e">a paused channel → its pills in the matrix are dimmed (the route is intact, just not firing)</span></div>
+              <div class="test-case"><span class="test-case__k">smtp warning</span><span class="test-case__e">SMTP not configured → the email chip turns red, a warning</span></div>
+              <div class="test-case"><span class="test-case__k">recipients note</span><span class="test-case__e">a banner “recipients — Owner / Admin”, links to Users and the profile</span></div>
+              <div class="test-case"><span class="test-case__k">read-only for Admin</span><span class="test-case__e">Admin sees it, only Owner edits</span></div>
+              <div class="test-case"><span class="test-case__k">loading state</span><span class="test-case__e">before the API responds — skeleton</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico">✦</span><span class="name">AiBehaviorPage.test.tsx</span></div>
+            <div class="test-card__sub">Two blocks — edit in place, reset, cap</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">bubbles render</span><span class="test-case__e">two blocks with current text from the API; “Reset” / “Edit” buttons</span></div>
+              <div class="test-case"><span class="test-case__k">edit in place</span><span class="test-case__e">“Edit” → the block text becomes editable in place, buttons → “Cancel / Save”</span></div>
+              <div class="test-case"><span class="test-case__k">save → PATCH</span><span class="test-case__e">“Save” → PATCH of this block only, exit editing, success toast</span></div>
+              <div class="test-case"><span class="test-case__k">cancel discards</span><span class="test-case__e">“Cancel” → the edit is discarded, no request sent, the block returns to view mode</span></div>
+              <div class="test-case"><span class="test-case__k">reset → default</span><span class="test-case__e">“Reset” → PATCH <code>null</code>, the block shows the built-in default</span></div>
+              <div class="test-case"><span class="test-case__k">default state</span><span class="test-case__e"><code>is_default=true</code> → the block is marked “at default”, “Reset” is dimmed; after an edit the flag is <code>false</code> → the button is active</span></div>
+              <div class="test-case"><span class="test-case__k">token counter cap</span><span class="test-case__e">the counter grows as you type; over the cap — “Save” disabled + highlight</span></div>
+              <div class="test-case"><span class="test-case__k">info tooltip</span><span class="test-case__e">the “i” icon by the heading → a hint about the block's purpose on hover/focus</span></div>
+              <div class="test-case"><span class="test-case__k">independent blocks</span><span class="test-case__e">editing/resetting one block does not affect the other — two independent PATCHes</span></div>
+              <div class="test-case"><span class="test-case__k">loading state</span><span class="test-case__e">before the API responds — block skeletons</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></svg></span><span class="name">ListControls.test.tsx</span></div>
+            <div class="test-card__sub">Shared mechanics: search, facets, pagination <a href="list-controls.html#threshold" class="xref-badge xref-badge--page">→ List Controls</a></div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">search threshold</span><span class="test-case__e">the request fires on both conditions: a typing pause ≈ 300&nbsp;ms (debounce) and ≥ 2 significant characters; 1 character or before the pause — no request <a href="list-controls.html#threshold" class="xref-badge xref-badge--page">→ #threshold</a></span></div>
+              <div class="test-case"><span class="test-case__k">query resets page</span><span class="test-case__e">any change to the query — new text, facet, or sort — resets to page 1 (otherwise you could land on a page absent from the new set) <a href="list-controls.html#page-params" class="xref-badge xref-badge--page">→ #page-params</a></span></div>
+              <div class="test-case"><span class="test-case__k">facet OR / AND</span><span class="test-case__e">values within one facet — OR; different facets — AND (rows at the intersection) <a href="list-controls.html#facet-logic" class="xref-badge xref-badge--page">→ #facet-logic</a></span></div>
+              <div class="test-case"><span class="test-case__k">offset/limit clamp</span><span class="test-case__e">a request beyond the range → clamp to the last page; the “X–Y of N” counter stays consistent <a href="list-controls.html#pagination" class="xref-badge xref-badge--page">→ #pagination</a></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8" /><rect width="16" height="12" x="4" y="8" rx="2" /><path d="M2 14h2" /><path d="M20 14h2" /><path d="M15 13v2" /><path d="M9 13v2" /></svg></span><span class="name">AgentsPage.test.tsx</span></div>
+            <div class="test-card__sub">All agents list — pause, limits (Admin)</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">pause agent · guarded</span><span class="test-case__e">“Pause” → confirmation → PATCH; the agent goes paused, runs do not start</span></div>
+              <div class="test-case"><span class="test-case__k">resume agent</span><span class="test-case__e">“Resume” on a paused agent → PATCH, status active</span></div>
+              <div class="test-case"><span class="test-case__k">save limits</span><span class="test-case__e">platform run limits (step cap + concurrent runs platform-wide, shared org-wide) → “Save” → PATCH <code>platform_settings</code></span></div>
+              <div class="test-case"><span class="test-case__k">open profile (read-only)</span><span class="test-case__e">“Open profile” → go to the agent card (model, instructions — read-only)</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M9 9h6v6H9z" /><path d="M15 2v2" /><path d="M15 20v2" /><path d="M2 15h2" /><path d="M2 9h2" /><path d="M20 15h2" /><path d="M20 9h2" /><path d="M9 2v2" /><path d="M9 20v2" /></svg></span><span class="name">AiModelsPage.test.tsx</span></div>
+            <div class="test-card__sub">Providers and models — assigning the embedder</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">change &amp; reembed · guarded</span><span class="test-case__e">changing the assigned embedder → “Change and re-index” → confirmation (vectors are incompatible) → a full re-embedding run starts</span></div>
+              <div class="test-case"><span class="test-case__k">reembed in progress</span><span class="test-case__e">while the run is in flight — the row shows progress (%), a repeat change is blocked</span></div>
+              <div class="test-case"><span class="test-case__k">disable model · guarded</span><span class="test-case__e">“Disable” / “Remove” a model → confirmation → PATCH; the assigned embedder cannot be removed</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg></span><span class="name">ToolsPage.test.tsx</span></div>
+            <div class="test-card__sub">AI tools — toggles and providers</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">chat / agents toggle</span><span class="test-case__e">the “In chat” / “For agents” toggles → PATCH independently; off → the tool is not offered to that surface</span></div>
+              <div class="test-case"><span class="test-case__k">configure provider</span><span class="test-case__e">“Configure” → a credential form (write-only); the secret is not returned in the response/UI</span></div>
+              <div class="test-case"><span class="test-case__k">test provider</span><span class="test-case__e">“Test” → POST ping → success/error status chip</span></div>
+              <div class="test-case"><span class="test-case__k">access — Owner/Admin</span><span class="test-case__e">/admin/ai-tools · Owner / Admin — edits (toggles, providers) are written as an admin action by both roles</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></svg></span><span class="name">UsagePage.test.tsx</span></div>
+            <div class="test-card__sub">AI usage — views and drill-down to detail</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">sections render</span><span class="test-case__e">stacked sections on a single page: “Company total” · “Spend limits” · “Spend by user” · “Spend by model”</span></div>
+              <div class="test-case"><span class="test-case__k">total tiles</span><span class="test-case__e">under “Total” week / month / year — three static tiles at once; no window switcher (the “30 days ▾” selector exists only in the by-model view)</span></div>
+              <div class="test-case"><span class="test-case__k">row → detail</span><span class="test-case__e">clicking a user row → go to that user's usage detail</span></div>
+              <div class="test-case"><span class="test-case__k">access — Owner/Admin</span><span class="test-case__e">/admin/usage · Owner / Admin; in the limits section a plain “Save”, available to both roles</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5V19A9 3 0 0 0 21 19V5" /><path d="M3 12A9 3 0 0 0 21 12" /></svg></span><span class="name">HarvesterPage.test.tsx</span></div>
+            <div class="test-card__sub">Harvester in Admin — sync run, guarded actions</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">metrics render</span><span class="test-case__e">the source list from the API; run status is shown inline in the source cell (idle · syncing · error)</span></div>
+              <div class="test-case"><span class="test-case__k">run sync</span><span class="test-case__e">“Sync” / “Sync all” → POST without confirmation; the source row goes syncing</span></div>
+              <div class="test-case"><span class="test-case__k">pause + wipe</span><span class="test-case__e">“Pause” → PATCH without confirmation; “Wipe data” is the only guarded action (type-to-confirm)</span></div>
+              <div class="test-case"><span class="test-case__k">access — Owner/Admin</span><span class="test-case__e">/admin/harvester · Owner / Admin — the screen and actions are available to both roles</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg></span><span class="name">KnowledgeStorePage.test.tsx</span></div>
+            <div class="test-card__sub">Knowledge Store in Admin — curation, backups</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">metrics render</span><span class="test-case__e">graph/vector counters, the curation schedule, recent runs and snapshots</span></div>
+              <div class="test-case"><span class="test-case__k">run curation</span><span class="test-case__e">“Run” → POST without confirmation; the run is running, a repeat start is blocked (button disabled); “Cancel run” — guarded</span></div>
+              <div class="test-case"><span class="test-case__k">restore guarded</span><span class="test-case__e">“Restore” a snapshot → type-to-confirm → POST; snapshots are created only on schedule, there is no manual capture</span></div>
+              <div class="test-case"><span class="test-case__k">reembed lock</span><span class="test-case__e">re-embedding in progress (assigned via AI models) → starting curation is blocked with an explanation</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0" /><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" /></svg></span><span class="name">NotificationFeed.test.tsx</span></div>
+            <div class="test-card__sub">In-app feed — bell, read state, actions</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">bell unread count</span><span class="test-case__e">the bell with an unread count (deliveries <code>read_at IS NULL</code>); a click opens the event feed panel</span></div>
+              <div class="test-case"><span class="test-case__k">mark all read</span><span class="test-case__e">“Mark all read” → <code>read_at</code> on all of the admin's deliveries, the counter resets to zero</span></div>
+              <div class="test-case"><span class="test-case__k">read / unread toggle</span><span class="test-case__e">“Mark as read” dims the card; “Mark as unread” brings it back into the count</span></div>
+              <div class="test-case"><span class="test-case__k">add to scope · idempotent</span><span class="test-case__e">actionable discovery: “Add to scope” brings the container into coverage; a repeat (already in scope) — no-op, the button dims for everyone</span></div>
+              <div class="test-case"><span class="test-case__k">unread facet</span><span class="test-case__e">the “Unread” facet (a common default) → unread only; clear it → the full history; grouped Today · Earlier</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Structure ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Structure</span>
+        <span class="test-sec__title">Test file structure</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          The backend is thin (PlatformSettings CRUD); most of the logic is
+          frontend. The user management and audit log APIs are covered in
+          auth-security — here it's only the UI on top of them. The data/AI
+          screens (Agents, AI models, Tools, Usage, Harvester, Knowledge Store)
+          and the notification feed are covered by FE cards here — only the React
+          component and its guarded actions; the domain backend logic is owned
+          and tested by the modules themselves. Priority (P0–P1) is orthogonal to
+          the directories and is set by markers (<code>pytest -m p0</code>), not
+          by folders.
+        </p>
+        <div class="test-tree">
+          <ul>
+            <li>
+              <span class="test-tree__row"><code>tests/</code><span class="d">backend — shared scaffolding</span></span>
+              <ul>
+                <li><span class="test-tree__row"><code>conftest.py</code><span class="d">DB, session, app client (already present)</span></span></li>
+                <li>
+                  <span class="test-tree__row"><code>factories/</code><span class="d">data factories</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>admin.py</code><span class="d">PlatformSettingsFactory · NotificationChannelFactory · PromptSettingsFactory</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>admin/</code><span class="d">module directory</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>conftest.py</code><span class="d">admin fixtures, admin_client</span></span></li>
+                    <li>
+                      <span class="test-tree__row"><code>unit/</code><span class="d">no DB</span></span>
+                      <ul>
+                        <li><span class="test-tree__row"><code>test_settings_schema.py</code><span class="d">Pydantic DTO</span></span></li>
+                        <li><span class="test-tree__row"><code>test_notification_schema.py</code><span class="d">channels · routes · payload</span></span></li>
+                        <li><span class="test-tree__row"><code>test_prompt_schema.py</code><span class="d">prompt_settings DTO · token cap</span></span></li>
+                      </ul>
+                    </li>
+                    <li>
+                      <span class="test-tree__row"><code>integration/</code><span class="d">with DB</span></span>
+                      <ul>
+                        <li><span class="test-tree__row"><code>test_platform_settings.py</code><span class="d">CRUD · validation · singleton CHECK</span></span></li>
+                        <li><span class="test-tree__row"><code>test_maintenance.py</code><span class="d">503 · allow-list · pause sync/agents</span></span></li>
+                        <li><span class="test-tree__row"><code>test_admin_access.py</code><span class="d">role-based access</span></span></li>
+                        <li><span class="test-tree__row"><code>test_notifications.py</code><span class="d">channels · routes · dispatch · delivery</span></span></li>
+                        <li><span class="test-tree__row"><code>test_prompt_settings.py</code><span class="d">override · reset · cap · singleton</span></span></li>
+                      </ul>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+          <ul>
+            <li>
+              <span class="test-tree__row"><code>frontend/…/admin/__tests__/</code><span class="d">next to the code</span></span>
+              <ul>
+                <li><span class="test-tree__row"><code>AdminLayout.test.tsx</code><span class="d">sidebar · role · toggles · logout</span></span></li>
+                <li><span class="test-tree__row"><code>PlatformSettings.test.tsx</code><span class="d">form · save · validation · states</span></span></li>
+                <li><span class="test-tree__row"><code>UsersPage.test.tsx</code><span class="d">list · tabs · invite · actions</span></span></li>
+                <li><span class="test-tree__row"><code>UserDetailPage.test.tsx</code><span class="d">profile · role · actions · RBAC</span></span></li>
+                <li><span class="test-tree__row"><code>AuditLogPage.test.tsx</code><span class="d">table · filters · states</span></span></li>
+                <li><span class="test-tree__row"><code>NotificationsPage.test.tsx</code><span class="d">channels · matrix · recipients</span></span></li>
+                <li><span class="test-tree__row"><code>AiBehaviorPage.test.tsx</code><span class="d">bubbles · edit · reset · cap · tooltip</span></span></li>
+                <li><span class="test-tree__row"><code>ListControls.test.tsx</code><span class="d">shared: search threshold · reset page · facets · clamp</span></span></li>
+                <li><span class="test-tree__row"><code>AgentsPage.test.tsx</code><span class="d">pause · resume · limits (guarded)</span></span></li>
+                <li><span class="test-tree__row"><code>AiModelsPage.test.tsx</code><span class="d">change &amp; reembed · disable (guarded)</span></span></li>
+                <li><span class="test-tree__row"><code>ToolsPage.test.tsx</code><span class="d">chat/agents toggles · configure · test</span></span></li>
+                <li><span class="test-tree__row"><code>UsagePage.test.tsx</code><span class="d">slices · window · → detail</span></span></li>
+                <li><span class="test-tree__row"><code>HarvesterPage.test.tsx</code><span class="d">run · pause source (guarded)</span></span></li>
+                <li><span class="test-tree__row"><code>KnowledgeStorePage.test.tsx</code><span class="d">curation · backups (guarded)</span></span></li>
+                <li><span class="test-tree__row"><code>NotificationFeed.test.tsx</code><span class="d">bell · read/unread · add to scope · unread-facet</span></span></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

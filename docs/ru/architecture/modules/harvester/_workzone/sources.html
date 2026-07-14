@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Harvester: Sources</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="sources.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Harvester</a>
+        <h1 class="header__title">Sources</h1>
+        <div class="header__sub">harvester · workzone</div>
+      </div>
+
+      <p class="desc">
+        Что такое источник данных и как он подключается. Подключение — это
+        заполненная админом
+        <a href="#source-model" class="xref-anchor">модель источника</a>:
+        тип, адрес, учётные данные и scope. Дальше платформа
+        <a href="#authentication" class="xref-anchor">проходит аутентификацию</a>,
+        прячет секреты в
+        <a href="#secrets" class="xref-anchor">крипто-ядро</a>,
+        проверяет связку через
+        <a href="#test-connection" class="xref-anchor">Test Connection</a> и
+        начинает <a href="#fetch" class="xref-anchor">выборку</a> только по
+        объектам в scope. Дальше источник проходит свой
+        <a href="#lifecycle" class="xref-anchor">жизненный цикл</a> — пауза,
+        отключение, удаление. Экран подключения живёт в
+        <a
+          href="../../admin-panel/_wireframes/data-sources.html#source-wizard"
+          class="xref-module"
+          >Admin Panel</a
+        >.
+      </p>
+
+      <!-- ════════ МОДЕЛЬ ИСТОЧНИКА ════════ -->
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--model" id="source-model">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">◆</span>
+              <span class="stk-layer__name">Модель источника</span>
+              <span class="stk-layer__role"
+                >Админ заполняет при подключении.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="src-fields">
+                <div class="src-field">
+                  <span class="src-field__key"><code>connector_type</code></span>
+                  <span class="src-field__val"
+                    >Тип источника — Jira, Confluence, GitLab, Slack и другие. Выбирает
+                    <a href="connectors.html#catalog" class="xref-page"
+                      >коннектор</a
+                    >
+                    из реестра; его манифест и задаёт, какие поля и какого вида
+                    учётные данные просит форма.</span
+                  >
+                </div>
+                <div class="src-field">
+                  <span class="src-field__key"><code>base URL</code></span>
+                  <span class="src-field__val"
+                    >Адрес инстанса источника — куда коннектор шлёт
+                    запросы.</span
+                  >
+                </div>
+                <div class="src-field">
+                  <span class="src-field__key">credential</span>
+                  <span class="src-field__val"
+                    >Чем платформа представляется источнику: под кем
+                    (сервисная учётка или личный аккаунт) и чем (токен, в
+                    <span class="iter v2">v2</span> OAuth). Зависит от
+                    <code>connector_type</code>. Подробности —
+                    <a href="#authentication" class="xref-anchor"
+                      >ниже</a
+                    >.</span
+                  >
+                </div>
+                <div class="src-field">
+                  <span class="src-field__key">scope</span>
+                  <span class="src-field__val"
+                    >Какие объекты источника забираем — проекты, пространства,
+                    каналы. Режим и списки, заданные админом. См.
+                    <a href="#allowlist" class="xref-anchor">scope</a>.</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ АУТЕНТИФИКАЦИЯ ════════ -->
+      <div class="section" id="authentication">
+        <div class="section__title">Аутентификация</div>
+        <p class="desc">
+          Вход в источник раскладывается на два независимых вопроса:
+          <b>под кем</b> платформа ходит в источник и <b>чем</b> это
+          доказывает. Оси ортогональны и комбинируются — сервисная учётка
+          предъявляет свой токен.
+        </p>
+
+        <div class="src-axis">
+          <div class="src-axis__label">Под кем — личность</div>
+          <div class="src-auth">
+            <div class="stk-dec stk-dec--wide stk-dec--rec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Сервисная учётка</span>
+              </div>
+              <div class="stk-dec__d">
+                Отдельный технический read-only аккаунт под интеграцию.
+                Права видны и отзываемы в одном месте,
+                scope урезан до выбранного. <b>Путь по умолчанию.</b>
+              </div>
+            </div>
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Личный аккаунт админа</span>
+              </div>
+              <div class="stk-dec__d">
+                Запасной путь для инстансов, где сервисную учётку завести нельзя
+                или избыточно. Доступ привязан к человеку — годится для мелких
+                и разовых источников, не как норма.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="src-axis">
+          <div class="src-axis__label">Чем — механизм</div>
+          <div class="src-auth">
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Статический токен</span>
+              </div>
+              <div class="stk-dec__d">
+                API-токен или personal access token, выпущенный для выбранной
+                личности. Долгоживущий, вводится один раз — платформа прячет
+                его в крипто-ядро.
+              </div>
+            </div>
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">OAuth</span>
+                <span class="iter v2">v2</span>
+              </div>
+              <div class="stk-dec__d">
+                Авторизация через провайдера источника, без ручного ввода
+                долгоживущего токена.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ СЕКРЕТЫ ════════ -->
+      <div class="section" id="secrets">
+        <div class="section__title">
+          Секреты
+          <a
+            class="xref-badge"
+            href="../../auth-security/_workzone/protection.html#crypto-core"
+            >→ Auth · Крипто-ядро</a
+          >
+        </div>
+        <p class="desc">
+          Токены и пароли сервисных учёток платформа хранит
+          <b>зашифрованными</b> — оригинал нужен обратимо (с ним коннектор
+          ходит в источник), поэтому это шифрование, не хэш. Ключ и алгоритм —
+          не самодельные: ту же связку (AES-256-GCM), что шифрует пароль SMTP
+          в модуле Email, даёт крипто-ядро Auth. Harvester своего хранилища
+          секретов не заводит — кладёт секрет в поле
+          <code>sources.credential_enc</code> и обращается к ядру за
+          расшифровкой в момент запроса к источнику.
+        </p>
+      </div>
+
+      <!-- ════════ TEST CONNECTION ════════ -->
+      <div class="section" id="test-connection">
+        <div class="section__title">Test Connection</div>
+        <p class="desc">
+          Перед первой выборкой связку проверяют по шагам — чтобы при ошибке
+          сразу было видно, где именно она: в адресе, в кредах или в правах.
+          Это тот же приём проверки доступности, что у провайдеров моделей и у
+          Email (<code>is_available()</code>): не «работает / не работает», а
+          понятная диагностика. Шаги «креды» и «права» — это
+          <a href="connectors.html#contract" class="xref-page"
+            >метод <code>check_connection()</code></a
+          >
+          коннектора; шаг доступности URL — общий слой, одинаковый для любого
+          типа, не дело коннектора.
+        </p>
+        <div class="src-probe">
+          <div class="src-probe__step">
+            <span class="src-probe__n">1</span>
+            <div class="src-probe__body">
+              <div class="src-probe__t">URL доступен</div>
+              <div class="src-probe__d">
+                Инстанс по <code>base URL</code> отвечает. Нет — адрес неверен
+                или источник недоступен по сети.
+              </div>
+            </div>
+          </div>
+          <div class="src-probe__link"></div>
+          <div class="src-probe__step">
+            <span class="src-probe__n">2</span>
+            <div class="src-probe__body">
+              <div class="src-probe__t">Креды валидны</div>
+              <div class="src-probe__d">
+                Источник принимает credential. Нет — токен истёк, отозван или
+                сервисная учётка не та.
+              </div>
+            </div>
+          </div>
+          <div class="src-probe__link"></div>
+          <div class="src-probe__step">
+            <span class="src-probe__n">3</span>
+            <div class="src-probe__body">
+              <div class="src-probe__t">Прав достаточно</div>
+              <div class="src-probe__d">
+                Учётка реально видит выбранные объекты. Нет — креды валидны, но
+                read-доступа к проекту или каналу не хватает.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="src-probe__verdict">
+          Каждый шаг возвращает свою ошибку: админ чинит ровно то звено, что
+          оборвалось, а не гадает по общему «не удалось подключиться».
+        </div>
+        <p class="desc" id="health-check">
+          Та же проба работает на два триггера.<br/><b>По требованию</b> — админ
+          жмёт при подключении и правке, со всеми тремя шагами.<br/><b>По
+          расписанию</b> — платформа сама гоняет лёгкую версию (шаги 1–2: связь
+          и валидность кред) между синхронизациями, отдельно от тяжёлого
+          прогона. На провале выборки: проба
+          роняет источник в
+          <a href="#lifecycle" class="xref-anchor"
+            >health-состояние <code>(error)</code></a
+          >
+          и поднимает уведомление тем же каналом, что и провал прогона
+          (<a href="reliability.html#visibility" class="xref-page">видимость</a>).
+          Триггеры и итог пробы видны в блоке «Проверка соединения»
+          <a
+            href="../../admin-panel/_wireframes/data-sources.html#test-connection"
+            class="xref-module"
+            >карточки источника</a
+          >.
+        </p>
+      </div>
+
+      <!-- ════════ SCOPE ════════ -->
+      <div class="section" id="allowlist">
+        <div class="section__title">Scope</div>
+        <p class="desc">
+          Scope — это <b>режим</b>, а не перечень, набитый руками. Как только
+          креды приняты
+          (<a href="#test-connection" class="xref-anchor">Test Connection</a>,
+          шаг 2), коннектор строит <b>каталог</b> объектов источника — проекты,
+          пространства, каналы — своим
+          <a href="connectors.html#contract" class="xref-page"
+            >методом <code>list_catalog()</code></a
+          >, и админ выбирает из живого списка на экране подключения. Без
+          опечаток и угадывания ключей.
+        </p>
+
+        <div class="src-axis">
+          <div class="src-axis__label">Режим scope</div>
+          <div class="src-auth">
+            <div class="stk-dec stk-dec--wide stk-dec--rec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Всё</span>
+              </div>
+              <div class="stk-dec__d">
+                Берём источник целиком и <b>подхватываем новые объекты</b>
+                автоматически; deny-list убирает лишнее — архивы, песочницы,
+                личные пространства. Для крупных инстансов, где перечислять
+                каждый объект — оверкил. <b>Путь по умолчанию.</b>
+              </div>
+            </div>
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Только выбранное</span>
+              </div>
+              <div class="stk-dec__d">
+                Поимённый allow-list из каталога, с поиском. Новые объекты
+                остаются снаружи, пока админ не добавит их сам. Для пилотов и
+                точечных подключений.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="desc">
+          Scope хранится как <b>политика</b> — режим плюс списки, не замороженный
+          снимок: конкретные объекты платформа сверяет с каталогом на каждой
+          синхронизации, иначе появившиеся и удалённые пространства разошлись бы
+          с настройкой. Оговорка про права: чтобы собрать каталог, учётке нужно
+          <b>листать</b> инстанс, даже когда выборка потом сужена. Scope — часть
+          <a href="#source-model" class="xref-anchor">модели источника</a> и
+          граница, внутри которой работает выборка.
+        </p>
+      </div>
+
+      <!-- ════════ ВЫБОРКА ════════ -->
+      <div class="section" id="fetch">
+        <div class="section__title">Механика выборки</div>
+        <p class="desc">
+          Как <a href="connectors.html#catalog" class="xref-page">коннектор</a>
+          достаёт данные из источника и крутит один цикл: метод листинга отдаёт
+          страницу, коннектор передаёт её на вход
+          <a href="pipeline.html#extract" class="xref-page">конвейера</a> и
+          идёт за следующей по курсору. Сбой отдельного запроса — таймаут или
+          <code>429</code> от источника — цикл не рвёт: повтор с backoff держит
+          <a href="reliability.html#retry" class="xref-page">reliability</a>.
+        </p>
+        <div class="src-loop">
+          <div class="src-loop__step">
+            <span class="src-loop__name">listing</span>
+            <span class="src-loop__d"
+              >Метод API источника, отдающий объекты постранично.</span
+            >
+          </div>
+          <span class="src-loop__sep">→</span>
+          <div class="src-loop__step">
+            <span class="src-loop__name">page</span>
+            <span class="src-loop__d">Очередная страница объектов.</span>
+          </div>
+          <span class="src-loop__sep">→</span>
+          <div class="src-loop__step">
+            <span class="src-loop__name">emit</span>
+            <span class="src-loop__d"
+              >Объекты страницы идут потоком в конвейер.</span
+            >
+          </div>
+          <div class="src-loop__back">
+            есть следующий курсор → <b>обратно к listing</b>; нет → выборка
+            завершена
+          </div>
+        </div>
+
+        <div class="src-levers">
+          <div class="src-lever">
+            <span class="src-lever__name"
+              >Пагинация · <code>cursor</code></span
+            >
+            <span class="src-lever__d"
+              >Источник отдаёт данные страницами; курсор — закладка на следующую.
+              Коннектор листает до конца, не пытаясь забрать всё одним
+              запросом.</span
+            >
+          </div>
+          <div class="src-lever">
+            <span class="src-lever__name"
+              >Инкремент · <code>fetch(since)</code></span
+            >
+            <span class="src-lever__d"
+              >Граница «забирать только изменённое после». При полном импорте
+              <code>since</code> = epoch, при инкременте — момент прошлой
+              синхронизации.</span
+            >
+          </div>
+          <div class="src-lever">
+            <span class="src-lever__name">Webhooks</span>
+            <span class="src-lever__d"
+              >Near-real-time: источник сам шлёт событие об изменении — это
+              спусковой крючок, не новая логика (путь — ниже). Канал один на
+              источник; endpoint и секрет админ заводит в настройках источника
+              вручную (авто-провижн через API источника —
+              <span class="iter v2">v2</span>).</span
+            >
+          </div>
+        </div>
+
+        <div class="src-trigger">
+          <span class="src-trigger__label">Путь webhook-события</span>
+          <div class="src-loop src-loop--trigger">
+            <div class="src-loop__step">
+              <span class="src-loop__name">событие</span>
+              <span class="src-loop__d"
+                >Источник шлёт вызов на endpoint: «объект изменился».</span
+              >
+            </div>
+            <span class="src-loop__sep">→</span>
+            <div class="src-loop__step">
+              <span class="src-loop__name">проверка входящих</span>
+              <span class="src-loop__d"
+                >Подпись и анти-replay —
+                <a href="security.html#webhooks" class="xref-page">security</a>
+                отсекает чужое.</span
+              >
+            </div>
+            <span class="src-loop__sep">→</span>
+            <div class="src-loop__step">
+              <span class="src-loop__name">инкремент-задача</span>
+              <span class="src-loop__d"
+                >Событие становится задачей «подтянуть дельту».</span
+              >
+            </div>
+            <span class="src-loop__sep">→</span>
+            <div class="src-loop__step">
+              <span class="src-loop__name">конвейер</span>
+              <span class="src-loop__d"
+                >Тот же конвейер, что и прогон по расписанию.</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <p class="desc">
+          Конкуренция — между источниками: их прогоны независимы и идут
+          параллельно
+          (<a href="sync-modes.html#per-source" class="xref-page"
+            >per-source</a
+          >). Внутри одного источника листинг последователен — курсор не даёт
+          забежать вперёд, — но обработка объектов порядко-независима.
+        </p>
+        <p class="desc">
+          Те же API источника отдают и пользователей с правами доступа — но это
+          отдельная тема: как identity и ACL переезжают в платформу, держит
+          <a href="acl-identity.html#identity" class="xref-page">acl-identity</a>.
+        </p>
+      </div>
+
+      <!-- ════════ ЖИЗНЕННЫЙ ЦИКЛ ════════ -->
+      <div class="section" id="lifecycle">
+        <div class="section__title">Жизненный цикл источника</div>
+        <p class="desc">
+          Подключённый источник живёт дольше одного прогона: его ставят на
+          паузу, отключают, удаляют. За кнопками экрана стоят состояния и
+          правила.
+          <a href="#authentication" class="xref-anchor">аутентификация</a>
+          делит на «под кем» и «чем».
+        </p>
+
+        <div class="src-axis">
+          <div class="src-axis__label">Состояние — что решил админ</div>
+          <div class="src-auth">
+            <div class="stk-dec stk-dec--wide stk-dec--rec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Active</span>
+              </div>
+              <div class="stk-dec__d">
+                Подключён и синхронизируется по расписанию. Рабочее состояние.
+              </div>
+            </div>
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Paused</span>
+              </div>
+              <div class="stk-dec__d">
+                Расписание на паузе на время простоя источника. Конфигурация и
+                собранные данные целы, новые прогоны не запускаются; снимается
+                <code>Resume</code>.
+              </div>
+            </div>
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Disconnected</span>
+              </div>
+              <div class="stk-dec__d">
+                Креды сняты, прогоны остановлены, но конфиг-оболочка и данные
+                сохранены. Источник переподключают, не настраивая заново, — для
+                ротации доступа или временного вывода.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="src-axis">
+          <div class="src-axis__label">Здоровье — что наблюдает платформа</div>
+          <div class="src-auth">
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">idle</span>
+              </div>
+              <div class="stk-dec__d">
+                Прогонов нет, источник ждёт следующего по расписанию.
+              </div>
+            </div>
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">syncing</span>
+              </div>
+              <div class="stk-dec__d">
+                Идёт прогон; его ход, прогресс и итог держит
+                <a href="reliability.html#sync-run" class="xref-page"
+                  >SyncRun</a
+                >.
+              </div>
+            </div>
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">error</span>
+              </div>
+              <div class="stk-dec__d">
+                Последний прогон или
+                <a href="#health-check" class="xref-anchor">health-check</a>
+                завершился сбоем. Конфигурацию не блокирует — чинится повтором,
+                провал виден и поднимает уведомление.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="desc">
+          Оси независимы: active-источник бывает и idle, и syncing, а error
+          говорит про последний прогон, не про намерение админа. Бейджи на
+          экранах
+          <a
+            href="../../admin-panel/_wireframes/data-sources.html#connection-status"
+            class="xref-module"
+            >Admin Panel · Источники</a
+          >
+          и
+          <a
+            href="../../admin-panel/_wireframes/harvester.html#sync-overview"
+            class="xref-module"
+            >Admin Panel · Синхронизация</a
+          >
+          — отрисовка этих осей, не отдельная истина.
+        </p>
+
+        <p class="desc">
+          <b>Во время прогона источник под замком.</b> Пока он в
+          <code>syncing</code>, операции над ним недоступны — правка
+          конфигурации, пауза, отключение, удаление и повторный запуск: один
+          источник — один активный прогон
+          (<a href="sync-modes.html#per-source" class="xref-page"
+            >single-flight per-source</a
+          >). Единственный доступный рычаг — <code>Cancel</code>.
+        </p>
+        <p class="desc">
+          <code>Cancel</code> безопасен и потому отката не требует. Прогон
+          останавливается на ближайшем чекпоинте, уже обработанное лежит
+          консистентно —
+          <a href="pipeline.html#load" class="xref-page">Load идемпотентен</a>
+          по <code>source_id + source_type + source_entity_id</code>,
+          полусобранного состояния не
+          возникает. Откат к снимку был бы вреден и не нужен: данные
+          самосогласуются идемпотентным upsert, Incremental и Reconciliation.
+        </p>
+        <p class="desc">
+          Pause при этом глушит <b>расписание</b>, а не замораживает живой
+          прогон. Resume
+          с чекпоинта лечит <b>крах</b> воркера в коротком окне, с
+          <a href="reliability.html#checkpoint" class="xref-page"
+            >бюджетом свежести</a
+          >; прогон, отменённый или приостановленный надолго, терминален —
+          следующий стартует свежим, а не доедает стухшую выборку.
+        </p>
+
+        <div class="src-axis">
+          <div class="src-axis__label">Удаление — выбор при подтверждении</div>
+          <div class="src-auth">
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Только конфигурация</span>
+              </div>
+              <div class="stk-dec__d">
+                Источник убран, его данные осиротевают, но остаются в Knowledge
+                Store — на случай переподключения или если ими ещё пользуются.
+              </div>
+            </div>
+            <div class="stk-dec stk-dec--wide">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Конфигурация + данные</span>
+              </div>
+              <div class="stk-dec__d">
+                За type-to-confirm: каскадно чистит данные источника из графа,
+                векторов и метаданных. Необратимо — для полного вывода из
+                эксплуатации.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="desc">
+          Pause и Disconnect обратимы и данных не трогают; судьбу собранного
+          решает только Delete. Чистка «конфигурация + данные» — явный жёсткий
+          снос, в отличие от мягкого архивирования записи, исчезнувшей в самом
+          источнике (она хранится для аудита). Сущность, которую питает ещё и
+          другой источник, при этом не пропадает — отцепляется лишь вклад
+          удаляемого; межисточниковую склейку и её границу держит
+          <a href="data-model.html#cross-source" class="xref-page"
+            >data-model</a
+          >
+          → Knowledge Store.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

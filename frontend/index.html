@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Achilles — corporate knowledge graph" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>Achilles</title>
+    <!--
+      Paint the stored theme before the first frame: ThemeProvider only reaches the
+      DOM after React mounts, which is one light-themed flash too late. The storage
+      key mirrors THEME_STORAGE_KEY in the theme provider. Blocked storage throws,
+      and the light default stands.
+    -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("achilles.theme");
+          var dark =
+            stored === "dark" ||
+            (stored === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          document.documentElement.classList.toggle("dark", dark);
+        } catch (error) {
+          void error;
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>JavaScript is required to run this application.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

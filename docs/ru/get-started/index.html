@@ -1,0 +1,928 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Get Started</title>
+    <meta
+      name="description"
+      content="Быстрый старт Achilles: развернуть, создать владельца — дальше ведёт панель настройки на дашборде."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../shared.css" />
+    <link rel="stylesheet" href="../presentation/presentation.css" />
+    <link rel="stylesheet" href="get-started.css" />
+  </head>
+
+  <body>
+    <a class="home-link" href="../index.html" title="На главную">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 10.5 12 3l9 7.5" />
+        <path d="M5 9.5V21h14V9.5" />
+      </svg>
+      Главная
+    </a>
+    <div class="page">
+      <!-- ══════════════════════════════════════ -->
+      <!-- HERO                                  -->
+      <!-- ══════════════════════════════════════ -->
+      <header class="hero">
+        <h1 class="hero__title">Achilles</h1>
+        <p class="hero__subtitle">Get Started</p>
+        <p class="hero__desc">
+          Два консольных шага — развернуть и создать владельца. Дальше
+          платформа ведёт сама: на дашборде вас ждёт панель настройки со
+          ссылками на нужные экраны и галочками выполненного.
+        </p>
+      </header>
+
+      <!-- Table of contents -->
+      <nav class="toc">
+        <a class="toc__item" href="#deploy">
+          <span class="toc__num">1</span>
+          <span class="toc__body">
+            <span class="toc__title">Развёртывание</span>
+            <span class="toc__text">Поднять платформу на своём сервере — Docker Compose и три команды.</span>
+          </span>
+        </a>
+        <a class="toc__item" href="#first-login">
+          <span class="toc__num">2</span>
+          <span class="toc__body">
+            <span class="toc__title">Первый вход</span>
+            <span class="toc__text">Создать владельца платформы и открыть панель администратора.</span>
+          </span>
+        </a>
+        <a class="toc__item" href="#panel">
+          <span class="toc__num">3</span>
+          <span class="toc__body">
+            <span class="toc__title">Панель настройки</span>
+            <span class="toc__text">Шесть шагов на дашборде: AI-модели, источники, почта, мессенджеры — прогресс панель отмечает сама.</span>
+          </span>
+        </a>
+        <a class="toc__item" href="#team">
+          <span class="toc__num">4</span>
+          <span class="toc__body">
+            <span class="toc__title">Приглашение команды</span>
+            <span class="toc__text">Позвать сотрудников по email, раздать роли, привязать мессенджеры.</span>
+          </span>
+        </a>
+        <a class="toc__item" href="#finetune">
+          <span class="toc__num">5</span>
+          <span class="toc__body">
+            <span class="toc__title">Тонкая настройка<span class="opt">опционально</span></span>
+            <span class="toc__text">Организация, лимиты расходов, инструменты AI, промпт организации, уведомления.</span>
+          </span>
+        </a>
+        <a class="toc__item" href="#custom">
+          <span class="toc__num">6</span>
+          <span class="toc__body">
+            <span class="toc__title">Кастомизация<span class="opt">опционально</span></span>
+            <span class="toc__text">Свои поверхности через Public API, MCP, новые коннекторы и инструменты.</span>
+          </span>
+        </a>
+      </nav>
+
+      <!-- Prerequisites -->
+      <section class="section">
+        <div class="section__label section__label--summary">Перед началом</div>
+        <h2 class="section__title">Что понадобится</h2>
+        <div class="prereqs">
+          <div class="prereq">
+            <span><strong>Linux-сервер (VPS)</strong> с установленными Docker и Docker Compose — от 2 vCPU и 8 ГБ RAM (точнее — в шаге 1).</span>
+          </div>
+          <div class="prereq">
+            <span><strong>Домен</strong>, A-запись которого указывает на сервер.</span>
+          </div>
+          <div class="prereq">
+            <span><strong>API-ключ AI-провайдера</strong> — Anthropic, OpenAI, Google, агрегатор нейросетей (OpenRouter и подобные) или свой OpenAI-совместимый сервер, включая локальный Ollama.</span>
+          </div>
+          <div class="prereq">
+            <span><strong>Доступ к SMTP</strong> (почтовый сервер для исходящих писем) — нужен, чтобы приглашать сотрудников. Можно добавить позже.</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- STEP 1: DEPLOY                        -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="deploy">
+        <div class="section__label section__label--solution">Консоль · шаг 1</div>
+        <h2 class="section__title">Развёртывание</h2>
+        <p class="section__text">
+          Платформа поставляется как набор Docker-контейнеров: база
+          данных, очереди, backend, frontend и reverse-proxy поднимаются
+          одной командой.
+        </p>
+
+        <div class="ui-card ui-card--wide">
+          <div class="ui-card__bar">
+            Требования к серверу
+            <span class="ui-card__bar-note">минимум · рекомендуется</span>
+          </div>
+          <div class="ui-card__row">
+            <span class="ui-card__label">AI-хаб (без базы знаний)</span>
+            <span class="ui-card__value">2 vCPU · 8 ГБ RAM · 40 ГБ SSD</span>
+          </div>
+          <div class="ui-card__row">
+            <span class="ui-card__label">С базой знаний и встроенным эмбеддером</span>
+            <span class="ui-card__value">8 vCPU · 16 ГБ RAM · 80 ГБ SSD</span>
+          </div>
+        </div>
+        <div class="ui-card__caption">
+          встроенный эмбеддер держит модель в памяти (пик ~6 ГБ);
+          если эмбеддинги считает внешний провайдер — достаточно минимума.
+          Запускаете эмбеддер на хосте с 8 ГБ? Добавьте swap (4 ГБ хватит) —
+          пик загрузки кратковременный, но без swap сервис может уйти в OOM
+        </div>
+
+        <div class="step-rows">
+          <div class="step-row">
+            <span class="step-row__num">1</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Склонировать репозиторий и заполнить настройки</div>
+              <div class="step-row__text">
+                Файл <span class="chip-url">.env</span> — единственное
+                место, которое нужно отредактировать перед запуском.
+              </div>
+              <div class="codeblock">git clone https://github.com/maestrokj/Achilles.git
+cd Achilles
+cp .env.example .env</div>
+              <div class="ui-card">
+                <div class="ui-card__bar">
+                  .env
+                  <span class="ui-card__bar-note">заполнить эти строки</span>
+                </div>
+                <div class="ui-card__row ui-card__row--focus">
+                  <span class="ui-card__label">POSTGRES_PASSWORD / REDIS_PASSWORD</span>
+                  <span class="ui-card__value ui-card__value--in">надёжные пароли</span>
+                </div>
+                <div class="ui-card__row ui-card__row--focus">
+                  <span class="ui-card__label">SECRET_KEY</span>
+                  <span class="ui-card__value ui-card__value--in">openssl rand -base64 32</span>
+                </div>
+                <div class="ui-card__row ui-card__row--focus">
+                  <span class="ui-card__label">CORS_ORIGINS</span>
+                  <span class="ui-card__value ui-card__value--in">["https://ваш-домен.com"]</span>
+                </div>
+                <div class="ui-card__row ui-card__row--focus">
+                  <span class="ui-card__label">DOMAIN</span>
+                  <span class="ui-card__value ui-card__value--in">ваш-домен.com</span>
+                </div>
+                <div class="ui-card__row ui-card__row--focus">
+                  <span class="ui-card__label">PUBLIC_BASE_URL</span>
+                  <span class="ui-card__value ui-card__value--in">https://ваш-домен.com</span>
+                </div>
+                <div class="ui-card__row ui-card__row--focus">
+                  <span class="ui-card__label">VITE_API_URL</span>
+                  <span class="ui-card__value ui-card__value--in">https://ваш-домен.com/api</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">2</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Запустить платформу</div>
+              <div class="codeblock">docker compose -f docker-compose.prod.yml up -d</div>
+              <div class="step-row__text">
+                Проверка: откройте
+                <span class="chip-url">http://&lt;ваш-домен&gt;/</span> —
+                платформа встретит страницей статуса.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">3</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Выпустить TLS-сертификат</div>
+              <div class="step-row__text">
+                Certbot уже входит в поставку. После выпуска сертификата
+                nginx сам переключится на HTTPS; продление — автоматическое.
+              </div>
+              <div class="codeblock">docker compose -f docker-compose.prod.yml run --rm --entrypoint certbot certbot \
+  certonly --webroot -w /var/www/certbot -d &lt;ваш-домен&gt; -d www.&lt;ваш-домен&gt;
+docker compose -f docker-compose.prod.yml restart nginx</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="arch-ref">
+          Как это устроено:
+          <a href="../architecture/deployment.html">Deployment</a>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- STEP 2: FIRST LOGIN                   -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="first-login">
+        <div class="section__label section__label--solution">Консоль · шаг 2</div>
+        <h2 class="section__title">Первый вход</h2>
+        <p class="section__text">
+          У свежей платформы нет ни одного аккаунта. Первый — владелец
+          (Owner) — вы создаёте сами; все остальные потом войдут по
+          приглашениям. Сделать это можно двумя способами, и оба работают
+          только пока база пуста.
+        </p>
+
+        <div class="step-rows">
+          <div class="step-row">
+            <span class="step-row__num">A</span>
+            <div class="step-row__body">
+              <div class="step-row__title">В браузере — экран первого запуска</div>
+              <div class="step-row__text">
+                Просто откройте <span class="chip-url">https://&lt;ваш-домен&gt;/</span>.
+                На пустой базе платформа сразу приводит вас на экран создания
+                владельца — введите имя, почту и пароль, и вы попадёте в панель
+                администратора уже под своей учётной записью.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">B</span>
+            <div class="step-row__body">
+              <div class="step-row__title">В консоли — командой</div>
+              <div class="step-row__text">
+                Не хотите держать форму на публичном домене? Создайте владельца
+                на сервере, затем войдите на
+                <span class="chip-url">https://&lt;ваш-домен&gt;/login</span>.
+              </div>
+              <div class="codeblock">docker compose -f docker-compose.prod.yml exec backend \
+  achilles init-owner --email you@company.com --password '…' --name 'Ваше имя'</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="note">
+          Экран первого запуска открыт тому, кто первым дойдёт до домена, —
+          поэтому создайте владельца сразу после развёртывания. Как только
+          появляется хоть один аккаунт, и экран, и команда навсегда
+          отключаются, а домен показывает обычный вход.
+        </div>
+
+        <div class="note">
+          Роли в платформе: <strong>Владелец</strong> — всё, включая
+          журнал аудита и настройки безопасности; <strong>Администратор</strong> —
+          панель управления; <strong>Участник</strong> — чат, агенты
+          и личный кабинет.
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- SETUP PANEL                           -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="panel">
+        <div class="section__label section__label--summary">Дальше — в браузере</div>
+        <h2 class="section__title">Панель настройки ведёт сама</h2>
+        <p class="section__text">
+          После первого входа дашборд администратора встречает панелью
+          настройки: шесть шагов, каждый — ссылка на нужный экран. Галочки
+          платформа ставит сама по мере выполнения, а когда всё готово,
+          панель исчезает. Разделы ниже проходят те же шесть шагов в том же
+          порядке.
+        </p>
+
+        <div class="ui-card setup-mock">
+          <div class="ui-card__bar">
+            Настроим платформу
+            <span class="ui-card__bar-note">/admin · дашборд</span>
+          </div>
+          <a class="setup-mock__row" href="#chat-models">
+            <span class="setup-mock__check"></span>
+            <span class="setup-mock__title">Модели для ответов</span>
+            <span class="setup-mock__where">AI-модели</span>
+          </a>
+          <a class="setup-mock__row" href="#embedding">
+            <span class="setup-mock__check"></span>
+            <span class="setup-mock__title">Модель эмбеддинга</span>
+            <span class="setup-mock__where">AI-модели</span>
+          </a>
+          <a class="setup-mock__row" href="#sources">
+            <span class="setup-mock__check"></span>
+            <span class="setup-mock__title">Источники данных</span>
+            <span class="setup-mock__where">Источники данных</span>
+          </a>
+          <a class="setup-mock__row" href="#agent-models">
+            <span class="setup-mock__check"></span>
+            <span class="setup-mock__title">Модели для агентов</span>
+            <span class="setup-mock__where">AI-модели</span>
+          </a>
+          <a class="setup-mock__row" href="#email">
+            <span class="setup-mock__check"></span>
+            <span class="setup-mock__title">Доставка почты</span>
+            <span class="setup-mock__where">Платформа</span>
+          </a>
+          <a class="setup-mock__row" href="#surfaces">
+            <span class="setup-mock__check"></span>
+            <span class="setup-mock__title">Каналы общения</span>
+            <span class="setup-mock__where">Платформа</span>
+          </a>
+        </div>
+        <div class="ui-card__caption">
+          та самая панель с дашборда — здесь каждый пункт ведёт к своему
+          разделу ниже
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PANEL 1: MODELS FOR ANSWERS           -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="chat-models">
+        <div class="section__label section__label--solution">Панель · 1</div>
+        <h2 class="section__title">Модели для ответов</h2>
+        <p class="section__text">
+          Сердце платформы. Один провайдер и одна модель — минимум,
+          с которым чат уже работает. Всё происходит на одном экране —
+          <span class="chip-url">https://&lt;ваш-домен&gt;/admin/ai-models</span>
+          (пункт меню «AI-модели»).
+        </p>
+
+        <div class="step-rows">
+          <div class="step-row">
+            <span class="step-row__num">1</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Добавить провайдера</div>
+              <div class="step-row__text">
+                «Добавить провайдера» → вставьте API-ключ → «Проверить».
+                Подойдёт крупный провайдер (Anthropic, OpenAI, Google),
+                агрегатор нейросетей или своя OpenAI-совместимая модель —
+                для неё достаточно указать адрес сервера.
+              </div>
+              <div class="ui-card">
+                <div class="ui-card__bar">
+                  Новый провайдер
+                  <span class="ui-card__btn">Проверить</span>
+                </div>
+                <div class="ui-card__row">
+                  <span class="ui-card__label">Провайдер</span>
+                  <span class="ui-card__value">Anthropic</span>
+                </div>
+                <div class="ui-card__row ui-card__row--focus">
+                  <span class="ui-card__label">API-ключ</span>
+                  <span class="ui-card__value ui-card__value--in">sk-ant-•••••••••••••</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">2</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Включить модели</div>
+              <div class="step-row__text">
+                Включите нужные модели из каталога провайдера.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">3</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Назначить их чату</div>
+              <div class="step-row__text">
+                В блоке «Назначения» отметьте, какие из включённых моделей
+                доступны сотрудникам в чате.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="milestone">
+          <strong>Чат работает.</strong> Откройте
+          <span class="chip-url">https://&lt;ваш-домен&gt;/chat</span>
+          и попробуйте — остальные шаги панели его не блокируют. Это рабочее
+          место сотрудников: здесь они общаются с AI, а рядом заводят
+          и настраивают своих агентов.
+        </div>
+
+        <div class="arch-ref">
+          Как это устроено:
+          <a href="../architecture/modules/ai-foundation/index.html">AI Foundation</a>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PANEL 2: EMBEDDING MODEL              -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="embedding">
+        <div class="section__label section__label--solution">
+          Панель · 2 <span class="opt">для базы знаний</span>
+        </div>
+        <h2 class="section__title">Модель эмбеддинга</h2>
+        <p class="section__text">
+          Тот же экран «AI-модели», блок «Назначения». Модель эмбеддинга
+          превращает документы в вектора для поиска — без неё база знаний
+          не соберётся. В поставку входит встроенный эмбеддер, который
+          работает на вашем сервере, — внешний провайдер не обязателен.
+        </p>
+
+        <div class="note">
+          Выберите модель до первой синхронизации источников: смена позже
+          означает переиндексацию всей базы.
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PANEL 3: DATA SOURCES                 -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="sources">
+        <div class="section__label section__label--solution">
+          Панель · 3 <span class="opt">для базы знаний</span>
+        </div>
+        <h2 class="section__title">Источники данных</h2>
+        <p class="section__text">
+          Этот шаг превращает платформу из AI-хаба в память компании:
+          Jira, Confluence и другие источники собираются в граф знаний,
+          и ответы начинают опираться на ваши документы — со ссылками
+          на первоисточник. Экран —
+          <span class="chip-url">https://&lt;ваш-домен&gt;/admin/harvester</span>
+          (пункт меню «Источники данных»).
+        </p>
+
+        <div class="step-rows">
+          <div class="step-row">
+            <span class="step-row__num">1</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Добавить источник</div>
+              <div class="step-row__text">
+                Кнопка «Добавить источник» открывает мастер: тип источника,
+                доступы, проверка соединения, охват.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">2</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Запустить синхронизацию</div>
+              <div class="step-row__text">
+                Вручную или дождитесь расписания. Интервал инкрементальной
+                синхронизации общий для всех источников; отдельному источнику
+                можно задать своё расписание в его карточке.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">3</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Проверить, что люди сопоставились</div>
+              <div class="step-row__text">
+                После первой синхронизации платформа сама связывает аккаунты
+                источника с пользователями по email. Тех, кого связать
+                не удалось, видно на дашборде («непривязанные аккаунты»)
+                и на экране
+                <span class="chip-url">https://&lt;ваш-домен&gt;/admin/users</span>
+                → вкладка «Связь с источниками данных» — там же связь
+                ставится вручную в пару кликов. Пока аккаунт не связан,
+                сотрудник получает в ответах только общедоступные документы.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">4</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Присматривать за хранилищем</div>
+              <div class="step-row__text">
+                <span class="chip-url">https://&lt;ваш-домен&gt;/admin/knowledge-store</span>
+                (пункт «Хранилище») — состояние графа (сущности, фрагменты,
+                связи, векторы), расписание доводки, политика хранения
+                и резервные копии во внешнее хранилище.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="note">
+          Права доступа источников переносятся в граф: сотрудник получает
+          в ответах только те документы, которые ему доступны
+          в первоисточнике.
+        </div>
+
+        <div class="arch-ref">
+          Как это устроено:
+          <a href="../architecture/modules/harvester/index.html">Harvester</a>
+          <a href="../architecture/modules/knowledge-store/index.html">Knowledge Store</a>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PANEL 4: MODELS FOR AGENTS            -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="agent-models">
+        <div class="section__label section__label--solution">Панель · 4</div>
+        <h2 class="section__title">Модели для агентов</h2>
+        <p class="section__text">
+          Агенты — автономные помощники, которых сотрудники заводят для
+          регулярной работы на экране
+          <span class="chip-url">https://&lt;ваш-домен&gt;/agents</span>.
+          На экране «AI-модели», в том же блоке «Назначения», отметьте
+          модели, доступные агентам, — из этого списка сотрудник выбирает
+          модель для своего агента.
+        </p>
+
+        <div class="arch-ref">
+          Как это устроено:
+          <a href="../architecture/modules/agent-engine/index.html">Agent Engine</a>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PANEL 5: EMAIL DELIVERY               -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="email">
+        <div class="section__label section__label--solution">Панель · 5</div>
+        <h2 class="section__title">Доставка почты</h2>
+        <p class="section__text">
+          Без неё не работают приглашения сотрудников и сброс пароля.
+          На экране
+          <span class="chip-url">https://&lt;ваш-домен&gt;/admin/platform</span>
+          (пункт меню «Платформа») заполните карточку SMTP и нажмите
+          «Проверить» — платформа отправит тестовое письмо.
+        </p>
+
+        <div class="ui-card">
+          <div class="ui-card__bar">
+            Почта (SMTP)
+            <span class="ui-card__btn">Проверить</span>
+          </div>
+          <div class="ui-card__row ui-card__row--focus">
+            <span class="ui-card__label">Хост</span>
+            <span class="ui-card__value ui-card__value--in">smtp.yourcompany.com</span>
+          </div>
+          <div class="ui-card__row ui-card__row--focus">
+            <span class="ui-card__label">Порт · Шифрование</span>
+            <span class="ui-card__value ui-card__value--in">465 · SSL/TLS</span>
+          </div>
+          <div class="ui-card__row ui-card__row--focus">
+            <span class="ui-card__label">Логин · Пароль</span>
+            <span class="ui-card__value ui-card__value--in">noreply@yourcompany.com · ••••</span>
+          </div>
+          <div class="ui-card__row ui-card__row--focus">
+            <span class="ui-card__label">Адрес отправителя</span>
+            <span class="ui-card__value ui-card__value--in">noreply@yourcompany.com</span>
+          </div>
+        </div>
+        <div class="ui-card__caption">
+          фрагмент экрана «Платформа» — зелёным отмечено, что заполнить
+        </div>
+
+        <div class="arch-ref">
+          Как это устроено:
+          <a href="../architecture/modules/email/index.html">Email</a>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PANEL 6: CHAT SURFACES                -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="surfaces">
+        <div class="section__label section__label--solution">
+          Панель · 6 <span class="opt">опционально</span>
+        </div>
+        <h2 class="section__title">Каналы общения</h2>
+        <p class="section__text">
+          Сотрудники могут спрашивать платформу прямо из мессенджера —
+          каждый тред становится отдельной беседой. Карточки живут на экране
+          «Платформа», в блоке «Поверхности»; подключайте любую из трёх
+          или все сразу.
+        </p>
+
+        <div class="ui-card">
+          <div class="ui-card__bar">
+            Поверхности
+            <span class="ui-card__bar-note">Платформа · что нужно каждой</span>
+          </div>
+          <div class="ui-card__row">
+            <span class="ui-card__label">Slack</span>
+            <span class="ui-card__value">bot token · signing secret</span>
+          </div>
+          <div class="ui-card__row">
+            <span class="ui-card__label">Mattermost</span>
+            <span class="ui-card__value">адрес сервера · bot token</span>
+          </div>
+          <div class="ui-card__row">
+            <span class="ui-card__label">Telegram</span>
+            <span class="ui-card__value">bot token</span>
+          </div>
+        </div>
+        <div class="ui-card__caption">
+          у каждой карточки своя кнопка «Проверить» — платформа сразу
+          проверяет доступы
+        </div>
+
+        <div class="note">
+          Чтобы платформа узнавала, кто пишет, сотрудник привязывает свой
+          аккаунт мессенджера в личном кабинете — см. «Приглашение команды»
+          ниже.
+        </div>
+
+        <div class="milestone">
+          <strong>Все шесть галочек — панель исчезает сама.</strong>
+          Платформа настроена; осталось привести людей.
+        </div>
+
+        <div class="arch-ref">
+          Как это устроено:
+          <a href="../architecture/modules/slack/index.html">Slack</a>
+          <a href="../architecture/modules/mattermost/index.html">Mattermost</a>
+          <a href="../architecture/modules/telegram/index.html">Telegram</a>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- TEAM                                  -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="team">
+        <div class="section__label section__label--solution">Почти готово</div>
+        <h2 class="section__title">Приглашение команды</h2>
+        <p class="section__text">
+          Аккаунты создаются только по приглашению — самостоятельной
+          регистрации нет. Понадобится настроенная почта (шаг 5 панели);
+          если SMTP не настроен, экран приглашений сам об этом напомнит.
+        </p>
+
+        <div class="step-rows">
+          <div class="step-row">
+            <span class="step-row__num">1</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Отправить приглашение</div>
+              <div class="step-row__text">
+                <span class="chip-url">https://&lt;ваш-домен&gt;/admin/users</span>
+                (пункт «Пользователи») → вкладка «Приглашения» → email
+                и роль. Ссылка в письме действует 48 часов.
+              </div>
+              <div class="ui-card">
+                <div class="ui-card__bar">
+                  Пригласить сотрудника
+                  <span class="ui-card__btn">Отправить</span>
+                </div>
+                <div class="ui-card__row ui-card__row--focus">
+                  <span class="ui-card__label">Email</span>
+                  <span class="ui-card__value ui-card__value--in">colleague@company.com</span>
+                </div>
+                <div class="ui-card__row ui-card__row--focus">
+                  <span class="ui-card__label">Роль</span>
+                  <span class="ui-card__value ui-card__value--in">Участник</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">2</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Сотрудник принимает приглашение</div>
+              <div class="step-row__text">
+                По ссылке из письма он задаёт имя и пароль — и попадает
+                в чат. Свои агенты, история бесед, лента уведомлений
+                и личный кабинет уже ждут его.
+              </div>
+            </div>
+          </div>
+
+          <div class="step-row">
+            <span class="step-row__num">3</span>
+            <div class="step-row__body">
+              <div class="step-row__title">Привязка мессенджера <span class="opt">опционально</span></div>
+              <div class="step-row__text">
+                В личном кабинете
+                (<span class="chip-url">https://&lt;ваш-домен&gt;/account</span>,
+                раздел «Связанные аккаунты») сотрудник выбирает мессенджер —
+                платформа выдаёт короткоживущий код, его нужно отправить боту
+                в личные сообщения, и аккаунты связаны.
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- FINE-TUNING (optional)                -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="finetune">
+        <div class="section__label section__label--solution">
+          Тонкая настройка <span class="opt">опционально</span>
+        </div>
+        <h2 class="section__title">Сделать платформу своей</h2>
+        <p class="section__text">
+          За пределами панели настройки — стоит заглянуть, когда платформа
+          уже работает.
+        </p>
+
+        <div class="benefits">
+          <div class="benefit">
+            <div class="benefit__title">Организация</div>
+            <div class="benefit__text">
+              Название компании, логотип, часовой пояс, язык интерфейса
+              и формат дат — дефолты, которые каждый сотрудник может
+              переопределить.
+              <span class="chip-url">/admin/platform</span>
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Лимиты расходов</div>
+            <div class="benefit__text">
+              Недельный потолок токенов для агентов и месячное бюджетное
+              оповещение; здесь же виден расход по сотрудникам и моделям.
+              <span class="chip-url">/admin/ai-usage</span>
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Инструменты AI</div>
+            <div class="benefit__text">
+              Веб-поиск и загрузка страниц для чата и агентов.
+              <span class="chip-url">/admin/ai-tools</span>
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Промпт организации</div>
+            <div class="benefit__text">
+              Тон, правила и контекст компании, которые AI учитывает
+              в каждом ответе.
+              <span class="chip-url">/admin/ai-prompt</span>
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Уведомления</div>
+            <div class="benefit__text">
+              Какие события до кого доходят и по каким каналам — лента
+              внутри платформы и почта.
+              <span class="chip-url">/admin/notifications</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- CUSTOMIZATION (optional)              -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="custom">
+        <div class="section__label section__label--solution">
+          Расти дальше <span class="opt">опционально</span>
+        </div>
+        <h2 class="section__title">Кастомизация</h2>
+        <p class="section__text">
+          Платформа расширяется в четырёх направлениях — каждое описано
+          в архитектурной документации.
+        </p>
+
+        <div class="benefits">
+          <div class="benefit">
+            <div class="benefit__title">Свои поверхности — Public API</div>
+            <div class="benefit__text">
+              Внутренний портал, другой мессенджер, свой инструмент —
+              любая поверхность подключается через открытый HTTP-API.
+              Ключи доступа выпускаются на экране «API-ключи»
+              (<span class="chip-url">/admin/api-keys</span>).
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Внешние AI-ассистенты — MCP</div>
+            <div class="benefit__text">
+              Claude, IDE и другие MCP-клиенты подключаются к базе знаний
+              компании как к инструменту — включается рубильником на экране
+              «Платформа».
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Свои коннекторы</div>
+            <div class="benefit__text">
+              Нестандартный источник данных подключается по контракту
+              Harvester — синхронизация, расписание и мониторинг достаются
+              бесплатно.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Свои инструменты AI</div>
+            <div class="benefit__text">
+              Каталог инструментов открытый: следующая итерация добавит
+              подключение MCP-серверов с инструментами для агентов.
+            </div>
+          </div>
+        </div>
+
+        <div class="arch-ref">
+          Как это устроено:
+          <a href="../architecture/modules/public-api/index.html">Public API</a>
+          <a href="../architecture/modules/mcp/index.html">MCP</a>
+          <a href="../architecture/modules/harvester/index.html">Harvester</a>
+          <a href="../architecture/modules/ai-foundation/index.html">AI Foundation</a>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- CTA                                   -->
+      <!-- ══════════════════════════════════════ -->
+      <footer class="cta">
+        <h2 class="cta__title">Дальше — глубже</h2>
+        <p class="cta__text">
+          Зачем всё это устроено именно так — в презентации;
+          как работает под капотом — в архитектурной документации.
+        </p>
+        <div class="cta__actions">
+          <a href="../presentation/presentation.html" class="cta__btn cta__btn--primary">
+            Презентация →
+          </a>
+          <a href="../architecture/architecture-scheme.html" class="cta__btn cta__btn--secondary">
+            Архитектура
+          </a>
+          <a href="https://github.com/maestrokj/Achilles" class="cta__btn cta__btn--secondary">
+            GitHub
+          </a>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      // Click-to-copy: URL-чипы копируются кликом, у shell-блоков — кнопка.
+      function copyText(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+          return navigator.clipboard.writeText(text);
+        }
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand("copy");
+        } finally {
+          document.body.removeChild(ta);
+        }
+        return Promise.resolve();
+      }
+
+      function flash(el, cls) {
+        el.classList.add(cls);
+        clearTimeout(el._copyTimer);
+        el._copyTimer = setTimeout(function () {
+          el.classList.remove(cls);
+        }, 1400);
+      }
+
+      document.querySelectorAll(".chip-url").forEach(function (chip) {
+        chip.title = "Нажмите, чтобы скопировать";
+        chip.addEventListener("click", function () {
+          copyText(chip.textContent.trim()).then(function () {
+            flash(chip, "copied");
+          });
+        });
+      });
+
+      document.querySelectorAll(".codeblock").forEach(function (block) {
+        var text = block.textContent.replace(/^\n+|\s+$/g, "");
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "copy-btn";
+        btn.textContent = "копировать";
+        btn.addEventListener("click", function () {
+          copyText(text).then(function () {
+            btn.textContent = "скопировано ✓";
+            flash(btn, "copied");
+            setTimeout(function () {
+              btn.textContent = "копировать";
+            }, 1400);
+          });
+        });
+        block.appendChild(btn);
+      });
+    </script>
+    <script defer src="../architecture/doc-nav.js"></script>
+  </body>
+</html>

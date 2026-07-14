@@ -1,0 +1,952 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Knowledge Store: Lifecycle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../knowledge-store.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="lifecycle.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Knowledge Store</a>
+        <h1 class="header__title">Lifecycle</h1>
+        <div class="header__sub">knowledge-store · workzone</div>
+      </div>
+
+      <p class="desc">
+        The Knowledge Store data lifecycle revolves around
+        <a href="#curation-pass" class="xref-anchor">Curation Pass</a> — a
+        periodic background run <strong>over the graph already assembled</strong>,
+        not over the source. It's an orchestrator on top of a set of lifecycle
+        operations:
+        <a href="#edge-materialization" class="xref-anchor">edge
+          materialization</a>,
+        <a href="#entity-resolution" class="xref-anchor">fuzzy resolution</a> and
+        <a href="#staleness" class="xref-anchor">demoting the stale</a> run as one
+        chain on a schedule, while
+        <a href="#retention" class="xref-anchor">retention</a>
+        <span class="iter v2">v2</span> adjoins it as the next step;
+        <a href="#embedding-refresh" class="xref-anchor">re-embedding</a> stands
+        apart — triggered by a model-change event. Run visibility is held by the
+        control-plane table <a href="#curation-runs" class="xref-anchor"
+          >curation_runs</a
+        >; mutual exclusion of concurrent runs against Harvester delivery is held
+        by
+        <a href="#coordination" class="xref-anchor">lane coordination</a>, and
+        backup and single-database consistency by
+        <a href="#backup" class="xref-anchor">backup</a> and
+        <a href="#consistency" class="xref-anchor">consistency</a>.
+      </p>
+
+      <!-- ════════════════ CURATION PASS — ORCHESTRATOR ════════════════ -->
+      <div class="section" id="curation-pass">
+        <div class="section__title">
+          Curation Pass — the graph-curation orchestrator
+        </div>
+        <p class="desc">
+          Harvester delivers data and repairs each source individually;
+          Curation Pass curates the <em>graph</em> across all sources at once.
+          It's the mirror of
+          <a
+            href="../../harvester/_workzone/sync-modes.html#reconciliation"
+            class="xref-module"
+            >Harvester · Reconciliation</a
+          >: Reconciliation reads the source API and brings the per-source
+          snapshot into agreement with it; Curation Pass reads the Knowledge Store
+          database itself and reconciles what's visible only when you look at all
+          sources together. The boundary is exactly the one at the
+          <a href="data-model.html#boundary" class="xref-page">boundary with the
+            producer</a
+          >: "certain within a source → Harvester, a guess across sources →
+          Knowledge Store".
+        </p>
+
+        <p class="desc">
+          The schedule is <strong>a single platform one</strong>, not per-source:
+          the run covers the whole graph, and there's no point splitting it by
+          source. The cadence is set by
+          <a
+            class="xref-badge"
+            href="../../admin-panel/_wireframes/knowledge-store.html#knowledge-store"
+            >→ Admin · Knowledge Store</a
+          >. Under one orchestrator — three scheduled steps in v1 (retention
+          <span class="iter v2">v2</span> being the fourth) plus one by event:
+        </p>
+
+        <div class="lc-steps">
+          <div class="lc-steps__chain">
+            <a class="lc-step lc-step--materialize" href="#edge-materialization">
+              <span class="lc-step__n">1</span>
+              <span class="lc-step__t">Edge materialization</span>
+              <span class="lc-step__d">explicit <code>entity_ref</code> claims →
+                edges, once both nodes are in the database</span
+              >
+            </a>
+            <span class="lc-step__seam">→</span>
+            <a class="lc-step lc-step--resolve" href="#entity-resolution">
+              <span class="lc-step__n">2</span>
+              <span class="lc-step__t">Entity resolution</span>
+              <span class="lc-step__d">fuzzy cross-source resolution of
+                duplicates and identities</span
+              >
+            </a>
+            <span class="lc-step__seam">→</span>
+            <a class="lc-step lc-step--stale" href="#staleness">
+              <span class="lc-step__n">3</span>
+              <span class="lc-step__t">Staleness decay</span>
+              <span class="lc-step__d">age and access demote
+                <code>trust_score</code> on top of source weight</span
+              >
+            </a>
+            <span class="lc-step__seam">→</span>
+            <a class="lc-step lc-step--retain" href="#retention">
+              <span class="lc-step__n">4</span>
+              <span class="lc-step__t"
+                >Retention<span class="iter v2">v2</span></span
+              >
+              <span class="lc-step__d">archival and deletion by type and
+                policy</span
+              >
+            </a>
+          </div>
+          <div class="lc-steps__cap">on a schedule · one run chain</div>
+
+          <div class="lc-steps__aside">
+            <a class="lc-step lc-step--embed" href="#embedding-refresh">
+              <span class="lc-step__badge">by event</span>
+              <span class="lc-step__t">Embedding refresh</span>
+              <span class="lc-step__d">re-embedding on a model change — outside
+                the scheduled chain</span
+              >
+            </a>
+          </div>
+        </div>
+
+        <div class="decision-box">
+          <strong>An orchestrator, not a separate module.</strong> Curation Pass
+          isn't a new service but a Knowledge Store background run that launches a
+          set of lifecycle operations over the already-persisted
+          <a href="data-model.html#projections" class="xref-page">three
+            projections</a
+          >. Each step is self-contained and idempotent: a repeat run does no
+          harm, and a partial failure doesn't break the rest.
+        </div>
+      </div>
+
+      <!-- ════════════════ EDGE MATERIALIZATION ════════════════ -->
+      <div class="section" id="edge-materialization">
+        <div class="section__title">
+          Edge materialization: from claims to graph
+        </div>
+        <p class="desc">
+          A deterministic step, not a guess. During capture Harvester leaves
+          explicit references as claims in
+          <a href="data-model.html#entity-ref" class="xref-page">entity_ref</a>,
+          when the target node isn't in the database yet (another source, or a
+          forward within its own). The run walks the unresolved claims, looks up
+          the target by its natural identifier and, on a match, writes an edge to
+          <a href="data-model.html#graph" class="xref-page">entity_edge</a>
+          (<code>origin=curation</code>) and clears the claim; if the target isn't
+          found, the claim waits for the next run. So the graph is eventually
+          complete: a relation appears the moment both of its ends are in the
+          database. This separates the deterministic assembly of explicit
+          relations from the
+          <a href="#entity-resolution" class="xref-anchor">fuzzy resolution</a>
+          below.
+        </p>
+      </div>
+
+      <!-- ════════════════ ENTITY RESOLUTION ════════════════ -->
+      <div class="section" id="entity-resolution">
+        <div class="section__title">
+          Entity resolution: fuzzy cross-source reconciliation
+        </div>
+        <p class="desc">
+          This is deep entity resolution — what
+          <a href="data-model.html#boundary" class="xref-page"
+            >Harvester's exact-match</a
+          >
+          didn't catch at load time. Within one source, duplicates are collapsed
+          by Reconciliation's full scan; across sources there's no exact key, and
+          resolution becomes a <em>guess</em> — a job for Curation Pass. Jira's
+          "Ivan Petrov" and Slack's "ipetrov" are one person; two pages about the
+          same release in different spaces are one topic.
+        </p>
+
+        <div class="lc-cases">
+          <div class="lc-case">
+            <div class="lc-case__h">Identity resolution</div>
+            <div class="lc-case__d">
+              Unresolved <code>source_principal</code>s and identities under
+              <em>different</em> emails are matched fuzzily by the run, which sets
+              <code>identity_id</code> — <span class="iter v2">v2</span>, a
+              Curation Pass step. In v1 the <code>identity ↔ users</code> bridge
+              only links up by matching email; when addresses differ, the identity
+              goes to manual review (below). The model and exact resolution are on
+              <a href="acl-identity.html#identity" class="xref-page"
+                >ACL & identity</a
+              >.
+            </div>
+          </div>
+          <div class="lc-case">
+            <div class="lc-case__h">Merging nodes in the graph</div>
+            <div class="lc-case__d">
+              Two entities recognized as one object collapse into a single node;
+              their edges are moved over, and the duplicate is marked
+              <code>duplicate_of</code>. A graph node is
+              <a href="data-model.html#graph" class="xref-page"
+                >the <code>entities</code> record itself</a
+              >, so the merge is an operation on the relational body, not on a
+              separate node table.
+            </div>
+          </div>
+        </div>
+
+        <p class="note">
+          The run doesn't discard the unresolved: whatever couldn't be linked
+          fuzzily stays for manual review in
+          <a
+            class="xref-badge"
+            href="../../admin-panel/_wireframes/users.html#identity-mapping"
+            >→ Admin · Account linking</a
+          >
+          — so automation and manual review work off one queue.
+        </p>
+      </div>
+
+      <!-- ════════════════ STALENESS ════════════════ -->
+      <div class="section" id="staleness">
+        <div class="section__title">Staleness &amp; trust decay</div>
+        <p class="desc">
+          Data goes stale and isn't equal in reliability: a ticket closed a year
+          ago and yesterday's release, an official policy and a chat aside — all
+          carry different weight. Curation Pass maintains the ranking
+          <a href="data-model.html#entities" class="xref-page"
+            ><code>entities.trust_score</code></a
+          >
+          — no deletion, only a lower priority in results. The base is set by
+          <strong>source authority</strong>, with age and demand
+          <strong>modulating</strong> it: trust = source weight, lowered by
+          staleness and disuse.
+        </p>
+
+        <div class="lc-decay">
+          <div class="lc-decay__in">
+            <div class="lc-decay__h">Trust inputs</div>
+            <ul class="lc-decay__list">
+              <li>
+                <strong>source authority</strong> — the base weight from the tier
+                (<code>low</code> · <code>normal</code> · <code>high</code>):
+                policy bases and wikis higher, tickets mid, chat and bots lower.
+                The tier is set by the admin on the source card
+                (<a
+                  href="../../harvester/_workzone/data-model.html#sources-table"
+                  class="xref-module"
+                  ><code>Harvester.sources.authority_tier</code></a
+                >, read via JOIN on <code>source_id</code>); decay expands the
+                tier into a numeric multiplier — the
+                <code>tier → weight</code> mapping lives in code in one place
+              </li>
+              <li>
+                <strong>age</strong> — how long ago
+                <code>source_updated_at</code> was last edited in the source; the
+                old is lowered by a decay function
+              </li>
+              <li>
+                <strong>access frequency</strong> — what's never queried is
+                lowered; what's in demand keeps its weight. The signal is driven
+                by
+                <a href="../../query-engine/_workzone/retrieval.html#access-signal" class="xref-module"
+                  >Query Engine</a
+                >
+                (<code>access_counter.hits</code> · <code>last_accessed_at</code>,
+                read via JOIN on the entity id during recompute — the same trick
+                as <code>authority_tier</code>); long-unqueried data decays toward
+                neutral
+              </li>
+            </ul>
+          </div>
+          <div class="lc-decay__arrow">→</div>
+          <div class="lc-decay__out">
+            <div class="lc-decay__h">Output</div>
+            <div class="lc-decay__field">
+              <code>trust_score</code> ↓
+            </div>
+            <div class="lc-decay__note">
+              a ranking weight, not an access filter — the stale stays visible,
+              just lower
+            </div>
+          </div>
+        </div>
+
+        <div class="decision-box">
+          <strong>The function's shape and two invariants.</strong>
+          <code>trust_score</code> is a product of normalized multipliers:
+          authority × freshness × demand. Freshness is an exponential decay with a
+          configurable half-life; the authority-tier multipliers and the axis
+          weights live in code/config in one place, not as magic numbers. A simple,
+          explainable function on purpose: add complexity after measuring on real
+          results, not ahead of it. Two invariants keep the run predictable:
+          <ul class="lc-decay__list">
+            <li>
+              <strong>absolute recompute, not increment</strong> — each run
+              computes <code>trust_score</code> anew from the current inputs, so a
+              repeat run is idempotent: the same result, with no accumulated drift
+            </li>
+            <li>
+              <strong>degradation on a missing signal</strong> — while an entity
+              has no row in <code>access_counter</code>, the demand multiplier is
+              neutral
+              (decay rides on authority and age); the signal plugs in without
+              changing the formula or the schema
+            </li>
+          </ul>
+        </div>
+
+        <p class="note">
+          Decay is neither a status nor a soft-delete: the
+          <code>status</code> and <code>is_deleted</code> axes are driven by
+          ingestion, while <code>trust_score</code> is a continuous weight the run
+          recomputes. A record's disappearance from a source is recorded by
+          <a
+            href="../../harvester/_workzone/sync-modes.html#reconciliation"
+            class="xref-module"
+            >Reconciliation</a
+          >, not by staleness.
+        </p>
+      </div>
+
+      <!-- ════════════════ RETENTION ════════════════ -->
+      <div class="section" id="retention">
+        <div class="section__title">
+          Retention policy<span class="iter v2">v2</span>
+        </div>
+        <p class="desc">
+          What to keep forever, what to archive, what to delete physically — the
+          closing step of the chain, deferred to <span class="iter v2">v2</span>:
+          in the first version data simply accumulates (the source purges only
+          what it marked deleted itself — via
+          <a
+            href="../../harvester/_workzone/sync-modes.html#reconciliation"
+            class="xref-module"
+            >Reconciliation</a
+          >), and our own retention policy comes later. The policy depends on the
+          entity type and the customer's requirements (regulatory periods, volume,
+          sensitivity), so it's set not in code but in
+          <a
+            class="xref-badge"
+            href="../../admin-panel/_wireframes/knowledge-store.html#retention"
+            >→ Admin · Knowledge Store</a
+          >
+          alongside the run schedule.
+        </p>
+
+        <div class="lc-retain">
+          <div class="lc-retain__tier lc-retain__tier--keep">
+            <div class="lc-retain__t">Keep</div>
+            <div class="lc-retain__d">
+              Active and in demand — stays in hot results with no time limit.
+            </div>
+          </div>
+          <div class="lc-retain__tier lc-retain__tier--archive">
+            <div class="lc-retain__t">Archive</div>
+            <div class="lc-retain__d">
+              Old but valuable for audit — leaves hot results, kept physically.
+              Akin to a soft-delete, but by policy, not by disappearance from a
+              source.
+            </div>
+          </div>
+          <div class="lc-retain__tier lc-retain__tier--purge">
+            <div class="lc-retain__t">Delete</div>
+            <div class="lc-retain__d">
+              Expired by period or policy — purged physically along with its child
+              <a href="data-model.html#chunks" class="xref-page"
+                >chunks</a
+              >
+              by CASCADE.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ EMBEDDING REFRESH ════════════════ -->
+      <div class="section" id="embedding-refresh">
+        <div class="section__title">
+          Embedding refresh — re-embedding on a model change
+        </div>
+        <p class="desc">
+          This step stands <strong>outside the scheduled chain</strong>: it's
+          triggered not by a timer but by an <em>event</em> — a change of
+          embedding model. Vectors computed by the old model are incompatible with
+          the new one: their proximity in a shared space loses meaning, and search
+          breaks while the database is mixed. So on a model change Curation Pass
+          regenerates
+          <a href="data-model.html#chunks" class="xref-page"
+            ><code>chunks.embedding</code></a
+          >
+          and updates <code>chunks.embedding_model</code> — a bulk run that is
+          itself inference
+          <span
+            class="ai-tag"
+            title="This stage uses a neural network — model inference"
+            ><span class="ai-tag__icon"></span>AI</span
+          >.
+        </p>
+
+        <p class="note">
+          A subtlety of dimensionality: at equal dimensionality old and new
+          embeddings coexist row by row while the run proceeds (told apart by
+          <code>embedding_model</code>). Changing the dimensionality N itself is
+          not a row-by-row refresh but a schema operation:
+          <code>chunks.embedding</code> is typed by its dimensionality
+          (<code>halfvec(N)</code>) and can't hold two Ns at once, so a new size
+          requires reindexing the column.
+        </p>
+
+        <div class="decision-box">
+          <strong>Refresh rebuilds the index, it doesn't edit in place.</strong>
+          A bulk <code>UPDATE</code> of the <code>embedding</code> column on a live
+          HNSW is total graph churn (each re-embedded row = deleting and inserting
+          a node under locks), the worst regime for maintaining the index. So the
+          run proceeds as a rebuild without an exclusive write lock: a new column
+          → <code>CREATE INDEX CONCURRENTLY</code> → an atomic swap, or
+          <code>REINDEX INDEX CONCURRENTLY</code> — at the cost of run time and the
+          space for two indexes at once. The same trick builds the index on a
+          source's initial bulk import: chunks are loaded first, HNSW in a single
+          pass afterward rather than incrementally during the load.
+        </div>
+
+        <p class="note">
+          <strong>Cancellation is safe — the swap is the only commit point.</strong>
+          Since the new generation is assembled in a separate column while the old
+          index stays authoritative until the swap, aborting the run simply drops
+          the half-built column: no mixed row-by-row state visible to search
+          arises, and the platform stays on the previous model. The cost isn't in
+          integrity but in the inference spent — which is why in
+          <a
+            href="../../admin-panel/_wireframes/knowledge-store.html#curation-run"
+            class="xref-module"
+            >Admin</a
+          >
+          cancelling a re-embedding goes through a confirmation, and restarting is
+          a repeat model change.
+        </p>
+      </div>
+
+      <!-- ════════════════ CURATION RUNS ════════════════ -->
+      <div class="section" id="curation-runs">
+        <div class="section__title">
+          Control-plane: <code>curation_runs</code>
+          <a class="xref-badge" href="../../cache-workers/_workzone/lifecycle.html#dlq">→ Cache &amp; Workers</a>
+        </div>
+        <p class="desc">
+          The mirror of Harvester's run journal
+          (<a
+            href="../../harvester/_workzone/data-model.html#sync-runs-table"
+            class="xref-module"
+            >sync_runs</a
+          >) on the Knowledge Store side: one row per run, visibility of progress
+          and outcome. The UI computes nothing — it reads
+          <code>curation_runs</code> and draws progress, status and per-step stats.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--ks">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">●</span>
+              <span class="stk-layer__name">Curation run</span>
+              <span class="stk-layer__role">Curation Pass run journal.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">curation_runs</span>
+                  <span class="dm-tbl__sub">curation run journal</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--flag">platform-wide · not per-source</span>
+                    <span class="dm-badge dm-badge--flag">one active</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">trigger</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (schedule | model_change | manual)">CHECK</span>
+                      </td>
+                      <td class="dm-note">what raised the run · <code>schedule</code> (timer) · <code>model_change</code> (embedding-model change) · <code>manual</code> (manual start from Admin)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">state</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 'queued'">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (queued | running | succeeded | failed | cancelled)">CHECK</span>
+                      </td>
+                      <td class="dm-note">queued · running · succeeded · failed · cancelled</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">started_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note"><code>NULL</code> while queued · duration = finished − started</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">finished_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note"><code>NULL</code> while running · terminal time</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">heartbeat_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">liveness of the run worker · staleness releases the lock</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">steps</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">which steps ran + stats · edges materialized · duplicates resolved · entities demoted</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">error</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">short failure reason</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> · no <code>updated_at</code> — run progress is carried by <code>started_at</code> / <code>finished_at</code> / <code>heartbeat_at</code>, a separate edit stamp is redundant</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">One active platform-wide run</span>
+                  <a class="xref-anchor" href="#coordination">↓ Lane coordination</a>
+                </div>
+                <div class="stk-dec__d">
+                  The lock mirrors
+                  <a
+                    href="../../harvester/_workzone/data-model.html#sync-runs-table"
+                    class="xref-module"
+                    >sync_runs</a
+                  >, but platform-wide, not per-source: a partial unique index on
+                  a constant discriminator
+                  <code>UNIQUE ((true)) WHERE state IN ('queued','running')</code>
+                  — at most one unfinished curation run across the whole platform.
+                  A second request (a timer coinciding with a running one, a manual
+                  trigger over a scheduled one) queues as <code>queued</code> or is
+                  rejected, rather than spawning a parallel curation. The worker
+                  beats <code>heartbeat_at</code> ~every 30s; silence longer than
+                  <strong>~90s</strong> (three misses, as with
+                  <a href="../../harvester/_workzone/reliability.html#checkpoint" class="xref-module">sync_runs</a>
+                  and <a href="../../agent-engine/_workzone/data-model.html#agent-runs" class="xref-module">agent_runs</a>)
+                  — the watchdog releases the lock of a zombie that never closed
+                  its run; <code>cancelled</code> terminalizes — the next one
+                  starts fresh. Coordination <em>with Harvester delivery</em> (what
+                  runs in parallel, what's mutually exclusive) is held by a
+                  <a href="#coordination" class="xref-anchor">separate section</a>.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Per-step stats — in <code>steps</code>, not in columns</span>
+                </div>
+                <div class="stk-dec__d">
+                  A run's steps are heterogeneous (edge materialization,
+                  resolution, decay, retention, re-embedding), and the set may
+                  change, so their totals live in a flexible <code>JSONB</code>
+                  rather than fixed columns: which step ran and with what stats.
+                  <code>trigger</code> answers <em>why the run was raised</em>,
+                  <code>steps</code> — <em>what was done inside</em>: an
+                  event-driven re-embedding is a row with
+                  <code>trigger = model_change</code> and a single re-embedding
+                  step in <code>steps</code>. The exact contents of
+                  <code>steps</code> are indicative — settled during
+                  implementation.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ COORDINATION ════════════════ -->
+      <div class="section" id="coordination">
+        <div class="section__title">
+          Lane coordination: delivery ∥ curation
+          <a
+            class="xref-badge"
+            href="../../harvester/_workzone/sync-modes.html#per-source"
+            >→ Harvester · Sync</a
+          >
+        </div>
+        <p class="desc">
+          Two background lanes write to one graph: <strong>delivery</strong> —
+          Harvester pulling sources, and <strong>curation</strong> —
+          Curation Pass tidying the already-assembled graph. There's one rule:
+          normally they run <strong>side by side, without getting in each other's
+          way</strong>, and only for a short <em>destructive</em> curation window
+          does source sync yield the road to it.
+        </p>
+
+        <div class="lc-lanes">
+          <div class="lc-lane lc-lane--deliver">
+            <span class="lc-lane__tag">Delivery
+              <span class="lc-lane__sub">Harvester · per-source</span></span>
+            <span class="lc-lane__track"
+              ><span class="lc-lane__flow"></span
+            ></span>
+          </div>
+          <div class="lc-lane lc-lane--doctor">
+            <span class="lc-lane__tag">Curation
+              <span class="lc-lane__sub">Curation · platform-wide</span></span>
+            <span class="lc-lane__track"
+              ><span class="lc-lane__flow"></span
+              ><span class="lc-lane__lock"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg> merge · retention</span></span>
+          </div>
+          <div class="lc-lanes__cap">
+            they intersect only at the lock — while it holds, a source's sync
+            waits in the queue and starts right after
+          </div>
+        </div>
+
+        <div class="lc-cases">
+          <div class="lc-case">
+            <div class="lc-case__h">Runs in parallel — almost everything</div>
+            <div class="lc-case__d">
+              Edge materialization, decay and
+              <a href="#embedding-refresh" class="xref-anchor">re-embedding</a>
+              only <em>add</em> and recompute, breaking nothing. They comfortably
+              survive a concurrent Harvester write — they need no lock: search
+              works, ingestion doesn't stall.
+            </div>
+          </div>
+          <div class="lc-case">
+            <div class="lc-case__h">Yields the road — only the destructive</div>
+            <div class="lc-case__d">
+              <a href="#entity-resolution" class="xref-anchor">Merging
+                duplicates</a> and
+              <a href="#retention" class="xref-anchor">retention</a>
+              <span class="iter v2">v2</span> move edges and delete records. Have
+              Harvester rewrite the same entity at that moment and you get a mess.
+              So a lock goes up on them, and delivery of the affected sources waits
+              and continues right after (a merge is cross-source by nature — the
+              window spans more than one source).
+            </div>
+          </div>
+        </div>
+
+        <div class="decision-box">
+          <strong>The lock self-clears, one run per platform.</strong> While a
+          destructive step holds the lock, a new source run queues as
+          <code>queued</code> and starts right after — it doesn't fail. Should the
+          curation worker crash without closing its run, the lock releases itself,
+          and no stuck locks remain. There's one curation run per platform
+          (<a href="#curation-runs" class="xref-anchor">curation_runs</a>), a
+          second one queues. Re-embedding isn't part of this: it only
+          <em>adds</em> vectors and runs without a lock.
+        </div>
+
+        <p class="note">
+          <strong>UI.</strong> The buttons simply reflect this state, computing
+          nothing. A source under a run — "Sync" is disabled; a destructive
+          curation window is in progress — the start is marked "queued · graph
+          curation in progress". The overall activity indicator is on
+          <a
+            class="xref-badge"
+            href="../../admin-panel/_wireframes/knowledge-store.html#curation-run"
+            >→ Admin · Knowledge Store</a
+          >, once the screen leaves stub state.
+        </p>
+      </div>
+
+      <!-- ════════════════ BACKUP ════════════════ -->
+      <div class="section" id="backup">
+        <div class="section__title">Backup &amp; restore</div>
+        <p class="desc">
+          Backup runs automatically on a schedule, separately from graph curation.
+          The destination (external storage / S3), frequency and the backups' own
+          retention are set in
+          <a
+            class="xref-badge"
+            href="../../admin-panel/_wireframes/knowledge-store.html#backups"
+            >→ Admin · Backups</a
+          >; restore is launched from there too. One Postgres database under the
+          whole module means the snapshot is consistent by construction: body,
+          vectors, graph and permissions land in the backup at one consistent
+          point, with no assembly from several DBMSs.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--ks">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">●</span>
+              <span class="stk-layer__name">Backup config and journal</span>
+              <span class="stk-layer__role">What to copy where and what's already taken.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">backup_settings</span>
+                  <span class="dm-tbl__sub">backup settings</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--flag">singleton · CHECK (id = 1)</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--pk">PK</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (id = 1)">CHECK</span>
+                      </td>
+                      <td class="dm-note">always <code>1</code> · one row per instance</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">destination_url</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">S3-compatible destination (<code>s3://…</code>) · <code>NULL</code> = not configured</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">destination_creds_enc</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">
+                        storage access key · write-only, encrypted by the crypto core
+                        (like <code>api_key_enc</code>), not returned in UI or data export ·
+                        <code>NULL</code> = the instance's ambient IAM role (inside AWS)
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">frequency</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 'daily'">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (daily | weekly)">CHECK</span>
+                      </td>
+                      <td class="dm-note">dump cadence · DEFAULT <code>'daily'</code> · daily · weekly</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">weekday</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (weekday BETWEEN 0 AND 6)">CHECK</span>
+                      </td>
+                      <td class="dm-note">0–6 · only for weekly · <code>NULL</code> for daily</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">time</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT '02:00'">DEFAULT</span>
+                      </td>
+                      <td class="dm-note"><code>'HH:MM'</code> local time · DEFAULT <code>'02:00'</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">retention_count</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 14">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (retention_count > 0)">CHECK</span>
+                      </td>
+                      <td class="dm-note">how many snapshots to keep · DEFAULT <code>14</code> · old ones rotate out</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · edited in place</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">backup_snapshots</span>
+                  <span class="dm-tbl__sub">snapshot journal</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--flag">append-only · mirrors sync_runs</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">state</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 'running'">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (running | succeeded | failed)">CHECK</span>
+                      </td>
+                      <td class="dm-note">running · succeeded · failed · UI "ready" chip = succeeded</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">started_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">when taken · journal sort</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">finished_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note"><code>NULL</code> while running</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">heartbeat_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">liveness of the dump worker · staleness releases the lock</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">size_bytes</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">dump size · shown in the journal (12.4 GB)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">location</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">snapshot path in storage · for restore</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">error</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">short failure reason</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> · no <code>updated_at</code> — progress is carried by <code>started_at</code> / <code>finished_at</code> / <code>heartbeat_at</code></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">One active snapshot · a stale <code>heartbeat_at</code> releases the lock</span>
+                </div>
+                <div class="stk-dec__d">
+                  Taking a dump (Postgres + vectors) is a long I/O operation, and
+                  the pod can die mid-way, leaving a snapshot in
+                  <code>running</code> forever. The same pattern as
+                  <a href="#curation-runs" class="xref-anchor">curation_runs</a>:
+                  a single-flight lock — a partial unique index
+                  <code>UNIQUE ((true)) WHERE state = 'running'</code>, one active
+                  backup per platform; the next one on schedule, coinciding with an
+                  unclosed one, is rejected rather than spawning a parallel dump.
+                  The worker beats <code>heartbeat_at</code> ~every 30s; silence
+                  longer than <strong>~90s</strong> (three misses) — the watchdog
+                  reaps the zombie into <code>failed</code> and releases the lock,
+                  and the schedule moves on.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Restore is maintenance, rotation is by count</span>
+                </div>
+                <div class="stk-dec__d">
+                  Restore overwrites the database wholesale with a snapshot, so it
+                  runs under
+                  <a href="../../admin-panel/_wireframes/platform-settings.html" class="xref-module">maintenance</a>:
+                  ingestion and search paused, the platform in maintenance mode.
+                  Snapshots rotate by <code>retention_count</code>: once the count
+                  exceeds the threshold, the oldest is deleted from both the
+                  journal and storage. Storage credentials are write-only — set on
+                  the
+                  <a href="../../admin-panel/_wireframes/knowledge-store.html#backups" class="xref-module">backups screen</a>,
+                  never shown back.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ CONSISTENCY ════════════════ -->
+      <div class="section" id="consistency">
+        <div class="section__title">Single-database consistency</div>
+        <p class="desc">
+          The relational body, pgvector and the graph live in one Postgres, so the
+          projections and the ACL change transactionally — no cross-database
+          synchronization, no window where permissions and content have diverged
+          across DBMSs. The source of truth is the relational body; vectors and
+          edges are its projections.
+        </p>
+        <p class="desc">
+          Synchronous loading (one transaction, a fixed projection order) is held
+          by the
+          <a href="data-model.html#projections" class="xref-page">data
+            model</a
+          >. Curation, by contrast, is <strong>asynchronous</strong>:
+          Curation Pass reconciles cross-source edges and fuzzy relations in a
+          separate run, on top of the already-consistent body. So the graph is
+          eventually complete — an edge is visible at once when both nodes are
+          already in the database; a reference to a node that hasn't arrived yet
+          (as with cross-source) is reconciled by the run — while the relational
+          body is always correct.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

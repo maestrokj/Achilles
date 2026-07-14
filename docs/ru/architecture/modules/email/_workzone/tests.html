@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Email: Тест-кейсы</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Email</a>
+        <h1 class="header__title">Тест-кейсы</h1>
+        <div class="header__sub">email · workzone</div>
+      </div>
+
+      <!-- ── Overview band: решения + стек ── -->
+      <div class="test-overview">
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Принятые решения</div>
+          <div class="decision-box">
+            <strong>SMTP мокается</strong>
+            Реальная отправка не происходит. Проверяем, что письмо собрано верно
+            (адрес, тема, ссылка, язык, <code>multipart/alternative</code>) и что
+            <code>send</code> вызван. Тот же подход уже применён в auth-тестах.
+          </div>
+          <div class="decision-box">
+            <strong>SAQ-задача — вызов обработчика напрямую</strong>
+            Без поднятия воркера: тестируем логику задачи (compose + send,
+            ретраи, разметка «не доставлено»), не инфраструктуру очереди.
+          </div>
+        </div>
+
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Стек и инфраструктура</div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Имеется <span class="iter done">done</span></span>
+            <span>pytest, pytest-asyncio, pytest-cov, httpx</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Добавить</span>
+            <span
+              >testcontainers (PostgreSQL), мок SMTP (подмена
+              <code>aiosmtplib</code>), time-machine (TTL ссылок и таймауты)</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Тест-БД</span>
+            <span
+              >singleton <code>smtp_settings</code> — реальная строка в тест-БД,
+              per-test rollback</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Маркеры</span>
+            <span
+              ><code>@pytest.mark.unit</code>, <code>@pytest.mark.integration</code> —
+              фильтрация по типу</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Unit ═══ Без БД и SMTP — чистая сборка письма, выбор языка,
+           предикат готовности. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--unit">Unit</span>
+        <span class="test-sec__title">Без БД и SMTP — сборка письма, языки, готовность</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" /></svg></span><span class="name">test_compose.py</span></div>
+            <div class="test-card__sub">compose — шаблон + данные + язык → готовое письмо</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="delivery.html#service">→ Интерфейс сервиса</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">invite</span><span class="test-case__e">тема — имя пригласившего + продукт; в теле роль, ссылка, «48 часов»</span></div>
+              <div class="test-case"><span class="test-case__k">reset</span><span class="test-case__e">тема, тело, ссылка, текст «1 час»</span></div>
+              <div class="test-case"><span class="test-case__k">test</span><span class="test-case__e">тема и тело подтверждения — без кнопки и без ссылки</span></div>
+              <div class="test-case"><span class="test-case__k">multipart/alternative</span><span class="test-case__e">HTML-часть И текстовая часть — обе присутствуют</span></div>
+              <div class="test-case"><span class="test-case__k">ссылка дважды</span><span class="test-case__e">кнопка-действие + та же ссылка обычным текстом ниже</span></div>
+              <div class="test-case"><span class="test-case__k">текстовая часть — plain</span><span class="test-case__e">без HTML-тегов, ссылка читаема</span></div>
+              <div class="test-case"><span class="test-case__k">From-заголовок</span><span class="test-case__e"><code>from_address</code> → display-name + адрес (RFC 5322)</span></div>
+              <div class="test-case"><span class="test-case__k">missing var → reject</span><span class="test-case__e">нет данных под ключ → ошибка рендера, не пустая подстановка</span></div>
+              <div class="test-case"><span class="test-case__k">HTML-escaping</span><span class="test-case__e">имя пригласившего с <code>&lt;</code>, <code>&amp;</code> экранируется в HTML-части (инъекция)</span></div>
+              <div class="test-case"><span class="test-case__k">типизированные ключи</span><span class="test-case__e">неизвестный ключ → ошибка, не строка-заглушка в коде</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg></span><span class="name">test_i18n.py</span></div>
+            <div class="test-card__sub">Выбор языка письма RU / EN</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="templates.html#i18n">→ Языки RU / EN</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">reset → адресат</span><span class="test-case__e">язык из профиля получателя</span></div>
+              <div class="test-case"><span class="test-case__k">test → адресат</span><span class="test-case__e">язык профиля админа</span></div>
+              <div class="test-case"><span class="test-case__k">invite → орг-дефолт</span><span class="test-case__e">язык организации (приглашаемого ещё нет в системе)</span></div>
+              <div class="test-case"><span class="test-case__k">язык без перевода</span><span class="test-case__e">неподдерживаемый → фолбэк на дефолт</span></div>
+              <div class="test-case"><span class="test-case__k">паритет ключей</span><span class="test-case__e">RU и EN — один набор ключей, ни одного пропуска</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="m9 12 2 2 4-4" /></svg></span><span class="name">test_availability.py</span></div>
+            <div class="test-card__sub">Готовность транспорта — <code>is_available()</code> + секрет</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#availability">→ Опциональность и живучесть</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">available → true</span><span class="test-case__e"><code>is_enabled</code> + host + port + from_address заполнены</span></div>
+              <div class="test-case"><span class="test-case__k">disabled → false</span><span class="test-case__e"><code>is_enabled=false</code> даже при заполненных полях</span></div>
+              <div class="test-case"><span class="test-case__k">нет обязательного → false</span><span class="test-case__e">NULL в host / port / from_address — каждое</span></div>
+              <div class="test-case"><span class="test-case__k">last_test_ok=false — совет</span><span class="test-case__e">НЕ влияет на <code>is_available</code> (не ворота)</span></div>
+              <div class="test-case"><span class="test-case__k">last_test_ok=NULL</span><span class="test-case__e">«не проверяли» ≠ «сломано» — не блокирует</span></div>
+              <div class="test-case"><span class="test-case__k">пароль наружу не уходит</span><span class="test-case__e">сериализация → только флаг «задан / не задан», без <code>password_enc</code> и открытого пароля</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P0 ═══ Сердце модуля — две дороги доставки. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p0">Integration · P0</span>
+        <span class="test-sec__title">Доставка — два режима</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></svg></span><span class="name">test_send_inline.py</span></div>
+            <div class="test-card__sub">Inline-отправка — тестовое письмо, вердикт сразу</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="delivery.html#modes">→ Inline или очередь</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">success</span><span class="test-case__e"><code>send</code> вызван, вердикт OK, <code>last_test_ok=true</code> + <code>last_test_at</code></span></div>
+              <div class="test-case"><span class="test-case__k">SMTP-сбой</span><span class="test-case__e">типизированная ошибка наверх, <code>last_test_ok=false</code>, <code>last_test_at</code> записан</span></div>
+              <div class="test-case"><span class="test-case__k">таймаут</span><span class="test-case__e">вердикт fail в пределах таймаута, запрос не зависает</span></div>
+              <div class="test-case"><span class="test-case__k">письмо собрано верно</span><span class="test-case__e">получатель = текущий админ, тема тестового, без ссылки</span></div>
+              <div class="test-case"><span class="test-case__k">пароль расшифрован в send</span><span class="test-case__e">spy: crypto-ядро <code>decrypt</code> вызвано в момент отправки; открытый пароль ушёл в SMTP-auth, не в БД / лог</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" /></svg></span><span class="name">test_queue_task.py</span></div>
+            <div class="test-card__sub">Очередь SAQ — обработчик задачи напрямую</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="delivery.html#modes">→ Inline или очередь</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">обработчик: compose + send</span><span class="test-case__e">письмо собрано (адрес, тема, ссылка, язык), <code>send</code> вызван</span></div>
+              <div class="test-case"><span class="test-case__k">enqueue → мгновенный ответ</span><span class="test-case__e">задача поставлена, потребитель отвечает сразу, не дожидаясь доставки</span></div>
+              <div class="test-case"><span class="test-case__k">идемпотентность</span><span class="test-case__e">повторный enqueue с тем же <code>job_id</code> → одна задача, письмо не дублируется</span></div>
+              <div class="test-case"><span class="test-case__k">потребитель не пакетит</span><span class="test-case__e">N писем = N задач; дробление на пачки — забота воркера</span></div>
+              <div class="test-case"><span class="test-case__k">успешная доставка</span><span class="test-case__e">задача завершена, ретраи не запускались</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P1 ═══ Сбои, безопасность раскрытия, темп. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">Integration · P1</span>
+        <span class="test-sec__title">Ошибки доставки, анти-энумерация, темп</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg></span><span class="name">test_delivery_errors.py</span></div>
+            <div class="test-card__sub">Таксономия ошибок — 4xx vs 5xx, ретраи, «не доставлено»</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="delivery.html#errors">→ Ошибки доставки</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">4xx / сеть → ретрай</span><span class="test-case__e">временный сбой → повтор с экспоненциальным backoff</span></div>
+              <div class="test-case"><span class="test-case__k">5xx → без ретраев</span><span class="test-case__e">неверный адрес, ящик отклонил → сразу «не доставлено»</span></div>
+              <div class="test-case"><span class="test-case__k">ретраи исчерпаны</span><span class="test-case__e">задача в «не доставлено», статус виден потребителю</span></div>
+              <div class="test-case"><span class="test-case__k">статус инвайта</span><span class="test-case__e">провал доставки приглашения отражается на модели admission</span></div>
+              <div class="test-case"><span class="test-case__k">backoff растёт</span><span class="test-case__e">задержка между попытками увеличивается, ≤ предел</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></svg></span><span class="name">test_reset_anti_enum.py</span></div>
+            <div class="test-card__sub">Сброс пароля — сбой доставки не раскрывается</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="delivery.html#errors">→ Ошибки доставки</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">сбой → проглатывается</span><span class="test-case__e">провал доставки reset НЕ пробрасывается наверх</span></div>
+              <div class="test-case"><span class="test-case__k">единый ответ</span><span class="test-case__e">исход неотличим от успеха — анти-энумерация (механика в Auth)</span></div>
+              <div class="test-case"><span class="test-case__k">провал в лог и аудит</span><span class="test-case__e">сбой фиксируется внутри, наружу — ничего</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4" /><path d="M3.34 19a10 10 0 1 1 17.32 0" /></svg></span><span class="name">test_throttling.py</span></div>
+            <div class="test-card__sub">Темп рассылки — ответственность воркера</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="delivery.html#throttling">→ Очередь и пакетная рассылка</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">ограничение скорости</span><span class="test-case__e">воркер держит заданный темп отправки (конфиг)</span></div>
+              <div class="test-case"><span class="test-case__k">размер пачки</span><span class="test-case__e">за раз берётся не больше пачки (конфиг)</span></div>
+              <div class="test-case"><span class="test-case__k">параметры — конфиг</span><span class="test-case__e">скорость, пачка, параллельность из настроек, не хардкод</span></div>
+              <div class="test-case"><span class="test-case__k">залп задач</span><span class="test-case__e">много задач разом → воркер разгребает в темпе, не одним залпом</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ v2 — отложенный охват ═══ Security-алерты проектируются вместе
+           с самой фичей; здесь только зафиксирован охват. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--v2">v2</span>
+        <span class="test-sec__title">Отложенный охват</span>
+      </div>
+      <div class="test-struct">
+        <div class="test-stack-row">
+          <span class="test-stack-row__lbl">Security-алерты</span>
+          <span
+            >fan-out по получателям (Owner / Admin) тем же queue-путём, дедуп
+            повторов, общий шаблонный layout</span
+          >
+        </div>
+      </div>
+
+      <!-- ═══ Структура ═══ Каталог модуля: unit без БД, integration с БД и
+           мок-SMTP. Приоритет задаётся маркерами, не папками. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Structure</span>
+        <span class="test-sec__title">Файловая структура тестов</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          Приоритет (P0–P1) ортогонален каталогам и задаётся маркерами
+          (<code>pytest -m p0</code>), а не отдельными папками.
+        </p>
+        <div class="test-tree">
+          <ul>
+            <li>
+              <span class="test-tree__row"><code>tests/email/</code><span class="d">каталог модуля</span></span>
+              <ul>
+                <li><span class="test-tree__row"><code>conftest.py</code><span class="d">мок SMTP, singleton smtp_settings, фабрики</span></span></li>
+                <li>
+                  <span class="test-tree__row"><code>unit/</code><span class="d">без БД и SMTP</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>compose · i18n · availability</code><span class="d">сборка письма, языки, предикат</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>integration/</code><span class="d">с БД и мок-SMTP</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>send-inline · queue-task</code><span class="d">два режима доставки</span></span></li>
+                    <li><span class="test-tree__row"><code>delivery-errors · reset-anti-enum · throttling</code><span class="d">сбои, безопасность, темп</span></span></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — AI Foundation: Tool catalog</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="tool-catalog.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← AI Foundation</a>
+        <h1 class="header__title">Tool catalog</h1>
+        <div class="header__sub">ai-foundation · workzone</div>
+      </div>
+
+      <div class="draft-notice">
+        <strong>Schema forecast.</strong>
+        The home of the
+        <a href="data-model.html#tools" class="xref-page"><code>tools</code></a>
+        table is this module's data model; the agent-selection link
+        (<a href="../../agent-engine/_workzone/data-model.html#agent-tools" class="xref-module"><code>agent_tools</code></a>)
+        lives in Agent Engine. Below is a concept, not an API contract.
+      </div>
+
+      <p class="desc">
+        A <strong>tool</strong> is a callable function the platform exposes to
+        the model as a tool schema. The catalog of tools is owned by Admin.
+      </p>
+
+      <!-- ════════════════ MENTAL MODEL ════════════════ -->
+      <div class="tc-hero">
+        <div class="tc-flow">
+          <div class="tc-node tc-node--model">
+            <span class="tc-node__g">✦</span>
+            <span class="tc-node__t">Model</span>
+            <span class="tc-node__s">calls by name</span>
+          </div>
+          <div class="tc-edge">
+            <span class="tc-edge__arr">──▶</span>
+            <span class="tc-edge__lbl">exposed as a tool schema</span>
+          </div>
+          <div class="tc-node tc-node--tool">
+            <span class="tc-node__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z" /></svg></span>
+            <span class="tc-node__t">Tool</span>
+            <span class="tc-node__s">name · params · body</span>
+          </div>
+          <div class="tc-edge">
+            <span class="tc-edge__arr">──▶</span>
+            <span class="tc-edge__lbl">result into context</span>
+          </div>
+          <div class="tc-node">
+            <span class="tc-node__g">↩</span>
+            <span class="tc-node__t">Answer</span>
+            <span class="tc-node__s">model continues</span>
+          </div>
+        </div>
+        <div class="tc-hero__foot">
+          <span><b>The catalog</b> governs the set — what's enabled · seen by chat · allowed to agents</span>
+          <span><b>Execution</b> — the shared
+            <a href="../../agent-engine/_workzone/harness.html#primitive" class="xref-module">tool-calling harness</a>, not here</span>
+        </div>
+      </div>
+
+      <!-- ════════════════ CONCEPT ════════════════ -->
+      <div class="section" id="concept">
+        <div class="section__title">
+          Tool versus prompt
+          <a href="prompt-library.html#tool-contract" class="xref-badge xref-badge--page">→ Prompt copy</a>
+        </div>
+        <p class="desc">Distinct things; don't conflate them.</p>
+        <div class="tc-vs">
+          <div class="tc-vs__col tc-vs__col--accent">
+            <div class="tc-vs__head">
+              <span class="tc-vs__name">Tool</span>
+              <span class="tc-vs__kind">function</span>
+            </div>
+            <ul class="tc-vs__lines">
+              <li class="tc-vs__line">name · params · body</li>
+              <li class="tc-vs__line">supplied as a structured tool schema</li>
+              <li class="tc-vs__line">model calls by name → result into context</li>
+            </ul>
+          </div>
+          <div class="tc-vs__col tc-vs__col--alt">
+            <div class="tc-vs__head">
+              <span class="tc-vs__name">Prompt</span>
+              <span class="tc-vs__kind">text</span>
+            </div>
+            <ul class="tc-vs__lines">
+              <li class="tc-vs__line">an instruction on what to do and how</li>
+              <li class="tc-vs__line">steers behavior, isn't called</li>
+            </ul>
+          </div>
+        </div>
+        <p class="tc-vs__take">
+          A tool schema comes from a <b>structured source</b>, not from admin
+          prose — the call contract is reliable and won't break on a text edit.
+        </p>
+      </div>
+
+      <!-- ════════════════ SOURCES · REGISTRY ════════════════ -->
+      <div class="section" id="sources">
+        <div class="section__title">
+          Where a tool comes from — the type registry
+          <a href="../../harvester/_workzone/connectors.html#registry" class="xref-module">→ Connector registry</a>
+        </div>
+        <p class="desc">
+          The catalog is open; the mechanism is a <strong>type registry</strong>,
+          mirroring the Harvester connector registry: a type declares itself as a
+          class (name · tool schema · credential kind · body) and self-registers.
+        </p>
+        <p class="tc-origin">
+          <b>type</b> — a class in code, self-registering &nbsp;──▶&nbsp;
+          <b>instance</b> — a row in
+          <a href="data-model.html#tools" class="xref-page"><code>tools</code></a>
+          (flags + key)
+        </p>
+        <div class="tc-src">
+          <div class="tc-src__card">
+            <div class="tc-src__name"><code>preset</code> <span class="iter v1">v1</span></div>
+            <div class="tc-src__desc">
+              Built-in read-only platform classes: <code>web_search</code>,
+              <code>fetch_url</code>.
+            </div>
+          </div>
+          <div class="tc-src__card">
+            <div class="tc-src__name"><code>custom</code> <span class="iter v1">v1</span></div>
+            <div class="tc-src__desc">
+              The organization's own class following the same contract — as a pip
+              package or in-tree, in the <code>custom/</code> folder (<a href="#custom" class="xref-anchor">custom tool</a>).
+            </div>
+          </div>
+          <div class="tc-src__card tc-src__card--v2">
+            <div class="tc-src__name"><code>mcp · openapi</code> <span class="iter v2">v2</span></div>
+            <div class="tc-src__desc">
+              An external self-describing server, no code.
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          <strong>Provider behind an interface.</strong> <code>web_search</code> is
+          one tool to the model (<code>web_search(query)</code>), while the provider
+          (Tavily · Brave · Serper · Google CSE) is chosen by the
+          <strong>admin on a screen</strong>, not in a config file: the choice
+          lands in the non-secret <code>config</code> column, the key in
+          <code>credential_enc</code>. The model sees one stable schema; how it's
+          executed is the adapter's business. The same technique used for
+          <code>ai_models</code> providers and the built-in embedder.
+        </p>
+        <p class="note">
+          A tool's secret (API key) is not in <code>config</code> (JSONB) but in a
+          separate <code>credential_enc</code> column: AES-256-GCM ciphertext from
+          <a href="../../auth-security/_workzone/protection.html#crypto-core" class="xref-module">Auth's crypto core</a>,
+          exposed outward only as a "set" flag. Like provider and SMTP keys. The
+          human-readable name goes through <code>t()</code>; the DB holds only the
+          key.
+        </p>
+      </div>
+
+      <!-- ════════════════ CUSTOM TOOL ════════════════ -->
+      <div class="section" id="custom">
+        <div class="section__title">
+          Custom tool — in code
+          <a href="../../harvester/_workzone/connectors.html#custom" class="xref-module">→ Custom connector</a>
+        </div>
+        <p class="desc">
+          The organization adds its own tool as one class following the contract:
+          the body is a <code>call</code> method, the tool schema is in the
+          manifest, registration via a decorator.
+        </p>
+        <div class="tc-ide">
+          <div class="tc-ide__pane">
+            <div class="tc-ide__tab"># where to put your class — two paths</div>
+<pre class="tc-code"><span class="kw">✦ canonical</span>
+  pip package <span class="cm">→</span> entry point  achilles.tools
+  <span class="cm">core untouched · platform upgrade stays clean</span>
+
+<span class="kw">○ quick dev</span>
+  in-tree <span class="cm">→</span> achilles/ai_foundation/tools/custom/
+  <span class="cm">own folder · doesn't disturb the built-ins</span>
+</pre>
+          </div>
+        </div>
+        <ol class="tc-recipe">
+          <li class="tc-recipe__step"><b>1</b> subclass · <code>call</code></li>
+          <li class="tc-recipe__step"><b>2</b> manifest · schema</li>
+          <li class="tc-recipe__step"><b>3</b> @register_tool</li>
+        </ol>
+        <div class="tc-ide">
+          <div class="tc-ide__pane">
+            <div class="tc-ide__tab">web_search.py</div>
+<pre class="tc-code"><span class="cm"># 3 · discovery picks it up itself</span>
+<span class="kw">@register_tool</span>
+<span class="kw">class</span> WebSearchTool(BaseTool):       <span class="cm"># contract: schema + call</span>
+
+    manifest = ToolManifest(             <span class="cm"># defines what the model sees</span>
+        name       = "web_search",       <span class="cm"># key + name in the tool schema</span>
+        params     = {"query": str},     <span class="cm"># arguments for the model</span>
+        access     = ReadOnly,           <span class="cm"># read_only · write</span>
+        config     = [Provider],         <span class="cm"># Tavily · Brave · Serper · CSE</span>
+        credential = [ApiKey],           <span class="cm"># → credential_enc</span>
+    )
+
+    <span class="kw">def</span> call(self, args):               <span class="cm"># the tool body</span>
+        <span class="kw">return</span> provider.search(args.query)
+
+    <span class="kw">def</span> probe(self):                     <span class="cm"># "Test" button → status</span>
+        <span class="kw">return</span> provider.ping()           <span class="cm"># active · error</span>
+<span class="tc-warn"># <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg> either way below — in-tree or as a pip package — the class is visible
+#   only after rebuilding the image and redeploying the container:
+#   discovery reads classes at process start, not from Admin</span>
+</pre>
+          </div>
+          <div class="tc-ide__pane tc-ide__pane--tree">
+            <div class="tc-ide__tab">achilles/ai_foundation/tools/ · in-tree</div>
+<pre class="tc-tree">├── base.py        <span class="cm">BaseTool — contract: manifest + call</span>
+├── registry.py    <span class="cm">discovery: package + entry points</span>
+├── web_search.py  <span class="cm">┐ built-in</span>
+├── fetch_url.py   <span class="cm">┘ presets (read-only)</span>
+└── custom/        <span class="cm">← platform doesn't touch this folder</span>
+<span class="tc-tree__new">    └── jira.py    ← your class goes here</span>
+</pre>
+          </div>
+          <div class="tc-ide__pane tc-ide__pane--tree">
+            <div class="tc-ide__tab">achilles-jira-tool/ · separate pip package</div>
+<pre class="tc-tree"><span class="cm"># core untouched — discovery finds it via the entry point</span>
+<span class="tc-tree__new">├── tool.py         ← the same class following the contract</span>
+└── pyproject.toml  <span class="cm">[project.entry-points."achilles.tools"]</span>
+</pre>
+          </div>
+        </div>
+        <p class="note">
+          The contract is <strong>neutral</strong>: read-only is the policy of the
+          platform presets, while a custom class may write — at the organization's
+          own responsibility, like a custom connector (shared process, no sandbox;
+          the operator decides what to install). The contract <code>&lt; 1.0</code>
+          isn't frozen — the package is rebuilt against the platform version.
+        </p>
+      </div>
+
+      <!-- ════════════════ APPEARANCE IN THE CATALOG ════════════════ -->
+      <div class="section" id="discovery">
+        <div class="section__title">Appearing in the catalog — automatically</div>
+        <p class="desc">
+          The on-screen list is a <strong>live type registry</strong>, not a table:
+          the <a href="data-model.html#tools" class="xref-page"><code>tools</code></a>
+          table stores only state (flags + key) and is linked to the type by
+          <code>name</code>. So a new class enters the catalog on its own — no
+          migration and no UI changes.
+        </p>
+        <ul class="stk-dec__list">
+          <li>
+            Class added → discovery at startup → a row in the list,
+            <strong>disabled</strong> (no record in <code>tools</code> = both
+            marks <code>false</code>, <a href="#governance" class="xref-anchor">enablement</a>).
+          </li>
+          <li>
+            The <code>tools</code> record is created <strong>lazily</strong> — on
+            first enablement or when a key is entered.
+          </li>
+          <li>
+            Package removed → the type leaves the list on its own; the orphaned
+            record simply doesn't match by <code>name</code> and gets out of the
+            way.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ════════════════ SURFACES ════════════════ -->
+      <div class="section" id="surfaces">
+        <div class="section__title">
+          Two surfaces — chat and agents
+          <a href="../../agent-engine/_workzone/harness.html#params" class="xref-module">→ Tool-calling harness</a>
+        </div>
+        <p class="desc">
+          One catalog feeds both surfaces, but their loops differ.
+        </p>
+        <div class="tc-vs">
+          <div class="tc-vs__col tc-vs__col--accent">
+            <div class="tc-vs__head"><span class="tc-vs__name">Chat</span></div>
+            <span class="tc-vs__cycle">one round → answer</span>
+            <ul class="tc-vs__lines">
+              <li class="tc-vs__line">KS search + tools enabled by the admin (<code>chat_enabled</code>)</li>
+              <li class="tc-vs__line">1..N tools in parallel, e.g. knowledge base + web</li>
+            </ul>
+          </div>
+          <div class="tc-vs__col tc-vs__col--alt">
+            <div class="tc-vs__head"><span class="tc-vs__name">Agent</span></div>
+            <span class="tc-vs__cycle">loop ↻ up to the cap</span>
+            <ul class="tc-vs__lines">
+              <li class="tc-vs__line">a core of 3 KS tools (<code>search</code> · <code>graph</code> · <code>sql</code>, always, locked)</li>
+              <li class="tc-vs__line">+ those chosen by the owner from the allowlist</li>
+            </ul>
+          </div>
+        </div>
+        <p class="note">
+          An agent's KS core can't be removed. Removing an <em>added</em> tool is
+          <strong>graceful degradation</strong>: the agent continues on the core
+          and does <em>not</em> enter the readiness gate (unlike removing the
+          model, which stops the agent).
+        </p>
+        <p class="note">
+          <strong>"Locked" is about configuration, not unconditionality.</strong>
+          "Always" and "locked" on the core mean "can't be turned off manually by
+          either admin or owner," not "present in any state of the base." There is
+          a second, derived axis: with an empty base
+          (<a href="../../knowledge-store/_workzone/hybrid-search.html#emptiness" class="xref-module"
+            ><code>is_empty</code></a>) the KS tools aren't supplied at all — there's
+          nothing to search. This is one principle across both surfaces: both
+          <code>search_knowledge</code> in chat and the agent's core fall away
+          while the base holds no data; this is decided by the shared
+          <a href="../../agent-engine/_workzone/harness.html#params" class="xref-module"
+            >harness</a>, not by an admin mark. Not a "removal" and not config-driven
+          degradation — simply the absence of data; once the base fills, the core
+          returns on its own.
+        </p>
+      </div>
+
+      <!-- ════════════════ GOVERNANCE ════════════════ -->
+      <div class="section" id="governance">
+        <div class="section__title">
+          Enablement: two independent marks
+          <a href="../../admin-panel/_wireframes/tools.html" class="xref-badge">→ AI Tools screen</a>
+        </div>
+        <p class="desc">
+          The catalog is only a type registry; a tool's admission to work is set by
+          <strong>two independent marks</strong>, one per surface. Both are off by
+          default — a tool enters service only through a deliberate admin action;
+          it stays active as long as at least one mark supplies it.
+        </p>
+        <div class="tc-flags">
+          <div class="tc-flag">
+            <div class="tc-flag__top">
+              <span class="tc-flag__name">Chat</span>
+              <span class="tc-switch">
+                <span class="tc-switch__track"><span class="tc-switch__knob"></span></span>
+                <span class="tc-switch__lbl">OFF</span>
+              </span>
+            </div>
+            <div class="tc-flag__desc"><code>chat_enabled</code> — the tool is visible to chat.</div>
+            <div class="tc-flag__who">set by admin</div>
+          </div>
+          <div class="tc-flag">
+            <div class="tc-flag__top">
+              <span class="tc-flag__name">Agent allowlist</span>
+              <span class="tc-switch">
+                <span class="tc-switch__track"><span class="tc-switch__knob"></span></span>
+                <span class="tc-switch__lbl">OFF</span>
+              </span>
+            </div>
+            <div class="tc-flag__desc"><code>agents_allowed</code> — selectable by the owner in the agent editor.</div>
+            <div class="tc-flag__who">set by admin</div>
+          </div>
+        </div>
+        <p class="note">
+          Enabling a tool and changing its settings (provider, key) is an admin
+          action: it lands in the <a href="../../admin-panel/_wireframes/audit-log.html" class="xref-module">audit log</a>
+          alongside other access changes (the model calls themselves aren't logged
+          there — the log holds significant events, not every request). Default OFF
+          and auditing of enablement form a perimeter of caution: an external exit
+          is opened explicitly and under observation. A rate limit / call budget for
+          <code>web_search</code> is <span class="iter v2">v2</span>.
+        </p>
+      </div>
+
+      <!-- ════════════════ HEALTH CHECK ════════════════ -->
+      <div class="section" id="health">
+        <div class="section__title">
+          Health check — a button for the admin
+          <a href="../../admin-panel/_wireframes/ai-models.html#providers" class="xref-badge">→ Same as for AI models</a>
+        </div>
+        <p class="desc">
+          The key is set, the provider chosen — but does it work? The admin
+          shouldn't learn of a stale key from user complaints. Every tool with an
+          external exit has a <strong>"Test"</strong> button: the platform calls the
+          type's <code>probe()</code> (a light provider ping, not a real model
+          request) and stores the result. This mirrors the connection check for
+          <a href="../../admin-panel/_wireframes/ai-models.html#providers" class="xref-module">AI model providers</a>.
+        </p>
+        <div class="tc-status">
+          <span class="tc-pill tc-pill--active"><span class="tc-pill__dot"></span>active</span>
+          <span class="tc-pill tc-pill--error"><span class="tc-pill__dot"></span>error</span>
+          <span class="tc-pill tc-pill--unchecked"><span class="tc-pill__dot"></span>unchecked</span>
+        </div>
+        <ul class="stk-dec__list">
+          <li>
+            The result is written to <a href="data-model.html#tools" class="xref-page"><code>tools.status</code></a>
+            and <code>last_check_at</code> — state persists between visits; on
+            screen it's a pill "checked · N ago" or "error."
+          </li>
+          <li>
+            The button lives on tools with an external exit: <code>web_search</code>
+            (provider + key), <code>fetch_url</code> (egress reachability). The KS
+            core isn't tested — it's internal and always available.
+          </li>
+          <li>
+            <code>probe()</code> is part of the type contract, beside <code>call</code>;
+            an organization's custom tool declares it itself and joins the check
+            alongside the presets.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ════════════════ MCP · v2 ════════════════ -->
+      <div class="section" id="mcp">
+        <div class="section__title">
+          External servers — MCP <span class="iter v2">v2</span>
+        </div>
+        <p class="desc">
+          Connecting external MCP servers and write tools is the next iteration.
+          The locked design: <strong>per-user OAuth</strong> (each user authorizes
+          for themselves), the server holds its own ACL, access is
+          <strong>read-only</strong> via admin curation. In the wireframes — grey
+          inactive stubs.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

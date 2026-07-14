@@ -1,0 +1,283 @@
+/* Embedding runtime — bespoke diagrams for the embeddings-runtime workzone page.
+   Visual language: load paths converge into one shared inference service (er-flow);
+   the v1→v2 scaling split as two panels (er-scale); a load-profile matrix (er-tbl).
+   Loaded by knowledge-store/_workzone/embedding-runtime.html on top of module.css.
+   Placement convention: a single page's bespoke diagram → per-page sheet (README §Styling). */
+
+/* ═══════════ LOAD PATHS — convergence into one runtime ═══════════ */
+
+.er-flow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 1.4rem 0 0.4rem;
+}
+
+.er-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  flex: 1 1 300px;
+}
+
+/* ── source card — one producer of embedding load ── */
+.er-src {
+  border: 2px solid var(--border);
+  border-left-width: 5px;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: 0.7rem 0.9rem;
+}
+.er-src--bulk {
+  border-left-color: var(--s3-glow);
+} /* olive = batch / latency-tolerant */
+.er-src--live {
+  border-left-color: var(--accent);
+} /* accent = interactive / latency-critical */
+.er-src--agent {
+  border-left-color: var(--accent);
+  border-left-style: dashed;
+} /* accent = rides the online path; dashed = background/secondary caller */
+
+.er-src__name {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.er-src__role {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  margin: 0.15rem 0 0.5rem;
+}
+
+.er-chip {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--tag-radius);
+}
+.er-chip--bulk {
+  color: #4a5a32;
+  background: var(--s3-pale);
+}
+.er-chip--live {
+  color: #fff;
+  background: var(--accent);
+}
+.er-chip--agent {
+  color: var(--accent);
+  background: var(--tint-15);
+  box-shadow: inset 0 0 0 1px var(--tint-25);
+} /* online family, but outlined — quieter than the critical user chip */
+
+/* ── merge arrow + the shared runtime box + vector tail ── */
+.er-merge {
+  font-size: 1.8rem;
+  color: var(--accent-muted);
+  font-weight: 700;
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+.er-runtime {
+  flex: 0 0 auto;
+  border: 3px solid var(--accent);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: var(--card-shadow);
+  padding: 1rem 1.2rem;
+  text-align: center;
+  min-width: 220px;
+}
+.er-runtime__name {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--accent);
+}
+.er-runtime__sub {
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  margin-top: 0.35rem;
+}
+
+.er-out {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-dim);
+  font-weight: 600;
+}
+.er-out__arr {
+  font-size: 1.6rem;
+  color: var(--accent-muted);
+}
+
+/* ═══════════ LOAD-PROFILE MATRIX ═══════════ */
+
+.er-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.2rem 0 0.2rem;
+  font-size: 0.9rem;
+}
+.er-tbl th,
+.er-tbl td {
+  text-align: left;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.er-tbl thead th {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  border-bottom-width: 2px;
+}
+.er-tbl tbody th {
+  font-weight: 600;
+  white-space: nowrap;
+}
+.er-tbl .er-row--live th {
+  color: var(--accent);
+}
+.er-tbl .er-tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.12rem 0.5rem;
+  border-radius: var(--tag-radius);
+}
+.er-tbl .er-tag--wait {
+  color: #4a5a32;
+  background: var(--s3-pale);
+}
+.er-tbl .er-tag--now {
+  color: #fff;
+  background: var(--accent);
+}
+.er-tbl .er-tag--agent {
+  color: var(--accent);
+  background: var(--tint-15);
+  box-shadow: inset 0 0 0 1px var(--tint-25);
+} /* online routing, but tolerant — outlined accent, not the solid critical fill */
+
+/* ═══════════ SCALING — v1 vs v2 panels ═══════════ */
+
+.er-scale {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.4rem 0 0.4rem;
+}
+@media (max-width: 720px) {
+  .er-scale {
+    grid-template-columns: 1fr;
+  }
+}
+
+.er-panel {
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 1rem 1.1rem 1.1rem;
+}
+.er-panel--v2 {
+  border-style: dashed;
+  background: transparent;
+} /* v2 = backlog: muted + dashed, echoing .iter v2 */
+
+.er-panel__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  margin-bottom: 0.85rem;
+}
+.er-panel--v2 .er-panel__head {
+  color: var(--text-dim);
+}
+
+/* generic node box used inside the panels */
+.er-node {
+  border: 2px solid var(--accent-muted);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  padding: 0.5rem 0.7rem;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: center;
+}
+.er-panel--v2 .er-node {
+  border-color: var(--border);
+  color: var(--text-dim);
+  background: var(--surface);
+}
+
+/* v1 lanes — interactive lane straight, bulk lane through a bounded gate */
+.er-lane {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.55rem;
+  font-size: 0.84rem;
+}
+.er-lane__tag {
+  flex: 0 0 92px;
+  font-weight: 600;
+  font-size: 0.78rem;
+}
+.er-lane--live .er-lane__tag {
+  color: var(--accent);
+}
+.er-lane--bulk .er-lane__tag {
+  color: #4a5a32;
+}
+.er-lane__arr {
+  color: var(--accent-muted);
+  font-weight: 700;
+}
+.er-gate {
+  border: 1px dashed var(--s3-glow);
+  border-radius: var(--tag-radius);
+  padding: 0.15rem 0.45rem;
+  font-size: 0.76rem;
+  color: #4a5a32;
+  background: var(--s3-pale);
+  white-space: nowrap;
+}
+
+/* v2 — load balancer fans out to replicas */
+.er-reps {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+.er-reps .er-node {
+  flex: 1 1 0;
+}
+.er-fan {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 1.3rem;
+  line-height: 1;
+  margin: 0.35rem 0;
+}
+
+.er-panel__notes {
+  margin: 0.85rem 0 0;
+  padding-left: 1.1rem;
+}
+.er-panel__notes li {
+  font-size: 0.86rem;
+  margin-bottom: 0.35rem;
+  color: var(--text);
+}
+.er-panel--v2 .er-panel__notes li {
+  color: var(--text-dim);
+}

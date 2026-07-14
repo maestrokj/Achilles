@@ -1,0 +1,17 @@
+/* Harvester — security workzone accents.
+   Protecting the intake channel: two bands — incoming webhooks and outbound
+   rate limiting — reuse the stk-* kit; this sheet only sets a per-band accent
+   preset for each, parallel to pipeline's stage presets. No bespoke primitives.
+   Loaded by _workzone/security.html on top of ../../module.css
+   + ../../layered-stack.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Band accent presets — webhooks (cool intake) · rate limiting (warn) ── */
+.stk-layer--webhooks {
+  --stk-lc: var(--s2);
+  --stk-lc-pale: var(--s2-pale);
+}
+.stk-layer--ratelimit {
+  --stk-lc: var(--s3);
+  --stk-lc-pale: var(--s3-pale);
+}

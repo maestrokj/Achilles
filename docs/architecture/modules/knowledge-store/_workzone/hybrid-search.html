@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Knowledge Store: hybrid search</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../knowledge-store.css" />
+    <link rel="stylesheet" href="hybrid-search.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Knowledge Store</a>
+        <h1 class="header__title">Hybrid search</h1>
+        <div class="header__sub">knowledge-store · workzone</div>
+      </div>
+
+      <p class="desc">
+        Knowledge Store owns the <strong>retrieval layer</strong> — selecting
+        candidates from storage; the RAG that sits on top (model rerank, context
+        packing, LLM call) is Query Engine's job. Search stands on
+        <a href="#primitives" class="xref-anchor">four primitives</a> over the
+        <a href="data-model.html#projections" class="xref-page"
+          >three projections</a
+        >
+        of a single database: text is searched by two complementary paradigms at
+        once — a dense vector and sparse lexical — while the graph and the
+        relational body are searched by their own nature. KS exposes the
+        primitives two ways: individually (as tools) and
+        <a href="#fusion" class="xref-anchor">fused into one result</a>
+        (RRF / weighted). Permissions apply
+        <a href="#acl-prefilter" class="xref-anchor">once</a> — in storage,
+        as a pre-filter, before ranking. Where
+        KS ends and Query / Agent Engine begins is the
+        <a href="#boundary" class="xref-anchor">boundary</a>.
+      </p>
+
+      <!-- ════════════════ FOUR PRIMITIVES ════════════════ -->
+      <div class="section" id="primitives">
+        <div class="section__title">Four search primitives</div>
+        <p class="desc">
+          Not one way to search, but four that complement one another. There are
+          <a href="data-model.html#projections" class="xref-page">three</a>
+          projections, yet text deserves two paradigms at once: the dense vector
+          catches meaning, sparse lexical the exact word form that an embedding
+          smooths over; plus graph traversal along relations and exact filters on
+          the body. Each is a self-contained SQL over its own table; they can be
+          fused into one result or handed out as tools by intent (below).
+        </p>
+
+        <div class="hs-prim">
+          <div class="hs-prim__col hs-prim__col--vec">
+            <div class="hs-prim__h">
+              <span class="hs-prim__t">vector</span>
+              <span class="ai-tag" title="This stage uses a neural network — model inference"
+                ><span class="ai-tag__icon"></span>AI</span
+              >
+            </div>
+            <div class="hs-prim__op">similarity search · ANN</div>
+            <div class="hs-prim__tbl">chunks · pgvector / HNSW</div>
+            <p class="hs-prim__d">
+              The user's query is first <strong>embedded</strong> by a model
+              (inference), then the nearest
+              <a href="data-model.html#chunks" class="xref-page">chunks</a> are
+              found by vector — proximity by meaning, not word overlap. Returns
+              chunks ranked by distance.
+            </p>
+          </div>
+          <div class="hs-prim__col hs-prim__col--lexical">
+            <div class="hs-prim__h">
+              <span class="hs-prim__t">lexical</span>
+            </div>
+            <div class="hs-prim__op">word search · full-text</div>
+            <div class="hs-prim__tbl">chunks · tsvector / GIN</div>
+            <p class="hs-prim__d">
+              The same chunks, but searched by word form rather than meaning:
+              exact terms, acronyms, codes, names — what the vector smooths over.
+              Postgres full-text (<code>tsvector</code> + GIN), ranked by
+              <code>ts_rank</code>. A sparse signal alongside the dense one:
+              together they recover what each misses alone.
+            </p>
+          </div>
+          <div class="hs-prim__col hs-prim__col--graph">
+            <div class="hs-prim__h">
+              <span class="hs-prim__t">graph</span>
+            </div>
+            <div class="hs-prim__op">relation traversal · 1–3 hops</div>
+            <div class="hs-prim__tbl">entity_edge · recursive SQL (CTE)</div>
+            <p class="hs-prim__d">
+              Recursive traversal of
+              <a href="data-model.html#graph" class="xref-page">edges</a> from
+              starting nodes for near context (1–3 hops): thread, hierarchy,
+              mentions. Brings in the related that neighbours in the graph but
+              isn't similar in text. The caller supplies the starting nodes: as a
+              tool — the passed entities; in fused mode — the top hits of the
+              text primitives and sql.
+            </p>
+          </div>
+          <div class="hs-prim__col hs-prim__col--sql">
+            <div class="hs-prim__h">
+              <span class="hs-prim__t">sql</span>
+            </div>
+            <div class="hs-prim__op">exact filters · aggregates</div>
+            <div class="hs-prim__tbl">entities · relational predicates</div>
+            <p class="hs-prim__d">
+              Targeted selection on the
+              <a href="data-model.html#entities" class="xref-page">record body</a>:
+              type, source, status, dates. A deterministic filter — what you
+              already know for certain, without guessing at meaning. On top of the
+              selection — aggregates (count, grouping, trend) from a closed set:
+              Postgres computes the numbers deterministically, not the model in
+              its head.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ FUSION ════════════════ -->
+      <div class="section" id="fusion">
+        <div class="section__title">Merging lists: four paradigms into one result</div>
+        <p class="desc">
+          Each primitive returns its own ranked list; fusion reduces the four to
+          one — via RRF (reciprocal rank fusion: a position's weight, not the raw
+          score, which is incomparable across paradigms) or weighted. Merging goes
+          by rank, not by score — which is why it isn't "score-level": there's no
+          way to compare the raw scores of vector, lexical and traversal. Fusing
+          four paradigms <strong>under unified permissions</strong> is a
+          distinguishing trait of KS: "Query Engine assembles results" reads on
+          the RAG layer, not as raw cross-store merging from several DBMSs.
+        </p>
+        <p class="note">
+          The lists are of different granularity: vector and lexical rank
+          <a href="data-model.html#chunks" class="xref-page">chunks</a>, sql and
+          graph rank entities. The common merge key is the entity: chunk hits
+          fold up to their parent by <code>entity_id</code>, the best chunk stays
+          with it as evidence for context packing; an entity that arrived via
+          several primitives is deduplicated by RRF, which sums its ranks from the
+          different lists.
+        </p>
+
+        <div class="hs-fuse">
+          <div class="hs-fuse__lists">
+            <div class="hs-fuse__list hs-fuse__list--vec">
+              <span class="hs-fuse__tag">vector</span>
+              <span class="hs-fuse__rank">
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+              </span>
+            </div>
+            <div class="hs-fuse__list hs-fuse__list--lexical">
+              <span class="hs-fuse__tag">lexical</span>
+              <span class="hs-fuse__rank">
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+              </span>
+            </div>
+            <div class="hs-fuse__list hs-fuse__list--graph">
+              <span class="hs-fuse__tag">graph</span>
+              <span class="hs-fuse__rank">
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+              </span>
+            </div>
+            <div class="hs-fuse__list hs-fuse__list--sql">
+              <span class="hs-fuse__tag">sql</span>
+              <span class="hs-fuse__rank">
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+              </span>
+            </div>
+          </div>
+          <div class="hs-fuse__op">
+            <span class="hs-fuse__op-arrow">▸</span>
+            <span>weighted / RRF</span>
+          </div>
+          <div class="hs-fuse__out">
+            <span class="hs-fuse__out-h">fused</span>
+            <span class="hs-fuse__out-cell"></span>
+            <span class="hs-fuse__out-cell"></span>
+            <span class="hs-fuse__out-cell"></span>
+          </div>
+        </div>
+
+        <div class="hs-modes">
+          <div class="hs-modes__col hs-modes__col--tools">
+            <div class="hs-modes__h">
+              <span class="hs-modes__t">Tools by intent</span>
+              <span class="hs-modes__for">tools · agent</span>
+            </div>
+            <p class="hs-modes__d">
+              The agent is given three tools by intent: <code>search</code>
+              (text retrieval — <code>vector</code>+<code>lexical</code>, RRF-fused
+              in code, the model doesn't reconcile dense+sparse by hand),
+              <code>graph</code> and <code>sql</code>. Qualitatively different
+              operations are kept apart, and text fusion isn't dumped on the LLM —
+              the agent combines them deliberately.
+            </p>
+          </div>
+          <div class="hs-modes__col hs-modes__col--fused">
+            <div class="hs-modes__h">
+              <span class="hs-modes__t">Assembled hybrid result</span>
+              <span class="hs-modes__for">RAG retrieval</span>
+            </div>
+            <p class="hs-modes__d">
+              A ready fused list — one call, fusion inside KS. The backbone of
+              RAG retrieval: from here it only needs reranking and packing into
+              context.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ ACL PRE-FILTER ════════════════ -->
+      <div class="section" id="acl-prefilter">
+        <div class="section__title">ACL applies once — in storage</div>
+        <p class="desc">
+          Permissions aren't a separate step after search but a condition of the
+          query itself. Vectors, graph and the relational body live in one
+          database, so the
+          <a href="acl-identity.html#resolution" class="xref-page"
+            >ACL pre-filter</a
+          >
+          is the same SQL: candidates are narrowed by access <em>before</em>
+          ranking, in a single JOIN, with no second DBMS and no cross-database
+          permission reconciliation. One pass covers all four primitives and their
+          fusion — what's revoked never reaches fusion, rather than being filtered
+          out after the fact.
+        </p>
+        <p class="note">
+          The caller's identity is an <strong>input</strong> to retrieval: the
+          consumer passes an identity, and KS expands it into a resolution join
+          and applies the filter in a single SQL. The contract is narrow — pass an
+          identity, get candidates under permissions; the consumer neither builds
+          the join nor sees the permission schema.
+        </p>
+        <p class="note">
+          <strong>The query is a value, not code.</strong> The primitives are
+          parameterized SQL: query, vector and filters go as <em>bound
+          values</em>, not concatenated into the query body; the fields of the
+          <code>sql</code> filter (type, source, status, dates) are a closed list,
+          not free input; the aggregates too are a closed set (metric × dimension
+          from a catalog), not free-form SQL. No input — whether from RAG or from
+          an agent — can turn into SQL injection.
+        </p>
+        <p class="note">
+          A strict ACL filter over the approximate HNSW index has a pitfall — it's
+          worked through
+          <a href="data-model.html#chunks" class="xref-page"
+            >right at the <code>chunks</code> table</a
+          >.
+        </p>
+      </div>
+
+      <!-- ════════════════ BOUNDARY ════════════════ -->
+      <div class="section" id="boundary">
+        <div class="section__title">Boundary: retrieval here, the answer beyond</div>
+        <p class="desc">
+          KS ends at candidate selection. What comes on top is beyond the module's
+          boundary, with two consumers: one takes the assembled hybrid result in
+          <em>one</em> call and carries it through to an answer (Query Engine — at
+          the chat model's discretion), the other takes tools by intent —
+          <code>search</code> · <code>graph</code> · <code>sql</code> — in an
+          agentic loop (Agent Engine).
+        </p>
+        <p class="note">
+          <code>sql</code> also returns a second format: not candidates for
+          fusion, but a <strong>ready aggregate</strong> (count, grouping, trend)
+          over the ACL-prefiltered slice. This is outside fusion — a separate tool
+          mode; it's the agent that interprets the result.
+        </p>
+
+        <div class="hs-bound">
+          <div class="hs-bound__col hs-bound__col--here">
+            <div class="hs-bound__head">
+              <span class="hs-bound__who">Knowledge Store</span>
+              <span class="hs-bound__act">retrieval</span>
+            </div>
+            <p class="hs-bound__d">
+              Four ACL-filtered primitives and their fusion. Returns candidates —
+              chunks and entities, ranked, under permissions. This is where the
+              storage layer ends.
+            </p>
+          </div>
+          <div class="hs-bound__seam">▸</div>
+          <div class="hs-bound__col hs-bound__col--there">
+            <div class="hs-bound__head">
+              <span class="hs-bound__who">Query Engine</span>
+              <span class="hs-bound__act">RAG on the query</span>
+            </div>
+            <p class="hs-bound__d">
+              When the chat model calls search, it takes the assembled hybrid
+              result and carries it through to a grounded answer: rerank (RRF from
+              KS in v1), context packing and
+              <span class="ai-tag" title="This stage uses a neural network — model inference"
+                ><span class="ai-tag__icon"></span>AI</span
+              >
+              LLM generation. One optional call, no agentic loop.
+            </p>
+          </div>
+        </div>
+
+        <p class="note">
+          Both consumers of the retrieval layer are still stubs:
+          the assembled result goes to RAG in
+          <a
+            class="xref-badge"
+            href="../../query-engine/_workzone/retrieval.html#boundary"
+            >→ Query Engine</a
+          >, and the tools by intent (search · graph · sql) go to
+          <a
+            class="xref-badge"
+            href="../../agent-engine/_workzone/runtime.html#tools"
+            >→ Agent Engine</a
+          >.
+        </p>
+      </div>
+
+      <!-- ════════════════ EMPTY INDEX ════════════════
+           Source of truth for the whole "no data → no KS tools" invariant.
+           A derived property, not a setting: modelled on SMTP's is_available().
+           The harness reads it and doesn't put KS tools into the model's schema. -->
+      <div class="section" id="emptiness">
+        <div class="section__title">Empty index: the derived property <code>is_empty</code></div>
+        <p class="desc">
+          The database may be empty — the company deployed the platform but hasn't
+          connected sources, or ingestion hasn't yielded a single chunk yet. Then
+          <a href="data-model.html#chunks" class="xref-page">chunks</a> holds not
+          a row: retrieval has nothing to work on, and there's no point calling
+          it. KS exposes this outward as the <strong>derived property</strong>
+          <code>is_empty</code> — whether there are any chunks to search at all.
+          It's not a flag or a "mode" that someone turns on, but a consequence of
+          data being present — exactly like SMTP's
+          <code>is_available()</code>: a property of the model, not a toggle. The
+          implementation may keep a cheap cached metric instead of counting on the
+          fly.
+        </p>
+        <p class="note">
+          The property is read by the shared
+          <a href="../../agent-engine/_workzone/harness.html#params" class="xref-module"
+            >tool-calling harness</a>: when <code>is_empty</code>, it doesn't put
+          KS tools into the model's schema at all — on <em>both</em> surfaces,
+          in chat (<code>search_knowledge</code>) and for the agent (the core
+          <code>search</code> · <code>graph</code> · <code>sql</code>). The model
+          doesn't see search and answers like an ordinary assistant; grounding
+          isn't "switched off" — its precondition simply hasn't been met. The
+          first accepted chunk flips the property itself — the tools appear
+          without a single setting.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,358 @@
+/* Query Engine — rag-pipeline workzone diagrams.
+   The search tool's body: embed → retrieve → rerank → augment → generate (the
+   route the model runs when it calls search_knowledge). Reuses the stk-* kit for
+   the route bands (presets below — the KS-owned embed/retrieve, the QE-owned
+   tail), and adds the page-only primitives: the side owner tag inside a band bar
+   (rp-side), the owner seam strip under the stack (rp-seam), the model map
+   (rp-models), the rerank v1/v2 split (rp-rerank) and the agent boundary
+   hand-off (rp-bound).
+   Static — no hover affordance (README §Hover).
+   Loaded by _workzone/rag-pipeline.html on top of ../../module.css
+   + ../../layered-stack.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ════════════════ ROUTE BAND ACCENTS ════════════════ embed/retrieve
+   (Knowledge Store green, the storage side) → rerank/augment/generate (Query
+   Engine accent, the RAG side). */
+.stk-layer--ks {
+  --stk-lc: var(--s3);
+  --stk-lc-pale: var(--s3-pale);
+}
+.stk-layer--qe {
+  --stk-lc: var(--accent);
+  --stk-lc-pale: var(--tint-8);
+}
+
+/* ── Owner tag in the band bar — names which module runs the step, sits
+   before the italic role on the right. ── */
+.rp-side {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--s3);
+}
+.rp-side--qe {
+  color: var(--accent);
+}
+/* When the role text follows, the tag keeps left of it (role takes the
+   margin-auto instead). */
+.stk-layer__bar .rp-side + .stk-layer__role {
+  margin-left: 0.7rem;
+}
+.stk-layer__bar .rp-side {
+  margin-left: auto;
+}
+.stk-layer__bar .rp-side ~ .stk-layer__role {
+  margin-left: 0.7rem;
+  max-width: 22ch;
+}
+
+/* ════════════════ OWNER SEAM ════════════════ summary strip under the stack —
+   which side owns which steps: KS does embed+retrieve, QE the rest. */
+.rp-seam {
+  display: flex;
+  align-items: stretch;
+  gap: 0.7rem;
+  margin: 1rem 0 0.3rem;
+}
+.rp-seam__col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+.rp-seam__col--ks {
+  border-left: 4px solid var(--s3);
+}
+.rp-seam__col--qe {
+  border-left: 4px solid var(--accent);
+  background: var(--tint-6);
+}
+.rp-seam__who {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.rp-seam__act {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.rp-seam__col--ks .rp-seam__act {
+  color: var(--s3);
+}
+.rp-seam__col--qe .rp-seam__act {
+  color: var(--accent);
+}
+.rp-seam__arrow {
+  align-self: center;
+  font-size: 1rem;
+  color: var(--accent);
+}
+
+/* ════════════════ MODEL MAP ════════════════ three cards — chat (leads the
+   turn + generate) · embed (shared) · rerank (none in v1), each its accent. */
+.rp-models {
+  display: flex;
+  gap: 0.6rem;
+  margin: 1.1rem 0 0.4rem;
+}
+.rp-model {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.75rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--dot, var(--text-muted));
+  border-radius: var(--radius-md);
+}
+.rp-model--chat {
+  border-top-color: var(--accent);
+}
+.rp-model--embed {
+  border-top-color: var(--s3);
+}
+.rp-model--rerank {
+  border-top-color: var(--s2);
+}
+.rp-model:target {
+  animation: target-highlight 2.6s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rp-model:target {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+}
+.rp-model__h {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+.rp-model__step {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.rp-model--chat .rp-model__step {
+  color: var(--accent);
+}
+.rp-model--embed .rp-model__step {
+  color: var(--s3);
+}
+.rp-model--rerank .rp-model__step {
+  color: var(--s2);
+}
+.rp-model__name {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.rp-model__d {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ════════════════ RERANK SPLIT ════════════════ v1 RRF-from-KS (no model) vs
+   the v2 cross-encoder reranker (its own model). */
+.rp-rerank {
+  display: flex;
+  gap: 0.75rem;
+  margin: 1rem 0 0.3rem;
+}
+.rp-rerank__col {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--text-muted);
+  border-radius: var(--radius-md);
+  padding: 0.8rem 1rem;
+}
+.rp-rerank__col--v1 {
+  border-left-color: var(--accent);
+  background: var(--tint-6);
+}
+.rp-rerank__col--v2 {
+  border-left-color: var(--s2);
+}
+.rp-rerank__h {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+.rp-rerank__t {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.rp-rerank__d {
+  font-size: 0.77rem;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+
+/* ════════════════ AGENT BOUNDARY ════════════════ QE one-pass RAG ▸ Agent
+   Engine multi-step reasoning — where the RAG route ends. */
+.rp-bound {
+  display: flex;
+  gap: 0.75rem;
+  margin: 0.9rem 0 0.3rem;
+}
+.rp-bound__col {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+}
+.rp-bound__col--here {
+  border-left: 4px solid var(--accent);
+  background: var(--tint-6);
+}
+.rp-bound__col--there {
+  border-left: 4px solid var(--s2);
+}
+.rp-bound__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+.rp-bound__who {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.rp-bound__act {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.rp-bound__col--here .rp-bound__act {
+  color: var(--accent);
+}
+.rp-bound__d {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+.rp-bound__seam {
+  align-self: center;
+  font-size: 1rem;
+  color: var(--accent);
+}
+
+/* ════════════════ CACHE GATE ════════════════ exact-retrieval cache
+   short-circuit at the tool entry: a hit returns cached candidates, a miss falls
+   through into the expensive embed→retrieve. Keyed on the standalone query +
+   identity, so cached candidates never cross permissions. Dashed gate, not a
+   route band — it interrupts the descent rather than being a step in it. */
+.rp-cache {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1rem;
+  margin: 0.2rem 0;
+  padding: 0.6rem 0.9rem;
+  background: var(--surface);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-md);
+}
+.rp-cache:target {
+  animation: target-highlight 2.6s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rp-cache:target {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+}
+.rp-cache__gate {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.rp-cache__d {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent-muted);
+}
+.rp-cache__q {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.rp-cache__key {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+.rp-cache__branches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.1rem;
+  margin-left: auto;
+}
+.rp-cache__branch {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.rp-cache__cond {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.05rem 0.4rem;
+  border-radius: var(--radius-md);
+}
+.rp-cache__branch--hit .rp-cache__cond {
+  color: var(--s3);
+  background: var(--s3-pale);
+}
+.rp-cache__branch--miss .rp-cache__cond {
+  color: var(--text-muted);
+  background: var(--tint-6);
+}
+.rp-cache__arr {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.rp-cache__res {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
+
+@media (max-width: 640px) {
+  .rp-seam,
+  .rp-models,
+  .rp-rerank,
+  .rp-bound {
+    flex-direction: column;
+  }
+}

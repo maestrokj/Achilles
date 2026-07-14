@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Shared UI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="../wireframe.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← К схеме</a>
+        <h1 class="header__title">Shared UI</h1>
+        <div class="header__sub">UI foundations · общий слой точек входа</div>
+      </div>
+
+      <p class="desc">
+        Каталог общих UI-паттернов, которые повторяются на всех точках входа
+        (Admin Panel, Web App и далее). Это не модуль системы, а слой
+        представления: фундамент, на котором собираются экраны модулей.
+      </p>
+
+      <!-- ═══ Каталог компонентов ═══ -->
+      <div class="section">
+        <h2 class="section__title">Компоненты</h2>
+        <div class="wz-nav">
+          <a class="wz-link" href="_wireframes/toasts.html">
+            <span>Toasts</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <a class="wz-link" href="_wireframes/confirm-dialog.html">
+            <span>Confirm Dialog</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <a class="wz-link" href="_wireframes/system-screens.html">
+            <span>System Screens</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <a class="wz-link" href="_wireframes/loading-states.html">
+            <span>Загрузка и ожидание</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

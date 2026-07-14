@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Cache &amp; Workers</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="cache-workers.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← Back to architecture</a>
+        <h1 class="header__title">Cache &amp; Workers</h1>
+        <div class="header__sub">cache · queues · scheduler · workers · rate-limit</div>
+      </div>
+
+      <!-- ═══ Description ═══ An infrastructure layer, not a domain module: holds
+           no knowledge of its own. Two faces — synchronous ephemeral state on the
+           request path, and a background execution environment off the request. -->
+      <p class="desc">
+        The platform's ephemeral infrastructure on top of <strong>Redis</strong>:
+        it speeds things up (a cache of frequent reads) and connects them
+        (asynchronous handoff of tasks between modules). It holds no domain
+        knowledge of its own — it's a shared layer the other modules consume
+        through a thin client. Two faces:
+        <strong>synchronous ephemeral state</strong> on the request path (cache,
+        rate-limit, blacklist) and a <strong>background execution environment</strong>
+        off the request (queue, scheduler, workers, task lifecycle).
+      </p>
+
+      <!-- ═══ Architecture ═══ A flow poster: the module's two faces (synchronous
+           on the request path · background off it). The static “what lives where” — the hard boundary. -->
+      <div class="section" id="architecture">
+        <h2 class="section__title">Architecture</h2>
+        <p class="note">
+          The module's two faces side by side: the synchronous one on the request
+          path and the background one off it, each with its own top-to-bottom
+          flow. Both rest on a shared foundation of three stores; the static
+          “what lives where” principle is on the
+          <a href="_workzone/redis-keys.html#principle" class="xref-page">Redis ⟂ Postgres hard boundary</a>.
+        </p>
+        <div class="cw-dip">
+          <div class="cw-dip__faces">
+            <!-- face 1: synchronous ephemeral state on the request path -->
+            <div class="cw-dface cw-dface--sync">
+              <div class="cw-dface__cap">
+                <span class="cw-dface__t">On the request path</span>
+                <span class="cw-dface__s">synchronous · ephemeral state</span>
+              </div>
+              <div class="cw-step">API · inbound request</div>
+              <a class="cw-step" href="_workzone/rate-limit.html#primitive">
+                rate-limit<small>atomic counter · durable</small>
+              </a>
+              <a class="cw-step" href="_workzone/caching.html#policy">
+                candidate cache<small>single-flight · TTL</small>
+              </a>
+              <div class="cw-step">response to the user</div>
+            </div>
+
+            <!-- face 2: background execution environment off the request -->
+            <div class="cw-dface cw-dface--bg">
+              <div class="cw-dface__cap">
+                <span class="cw-dface__t">Off the request</span>
+                <span class="cw-dface__s">background · execution environment</span>
+              </div>
+              <a class="cw-step" href="_workzone/scheduling.html#cron">
+                modules · events · scheduler <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2" /><line x1="12" x2="15" y1="14" y2="11" /><circle cx="12" cy="14" r="8" /></svg><small>enqueue by job_id · cron singleton</small>
+              </a>
+              <a class="cw-step" href="_workzone/redis-keys.html#instances">
+                queue<small>redis-durable</small>
+              </a>
+              <a class="cw-step" href="_workzone/queues.html#lanes">
+                lanes → workers
+                <span class="cw-laneset">
+                  <span class="cw-lane cw-lane--i">interactive</span>
+                  <span class="cw-lane cw-lane--b">background</span>
+                  <span class="cw-lane cw-lane--a">agents</span>
+                </span>
+              </a>
+              <a class="cw-step" href="_workzone/lifecycle.html#contract">
+                task lifecycle<small>journal · retry · DLQ</small>
+              </a>
+            </div>
+          </div>
+
+          <div class="cw-foundlabel">↓ both faces rest on a single foundation ↓</div>
+
+          <div class="cw-base">
+            <a class="cw-store cw-store--rd" href="_workzone/redis-keys.html#instances">
+              <div class="cw-store__t">redis-durable</div>
+              <div class="cw-store__d">queues · counters · locks · dedup · noeviction + AOF</div>
+            </a>
+            <a class="cw-store cw-store--rc" href="_workzone/redis-keys.html#instances">
+              <div class="cw-store__t">redis-cache</div>
+              <div class="cw-store__d">candidate cache · pub/sub · allkeys-lru</div>
+            </a>
+            <a class="cw-store cw-store--pg" href="_workzone/lifecycle.html#contract">
+              <div class="cw-store__t">Postgres</div>
+              <div class="cw-store__d">system of record · run uniqueness · DLQ</div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Workzone ═══ Eight design pages: the module's two faces
+           (execution environment + ephemeral state) plus stack and tests. -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Design</span>
+        </div>
+        <p class="workzone-hint">
+          Detailed design decisions for the module.
+        </p>
+
+        <div class="wz-nav">
+          <div class="wz-nav__group">Background execution environment</div>
+          <a class="wz-link" href="_workzone/queues.html">
+            <span>Queues and workers</span>
+          </a>
+          <a class="wz-link" href="_workzone/scheduling.html">
+            <span>Scheduler</span>
+          </a>
+          <a class="wz-link" href="_workzone/lifecycle.html">
+            <span>Task lifecycle</span>
+          </a>
+
+          <div class="wz-nav__group">Ephemeral state</div>
+          <a class="wz-link" href="_workzone/rate-limit.html">
+            <span>Rate-limit</span>
+          </a>
+          <a class="wz-link" href="_workzone/caching.html">
+            <span>Cache</span>
+          </a>
+          <a class="wz-link" href="_workzone/redis-keys.html">
+            <span>Redis: instances and keys</span>
+          </a>
+
+          <div class="wz-nav__group">Implementation</div>
+          <a class="wz-link" href="_workzone/stack.html">
+            <span>Stack and structure</span>
+          </a>
+          <a class="wz-link" href="_workzone/tests.html">
+            <span>Tests</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ═══ Wireframes (surfaces) ═══ The module has no frontend of its own —
+           queue and Redis monitoring is rendered by the Admin Panel dashboard. A pointer here. -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Wireframes</span>
+          <span class="workzone-title">Surfaces</span>
+        </div>
+        <p class="workzone-hint">
+          The module has no frontend of its own: the admin sees the state of
+          queues, workers and Redis on the dashboard —
+          <a href="../admin-panel/_wireframes/dashboard.html#system-health" class="xref-badge">→ Admin Panel</a>.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,106 @@
+<!doctype html>
+<!--
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  FEATURE: mfa — setting up and managing two-factor authentication     │
+  │  (TOTP). Built from _template/.                                       │
+  │                                                                       │
+  │  OWNS mfa-setup.html (3-step wizard) + mfa-manage.html (the "enabled" │
+  │  state · management) — both nodes exclusive to this flow, living      │
+  │  beside it. Orphan test: remove the feature — these screens have      │
+  │  nowhere to live → their home is here. profile-account and            │
+  │  re-auth-modal are shared screens from _wireframes/: the feature      │
+  │  LINKS to them as the entry point and the sudo gate                   │
+  │  (.flow-stop--shared) but doesn't own them — an entry-point/gate link │
+  │  doesn't make a screen shared. Don't duplicate the mechanic (TOTP,    │
+  │  secret encryption, code hashing) — it's on the screen legends and    │
+  │  in _workzone. README → "Features".                                   │
+  └─────────────────────────────────────────────────────────────────────┘
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Two-factor authentication</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · feature-flow kit (no wireframe
+         kit — screens link out) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../feature-flow.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../index.html">← Auth / Security</a>
+        <h1 class="header__title">
+          Two-factor authentication <span class="iter v2">v2</span>
+        </h1>
+        <div class="header__sub">auth / security · features</div>
+      </div>
+
+      <!-- ═══ Description ═══ Product only: what the feature is and the user
+           journey. The mechanic (TOTP, secret encryption, role policy) — NOT here,
+           it's on the screen legends and in workzone. -->
+      <p class="desc">
+        A second factor at login on top of the password — a one-time TOTP code from
+        an authenticator app. A user enables MFA from the "Security" card in their
+        <a href="../../_wireframes/profile-account.html" class="xref-page">profile</a
+        >; entry to setup is protected by re-entering the password. A three-step
+        wizard connects the second factor, after which two-factor authentication is
+        active and managed on the same screen.
+      </p>
+
+      <!-- ═══ Flow ═══ Metro storyboard: the shared entry and sudo gate from
+           _wireframes (.flow-stop--shared, double ring), then the feature's local
+           nodes (.flow-stop) — the wizard and the management screen. -->
+      <div class="section">
+        <div class="section__title">Flow</div>
+        <div class="flow">
+          <div class="flow-stop flow-stop--shared">
+            <a
+              class="flow-stop__name"
+              href="../../_wireframes/profile-account.html"
+              >Profile / Account</a
+            >
+            <span class="flow-stop__role"
+              >shared · entry · "Security" card</span
+            >
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">"Set up" · sudo-protected</span>
+          </div>
+          <div class="flow-stop flow-stop--shared">
+            <a
+              class="flow-stop__name"
+              href="../../_wireframes/re-auth-modal.html"
+              >Re-auth modal</a
+            >
+            <span class="flow-stop__role">shared · password re-entry</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">password confirmed</span>
+          </div>
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="mfa-setup.html">MFA Setup</a>
+            <span class="flow-stop__role">start · 3-step wizard</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">codes saved · MFA active</span>
+          </div>
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="mfa-manage.html">MFA Management</a>
+            <span class="flow-stop__role"
+              >management · regeneration · disabling</span
+            >
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

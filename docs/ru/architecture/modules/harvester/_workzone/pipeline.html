@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Harvester: Pipeline</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="pipeline.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Harvester</a>
+        <h1 class="header__title">Pipeline</h1>
+        <div class="header__sub">harvester · workzone</div>
+      </div>
+
+      <p class="desc">
+        Внутренний конвейер обработки: как сырьё из источника превращается в
+        нормализованную сущность и попадает в хранилище. Три стадии —
+        <a href="#extract" class="xref-anchor">Extract</a>
+        <span class="pl-arrow">→</span>
+        <a href="#transform" class="xref-anchor">Transform</a>
+        <span class="pl-arrow">→</span>
+        <a href="#load" class="xref-anchor">Load</a>. Source-specific — только
+        вход (extract) и первый шаг трансформации (normalize); всё, что дальше, —
+        общее для любого источника и для любого
+        <a href="sync-modes.html" class="xref-page">режима синхронизации</a>.
+      </p>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ════════ EXTRACT ════════ -->
+          <div class="stk-layer stk-layer--extract" id="extract">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Extract</span>
+              <span class="stk-layer__role">Вход конвейера: поток RawItem.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Тонкий коннектор на источник</span>
+                  <a class="conn-tag" href="connectors.html#contract"
+                    title="Шаг реализуется в коннекторе"
+                    ><span class="conn-tag__icon"></span>коннектор</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Один коннектор на источник — тонкий async-клиент (httpx)
+                  поверх REST API; официальные SDK не используются: они
+                  синхронны и несут свои retry-слои, а надёжность платформы
+                  живёт на сыром HTTP-ответе.<br/>Все коннекторы прячутся за
+                  единым интерфейсом <code>fetch(since) → RawItem</code> и выдают
+                  поток <code>RawItem</code> — это и есть вход в Transform.
+                  Саму механику выборки — подключение, аутентификацию, пагинацию
+                  и инкремент по <code>since</code> — держит
+                  <a href="sources.html#fetch" class="xref-page">sources</a>.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ TRANSFORM ════════ -->
+          <div class="stk-layer stk-layer--transform" id="transform">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Transform</span>
+              <span class="stk-layer__role"
+                >Цепочка full sync и incremental.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="pl-chain">
+                <!-- normalize -->
+                <div class="pl-step pl-step--src">
+                  <div class="pl-step__head">
+                    <span class="pl-step__n">1</span>
+                    <span class="pl-step__name">normalize</span>
+                    <a class="conn-tag" href="connectors.html#contract"
+                      title="Шаг реализуется в коннекторе"
+                      ><span class="conn-tag__icon"></span>коннектор</a
+                    >
+                  </div>
+                  <div class="pl-step__d">
+                    Сырые данные источника <span class="pl-arrow">→</span> единая
+                    модель <code>Entity</code>. Единственный шаг трансформации,
+                    который пишется под конкретный источник.
+                  </div>
+                </div>
+                <div class="pl-link"></div>
+
+                <!-- filter -->
+                <div class="pl-step" id="filter">
+                  <div class="pl-step__head">
+                    <span class="pl-step__n">2</span>
+                    <span class="pl-step__name">filter</span>
+                  </div>
+                  <div class="pl-step__d">
+                    Отсев того, что не нужно индексировать: пустые сущности,
+                    системные события («X присоединился к каналу»), сообщения
+                    ботов. Базовые правила встроены и не настраиваются. Что
+                    тянуть сверх них — набор переключателей объявляет
+                    <a href="connectors.html#manifest" class="xref-page">манифест коннектора</a>
+                    (как и объекты scope): переопределения (вернуть отсеянное —
+                    ботов в чатах) и доп-включения (вложения, комментарии и
+                    треды, приватные каналы и DM). Карточка показывает
+                    релевантные типу —
+                    <a
+                      href="../../admin-panel/_wireframes/data-sources.html#content-filter"
+                      class="xref-module"
+                      >настройки источника</a
+                    >. Scope на уровне объектов — соседняя
+                    тема,
+                    <a href="sources.html#allowlist" class="xref-page"
+                      >sources</a
+                    >.
+                  </div>
+                </div>
+                <div class="pl-link"></div>
+
+                <!-- classify -->
+                <div class="pl-step">
+                  <div class="pl-step__head">
+                    <span class="pl-step__n">3</span>
+                    <span class="pl-step__name">classify</span>
+                  </div>
+                  <div class="pl-step__d">
+                    Статус сущности: <code>draft</code> / <code>final</code> /
+                    <code>archived</code>.
+                  </div>
+                </div>
+                <div class="pl-link"></div>
+
+                <!-- resolve -->
+                <div class="pl-step">
+                  <div class="pl-step__head">
+                    <span class="pl-step__n">4</span>
+                    <span class="pl-step__name">resolve</span>
+                  </div>
+                  <div class="pl-step__d">
+                    Схлопывание дублей <em>внутри одного прогона</em> и выбор
+                    победителя при конфликте версий: один <code>fetch</code>
+                    может вернуть сущность дважды. Идемпотентность
+                    <em>между прогонами</em> — не здесь, её даёт Load через
+                    upsert по <code>source_id + source_type + source_entity_id</code>. Глубокий
+                    entity resolution между источниками держит
+                    <a href="data-model.html#cross-source" class="xref-page"
+                      >data-model</a
+                    >.
+                  </div>
+                </div>
+                <div class="pl-link"></div>
+
+                <!-- enrich -->
+                <div class="pl-step">
+                  <div class="pl-step__head">
+                    <span class="pl-step__n">5</span>
+                    <span class="pl-step__name">enrich</span>
+                  </div>
+                  <div class="pl-step__d">
+                    Связи. Ребро проводится сразу, когда целевой узел уже
+                    загружен; иначе — ссылка на другой источник или на ещё не
+                    пришедший узел своего — сохраняется упоминанием (refs) в
+                    метаданных и материализуется позже, когда оба конца в базе.
+                    Граница — data-model.
+                  </div>
+                </div>
+                <div class="pl-link"></div>
+
+                <!-- clean -->
+                <div class="pl-step">
+                  <div class="pl-step__head">
+                    <span class="pl-step__n">6</span>
+                    <span class="pl-step__name">clean</span>
+                  </div>
+                  <div class="pl-step__d">
+                    Снятие разметки для вектора: размеченный текст
+                    <span class="pl-arrow">→</span> плоский. Делается поздно,
+                    после <code>enrich</code>: ссылки и упоминания в разметке
+                    нужны для связей, а заголовки — для резки на фрагменты.
+                    Чистится только копия под эмбеддинг; оригинал в
+                    <code>Entity</code> остаётся нетронутым.
+                  </div>
+                </div>
+                <div class="pl-link"></div>
+
+                <!-- chunk -->
+                <div class="pl-step" id="chunk">
+                  <div class="pl-step__head">
+                    <span class="pl-step__n">7</span>
+                    <span class="pl-step__name">chunk</span>
+                  </div>
+                  <div class="pl-step__d">
+                    Длинный текст <span class="pl-arrow">→</span> фрагменты под
+                    эмбеддинг. Одна <code>Entity</code>
+                    <span class="pl-arrow">→</span> много фрагментов, у каждого
+                    свой вектор. Целевой размер — <code>512</code> токенов
+                    (рабочий диапазон <code>256–1024</code>), тюнируемый
+                    параметр. Окно модели — не цель, а потолок:
+                    <code>effective = min(target_chunk_tokens, model_max_tokens)</code>.
+                    Большое окно эмбеддера (у <code>text-embedding-3</code> —
+                    <code>8192</code>) даёт запас от обрезки длинных секций, а не
+                    разрешение делать фрагмент на всё окно: чем длиннее текст под
+                    одним вектором, тем сильнее он «усредняется» и тем хуже
+                    попадания поиска.
+                  </div>
+                  <div class="pl-step__d">
+                    Стратегия — <strong>по типу контента</strong>, не один
+                    глобальный размер на всё: Slack — тред или окно, сообщения
+                    остаются целыми; тикет Jira или MR GitLab — тикет вместе с
+                    комментариями одним документом; код — по синтаксису
+                    (функции, AST), не по токен-окну; длинная страница Confluence
+                    идёт дефолтным маршрутом ниже. Это валидный современный
+                    дефолт — просто маршрутизируемый по типу.
+                  </div>
+                  <ul class="pl-mech">
+                    <li class="pl-mech__row">
+                      <span class="pl-mech__badge">structural</span>
+                      <span class="pl-mech__d"
+                        >Основной рез — по структуре из
+                        <code>normalize</code>: заголовки, секции, сообщение
+                        или тред. Граница естественная — нахлёст не нужен.</span
+                      >
+                    </li>
+                    <li class="pl-mech__row">
+                      <span class="pl-mech__badge">recursive</span>
+                      <span class="pl-mech__d"
+                        >Fallback: блок крупнее целевого размера добираем по
+                        абзацам, пока не влезет.</span
+                      >
+                    </li>
+                    <li class="pl-mech__row">
+                      <span class="pl-mech__badge">overlap</span>
+                      <span class="pl-mech__d"
+                        >~15% (≈75 токенов) — нахлёст на стыке, чтобы не рвать
+                        контекст границы. Включается
+                        <strong>только на recursive-fallback</strong>: при
+                        структурном резе граница естественная, а короткий
+                        контент (сообщение Slack) остаётся целым,
+                        <code>overlap = 0</code>.</span
+                      >
+                    </li>
+                  </ul>
+                </div>
+                <div class="pl-link"></div>
+
+                <!-- contextualize -->
+                <div class="pl-step pl-step--v2" id="contextualize">
+                  <div class="pl-step__head">
+                    <span class="pl-step__n">8</span>
+                    <span class="pl-step__name">contextualize</span>
+                    <span class="iter v2">v2</span>
+                    <span class="ai-tag" title="Этап использует нейросеть — инференс модели"><span class="ai-tag__icon"></span>AI</span>
+                  </div>
+                  <div class="pl-step__d">
+                    Перед эмбеддингом к каждому фрагменту дописывается короткий
+                    контекст, приземляющий его в документе — из какого источника
+                    и раздела, о чём речь; приписку пишет модель, видя документ
+                    целиком и сам фрагмент. Эмбеддинг фрагмента вместе с ней
+                    заметно поднимает попадания семантического поиска: фрагмент
+                    перестаёт быть вырванным из контекста.
+                  </div>
+                  <div class="pl-step__d">
+                    Нюанс <span class="iter v2">v2</span> для контент-кеша:
+                    приписка меняет финальную строку, значит хешируется строка
+                    <strong>вместе с ней</strong> — переэмбеддинг происходит сам
+                    собой. Сгенерированный blurb при этом
+                    <strong>сохраняется рядом с фрагментом</strong>: модель
+                    недетерминирована, и без сохранённой приписки хеш «плыл» бы
+                    при каждом прогоне.
+                  </div>
+                </div>
+                <div class="pl-link"></div>
+
+                <!-- embed -->
+                <div class="pl-step pl-step--embed" id="embed">
+                  <div class="pl-step__head">
+                    <span class="pl-step__n">9</span>
+                    <span class="pl-step__name">embed</span>
+                    <span class="ai-tag" title="Этап использует нейросеть — инференс модели"><span class="ai-tag__icon"></span>AI</span>
+                    <span class="cache-tag" title="Эмбеддинги кешируются по контент-хешу — неизменные фрагменты не переэмбеддятся"><span class="cache-tag__icon"></span>контент-кеш</span>
+                  </div>
+                  <div class="pl-step__d">
+                    Каждый фрагмент <span class="pl-arrow">→</span> вектор.
+                    Модель берётся из реестра AI-моделей — Admin назначает её
+                    функции embedding
+                    (<a
+                      href="../../admin-panel/_wireframes/ai-models.html#model-assignment"
+                      class="xref-module"
+                      >назначение по функциям</a
+                    >); это первая конкретная функция и точка стыка Harvester с
+                    управлением моделями. Свою настройку Harvester не заводит:
+                    использует ту модель, что назначена в реестре. Назначение —
+                    <strong>предусловие приёма</strong>: дефолта нет, и пока
+                    embedding-модель не выбрана (встроенные модели платформы
+                    доступны из коробки <em>или</em> своя), приём не стартует —
+                    иначе размерность <code>chunks.embedding</code> нечем
+                    зафиксировать.
+                  </div>
+                  <div class="pl-step__d">
+                    Ключ контент-кеша — хеш
+                    <strong>точной финальной строки</strong>, уходящей в
+                    эмбеддер, плюс всего, что влияет на вектор:
+                    <code>SHA256(model_id@version | instruction_prefix | normalized(текст фрагмента))</code>.
+                    Смена модели, токенизатора, обязательного префикса
+                    (<code>query:</code>/<code>passage:</code>) или правил
+                    нормализации меняет ключ <span class="pl-arrow">→</span>
+                    переэмбеддинг. Так неизменный фрагмент переиспользует вектор,
+                    а реальное изменение бьёт инференсом точечно. Как общий
+                    рантайм держит этот поток и масштабируется под нагрузку —
+                    <a
+                      href="../../knowledge-store/_workzone/embedding-runtime.html#scaling"
+                      class="xref-module"
+                      >embeddings-рантайм</a
+                    >.
+                  </div>
+                </div>
+              </div>
+              <div class="decision-box" id="param-homes">
+                <strong>Где живут параметры.</strong> Конвенция «no
+                hardcoding» делит ручки <code>chunk</code> и
+                <code>embed</code> на два дома. Интринсики модели — макс. токенов
+                окна, обязательный префикс
+                (<code>query:</code>/<code>passage:</code>), размерность вектора
+                — живут в
+                <a href="../../ai-foundation/_workzone/data-model.html#ai-intrinsics" class="xref-module">реестре AI-моделей</a>;
+                чанкер читает потолок оттуда.
+                Тюнируемые ручки — <code>target_chunk_tokens</code>,
+                <code>overlap_pct</code>, размеры по типам контента — в конфиге.
+                На стыке стоит валидатор:
+                <code>target_chunk_tokens ≤ model.max_input_tokens</code>.
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ LOAD ════════ -->
+          <div class="stk-layer stk-layer--load" id="load">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Load</span>
+              <span class="stk-layer__role"
+                >Идемпотентный upsert — выход конвейера.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Loader</span>
+                </div>
+                <div class="stk-dec__d">
+                  Идемпотентный upsert по ключу
+                  <code>source_id + source_type + source_entity_id</code>: каждая сущность пишется
+                  ровно в свою строку, повторный прогон обновляет её, а не
+                  плодит дубли. Идемпотентность распространяется и на фрагменты:
+                  их вектора — дочерние строки сущности, и тем же прогоном их
+                  набор сверяется целиком — устаревшие удаляются, новые
+                  добавляются, осиротевших векторов от прежней версии не остаётся.
+                  Неизменные фрагменты при этом не переэмбеддятся: вектор
+                  переиспользуется по контент-хешу, инференс бьёт только по тому,
+                  что реально изменилось. Главная гарантия модуля: повторная
+                  синхронизация и подключение нового источника спустя время не
+                  ломают уже собранные данные. Одна сущность при этом ложится
+                  сразу в несколько приёмников хранения:
+                </div>
+                <ul class="pl-mech">
+                  <li class="pl-mech__row">
+                    <span class="pl-mech__badge pl-mech__badge--rel"
+                      >relational</span
+                    >
+                    <span class="pl-mech__d"
+                      >Тело записи, метаданные и ACL — структура для точных
+                      фильтров.</span
+                    >
+                  </li>
+                  <li class="pl-mech__row">
+                    <span class="pl-mech__badge">vector</span>
+                    <span class="pl-mech__d"
+                      >Эмбеддинги фрагментов — поиск по смыслу.</span
+                    >
+                  </li>
+                  <li class="pl-mech__row">
+                    <span class="pl-mech__badge pl-mech__badge--graph"
+                      >graph</span
+                    >
+                    <span class="pl-mech__d"
+                      >Узел сущности и связи внутри источника — обход по
+                      графу.</span
+                    >
+                  </li>
+                </ul>
+                <div class="stk-dec__d">
+                  Полную раскладку — какое поле в какую базу, плюс
+                  поля, историю и удаления — держит
+                  <a href="data-model.html#storage" class="xref-page"
+                    >data-model</a
+                  >.
+                </div>
+              </div>
+              <div class="stk-sink">
+                <code>RawItem</code> <span class="pl-arrow">→</span>
+                <code>Entity</code> <span class="pl-arrow">→</span> сохранено
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ КОНТРАКТЫ ════════ -->
+      <div class="section" id="contracts">
+        <div class="section__title">Контракты</div>
+        <p class="desc">
+          Конвейер держится на двух контрактах. Каждая стадия знает только их —
+          поэтому всё после normalize остаётся общим.
+        </p>
+        <div class="pl-contracts">
+          <div class="mod-card pl-contract">
+            <div class="pl-contract__name"><code>RawItem</code></div>
+            <div class="pl-contract__role">Connector → Transform</div>
+            <div class="pl-contract__d">
+              Сырьё источника вместе с его метаданными. Выход коннектора и вход
+              трансформации.
+            </div>
+          </div>
+          <div class="pl-contract-arrow"></div>
+          <div class="mod-card pl-contract pl-contract--entity">
+            <div class="pl-contract__name"><code>Entity</code></div>
+            <div class="pl-contract__role">Transform → Loader</div>
+            <div class="pl-contract__d">
+              Нормализованная сущность. Разные типы внутри источника (тикет,
+              страница, сообщение) — подвиды одной <code>Entity</code> и проходят
+              один и тот же конвейер. Полную модель держит
+              <a href="data-model.html#entity" class="xref-page">data-model</a>.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,1146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Authentication</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="authentication.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Authentication</h1>
+        <div class="header__sub">auth / security · workzone</div>
+      </div>
+
+      <div class="stk-stage">
+        <div class="stk-stack">
+          <!-- ════════ L1 · ENTRY CHANNELS ════════ -->
+          <div class="stk-layer stk-layer--chan" id="entry-channels">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Entry channels</span>
+              <span class="stk-layer__role">Which channel the sign-in comes through.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2" /><line x1="8" x2="16" y1="21" y2="21" /><line x1="12" x2="12" y1="17" y2="21" /></svg> Web UI</span>
+                </div>
+                <div class="stk-dec__d">
+                  <a href="../../admin-panel/index.html" class="xref-module">Admin Panel</a>
+                  and <a href="../../web-app/index.html" class="xref-module">Web App</a> · email + password →
+                  <a href="routing.html#entry-gate" class="xref-page"><code>/login</code></a>
+                  → JWT. <b>The only password-based sign-in.</b>
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><svg class="doc-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg> Slack</span>
+                  <a class="xref-badge" href="../../slack/index.html#identity">→ Slack</a>
+                </div>
+                <div class="stk-dec__d">
+                  Slack ID → <code>identity_mapping</code> (<code>source='slack'</code>) → user:
+                  auto-match by workspace email or a
+                  <a href="#messenger-link" class="xref-anchor">link code</a>.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><svg class="doc-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg> Telegram</span>
+                  <a class="xref-badge" href="../../telegram/index.html#identity">→ Telegram</a>
+                </div>
+                <div class="stk-dec__d">
+                  Telegram ID → <code>identity_mapping</code> (<code>source='telegram'</code>) → user:
+                  <a href="#messenger-link" class="xref-anchor">link code</a> only —
+                  Telegram doesn't expose email.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg> Mattermost</span>
+                  <a class="xref-badge" href="../../mattermost/index.html#identity">→ Mattermost</a>
+                </div>
+                <div class="stk-dec__d">
+                  Mattermost ID → <code>identity_mapping</code> (<code>source='mattermost'</code>) → user:
+                  <a href="#messenger-link" class="xref-anchor">link code</a> only —
+                  events carry no email.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5" /><path d="M15 8V2" /><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" /><path d="M9 8V2" /></svg> MCP</span>
+                  <a class="xref-badge" href="../../mcp/index.html#auth">→ MCP</a>
+                </div>
+                <div class="stk-dec__d">
+                  <a class="xref-anchor" href="#api-keys">API key</a> (headless) or
+                  OAuth (interactive, <span class="iter v2">v2</span>) →
+                  <code>user_id</code>.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z" /></svg> Browser Extension</span
+                  ><span class="iter v2">v2</span>
+                  <a class="xref-badge" href="../../extension/index.html"
+                    >→ Browser Extension</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  OAuth or a token, stored in the extension.
+                </div>
+              </div>
+              <div class="stk-converge">
+                <b>Principle:</b> each channel
+                authenticates in its own way, but all converge
+                <span class="stk-arrow">→</span> one <code>user_id</code>
+                <span class="stk-arrow">→</span> role
+                <span class="stk-arrow">→</span> ACL.
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ L2 · IDENTIFICATION AND REGISTRATION ════════ -->
+          <div class="stk-layer stk-layer--reg">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Identification and registration</span>
+              <span class="stk-layer__role"
+                >Where the user_id comes from.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec" id="admission-model">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Admission model — who vouches</span>
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_features/user-onboarding/index.html"
+                    >→ User onboarding</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  How a user enters the system is determined by the trust anchor —
+                  who vouches for them. Three anchors, in increasing order of scale:<br />
+                  · <b>admin</b> → invitation
+                  (<a href="#invite-flow" class="xref-anchor">invite flow</a>),
+                  one at a time or as a CSV batch — the safe default;<br />
+                  · <b>corporate IdP</b> →
+                  <a href="#sso-oidc" class="xref-anchor">SSO</a>,
+                  auto-provisioning on sign-in — the scale ceiling,
+                  <span class="iter v2">v2</span>;<br />
+                  · <b>company email</b> → domain self-join (anyone with a
+                  domain address), <span class="iter v2">v2</span>.<br />
+                  Decision: the <b>floor is control</b> (invite, closed default),
+                  the <b>ceiling is delegation to the IdP</b> (SSO). Reading the
+                  knowledge base is sensitive in itself, so there is no public
+                  self-registration; domain self-join is not a step between the
+                  two but an option behind an explicit toggle (never
+                  default-on, with safeguards: verified domain ownership, an
+                  approval queue, and the Member role by default).
+                </div>
+              </div>
+              <div class="stk-dec" id="setup-wizard">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Setup Wizard — first launch</span>
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_wireframes/setup-wizard.html"
+                    >→ Setup wizard</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  With 0 users →
+                  <a href="routing.html#entry-gate" class="xref-page"><code>/setup</code></a>.
+                  The Owner sets an email + password. Once created, <code>/setup</code>
+                  returns 404.
+                  <details>
+                    <summary>race-condition guard</summary>
+                    <div>
+                      An advisory lock on bootstrap — creating the first Owner. A single
+                      key guards both entry points (Setup Wizard and
+                      <code>init-owner</code>).
+                    </div>
+                  </details>
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">CLI init-owner</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>achilles init-owner --email … --password …</code>. Only
+                  with 0 users. For CI/CD.
+                  <details>
+                    <summary>race-condition guard</summary>
+                    <div>
+                      The same bootstrap path as the Setup Wizard — guarded by the same
+                      advisory lock.
+                    </div>
+                  </details>
+                </div>
+              </div>
+              <div class="stk-dec" id="invite-flow">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Invite flow</span>
+                  <a
+                    class="xref-badge"
+                    href="../../admin-panel/_wireframes/users.html#users-tabs"
+                    >→ Admin Panel</a
+                  >
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_wireframes/invite-accept.html"
+                    >→ Accept invitation</a
+                  >
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_features/user-onboarding/index.html"
+                    >→ User onboarding</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  An Owner / Admin creates an invitation (email + role) → a single-use
+                  invite token (<b>48 h</b>) → the link is sent by email via
+                  <a
+                    href="../../admin-panel/_wireframes/platform-settings.html#smtp"
+                    class="xref-module"
+                    >SMTP</a
+                  >
+                  → registration (name + password). Email is the only delivery
+                  channel; the link is never handed out manually — delivery itself serves as
+                  <a class="xref-anchor" href="#email-verification"
+                    >email verification</a
+                  >.<br />Only an Owner can assign the Owner role in an invitation —
+                  an Admin can invite only Members (the server responds
+                  <code>403 FORBIDDEN</code>).<br />Until SMTP is configured,
+                  no invitation can be created: the UI disables the button and the server
+                  mirrors the guard — <code>409 SMTP_NOT_CONFIGURED</code>.<br />Bulk
+                  issuance (CSV) is a batch of single-use tokens of the same mechanics;
+                  delivery is handled by the
+                  <a href="../../email/_workzone/delivery.html#throttling" class="xref-module">Email</a>
+                  transport (background queue, safe pacing), and the import is
+                  idempotent — re-uploading the same list creates no duplicate
+                  invitations. UI —
+                  <a href="../_features/user-onboarding/bulk-invite-preview.html" class="xref-page">bulk import</a>.
+                </div>
+              </div>
+              <div class="stk-dec" id="admin-reset">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Admin-initiated reset</span>
+                </div>
+                <div class="stk-dec__d">
+                  An Owner resets Admins / Members, an Admin only Members, via
+                  <a
+                    href="../../admin-panel/_wireframes/user-card.html#user-card"
+                    class="xref-module"
+                    >Admin Panel</a
+                  >.<br/>An Owner's own password is reset by a second Owner, or, if
+                  there is none, by a CLI on the server
+                  (<code>achilles reset-password --email …</code>).
+                  <details>
+                    <summary>mechanism</summary>
+                    <div>
+                      The primary path is a single-use reset link by email
+                      (TTL <b>1 h</b>; the DB stores only the hash), sharing the machinery of the
+                      <a href="#forgot-password" class="xref-anchor">“forgot password”</a> flow;
+                      refresh tokens are revoked when a new password is set.<br />
+                      The fallback without configured SMTP is a temporary password (CSPRNG,
+                      shown to the admin once); all refresh tokens are revoked
+                      immediately, and the user can change their password themselves in their profile.<br />
+                      Forced change of the temporary password on first sign-in
+                      — signing in with a temporary password leads to the
+                      <a href="../_features/forced-password-change/index.html" class="xref-page">forced-change screen</a>;
+                      access to the application is closed by a server-side gate until a
+                      permanent password is set. The <code>must_change_password</code> flag and
+                      the gate mechanics —
+                      <a href="data-model.html#temp-password-gate" class="xref-page">data model</a>.
+                    </div>
+                  </details>
+                </div>
+              </div>
+              <div class="stk-dec" id="admin-email-change">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Admin-initiated email change</span>
+                </div>
+                <div class="stk-dec__d">
+                  An admin changes an employee's email from the
+                  <a
+                    href="../../admin-panel/_wireframes/user-card.html#user-card"
+                    class="xref-module"
+                    >user card</a
+                  > — on the trust of their role, without a confirmation email. The new
+                  address goes through <code>lower()</code> normalization and a
+                  uniqueness check (address taken → <code>409 CONFLICT</code>). All the
+                  user's refresh tokens are revoked — they will sign in again with the
+                  new address, while an already-issued access token lives out its
+                  ≤15-minute window. The action is written to <code>audit_log</code>
+                  (action <code>user.email_change</code>, old → new address
+                  in <code>meta</code>). The gate is a confirmation modal
+                  (re-auth — <span class="iter v2">v2</span>). An email change
+                  re-evaluates the identity mapping
+                  (<span class="iter v2">v2</span>).
+                </div>
+              </div>
+              <div class="stk-dec" id="forgot-password">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">“Forgot password” reset</span>
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_features/password-recovery/index.html"
+                    >→ Password recovery</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Handled over email. A single-use token (<b>1 h</b>);
+                  a repeat request revokes the previous one — only the latest is active,
+                  and an expired and a used token are indistinguishable to the client.
+                  Refresh tokens are revoked when a new password is set. Requires
+                  configured SMTP — without it there is no “forgot password?” link on
+                  the sign-in screen.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Last-Owner protection</span>
+                </div>
+                <div class="stk-dec__d">
+                  Deletion / deactivation / demotion of the only active
+                  Owner is forbidden. A business-logic-level guard.
+                </div>
+              </div>
+              <div class="stk-dec" id="email-verification">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Email verification</span
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  The Owner's email is accepted on
+                  trust; invited users are verified by delivery —
+                  the invite link is sent only by email to the invited address.
+                  The user does not change their own email — it is the login identifier.
+                  An employee's email change is
+                  performed by an admin from the user card, on the trust
+                  of their role (without a confirmation email); refresh tokens are revoked
+                  and the action is written to the audit log.
+                </div>
+              </div>
+              <div class="stk-dec" id="messenger-link">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Messenger account linking</span>
+                  <a class="xref-badge" href="../../slack/index.html#identity">→ Slack</a>
+                  <a class="xref-badge" href="../../telegram/index.html#identity">→ Telegram</a>
+                  <a class="xref-badge" href="../../mattermost/index.html#identity">→ Mattermost</a>
+                </div>
+                <div class="stk-dec__d">
+                  The assistant bot maps the person writing to an account via
+                  <a href="data-model.html#identity-mapping" class="xref-page"
+                    ><code>identity_mapping</code></a
+                  >
+                  (<code>source='slack'</code> · <code>'telegram'</code> · <code>'mattermost'</code>) — this is the
+                  <b>sign-in</b> identity, separate from the source's content identity
+                  (<a href="../../knowledge-store/_workzone/acl-identity.html#identity" class="xref-module">Knowledge Store</a>).
+                  The common path is a <b>link code</b>: the code is generated in a signed-in web session,
+                  the employee returns it to the bot in a DM, and the <b>returning</b>
+                  account is linked to the <b>issuing</b> account (<a href="data-model.html#link-tokens" class="xref-page"><code>link_tokens</code></a>,
+                  single-use, 15 min). Slack also allows auto-matching by the workspace's
+                  provisioned email; Telegram and Mattermost expose no email — there it's the code only. Only
+                  an admin creates an account — the bot merely links to an existing one; there is no
+                  self-registration.
+                </div>
+                <details>
+                  <summary>why the code is returned to the bot, not the other way around</summary>
+                  <div>
+                    One person must prove both sides: the account — by signing in to the web; the
+                    messenger — by returning the code in their own DM. The code is visible only in the
+                    signed-in browser, so relaying someone else's link to a victim is useless — the
+                    browser&nbsp;→&nbsp;bot direction closes off hijacking. Auto-match (Slack only) relies on the
+                    workspace's provisioned email; where the workspace allows self-editing of email,
+                    the admin disables auto-match — leaving only the link code
+                    (<a href="../../admin-panel/_wireframes/platform-settings.html#slack" class="xref-module">settings</a>).
+                  </div>
+                </details>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ L3 · PASSWORD VERIFICATION ════════ -->
+          <div class="stk-layer stk-layer--pwd" id="login">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Password verification</span>
+              <a
+                class="xref-badge xref-badge--page"
+                href="../_wireframes/login.html"
+                >→ Sign-in screen</a
+              >
+              <span class="stk-layer__role">Confirming identity.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Email + password</span>
+                </div>
+                <div class="stk-dec__d">
+                  Hashing —
+                  <a href="protection.html#crypto-core" class="xref-page"
+                    ><b>argon2id</b></a
+                  >; the strength parameters are set in the crypto core.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">User model — SSO readiness</span>
+                </div>
+                <div class="stk-dec__d">
+                  The schema is SSO-ready from the start: the password is
+                  optional and the sign-in provider lives on the
+                  account — plugging in Okta / Azure AD requires no migration. Sign-in is a
+                  swappable strategy (local → IdP). Fields —
+                  <a href="data-model.html#data-model" class="xref-page"
+                    >data model</a
+                  >.
+                </div>
+              </div>
+              <div class="stk-dec" id="sso-oidc">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">SSO / OIDC</span
+                  ><span class="iter v2">v2</span>
+                </div>
+                <div class="stk-dec__d">
+                  SAML / OIDC (Okta, Azure AD, Google Workspace). Auto-provisioning
+                  of users from the IdP. The redirect exchange with the provider is protected against
+                  sign-in forgery by
+                  <a href="protection.html#csrf" class="xref-page">CSRF</a>.
+                  <details>
+                    <summary>redirect protection</summary>
+                    <div>
+                      <b>state</b> — a random request marker, checked on
+                      return from the IdP; if it doesn't match, sign-in is rejected.<br />
+                      <b>PKCE</b> — binds the authorization code to the sign-in initiator
+                      so an intercepted code cannot be exchanged (important for
+                      the browser extension).<br />
+                      <b>nonce</b> — ties the issued ID token to a specific
+                      sign-in request.
+                    </div>
+                  </details>
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">MFA</span
+                  ><span class="iter v2">v2</span>
+                  <a
+                    class="xref-badge"
+                    href="../../admin-panel/_wireframes/platform-settings.html#session-auth"
+                    >→ Admin Panel</a
+                  >
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_features/mfa/index.html"
+                    >→ Two-factor authentication</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  TOTP, ±1-step tolerance (±30 s) for clock drift. An accepted code is
+                  single-use: the server stores the last used time step and
+                  rejects a code replay within the tolerance window (RFC 6238 §5.2).
+                  Whether it is required is an org setting: required by default for
+                  Owner / Admin, optional for Members. Recovery
+                  codes (single-use).
+                  <details>
+                    <summary>secret storage</summary>
+                    <div>
+                      <code>mfa_secret</code> is stored encrypted — the cipher and
+                      key handling live in the crypto core.
+                    </div>
+                  </details>
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full" id="password-policy">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"
+                    ><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg> Password policy — NIST 800-63B</span
+                  >
+                  <a
+                    class="xref-badge"
+                    href="../../admin-panel/_wireframes/platform-settings.html#session-auth"
+                    >→ Admin Panel</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <b>A single rule set</b> — the source of truth for registration,
+                  invite, and password change and reset. All conditions must pass:
+                  <div class="stk-rules">
+                    <div class="stk-rule">
+                      <code>8 ≤ len ≤ 128</code>
+                      <span
+                        ><b>Length</b> — the only size constraint</span
+                      >
+                    </div>
+                    <div class="stk-rule">
+                      <code>zxcvbn ≥ 3</code>
+                      <span
+                        ><b>Strength</b> — a 0–4 strength score; below 3 —
+                        reject</span
+                      >
+                    </div>
+                    <div class="stk-rule">
+                      <code>not in HIBP</code>
+                      <span
+                        ><b>Breaches</b> — a check against the database of compromised
+                        passwords, k-anonymity (only the hash prefix is sent).
+                        HIBP unavailable → the check is skipped (<b>fail open</b>),
+                        length and zxcvbn still apply, and a
+                        <code>warning</code> is logged</span
+                      >
+                    </div>
+                  </div>
+                  <div class="stk-anti-row">
+                    <span class="stk-anti"
+                      ><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M4.929 4.929 19.07 19.071" /></svg> composition rules (mandatory digit / symbol)</span
+                    >
+                    <span class="stk-anti"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M4.929 4.929 19.07 19.071" /></svg> forced rotation</span>
+                  </div>
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full" id="change-password">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg> Change password</span>
+                  <code>POST /api/v1/auth/password/change</code>
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_wireframes/profile-account.html"
+                    >→ Profile screen</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Requires a valid access token.
+                  <div class="stk-flow">
+                    <code>current</code> + <code>new</code>
+                    <span class="stk-arrow">→</span> argon2 verify of the current
+                    <span class="stk-arrow">→</span> validation of the new against the
+                    <a href="#password-policy" class="xref-anchor">rule set</a>
+                    <span class="stk-arrow">→</span> hash
+                    <span class="stk-arrow">→</span> UPDATE user
+                    <span class="stk-arrow">→</span> invalidation of all refresh
+                    tokens except the current session.
+                  </div>
+                  <div class="stk-flow-note">
+                    <b>New ≠ current</b> — rejected. <b>Audit</b>: a record in the audit
+                    log on both success <b>and</b> failure. <b>Brute force:</b> an incorrect
+                    <code>current</code> is counted by the per-account
+                    <a href="protection.html#brute-force" class="xref-page"
+                      >brute-force counter</a
+                    >
+                    (delay + alert) — a stolen access token does not turn the
+                    endpoint into a password-guessing tool.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ L4 · TOKEN ════════ -->
+          <div class="stk-layer stk-layer--tok" id="tokens-sessions">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">4</span>
+              <span class="stk-layer__name">Token</span>
+              <a
+                class="xref-badge"
+                href="../../admin-panel/_wireframes/platform-settings.html#session-auth"
+                >→ Admin Panel</a
+              >
+              <a class="xref-badge" href="../../cache-workers/_workzone/redis-keys.html#blacklist">→ Cache &amp; Workers</a>
+              <span class="stk-layer__role"
+                >How an already-completed sign-in is proven.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Access + Refresh tokens</span>
+                </div>
+                <div class="stk-dec__d">
+                  Access — stateless JWT, <b>15 min</b>.<br/>Refresh — <b>30 days</b>
+                  sliding, absolute cap <b>90 days</b>.
+                </div>
+              </div>
+              <div class="stk-dec" id="jwt-signing">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">JWT signing</span>
+                  <a class="xref-badge xref-badge--page" href="protection.html#crypto-core"
+                    >→ Crypto core</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <b>HS256</b>, a single <code>SECRET_KEY</code>; verification with a
+                  hard-coded <code>algorithms=["HS256"]</code> (protection against alg
+                  substitution).<br/>The header carries a <code>kid</code> for the active key:
+                  there is only one key now, but it is in place from the start so a future rotation
+                  won't invalidate already-issued tokens.
+                </div>
+              </div>
+              <div class="stk-dec" id="jwt-claims">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">JWT claims</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>sub</code> (user_id) · <code>role</code> ·
+                  <code>exp</code> · <code>iat</code> · <code>jti</code>
+                  (logging and revocation) · <code>iss</code> ("achilles") ·
+                  <code>aud</code> ("achilles-api").
+                </div>
+                <details>
+                  <summary>claim freshness</summary>
+                  <div>
+                    <code>role</code> in the token is a snapshot at issue time;
+                    role demotion and deactivation take effect after the
+                    access token is refreshed (the shared 15-minute window of the stateless model).
+                    Critical checks (user management, security
+                    settings) read the role and status from the DB, not from the claim.
+                  </div>
+                </details>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ L5 · SESSION ════════ -->
+          <div class="stk-layer stk-layer--sess">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">5</span>
+              <span class="stk-layer__name">Session</span>
+              <span class="stk-layer__role"
+                >Token lifetime, refresh, and storage.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec" id="refresh-cookie">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Refresh — httpOnly cookie</span>
+                  <a class="xref-badge xref-badge--page" href="protection.html#csrf"
+                    >→ CSRF</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <div class="stk-pills">
+                    <span class="stk-pill">httpOnly</span>
+                    <span class="stk-pill">Secure</span>
+                    <span class="stk-pill">SameSite=Strict</span>
+                    <span class="stk-pill">Path=/api/v1/auth</span>
+                  </div>
+                  In implementation — the <code>__Secure-</code> name prefix
+                  (defense-in-depth: the browser accepts the cookie only with the
+                  Secure flag).<br />Path — <code>/api/v1/auth</code>, not just
+                  <code>/refresh</code>: the cookie is needed for logout too — session
+                  <a class="xref-anchor" href="#session-end">termination</a>
+                  uses it to identify the refresh token.
+                </div>
+              </div>
+              <div class="stk-dec" id="remember-me">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">“Remember me”</span>
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_wireframes/login.html"
+                    >→ Sign-in</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  The checkbox controls <b>the lifetime of the cookie, not the token</b>:
+                </div>
+                <ul class="stk-dec__d stk-dec__list">
+                  <li>
+                    <b>Unchecked</b> → session cookie (no Max-Age), removed when
+                    the browser closes (shared machines).
+                  </li>
+                  <li>
+                    <b>Checked</b> → persistent cookie with Max-Age = refresh
+                    token TTL (30 d).
+                  </li>
+                </ul>
+                <div class="stk-dec__d">
+                  In both cases the refresh token in the DB lives by its own TTL.
+                </div>
+              </div>
+              <div class="stk-dec" id="refresh-rotation">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Refresh token rotation</span>
+                </div>
+                <div class="stk-dec__d">
+                  On every refresh — a new token, the old one is invalidated.
+                  <b>Grace period ~10 s</b>: within this window a just-rotated token
+                  is accepted again and returns the same new one —
+                  a benign tab race is harmless. Presenting an old
+                  token outside the window is reuse detection → revoke the entire
+                  <b>chain (family)</b>, not all of the user's sessions.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Access token in the SPA</span>
+                </div>
+                <div class="stk-dec__d">
+                  Kept in JS memory (<b>not</b> localStorage) — protection against XSS.
+                  Sent via <code>Authorization: Bearer</code>. On reload,
+                  restored via <code>/refresh</code>.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--wide">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Refresh queue — concurrent 401</span>
+                </div>
+                <div class="stk-dec__d">
+                  A single shared <code>/refresh</code> for all requests that hit an
+                  expired token. The interceptor holds the Promise of the current refresh
+                  (or null):
+                </div>
+                <ul class="stk-dec__d stk-dec__list">
+                  <li>401 while a refresh is already in flight → await the same Promise.</li>
+                  <li>401 with no refresh in flight → start one, store the Promise.</li>
+                  <li>Success → all waiters retry their request with the new token.</li>
+                  <li>Failure → reject all, logout.</li>
+                </ul>
+                <div class="stk-dec__d"><b>Safeguards:</b></div>
+                <ul class="stk-dec__d stk-dec__list">
+                  <li>
+                    Retry exactly once — a <code>_retry</code> flag on the request.
+                    A 401 on an already-retried request → immediate logout, no new
+                    refresh round (loop protection).
+                  </li>
+                  <li>
+                    Only a 401 from an expired access token triggers a refresh. A 401 from
+                    <code>/refresh</code> itself → the refresh token is dead → logout without
+                    recursion; a 401 on permissions passes through without a refresh.
+                  </li>
+                  <li>
+                    A timeout on the refresh Promise — a hung request rejects all
+                    waiters and leads to logout rather than holding them forever.
+                  </li>
+                  <li>
+                    Across tabs, a single-use refresh token may be sent twice.
+                    The rotation grace period
+                    <a class="xref-anchor" href="#refresh-rotation"
+                      >↑ Refresh token rotation</a
+                    > absorbs the race: the late tab gets the same new token and
+                    carries on.
+                  </li>
+                </ul>
+              </div>
+              <div class="stk-dec stk-dec--wide" id="parallel-sessions">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Concurrent sessions</span>
+                </div>
+                <div class="stk-dec__d">
+                  <b>A session = one
+                  <a href="data-model.html#session-identity" class="xref-page">token family</a></b>
+                  — a single sign-in from a device or browser; an active session is a
+                  family with a live refresh token. The number of concurrent sessions is
+                  <b>unlimited</b>; visibility and control depend on role:
+                </div>
+                <ul class="stk-dec__d stk-dec__list">
+                  <li>
+                    <b>User — own sessions, self-defense.</b> Sees all
+                    their sessions and can end any but the current one — one at a time or
+                    “all others” (protection when compromised). The card carries the
+                    device, IP, and last activity (from the
+                    <a href="data-model.html#session-identity" class="xref-page">refresh token</a>).
+                    Screen —
+                    <a href="../_wireframes/session-management.html" class="xref-page">session management</a>.
+                  </li>
+                  <li>
+                    <b>Admin — others' sessions, without private details.</b>
+                    The owner's device, IP, and geo are not shown to the admin (private
+                    data, not needed to respond): the
+                    <a href="../../admin-panel/_wireframes/user-card.html#user-sessions" class="xref-module">user card</a>
+                    shows only the active-session count and a blunt “end all”.
+                    It deletes all refresh tokens — no new access tokens are issued, while
+                    an already-issued stateless access JWT lives out its 15-minute
+                    window (<a href="#jwt-claims" class="xref-anchor">↑ JWT claims</a>).
+                    When the suspicious session is known but the owner is not, the
+                    <a href="../../admin-panel/_wireframes/audit-log.html#audit-log" class="xref-module">audit log</a>
+                    names the user (auth events carry the session id), and from there — the same card.
+                  </li>
+                </ul>
+                <details class="stk-dec__d">
+                  <summary>what <span class="iter v2">v2</span> adds</summary>
+                  <div>
+                    <b>Per-user session limit</b> (default 5, configurable in
+                    <a href="../../admin-panel/_wireframes/platform-settings.html#session-auth" class="xref-module">Admin Panel</a>;
+                    on overflow the oldest is ended automatically).<br />
+                    <b>Sign-in alert</b> from a new device / geo — an in-UI banner
+                    plus an email.<br />
+                    <b>Instant revocation</b> of an access token via a jti blacklist in
+                    Redis — without waiting out the 15-minute window.
+                  </div>
+                </details>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Invalidation on deactivation</span
+                  ><span class="iter v2">v2</span>
+                </div>
+                <div class="stk-dec__d">
+                  Revocation of refresh tokens + the access token's <code>jti</code> in a Redis
+                  blacklist (TTL = access token lifetime).
+                </div>
+              </div>
+              <div class="stk-dec" id="re-auth">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Re-authentication — sudo</span
+                  ><span class="iter v2">v2</span>
+                  <a class="xref-badge xref-badge--page" href="../_wireframes/re-auth-modal.html"
+                    >→ Re-auth modal</a
+                  >
+                </div>
+                <ul class="stk-dec__d stk-dec__list">
+                  <li>
+                    Critical actions (password change, user management,
+                    security settings, ending sessions) require re-entering
+                    the password — even within an open session.
+                  </li>
+                  <li>
+                    With MFA enabled, the check accepts a TOTP code.
+                  </li>
+                  <li>
+                    After success — a grace period (a few minutes, tied to the
+                    current session): adjacent critical actions pass without a
+                    repeat prompt, then the check closes again.
+                  </li>
+                  <li>
+                    An incorrect entry counts under the same rate limit as sign-in.
+                  </li>
+                </ul>
+              </div>
+              <div class="stk-dec stk-dec--full" id="session-end">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">⎋ Session termination</span>
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_wireframes/session-management.html"
+                    >→ Session management</a
+                  >
+                </div>
+                <div class="stk-dec__d stk-dec__cols">
+                  <span
+                    ><b>Standard:</b> delete the refresh token from the DB (identified by
+                    the refresh cookie) + clear the httpOnly cookie. The access token
+                    expires on its own (15 min). The “Sign out” button —
+                    <a href="../../admin-panel/_wireframes/layout.html#header" class="xref-module">admin header</a>.</span
+                  >
+                  <span
+                    ><b>All devices:</b> delete all of the user's refresh tokens
+                    — by the user themselves, from the session-management UI.</span
+                  >
+                  <span
+                    ><b>Forced:</b> the same “all devices”, but by an admin —
+                    from the
+                    <a href="../../admin-panel/_wireframes/user-card.html#user-sessions" class="xref-module">user card</a>.
+                    All the user's refresh tokens are deleted; no new access tokens are
+                    issued, and an already-issued stateless access JWT lives out its
+                    ≤15-minute window.</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ L6 · LIFECYCLE AND ACL ════════ -->
+          <div class="stk-layer stk-layer--life" id="user-lifecycle">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">6</span>
+              <span class="stk-layer__name">Lifecycle and ACL</span>
+              <a
+                class="xref-badge"
+                href="../../admin-panel/_wireframes/users.html#users-tabs"
+                >→ Admin Panel</a
+              >
+              <span class="stk-layer__role"
+                >user_id → role → permissions and account state.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Statuses</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>active</code> (default after registration)<br/>
+                  <code>deactivated</code> (disabled by an admin).<br/>
+                  Field — in the <a href="data-model.html#user-status" class="xref-page">data model</a>.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Deactivation — who can</span>
+                </div>
+                <div class="stk-dec__d">
+                  Owner → anyone (except the only Owner). Admin → Members only.
+                  Self-deactivation is forbidden.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Deactivation — what happens</span>
+                </div>
+                <div class="stk-dec__d">
+                  All refresh tokens are deleted, all the user's API keys are
+                  revoked (machine access dies instantly). The access token is
+                  stateless and lives to expiry — the
+                  <a class="xref-anchor" href="#jwt-claims">shared 15-minute window</a>
+                  of the stateless model. The owner's personal agents are disabled
+                  (<code>enabled=false</code>) so background runs don't burn
+                  budget under a departed user's account —
+                  <a class="xref-badge" href="../../agent-engine/_workzone/governance.html#lifecycle"
+                    >Agent Engine</a>.
+                  <details>
+                    <summary>v2</summary>
+                    <div>
+                      <code>jti</code> in a Redis blacklist for instant
+                      invalidation of the access token.
+                    </div>
+                  </details>
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Reactivation</span>
+                </div>
+                <div class="stk-dec__d">
+                  Same permissions as for deactivation. The user can sign in
+                  again. Tokens, API keys, and <b>agents are not restored</b>
+                  — new ones are needed, and the owner re-enables agents themselves.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Deletion</span>
+                </div>
+                <div class="stk-dec__d">
+                  Deletion is a <b>hard delete</b>: physically erasing the row,
+                  Owner only, irreversible. Soft delete (a flag marker that keeps
+                  the row) is deliberately <b>not introduced</b> — its role
+                  is already played by deactivation, a separate account-state mechanism.
+                  The cascade removes only the user's auth data (tokens, keys);
+                  source content and <code>audit_log</code> are untouched.
+                </div>
+              </div>
+              <div class="stk-sink">
+                <code>user_id</code> <span class="stk-arrow">→</span> role
+                <span class="stk-arrow">→</span> ACL · access granted
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- ═══════════ SIDE ENTRANCE ═══════════ -->
+        <div class="stk-side">
+          <div class="stk-side__chan" id="api-keys">
+            <div class="stk-side__head">
+              <span class="stk-side__name"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" /><path d="m21 2-9.6 9.6" /><circle cx="7.5" cy="15.5" r="5.5" /></svg> API keys</span>
+            </div>
+            <span class="stk-side__tag">side entrance</span>
+            <span class="stk-side__xrefs">
+              <a class="xref-badge" href="../../mcp/index.html#auth">→ MCP</a>
+              <a class="xref-badge" href="../../public-api/index.html#auth">→ Public API</a>
+              <a
+                class="xref-badge"
+                href="../../admin-panel/_wireframes/api-keys.html#api-keys"
+                >→ Admin Panel</a
+              >
+              <a class="xref-badge" href="../../api/index.html#conventions">→ HTTP API</a>
+            </span>
+            <div class="stk-side__flow"><b>key</b> → user_id → role / ACL</div>
+
+            <div class="stk-side__decs">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Storage</span>
+                </div>
+                <div class="stk-dec__d">
+                  The key is shown once — at creation. Only its
+                  <code>SHA-256</code> hash and the <code>ach_xxxx</code> prefix
+                  remain in the database.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Binding and scope restriction</span>
+                </div>
+                <div class="stk-dec__d">
+                  Key → user_id → the user's role and ACL; <b>a key never
+                  exceeds its owner's permissions</b> — even one issued by an admin.
+                </div>
+                <details>
+                  <summary>details</summary>
+                  <div>
+                    The scope narrows along two axes: <b>access</b> — read-only
+                    (writing is Agent Engine's territory, not a key's); <b>sources</b>
+                    — by default all available to the owner, narrower if desired.
+                    A user can have several keys.
+                  </div>
+                </details>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Lifetime and rotation</span>
+                </div>
+                <div class="stk-dec__d">
+                  Lifetime — 30 / 90 / 365 days or never-expiring; on expiry the
+                  key stops working on its own, no revocation needed. An expiry reminder
+                  7 days ahead.
+                </div>
+                <details>
+                  <summary>rotation</summary>
+                  <div>Create a new one → verify → revoke the old.</div>
+                </details>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Creation and revocation</span>
+                </div>
+                <div class="stk-dec__d">
+                  The user creates and revokes their own keys — in their profile or
+                  via CLI sign-in. Owner and Admin see everyone's keys and can revoke
+                  any; revocation applies instantly via Admin Panel. When a user is
+                  deactivated, all their keys are revoked
+                  automatically.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Admin issuance · search</span>
+                </div>
+                <div class="stk-dec__d">
+                  When issuing a key for an employee, the Owner / Admin picks the
+                  user via type-ahead search. The request goes to the backend
+                  <b>from the 2nd character typed</b> and is debounced; the server
+                  returns the top 10 matches by name and email.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Rate limiting</span>
+                </div>
+                <div class="stk-dec__d">
+                  Per-key limit — <code>60 req/min</code>.
+                </div>
+              </div>
+            </div>
+
+            <div class="stk-side__into">resolves to user_id</div>
+            <div class="stk-side__merge">
+              the key resolves to user_id → then the usual path: role → ACL
+            </div>
+          </div>
+
+          <div class="stk-side__chan" id="oauth">
+            <div class="stk-side__head">
+              <span class="stk-side__name"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="16" r="1" /><rect x="3" y="10" width="18" height="12" rx="2" /><path d="M7 10V7a5 5 0 0 1 10 0v3" /></svg> OAuth</span
+              ><span class="iter v2">v2</span>
+            </div>
+            <span class="stk-side__tag">side entrance</span>
+            <span class="stk-side__xrefs">
+              <a class="xref-badge" href="../../mcp/index.html#auth">→ MCP</a>
+            </span>
+            <div class="stk-side__flow">
+              <b>sign-in</b> → token → user_id → role / ACL
+            </div>
+
+            <div class="stk-side__decs">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Purpose</span>
+                </div>
+                <div class="stk-dec__d">
+                  Interactive sign-in for clients next to the user:
+                  AI assistant, IDE, CLI. Connect without manually copying a
+                  key.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Sign-in flow</span>
+                </div>
+                <div class="stk-dec__d">
+                  The client opens the sign-in page, the user approves
+                  access — the client receives a token and stores it itself.
+                </div>
+                <details>
+                  <summary>details</summary>
+                  <div>
+                    <code>achilles login</code> opens the browser; after
+                    consent the token is saved locally, and the client then works
+                    without the user's involvement. The protocol is OAuth 2.1, as
+                    the MCP specification describes.
+                  </div>
+                </details>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Tokens</span>
+                  <a class="xref-anchor" href="#tokens-sessions"
+                    >→ Tokens</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  A short-lived access token and renewal via refresh — the shared
+                  session mechanism.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">OAuth or key</span>
+                </div>
+                <div class="stk-dec__d">
+                  OAuth — for interactive clients; an API key — for headless
+                  (CI, server, background jobs) where there is no one to approve the sign-in.
+                </div>
+              </div>
+            </div>
+
+            <div class="stk-side__into">resolves to user_id</div>
+            <div class="stk-side__merge">
+              the token resolves to user_id → then the usual path: role → ACL
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

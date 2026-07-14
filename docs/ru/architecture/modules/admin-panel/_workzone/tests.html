@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Тест-кейсы</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Тест-кейсы</h1>
+        <div class="header__sub">admin panel · workzone</div>
+      </div>
+
+      <!-- ── Overview band: решения + стек ── -->
+      <div class="test-overview">
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Принятые решения</div>
+          <div class="decision-box">
+            <strong>User management API — не тестируем</strong>
+            CRUD пользователей, invite, RBAC, audit log — эндпоинты
+            auth-модуля, полностью покрыты в
+            <!-- audit: intentional — ссылка на тест-сьют auth целиком: делегированные тесты разнесены по test_invite/test_rbac/test_user_lifecycle/test_audit_log, единой секции-якоря под них нет и быть не должно -->
+            <a href="../../auth-security/_workzone/tests.html" class="xref-module">Auth &amp; Security</a>.
+            Admin тестирует только свой бэкенд (PlatformSettings) и
+            фронтенд-поведение поверх делегированных API.
+          </div>
+          <div class="decision-box">
+            <strong>Frontend → Testing Library + MSW</strong>
+            Компоненты тестируются через React Testing Library (поведение, не
+            реализация); API-ответы мокаются через MSW (Mock Service Worker) —
+            единый перехват сетевых запросов.
+          </div>
+          <div class="decision-box">
+            <strong>Notifications backend — тестируем здесь</strong>
+            Каналы, маршруты, личные настройки и диспетчер доставки — core-ORM
+            с CRUD в Admin (как PlatformSettings), потому покрываются тут.
+            <em>Источники</em> событий (sync_runs, brute-force, curation) живут
+            и тестируются в своих модулях — здесь проверяется разводка и
+            доставка, не детектор.
+          </div>
+          <div class="decision-box">
+            <strong>Системный prompt — тестируем здесь</strong>
+            <code>prompt_settings</code> — core-ORM (singleton) с CRUD в Admin,
+            как PlatformSettings. Дефолты обоих блоков — seed-константы в коде,
+            <code>NULL</code> = «взять дефолт». Тут — хранение, кап токенов и
+            сброс; саму подстановку prompt в запрос модели держит и тестирует
+            Query Engine.
+          </div>
+        </div>
+
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Стек и инфраструктура</div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Backend <span class="iter done">done</span></span>
+            <span>pytest, pytest-asyncio, pytest-cov, httpx — общая инфраструктура</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Backend</span>
+            <span
+              >testcontainers, factory_boy — общие из auth-security;
+              добавляем <code>PlatformSettingsFactory</code>,
+              <code>NotificationChannelFactory</code>,
+              <code>PromptSettingsFactory</code></span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Frontend</span>
+            <span
+              >Vitest + React Testing Library + MSW — перехват fetch,
+              моделирование ответов бэкенда без реального сервера</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Маркеры</span>
+            <span
+              ><code>@pytest.mark.unit</code>, <code>@pytest.mark.integration</code> —
+              общие</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Unit ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--unit">Unit</span>
+        <span class="test-sec__title">Pydantic-схемы — валидация без БД</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z" /></svg></span><span class="name">test_settings_schema.py</span></div>
+            <div class="test-card__sub">PlatformSettings DTO — поля и ограничения</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">valid settings</span><span class="test-case__e">полный набор валидных полей → схема проходит</span></div>
+              <div class="test-case"><span class="test-case__k">partial update</span><span class="test-case__e">PATCH-схема: только изменённые поля, остальные Optional</span></div>
+              <div class="test-case"><span class="test-case__k">invalid timezone</span><span class="test-case__e">несуществующий IANA tz (<code>Mars/Olympus</code>) → reject</span></div>
+              <div class="test-case"><span class="test-case__k">invalid locale</span><span class="test-case__e">не из <code>ru | en</code> → reject</span></div>
+              <div class="test-case"><span class="test-case__k">invalid date_format</span><span class="test-case__e">не из допустимых форматов → reject</span></div>
+              <div class="test-case"><span class="test-case__k">negative TTL</span><span class="test-case__e"><code>@parametrize</code> access / refresh / session_absolute &lt; 0 → reject</span></div>
+              <div class="test-case"><span class="test-case__k">zero TTL</span><span class="test-case__e"><code>@parametrize</code> TTL = 0 → reject (CHECK &gt; 0)</span></div>
+              <div class="test-case"><span class="test-case__k">invalid accent_color</span><span class="test-case__e">не hex-формат (<code>красный</code>) → reject</span></div>
+              <div class="test-case"><span class="test-case__k">invalid theme</span><span class="test-case__e">не из <code>dark | light</code> → reject</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0" /><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" /></svg></span><span class="name">test_notification_schema.py</span></div>
+            <div class="test-card__sub">Каналы, маршруты, payload — валидация без БД</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">webhook requires url+preset</span><span class="test-case__e"><code>kind=webhook</code> без <code>url</code>/<code>preset</code> → reject</span></div>
+              <div class="test-case"><span class="test-case__k">builtin no url</span><span class="test-case__e"><code>kind=in_app|email</code> → <code>preset</code>/<code>url</code> запрещены</span></div>
+              <div class="test-case"><span class="test-case__k">invalid event_type</span><span class="test-case__e">тип вне <code>sync|security|budget|system|discovery</code> → reject</span></div>
+              <div class="test-case"><span class="test-case__k">invalid severity</span><span class="test-case__e">не из <code>info|warning|critical</code> → reject</span></div>
+              <div class="test-case"><span class="test-case__k">slack payload</span><span class="test-case__e">форматтер пресета Slack → ожидаемая форма сообщения</span></div>
+              <div class="test-case"><span class="test-case__k">generic payload</span><span class="test-case__e">нейтральный JSON: event·severity·title·source·ts</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico">✦</span><span class="name">test_prompt_schema.py</span></div>
+            <div class="test-card__sub">prompt_settings DTO — кап токенов, поля</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">valid override</span><span class="test-case__e"><code>safety_text</code> / <code>org_text</code> в пределах капа → схема проходит</span></div>
+              <div class="test-case"><span class="test-case__k">null = default</span><span class="test-case__e">оба поля <code>None</code> допустимы → блок берёт встроенный дефолт</span></div>
+              <div class="test-case"><span class="test-case__k">over token cap</span><span class="test-case__e">текст длиннее лимита → reject (кап защищает бюджет окна)</span></div>
+              <div class="test-case"><span class="test-case__k">blank not null</span><span class="test-case__e">пустая строка <code>''</code> ≠ <code>None</code>: либо нормализуется в <code>None</code> (сброс), либо reject — без «пустого» override</span></div>
+              <div class="test-case"><span class="test-case__k">known placeholders ok</span><span class="test-case__e">текст с <code>{org_name}</code> / <code>{today}</code> (или без них) → схема проходит: оба токена необязательны</span></div>
+              <div class="test-case"><span class="test-case__k">unknown placeholder reject</span><span class="test-case__e">неизвестный токен <code>{foo}</code> → reject: whitelist закрыт, буквальный <code>{…}</code> в prompt не утекает</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P0 ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p0">Integration · P0</span>
+        <span class="test-sec__title">PlatformSettings API</span>
+        <span class="test-sec__meta"><a href="../../api/index.html#surface-map" class="xref-badge">→ HTTP API</a> <a class="xref-badge" href="../../api/_workzone/tests.html#conformance">→ Conformance</a></span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg></span><span class="name">test_platform_settings.py</span></div>
+            <div class="test-card__sub">CRUD, валидация и целостность singleton</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">GET → defaults</span><span class="test-case__e">GET /admin/settings → 200, все поля с дефолтами из миграции</span></div>
+              <div class="test-case"><span class="test-case__k">PATCH → partial</span><span class="test-case__e">org_name + timezone → 200, остальные поля не изменились</span></div>
+              <div class="test-case"><span class="test-case__k">PATCH → TTLs</span><span class="test-case__e">access / refresh / session_absolute TTL → значения в БД обновлены</span></div>
+              <div class="test-case"><span class="test-case__k">PATCH → branding</span><span class="test-case__e">accent_color → 200, значение корректно</span></div>
+              <div class="test-case"><span class="test-case__k">invalid timezone</span><span class="test-case__e">→ 422 <code>VALIDATION_ERROR</code></span></div>
+              <div class="test-case"><span class="test-case__k">invalid locale</span><span class="test-case__e"><code>locale=fr</code> → 422 <code>VALIDATION_ERROR</code></span></div>
+              <div class="test-case"><span class="test-case__k">negative TTL</span><span class="test-case__e"><code>access_token_ttl=-1</code> → 422 <code>VALIDATION_ERROR</code></span></div>
+              <div class="test-case"><span class="test-case__k">singleton — no POST</span><span class="test-case__e">POST /admin/settings → 405 <code>METHOD_NOT_ALLOWED</code></span></div>
+              <div class="test-case"><span class="test-case__k">singleton — no DELETE</span><span class="test-case__e">DELETE /admin/settings → 405 <code>METHOD_NOT_ALLOWED</code></span></div>
+              <div class="test-case"><span class="test-case__k">updated_at trigger</span><span class="test-case__e">после PATCH <code>updated_at</code> строго больше предыдущего</span></div>
+              <div class="test-case"><span class="test-case__k">curation_frequency enum</span><span class="test-case__e"><code>daily</code> / <code>weekly</code> → 200; иное (<code>hourly</code>) → 422 (CHECK)</span></div>
+              <div class="test-case"><span class="test-case__k">weekday only weekly</span><span class="test-case__e">связанный CHECK: <code>curation_weekday</code> BETWEEN 0 AND 6 задан только при <code>weekly</code>; при <code>daily</code> он <code>NULL</code>, ненулевой → 422; <code>weekday=7</code> → 422</span></div>
+              <div class="test-case"><span class="test-case__k">agent_iteration_cap &gt; 0</span><span class="test-case__e"><code>@parametrize</code> ≤ 0 → 422 (CHECK &gt; 0); положительное → 200</span></div>
+              <div class="test-case"><span class="test-case__k">agent_max_concurrency &gt; 0</span><span class="test-case__e"><code>@parametrize</code> ≤ 0 → 422 (CHECK &gt; 0); положительное → 200</span></div>
+              <div class="test-case"><span class="test-case__k">mcp_enabled toggle</span><span class="test-case__e">булев рубильник: PATCH <code>true</code>/<code>false</code> → 200, значение в singleton; не-булево → 422</span></div>
+              <div class="test-case"><span class="test-case__k">mcp_enabled=false — эффект</span><span class="test-case__e">запрос к <code>/mcp</code> отклонён до проверки ключа — закрытая дверь MCP</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.4 4.6a2 2 0 0 1 0 2.8l-9 9-3.8 1 1-3.8 9-9a2 2 0 0 1 2.8 0Z" /><path d="M2 22a10 10 0 0 1 8-4" /><circle cx="10" cy="8" r="5" /></svg></span><span class="name">test_maintenance.py</span></div>
+            <div class="test-card__sub">Режим обслуживания — заглушка, allow-list, пауза <a href="maintenance.html#admin-allowlist" class="xref-badge xref-badge--page">→ Maintenance</a></div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">user gets 503</span><span class="test-case__e">режим включён → обычному Member middleware отвечает 503 + <code>Retry-After</code> (недоступность временная)</span></div>
+              <div class="test-case"><span class="test-case__k">owner/admin allowlist</span><span class="test-case__e">Owner и Admin в обход режима → 200; заперть сам себя нельзя — оператор проверяет платформу перед снятием</span></div>
+              <div class="test-case"><span class="test-case__k">sync + agents paused</span><span class="test-case__e">при включении режима sync и фоновая полоса агентов ставятся на паузу</span></div>
+              <div class="test-case"><span class="test-case__k">toggle owner-only</span><span class="test-case__e">включает только Owner (<code>maintenance_mode</code> в singleton); Admin/Member PATCH → 403 <code>FORBIDDEN</code></span></div>
+              <div class="test-case"><span class="test-case__k">off restores</span><span class="test-case__e">снятие режима → обычные пользователи снова 200, sync и агенты возобновляются</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0" /><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" /></svg></span><span class="name">test_notifications.py</span></div>
+            <div class="test-card__sub">Каналы · маршруты · диспетчер · доставка</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">seed builtin channels</span><span class="test-case__e">после миграции есть in_app + email, <code>is_builtin</code>, неудаляемы</span></div>
+              <div class="test-case"><span class="test-case__k">webhook CRUD</span><span class="test-case__e">создать/удалить webhook-канал; <code>url_enc</code> / <code>secret_enc</code> не возвращаются наружу</span></div>
+              <div class="test-case"><span class="test-case__k">delete builtin → reject</span><span class="test-case__e">DELETE in_app/email → 409 <code>CONFLICT</code></span></div>
+              <div class="test-case"><span class="test-case__k">route toggle</span><span class="test-case__e">PATCH ячейки тип×канал → <code>enabled</code> в БД</span></div>
+              <div class="test-case"><span class="test-case__k">route locked</span><span class="test-case__e">снять маршрут in_app × security/sync (<code>locked</code> + CHECK enabled OR NOT locked) → 422 · прочие маршруты выключаются свободно</span></div>
+              <div class="test-case"><span class="test-case__k">мутации каналов — только Owner</span><span class="test-case__e">не-Owner (Member / Admin) POST / DELETE /admin/notification-channels → 403 <code>FORBIDDEN</code> на бэкенде (не только фронтовое read-only); аноним → 401 <code>UNAUTHORIZED</code></span></div>
+              <div class="test-case"><span class="test-case__k">правка маршрутов — только Owner</span><span class="test-case__e">не-Owner PATCH /admin/notification-routes → 403 <code>FORBIDDEN</code>; аноним → 401 <code>UNAUTHORIZED</code></span></div>
+              <div class="test-case"><span class="test-case__k">листинг каналов скрывает секрет</span><span class="test-case__e">GET /admin/notification-channels → 200; <code>url_enc</code> / <code>secret_enc</code> не отдаются ни в списке, ни в детали — только признак наличия</span></div>
+              <div class="test-case"><span class="test-case__k">dispatch fan-out</span><span class="test-case__e">событие → deliveries на каждый включённый маршрут (канал не на паузе)</span></div>
+              <div class="test-case"><span class="test-case__k">type silenced</span><span class="test-case__e">все маршруты типа off → событие никому не уходит; in_app security/sync под замком обнулить нельзя</span></div>
+              <div class="test-case"><span class="test-case__k">channel paused</span><span class="test-case__e">канал <code>enabled=false</code> → его deliveries не создаются; активные каналы доставлены</span></div>
+              <div class="test-case"><span class="test-case__k">in_app channel stays on</span><span class="test-case__e">выключить канал in_app (<code>enabled=false</code>) → reject (CHECK)</span></div>
+              <div class="test-case"><span class="test-case__k">recipients by role</span><span class="test-case__e">личные каналы → только Owner/Admin; новый админ включён автоматически</span></div>
+              <div class="test-case"><span class="test-case__k">personal opt-out</span><span class="test-case__e"><code>in_app_enabled</code> / <code>email_enabled</code> раздельно гасят свой канал по типу</span></div>
+              <div class="test-case"><span class="test-case__k">opt-out unrestricted</span><span class="test-case__e">любой личный канал снимается для любого типа, включая security/sync — личных замков нет</span></div>
+              <div class="test-case"><span class="test-case__k">dedup series</span><span class="test-case__e">серия одного <code>dedup_key</code> в окне → одна строка, <code>dedup_count</code> растёт, <code>last_seen_at</code> двигается; за окном — новая строка</span></div>
+              <div class="test-case"><span class="test-case__k">discovery action idempotent</span><span class="test-case__e">повторное «В scope» (контейнер уже в allow-list) → no-op; событие состояние не хранит</span></div>
+              <div class="test-case"><span class="test-case__k">in_app read state</span><span class="test-case__e">пометка прочтения → <code>read_at</code>, unread-счётчик уменьшается</span></div>
+              <div class="test-case"><span class="test-case__k">email no SMTP</span><span class="test-case__e">SMTP не настроен → email-delivery <code>failed</code>, in_app доставлено</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico">✦</span><span class="name">test_prompt_settings.py</span></div>
+            <div class="test-card__sub">Override, сброс, кап и целостность singleton</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">GET → effective default</span><span class="test-case__e">override пуст → ответ отдаёт встроенный текст обоих блоков (effective), не <code>null</code></span></div>
+              <div class="test-case"><span class="test-case__k">is_default flag</span><span class="test-case__e">override пуст → <code>is_default=true</code>; после PATCH блока → <code>false</code>; фронт по флагу метит «на дефолте» и гасит «Сбросить»</span></div>
+              <div class="test-case"><span class="test-case__k">localized default</span><span class="test-case__e"><code>locale=en</code> → effective-дефолт по-английски; <code>ru</code> → по-русски; override пуст в обоих</span></div>
+              <div class="test-case"><span class="test-case__k">unknown placeholder</span><span class="test-case__e">override с <code>{foo}</code> → 422 <code>VALIDATION_ERROR</code>; <code>{org_name}</code>/<code>{today}</code> → 200</span></div>
+              <div class="test-case"><span class="test-case__k">PATCH org override</span><span class="test-case__e"><code>org_text</code> → 200, в БД сохранён; <code>safety_text</code> не тронут</span></div>
+              <div class="test-case"><span class="test-case__k">reset → null</span><span class="test-case__e">сброс блока → колонка <code>NULL</code>, GET снова отдаёт встроенный дефолт</span></div>
+              <div class="test-case"><span class="test-case__k">over token cap</span><span class="test-case__e">текст длиннее лимита → 422 <code>VALIDATION_ERROR</code></span></div>
+              <div class="test-case"><span class="test-case__k">updated_by recorded</span><span class="test-case__e">после PATCH <code>updated_by</code> = текущий админ; <code>updated_at</code> строго больше</span></div>
+              <div class="test-case"><span class="test-case__k">singleton — no POST/DELETE</span><span class="test-case__e">POST / DELETE /admin/ai-prompt → 405 <code>METHOD_NOT_ALLOWED</code></span></div>
+              <div class="test-case"><span class="test-case__k">access — Owner/Admin edit</span><span class="test-case__e">Owner и Admin PATCH → 200; Member → 403 <code>FORBIDDEN</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></svg></span><span class="name">test_token_usage.py</span></div>
+            <div class="test-card__sub">Расходы AI — лимиты, по людям, по моделям</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">PATCH limits</span><span class="test-case__e"><code>agent_weekly_token_budget</code> · <code>chat_weekly_token_budget</code> → 200, значения в singleton</span></div>
+              <div class="test-case"><span class="test-case__k">budget alert</span><span class="test-case__e">PATCH <code>ai_monthly_budget</code> + <code>ai_budget_alert_enabled</code> → 200; включить флаг без суммы → 422 (CHECK); порог достигнут → уведомление типа Budget, запрос не блокируется</span></div>
+              <div class="test-case"><span class="test-case__k">zero/negative limit</span><span class="test-case__e"><code>@parametrize</code> ≤ 0 → 422 (CHECK &gt; 0); <code>null</code> → без лимита</span></div>
+              <div class="test-case"><span class="test-case__k">list per-user</span><span class="test-case__e">GET /admin/usage → строка на пользователя: агенты + чат + всего за неделю</span></div>
+              <div class="test-case"><span class="test-case__k">agents derived</span><span class="test-case__e">сумма = <code>SUM(agent_runs.tokens_used)</code> по <code>agents.user_id</code> за окно недели</span></div>
+              <div class="test-case"><span class="test-case__k">chat derived</span><span class="test-case__e">сумма = <code>SUM(messages.tokens_used)</code> по <code>conversations.user_id</code>, только assistant</span></div>
+              <div class="test-case"><span class="test-case__k">week window</span><span class="test-case__e">расход вне текущей недели (до вс 00:00 org-tz) в сумму не входит</span></div>
+              <div class="test-case"><span class="test-case__k">excludes system spend</span><span class="test-case__e">embedding / RAG (<code>model_usage</code>) к пользователю не привязаны — в суммы не попадают</span></div>
+              <div class="test-case"><span class="test-case__k">chat advisory</span><span class="test-case__e">чат сверх <code>chat_weekly_token_budget</code> → индикатор «сверх», запрос не блокируется (v1)</span></div>
+              <div class="test-case"><span class="test-case__k">detail breakdown</span><span class="test-case__e">GET /admin/usage/:user → агенты по агентам, чат по <code>messages.model</code></span></div>
+              <div class="test-case"><span class="test-case__k">by-model spend</span><span class="test-case__e">разрез по моделям из <code>model_usage</code> (модель · функция, вход/выход, стоимость) — org-уровень, к людям не привязан; топ-5 по стоимости, остальные за «Показать все»</span></div>
+              <div class="test-case"><span class="test-case__k">company total</span><span class="test-case__e">итого по компании = <code>SUM(model_usage)</code> за неделю / месяц / год (все функции, токены + $); производное, без таблицы-счётчика; <code>@parametrize</code> по окну</span></div>
+              <div class="test-case"><span class="test-case__k">total ⊇ per-user</span><span class="test-case__e">«итого» шире суммы по людям — включает безличные embedding / RAG; месячная плитка сверяется с порогом <code>ai_monthly_budget</code></span></div>
+              <div class="test-case"><span class="test-case__k">sort by total</span><span class="test-case__e">список по умолчанию убыванием «Всего»; поиск по имени/email</span></div>
+              <div class="test-case"><span class="test-case__k">access — Owner/Admin</span><span class="test-case__e">Owner/Admin GET → 200; Member → 403; PATCH лимитов — только Owner</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P1 ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">Integration · P1</span>
+        <span class="test-sec__title">Контроль доступа</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg></span><span class="name">test_admin_access.py</span></div>
+            <div class="test-card__sub">Доступ к admin-роутам по ролям</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">Owner GET settings</span><span class="test-case__e">→ 200</span></div>
+              <div class="test-case"><span class="test-case__k">Owner PATCH settings</span><span class="test-case__e">→ 200</span></div>
+              <div class="test-case"><span class="test-case__k">Admin GET settings</span><span class="test-case__e">→ 200 (read-only доступ)</span></div>
+              <div class="test-case"><span class="test-case__k">Admin PATCH settings</span><span class="test-case__e">→ 403 <code>FORBIDDEN</code></span></div>
+              <div class="test-case"><span class="test-case__k">Member GET settings</span><span class="test-case__e">→ 403 <code>FORBIDDEN</code></span></div>
+              <div class="test-case"><span class="test-case__k">unauthenticated</span><span class="test-case__e">→ 401 <code>UNAUTHORIZED</code></span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Frontend ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--fe">Frontend</span>
+        <span class="test-sec__title">React — admin UI</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1" /><path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z" /><path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z" /></svg></span><span class="name">AdminLayout.test.tsx</span></div>
+            <div class="test-card__sub">Layout, навигация, role-видимость</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">Owner → full sidebar</span><span class="test-case__e">все пункты: Dashboard, Пользователи, Audit Log, Настройки</span></div>
+              <div class="test-case"><span class="test-case__k">Admin → restricted</span><span class="test-case__e">Dashboard, Пользователи, Настройки (read-only); Audit Log не виден (Owner-only)</span></div>
+              <div class="test-case"><span class="test-case__k">Member → redirect</span><span class="test-case__e">перенаправление на основной интерфейс, sidebar не рендерится</span></div>
+              <div class="test-case"><span class="test-case__k">active state</span><span class="test-case__e">текущий маршрут выделен, sub-страница выделяет родителя</span></div>
+              <div class="test-case"><span class="test-case__k">theme toggle</span><span class="test-case__e">клик переключает dark/light, значение в localStorage</span></div>
+              <div class="test-case"><span class="test-case__k">language toggle</span><span class="test-case__e">клик переключает RU/EN, значение в localStorage</span></div>
+              <div class="test-case"><span class="test-case__k">logout</span><span class="test-case__e">«Выйти» → logout, redirect /login</span></div>
+              <div class="test-case"><span class="test-case__k">logout all</span><span class="test-case__e">«Выйти со всех устройств» → подтверждение → logout-all</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5H3" /><path d="M12 19H3" /><path d="M14 3v4" /><path d="M16 17v4" /><path d="M21 12h-9" /><path d="M21 19h-5" /><path d="M21 5h-7" /><path d="M8 10v4" /><path d="M8 12H3" /></svg></span><span class="name">PlatformSettings.test.tsx</span></div>
+            <div class="test-card__sub">Форма настроек — save, валидация, состояния</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">form pre-fill</span><span class="test-case__e">форма загружает текущие значения из API</span></div>
+              <div class="test-case"><span class="test-case__k">save → PATCH</span><span class="test-case__e">изменение + Save → PATCH только изменённых полей</span></div>
+              <div class="test-case"><span class="test-case__k">validation errors</span><span class="test-case__e">невалидные значения → inline-ошибки, запрос не уходит</span></div>
+              <div class="test-case"><span class="test-case__k">success feedback</span><span class="test-case__e">успех → toast «Настройки сохранены»</span></div>
+              <div class="test-case"><span class="test-case__k">server error</span><span class="test-case__e">422 → ошибки из <code>errors[]</code> у соответствующих полей</span></div>
+              <div class="test-case"><span class="test-case__k">read-only for Admin</span><span class="test-case__e">Admin видит значения, Save отсутствует / disabled</span></div>
+              <div class="test-case"><span class="test-case__k">locale resolution chain</span><span class="test-case__e">показ берёт первое заданное: личный override → дефолт организации → locale браузера; незаданный override прозрачно падает на уровень организации <a href="locale.html#resolution-chain" class="xref-badge xref-badge--page">→ Locale</a></span></div>
+              <div class="test-case"><span class="test-case__k">password policy</span><span class="test-case__e">секция «Политика паролей» — текст NIST 800-63B read-only</span></div>
+              <div class="test-case"><span class="test-case__k">slack write-only secrets</span><span class="test-case__e">bot-токен и signing secret — write-only, в ответе/UI не возвращаются</span></div>
+              <div class="test-case"><span class="test-case__k">slack test connection</span><span class="test-case__e">«Проверить соединение» → ping Slack (<code>auth.test</code>) → чип статуса</span></div>
+              <div class="test-case"><span class="test-case__k">slack enable toggle</span><span class="test-case__e">тумблер → <code>slack_settings.enabled</code>; off → бот не отвечает</span></div>
+              <div class="test-case"><span class="test-case__k">slack auto-link toggle</span><span class="test-case__e">тумблер «Авто-привязка по email» → off → непривязанному всегда код, авто-матча нет</span></div>
+              <div class="test-case"><span class="test-case__k">telegram write-only secrets</span><span class="test-case__e">bot-токен write-only; webhook secret генерируется при <code>setWebhook</code>, вручную не вводится — в ответе/UI не возвращаются</span></div>
+              <div class="test-case"><span class="test-case__k">telegram test connection</span><span class="test-case__e">«Проверить соединение» → ping Telegram (<code>getMe</code>) → чип статуса + <code>bot_username</code></span></div>
+              <div class="test-case"><span class="test-case__k">telegram enable toggle</span><span class="test-case__e">тумблер → <code>telegram_settings.enabled</code>; off → бот не отвечает</span></div>
+              <div class="test-case"><span class="test-case__k">telegram — без авто-привязки</span><span class="test-case__e">email нет → тумблера «Авто-привязка» нет, всегда только код-привязка</span></div>
+              <div class="test-case"><span class="test-case__k">mattermost write-only secrets</span><span class="test-case__e">bot-токен — write-only, в ответе/UI не возвращается</span></div>
+              <div class="test-case"><span class="test-case__k">mattermost test connection</span><span class="test-case__e">«Проверить соединение» → ping сервера (<code>users/me</code>) → чип статуса + хэндл бота</span></div>
+              <div class="test-case"><span class="test-case__k">mattermost enable toggle</span><span class="test-case__e">тумблер → <code>mattermost_settings.enabled</code>; включение атомарно — живая проверка, отказ → 409 и переключатель откатывается; off → бот не отвечает</span></div>
+              <div class="test-case"><span class="test-case__k">mattermost — без авто-привязки</span><span class="test-case__e">в событиях email нет → тумблера «Авто-привязка» нет, всегда только код-привязка</span></div>
+              <div class="test-case"><span class="test-case__k">loading state</span><span class="test-case__e">до ответа API — skeleton/spinner, форма не рендерится</span></div>
+              <div class="test-case"><span class="test-case__k">network error</span><span class="test-case__e">500 → сообщение + «Повторить»</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><path d="M16 3.128a4 4 0 0 1 0 7.744" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><circle cx="9" cy="7" r="4" /></svg></span><span class="name">UsersPage.test.tsx</span></div>
+            <div class="test-card__sub">Список пользователей и приглашения</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">list renders</span><span class="test-case__e">таблица: имя, email, роль, статус из API</span></div>
+              <div class="test-case"><span class="test-case__k">tab switching</span><span class="test-case__e">переключение «Список» ↔ «Приглашения»</span></div>
+              <div class="test-case"><span class="test-case__k">invite form</span><span class="test-case__e">«Пригласить» → форма email + роль, валидация email</span></div>
+              <div class="test-case"><span class="test-case__k">actions by role</span><span class="test-case__e">Owner — все действия; Admin — ограниченные (RBAC-матрица)</span></div>
+              <div class="test-case"><span class="test-case__k">deactivated badge</span><span class="test-case__e">деактивированный отмечен, доступно «Реактивировать»</span></div>
+              <div class="test-case"><span class="test-case__k">empty state</span><span class="test-case__e">0 пользователей → «Пригласите команду»</span></div>
+              <div class="test-case"><span class="test-case__k">revoke invite</span><span class="test-case__e">«Отозвать» → подтверждение → invite удалён из списка</span></div>
+              <div class="test-case"><span class="test-case__k">resend invite</span><span class="test-case__e">«Переотправить» → POST, success toast</span></div>
+              <div class="test-case"><span class="test-case__k">loading state</span><span class="test-case__e">до ответа API — skeleton таблицы</span></div>
+              <div class="test-case"><span class="test-case__k">network error</span><span class="test-case__e">500 → сообщение об ошибке</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg></span><span class="name">UserDetailPage.test.tsx</span></div>
+            <div class="test-card__sub">Карточка пользователя — профиль и действия</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">profile renders</span><span class="test-case__e">имя, email, роль, дата создания, последний вход</span></div>
+              <div class="test-case"><span class="test-case__k">Owner → change role</span><span class="test-case__e">dropdown ролей, сохранение → PATCH, роль обновилась</span></div>
+              <div class="test-case"><span class="test-case__k">Admin → limited actions</span><span class="test-case__e">действия только над Member'ами, не над Owner/Admin</span></div>
+              <div class="test-case"><span class="test-case__k">deactivate</span><span class="test-case__e">«Деактивировать» → модалка → статус обновлён</span></div>
+              <div class="test-case"><span class="test-case__k">delete</span><span class="test-case__e">Owner: «Удалить» → модалка подтверждения → DELETE</span></div>
+              <div class="test-case"><span class="test-case__k">reset password</span><span class="test-case__e">«Сбросить пароль» → подтверждение → success toast</span></div>
+              <div class="test-case"><span class="test-case__k">reactivate</span><span class="test-case__e">деактивированный → «Реактивировать» доступна</span></div>
+              <div class="test-case"><span class="test-case__k">self-view</span><span class="test-case__e">свой профиль → деактивация и удаление скрыты</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12h-5" /><path d="M15 8h-5" /><path d="M19 17V5a2 2 0 0 0-2-2H4" /><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3" /></svg></span><span class="name">AuditLogPage.test.tsx</span></div>
+            <div class="test-card__sub">Журнал аудита — таблица и фильтры</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">table renders</span><span class="test-case__e">записи: актор, действие, результат, дата, IP</span></div>
+              <div class="test-case"><span class="test-case__k">filter by action</span><span class="test-case__e">тип действия (login, role_changed…) → таблица фильтруется</span></div>
+              <div class="test-case"><span class="test-case__k">filter by date</span><span class="test-case__e">диапазон дат → query params, таблица обновляется</span></div>
+              <div class="test-case"><span class="test-case__k">filter by actor</span><span class="test-case__e">пользователь-актор → query param, только его действия</span></div>
+              <div class="test-case"><span class="test-case__k">empty state</span><span class="test-case__e">0 записей → «Записей нет»</span></div>
+              <div class="test-case"><span class="test-case__k">loading state</span><span class="test-case__e">до ответа API — skeleton таблицы</span></div>
+              <div class="test-case"><span class="test-case__k">network error</span><span class="test-case__e">500 → сообщение об ошибке</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0" /><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" /></svg></span><span class="name">NotificationsPage.test.tsx</span></div>
+            <div class="test-card__sub">Каналы, матрица тип×канал, адресаты</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">channels render</span><span class="test-case__e">in-app + email (со статусом SMTP) + список webhooks</span></div>
+              <div class="test-case"><span class="test-case__k">add webhook</span><span class="test-case__e">«+ Добавить» → выбор пресета (Slack/Generic) → POST, строка в списке</span></div>
+              <div class="test-case"><span class="test-case__k">test webhook</span><span class="test-case__e">«Test» → POST, success/err toast по результату</span></div>
+              <div class="test-case"><span class="test-case__k">channel pause toggle</span><span class="test-case__e">тумблер email/webhook → PATCH <code>enabled</code>; in-app тумблер залочен (disabled)</span></div>
+              <div class="test-case"><span class="test-case__k">delete webhook guard</span><span class="test-case__e">«Удалить» → подтверждение → строка убрана</span></div>
+              <div class="test-case"><span class="test-case__k">matrix route toggle</span><span class="test-case__e">клик пилюли канала → PATCH маршрута</span></div>
+              <div class="test-case"><span class="test-case__k">matrix in-app locked</span><span class="test-case__e">пилюля in-app у security/sync — залочена (замок, клик не снимает); прочие пилюли переключаются</span></div>
+              <div class="test-case"><span class="test-case__k">paused channel cell</span><span class="test-case__e">канал на паузе → его пилюли в матрице приглушены (маршрут цел, не стреляет)</span></div>
+              <div class="test-case"><span class="test-case__k">smtp warning</span><span class="test-case__e">SMTP не настроен → чип email краснеет, предупреждение</span></div>
+              <div class="test-case"><span class="test-case__k">recipients note</span><span class="test-case__e">плашка «адресаты — Owner / Admin», ссылки на Пользователи и профиль</span></div>
+              <div class="test-case"><span class="test-case__k">read-only for Admin</span><span class="test-case__e">Admin видит, правит только Owner</span></div>
+              <div class="test-case"><span class="test-case__k">loading state</span><span class="test-case__e">до ответа API — skeleton</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico">✦</span><span class="name">AiBehaviorPage.test.tsx</span></div>
+            <div class="test-card__sub">Два блока — правка на месте, сброс, кап</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">bubbles render</span><span class="test-case__e">два блока с текущим текстом из API; кнопки «Сбросить» / «Редактировать»</span></div>
+              <div class="test-case"><span class="test-case__k">edit in place</span><span class="test-case__e">«Редактировать» → текст блока становится редактируемым на месте, кнопки → «Отмена / Сохранить»</span></div>
+              <div class="test-case"><span class="test-case__k">save → PATCH</span><span class="test-case__e">«Сохранить» → PATCH только этого блока, выход из правки, success toast</span></div>
+              <div class="test-case"><span class="test-case__k">cancel discards</span><span class="test-case__e">«Отмена» → правка отброшена, запрос не уходит, блок назад в режим просмотра</span></div>
+              <div class="test-case"><span class="test-case__k">reset → default</span><span class="test-case__e">«Сбросить» → PATCH <code>null</code>, блок показывает встроенный дефолт</span></div>
+              <div class="test-case"><span class="test-case__k">default state</span><span class="test-case__e"><code>is_default=true</code> → блок помечен «на дефолте», «Сбросить» погашена; после правки флаг <code>false</code> → кнопка активна</span></div>
+              <div class="test-case"><span class="test-case__k">token counter cap</span><span class="test-case__e">счётчик растёт при вводе; за капом — «Сохранить» disabled + подсветка</span></div>
+              <div class="test-case"><span class="test-case__k">info tooltip</span><span class="test-case__e">иконка «i» у заголовка → подсказка о назначении блока на hover/focus</span></div>
+              <div class="test-case"><span class="test-case__k">independent blocks</span><span class="test-case__e">правка/сброс одного блока не затрагивает второй — два независимых PATCH</span></div>
+              <div class="test-case"><span class="test-case__k">loading state</span><span class="test-case__e">до ответа API — skeleton блоков</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></svg></span><span class="name">ListControls.test.tsx</span></div>
+            <div class="test-card__sub">Общая механика: поиск, фасеты, пагинация <a href="list-controls.html#threshold" class="xref-badge xref-badge--page">→ List Controls</a></div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">search threshold</span><span class="test-case__e">запрос уходит при обоих условиях: пауза в наборе ≈ 300&nbsp;мс (debounce) и ≥ 2 значимых символов; 1 символ или до паузы — не уходит <a href="list-controls.html#threshold" class="xref-badge xref-badge--page">→ #threshold</a></span></div>
+              <div class="test-case"><span class="test-case__k">query resets page</span><span class="test-case__e">любое изменение запроса — новый текст, фасет, сортировка — сбрасывает на 1-ю страницу (иначе можно остаться на странице, которой в новом наборе нет) <a href="list-controls.html#page-params" class="xref-badge xref-badge--page">→ #page-params</a></span></div>
+              <div class="test-case"><span class="test-case__k">facet OR / AND</span><span class="test-case__e">значения внутри одного фасета — по ИЛИ, разные фасеты — по И (строки на пересечении) <a href="list-controls.html#facet-logic" class="xref-badge xref-badge--page">→ #facet-logic</a></span></div>
+              <div class="test-case"><span class="test-case__k">offset/limit clamp</span><span class="test-case__e">запрос за пределы диапазона → кламп к крайней странице; счётчик «X–Y из N» согласован <a href="list-controls.html#pagination" class="xref-badge xref-badge--page">→ #pagination</a></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8" /><rect width="16" height="12" x="4" y="8" rx="2" /><path d="M2 14h2" /><path d="M20 14h2" /><path d="M15 13v2" /><path d="M9 13v2" /></svg></span><span class="name">AgentsPage.test.tsx</span></div>
+            <div class="test-card__sub">Список всех агентов — пауза, лимиты (Admin)</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">pause agent · guarded</span><span class="test-case__e">«Пауза» → подтверждение → PATCH; агент переходит в paused, прогоны не стартуют</span></div>
+              <div class="test-case"><span class="test-case__k">resume agent</span><span class="test-case__e">«Снять паузу» на paused-агенте → PATCH, статус активен</span></div>
+              <div class="test-case"><span class="test-case__k">save limits</span><span class="test-case__e">платформенные лимиты прогона (потолок шагов + одновременных прогонов на платформу, единые на организацию) → «Сохранить» → PATCH <code>platform_settings</code></span></div>
+              <div class="test-case"><span class="test-case__k">open profile (read-only)</span><span class="test-case__e">«Открыть профиль» → переход на карточку агента (модель, инструкции — только чтение)</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M9 9h6v6H9z" /><path d="M15 2v2" /><path d="M15 20v2" /><path d="M2 15h2" /><path d="M2 9h2" /><path d="M20 15h2" /><path d="M20 9h2" /><path d="M9 2v2" /><path d="M9 20v2" /></svg></span><span class="name">AiModelsPage.test.tsx</span></div>
+            <div class="test-card__sub">Провайдеры и модели — назначение эмбеддера</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">change &amp; reembed · guarded</span><span class="test-case__e">смена назначенного эмбеддера → «Сменить и пересчитать» → подтверждение (векторы несовместимы) → запуск сплошного переэмбеддинга</span></div>
+              <div class="test-case"><span class="test-case__k">reembed in progress</span><span class="test-case__e">пока прогон идёт — строка показывает ход (%), повторная смена заблокирована</span></div>
+              <div class="test-case"><span class="test-case__k">disable model · guarded</span><span class="test-case__e">«Выключить» / «Убрать» модель → подтверждение → PATCH; назначенный эмбеддер убрать нельзя</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg></span><span class="name">ToolsPage.test.tsx</span></div>
+            <div class="test-card__sub">Инструменты AI — тумблеры и провайдеры</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">chat / agents toggle</span><span class="test-case__e">тумблеры «В чате» / «Агентам» → PATCH раздельно; off → инструмент не подаётся в свою поверхность</span></div>
+              <div class="test-case"><span class="test-case__k">configure provider</span><span class="test-case__e">«Настроить» → форма credential (write-only); секрет в ответе/UI не возвращается</span></div>
+              <div class="test-case"><span class="test-case__k">test provider</span><span class="test-case__e">«Протестировать» → POST ping → чип статуса success/err</span></div>
+              <div class="test-case"><span class="test-case__k">access — Owner/Admin</span><span class="test-case__e">/admin/ai-tools · Owner / Admin — правки (тумблеры, провайдеры) пишутся как админ-действие обеими ролями</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16" /><path d="M18 17V9" /><path d="M13 17V5" /><path d="M8 17v-3" /></svg></span><span class="name">UsagePage.test.tsx</span></div>
+            <div class="test-card__sub">Расходы AI — срезы и переход в detail</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">sections render</span><span class="test-case__e">сложенные секции одной страницы: «Итого по компании» · «Лимиты расхода» · «Расход по сотрудникам» · «Расход по моделям»</span></div>
+              <div class="test-case"><span class="test-case__k">total tiles</span><span class="test-case__e">в «Итого» неделя / месяц / год — три статичные плитки одновременно; переключателя окна нет (селектор «30 дней ▾» есть только в срезе по моделям)</span></div>
+              <div class="test-case"><span class="test-case__k">row → detail</span><span class="test-case__e">клик по строке сотрудника → переход в usage detail того сотрудника</span></div>
+              <div class="test-case"><span class="test-case__k">access — Owner/Admin</span><span class="test-case__e">/admin/usage · Owner / Admin; в секции лимитов обычная «Сохранить», доступна обеим ролям</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5V19A9 3 0 0 0 21 19V5" /><path d="M3 12A9 3 0 0 0 21 12" /></svg></span><span class="name">HarvesterPage.test.tsx</span></div>
+            <div class="test-card__sub">Harvester в Admin — прогон, guarded-действия</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">metrics render</span><span class="test-case__e">список источников из API; статус прогона показан inline в ячейке источника (idle · syncing · error)</span></div>
+              <div class="test-case"><span class="test-case__k">run sync</span><span class="test-case__e">«Синхронизировать» / «Синхронизировать всё» → POST без подтверждения; строка источника переходит в syncing</span></div>
+              <div class="test-case"><span class="test-case__k">pause + wipe</span><span class="test-case__e">«Поставить на паузу» → PATCH без подтверждения; «Очистить данные» — единственное guarded-действие (type-to-confirm)</span></div>
+              <div class="test-case"><span class="test-case__k">access — Owner/Admin</span><span class="test-case__e">/admin/harvester · Owner / Admin — экран и действия доступны обеим ролям</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M2 12h20" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg></span><span class="name">KnowledgeStorePage.test.tsx</span></div>
+            <div class="test-card__sub">Knowledge Store в Admin — доводка, backups</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">metrics render</span><span class="test-case__e">счётчики графа/векторов, расписание доводки, последние прогоны и снапшоты</span></div>
+              <div class="test-case"><span class="test-case__k">run curation</span><span class="test-case__e">«Запустить» → POST без подтверждения; прогон в статусе running, повторный запуск заблокирован (кнопка disabled); «Отменить прогон» — guarded</span></div>
+              <div class="test-case"><span class="test-case__k">restore guarded</span><span class="test-case__e">«Восстановить» снапшот → type-to-confirm → POST; снимки создаются только по расписанию, ручного снятия нет</span></div>
+              <div class="test-case"><span class="test-case__k">reembed lock</span><span class="test-case__e">идёт переэмбеддинг (назначен через AI-модели) → запуск доводки заблокирован с пояснением</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0" /><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" /></svg></span><span class="name">NotificationFeed.test.tsx</span></div>
+            <div class="test-card__sub">Лента in-app — колокольчик, чтение, действия</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">bell unread count</span><span class="test-case__e">колокольчик со счётчиком непрочитанных (доставки <code>read_at IS NULL</code>); клик открывает панель хвоста событий</span></div>
+              <div class="test-case"><span class="test-case__k">mark all read</span><span class="test-case__e">«Прочитать все» → всем доставкам админа <code>read_at</code>, счётчик обнуляется</span></div>
+              <div class="test-case"><span class="test-case__k">read / unread toggle</span><span class="test-case__e">«Отметить прочитанным» гасит карточку; «Отметить непрочитанным» возвращает в счётчик</span></div>
+              <div class="test-case"><span class="test-case__k">в scope · idempotent</span><span class="test-case__e">actionable discovery: «В scope» заводит контейнер в охват; повтор (уже в scope) — no-op, кнопка гаснет у всех</span></div>
+              <div class="test-case"><span class="test-case__k">unread facet</span><span class="test-case__e">фасет «Непрочитанные» (частый дефолт) → только unread; снять → вся история; группировка Сегодня · Ранее</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Структура ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Structure</span>
+        <span class="test-sec__title">Файловая структура тестов</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          Бэкенд тонкий (PlatformSettings CRUD), основная логика — фронтенд.
+          User management и audit log API покрыты в auth-security — здесь только
+          UI поверх них. Экраны данных/AI (Агенты, AI-модели, Инструменты,
+          Расходы, Harvester, Knowledge Store) и лента уведомлений покрыты
+          FE-карточками здесь — только React-компонент и его guarded-действия;
+          доменную бэкенд-логику держат и тестируют сами модули. Приоритет
+          (P0–P1) ортогонален каталогам и задаётся маркерами
+          (<code>pytest -m p0</code>), а не папками.
+        </p>
+        <div class="test-tree">
+          <ul>
+            <li>
+              <span class="test-tree__row"><code>tests/</code><span class="d">backend — общий каркас</span></span>
+              <ul>
+                <li><span class="test-tree__row"><code>conftest.py</code><span class="d">БД, сессия, app client (уже есть)</span></span></li>
+                <li>
+                  <span class="test-tree__row"><code>factories/</code><span class="d">фабрики данных</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>admin.py</code><span class="d">PlatformSettingsFactory · NotificationChannelFactory · PromptSettingsFactory</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>admin/</code><span class="d">каталог модуля</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>conftest.py</code><span class="d">admin fixtures, admin_client</span></span></li>
+                    <li>
+                      <span class="test-tree__row"><code>unit/</code><span class="d">без БД</span></span>
+                      <ul>
+                        <li><span class="test-tree__row"><code>test_settings_schema.py</code><span class="d">Pydantic DTO</span></span></li>
+                        <li><span class="test-tree__row"><code>test_notification_schema.py</code><span class="d">каналы · маршруты · payload</span></span></li>
+                        <li><span class="test-tree__row"><code>test_prompt_schema.py</code><span class="d">prompt_settings DTO · кап токенов</span></span></li>
+                      </ul>
+                    </li>
+                    <li>
+                      <span class="test-tree__row"><code>integration/</code><span class="d">с БД</span></span>
+                      <ul>
+                        <li><span class="test-tree__row"><code>test_platform_settings.py</code><span class="d">CRUD · validation · singleton CHECK</span></span></li>
+                        <li><span class="test-tree__row"><code>test_maintenance.py</code><span class="d">503 · allow-list · пауза sync/агентов</span></span></li>
+                        <li><span class="test-tree__row"><code>test_admin_access.py</code><span class="d">role-based access</span></span></li>
+                        <li><span class="test-tree__row"><code>test_notifications.py</code><span class="d">channels · routes · dispatch · delivery</span></span></li>
+                        <li><span class="test-tree__row"><code>test_prompt_settings.py</code><span class="d">override · reset · cap · singleton</span></span></li>
+                      </ul>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+          <ul>
+            <li>
+              <span class="test-tree__row"><code>frontend/…/admin/__tests__/</code><span class="d">рядом с кодом</span></span>
+              <ul>
+                <li><span class="test-tree__row"><code>AdminLayout.test.tsx</code><span class="d">sidebar · role · toggles · logout</span></span></li>
+                <li><span class="test-tree__row"><code>PlatformSettings.test.tsx</code><span class="d">form · save · validation · states</span></span></li>
+                <li><span class="test-tree__row"><code>UsersPage.test.tsx</code><span class="d">list · tabs · invite · actions</span></span></li>
+                <li><span class="test-tree__row"><code>UserDetailPage.test.tsx</code><span class="d">profile · role · actions · RBAC</span></span></li>
+                <li><span class="test-tree__row"><code>AuditLogPage.test.tsx</code><span class="d">table · filters · states</span></span></li>
+                <li><span class="test-tree__row"><code>NotificationsPage.test.tsx</code><span class="d">channels · matrix · recipients</span></span></li>
+                <li><span class="test-tree__row"><code>AiBehaviorPage.test.tsx</code><span class="d">bubbles · edit · reset · cap · tooltip</span></span></li>
+                <li><span class="test-tree__row"><code>ListControls.test.tsx</code><span class="d">shared: search threshold · reset page · facets · clamp</span></span></li>
+                <li><span class="test-tree__row"><code>AgentsPage.test.tsx</code><span class="d">pause · resume · limits (guarded)</span></span></li>
+                <li><span class="test-tree__row"><code>AiModelsPage.test.tsx</code><span class="d">change &amp; reembed · disable (guarded)</span></span></li>
+                <li><span class="test-tree__row"><code>ToolsPage.test.tsx</code><span class="d">chat/agents toggles · configure · test</span></span></li>
+                <li><span class="test-tree__row"><code>UsagePage.test.tsx</code><span class="d">slices · window · → detail</span></span></li>
+                <li><span class="test-tree__row"><code>HarvesterPage.test.tsx</code><span class="d">run · pause source (guarded)</span></span></li>
+                <li><span class="test-tree__row"><code>KnowledgeStorePage.test.tsx</code><span class="d">curation · backups (guarded)</span></span></li>
+                <li><span class="test-tree__row"><code>NotificationFeed.test.tsx</code><span class="d">bell · read/unread · в scope · unread-facet</span></span></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

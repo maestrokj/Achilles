@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Agent Engine: Data model</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="data-model.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Agent Engine</a>
+        <h1 class="header__title">Data model</h1>
+        <div class="header__sub">agent-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        Agent Engine stores <strong>agent definitions</strong> and the
+        <strong>run journal</strong>, plus a thin
+        <a href="#agent-tools" class="xref-anchor">agent_tools</a> link — the
+        choice of optional tools. An agent's identity is not a
+        separate entity but an FK to its owner (<a href="#agents" class="xref-anchor"
+          >agents</a>); the weekly budget is not a counter table but a
+        <strong>sum over</strong> <a href="#agent-runs" class="xref-anchor"
+          >agent_runs</a>. Knowledge lives in the Knowledge Store, and the weekly
+        budget cap lives in platform_settings; the only foreign data kept here is two references —
+        the owner's <code>user_id</code> and the chosen model's <code>model_id</code> —
+        everything else is
+        <a href="#boundary" class="xref-anchor">read from neighbors on the fly</a>.
+      </p>
+
+      <!-- ════════════════ AGENTS ════════════════ -->
+      <div class="section" id="agents">
+        <div class="section__title">Agent definition: <code>agents</code></div>
+        <p class="desc">
+          What the employee set up: a name, a <a href="runtime.html#prompt-composition" class="xref-page"
+            >prompt</a> (its composition layer), a <a href="execution.html#schedule" class="xref-page"
+            >schedule</a>, and two locks — the owner's switch and
+          the admin's sticky lock. The FK to the owner does double duty: both the
+          delete cascade and the <a href="identity.html#owner-rights" class="xref-page"
+            >identity</a> under which the agent reads the knowledge base.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--ae">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Agent</span>
+              <span class="stk-layer__role">What the employee set up — prompt, schedule, stops.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">agents</span>
+                  <span class="dm-tbl__sub">agent definitions</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → users</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">user_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">owner · CASCADE · their ACL = the agent's identity before the KS</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">name</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">agent name — for the “my agents” list</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">description</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">short description — the agent card subtitle · optional · not <code>prompt</code>: for the human, not the model</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">prompt</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">owner layer · composed beneath the platform prompt at runtime</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">schedule</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">simple schedule — a <a href="#schedule-shape" class="xref-anchor">tagged union</a> (interval / calendar) · NULL = manual run only · named by meaning, not <code>meta</code></td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">model_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → agent_models (core), ON DELETE SET NULL">FK→agent_models</span
+                        ><span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">run model · owner's choice from the <a href="../../ai-foundation/_workzone/data-model.html#ai-models" class="xref-module">allowed list</a> · <code>SET NULL</code>: model removed from the list → <code>NULL</code> = agent stopped, owner picks again</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">enabled</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="server_default=true">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">owner switch · <code>true</code> = agent live (scheduled + manual); <code>false</code> — full stop</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">admin_paused</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="server_default=false">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">admin's sticky lock · the owner cannot release it (<a href="governance.html#admin-pause" class="xref-page">two locks</a>)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">next_run_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">computed next slot · NULL = manual only / switched off by owner / locked by admin · the scheduler scans by it</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">meta</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">flexible agent attributes</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · edits to prompt, schedule, stops</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">The agent's identity is an FK to the owner, not a separate model</span>
+                </div>
+                <div class="stk-dec__d">
+                  Before the knowledge base, the agent <strong>is</strong> its owner:
+                  <code>user_id</code> leads straight to the creator's ACL, and the cascade
+                  runs down the same edge. There is no separate table for identities, service
+                  accounts, or a “whose access” choice; <span class="iter v2">v2</span>,
+                  the <a href="identity.html#owner-rights" class="xref-page">full identity model</a>.
+                  Linking is cheap: the employee's identity is already reconciled with their account
+                  by the <code>identity.user_id</code> bridge in the
+                  <a href="../../knowledge-store/_workzone/acl-identity.html#identity" class="xref-module"
+                    >identity model</a>.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Two locks — both must be open</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>enabled</code> is the owner's switch,
+                  <code>admin_paused</code> is the admin's lock; these are
+                  <strong>different axes</strong>, not one state field. The agent
+                  starts — scheduled or manual — only if it is enabled by the
+                  owner <em>and</em> not locked by the admin. The admin's lock is sticky:
+                  the owner edits their own flag, not the other. Owner deactivation adds no
+                  third axis: it writes the same <code>enabled=false</code>,
+                  and only the owner themselves may restore it
+                  (<a href="governance.html#lifecycle" class="xref-page">life
+                    cycle</a>).
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">The model is a reference to the allowed list, with no implicit default</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>model_id</code> points at a row in
+                  <a href="../../ai-foundation/_workzone/data-model.html#ai-models" class="xref-module"
+                    >agent_models</a> — the list of chat models the admin has allowed
+                  for agents. The owner picks from it; on creation the field is
+                  set (preselected — the list default). There is <strong>no</strong> implicit
+                  runtime default: <code>NULL</code> does not mean
+                  “take the default” but “no model — agent stopped”. Two paths
+                  lead here: the model is not yet chosen, or the admin removed it from the list —
+                  <code>ON DELETE SET NULL</code> clears the reference, and
+                  <code>model_id IS NOT NULL</code> becomes the fourth condition for
+                  <a href="governance.html#gate" class="xref-page">starting</a>.
+                  Referencing a list row rather than the model catalog is deliberate: removal
+                  stops the agent at once, with no “is the model still in the list” check, and
+                  re-adding it does not silently revive it — the owner
+                  confirms the choice.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full" id="schedule-shape">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><code>schedule</code> — a tagged union on <code>type</code>, not free-form JSON</span>
+                </div>
+                <div class="stk-dec__d">
+                  The field's shape is held by the backend (Pydantic v2, discriminator
+                  <code>type</code>) — the <a href="../../../README.md" class="xref-anchor">source
+                  of truth</a>; the surface editor receives it typed. Two
+                  variants. Interval —
+                  <code>{ "type": "interval", "every_hours": N }</code>, a
+                  “every N hours” period. Calendar —
+                  <code>{ "type": "calendar", "cadence": "daily" | "weekly", "weekday": 0–6, "time": "HH:MM" }</code>:
+                  <code>weekday</code> (0 = Monday) matters only for
+                  <code>weekly</code>, and <code>time</code> is the
+                  <a href="execution.html#schedule" class="xref-page">owner's</a> local time.
+                  <code>NULL</code> — no schedule, the agent is purely manual.
+                  The day encoding and time format are the <strong>same</strong> as
+                  the platform's <a href="../../admin-panel/_workzone/data-model.html#singleton" class="xref-module"
+                    >curation_*</a> (<code>weekday 0–6</code>, <code>'HH:MM'</code>) —
+                  we do not introduce a second schedule dialect.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ AGENT RUNS ════════════════ -->
+      <div class="section" id="agent-runs">
+        <div class="section__title">Run journal: <code>agent_runs</code></div>
+        <p class="desc">
+          A row per run — both the ones that happened and the ones rejected. A state
+          machine (<code>queued → running → succeeded</code> / <code>failed</code>)
+          plus the agent's <strong>output</strong> and token spend. The journal is the home
+          of the result (<a href="runtime.html#output" class="xref-page">output</a>)
+          and the source of the weekly budget: its <code>tokens_used</code> are summed
+          against the cap.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--run">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Run</span>
+              <span class="stk-layer__role">One run — outcome, output, spend.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">agent_runs</span>
+                  <span class="dm-tbl__sub">run journal</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → agents</span>
+                    <span class="dm-badge dm-badge--flag">state machine</span>
+                    <span class="dm-badge dm-badge--uniq">one active per agent</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">agent_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → agents, ON DELETE CASCADE">FK→agents</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">whose run · CASCADE · its history</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">trigger</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (manual | scheduled)">CHECK</span>
+                      </td>
+                      <td class="dm-note">how it started · <code>manual</code> · <code>scheduled</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">state</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (queued | running | succeeded | failed | skipped)">CHECK</span>
+                      </td>
+                      <td class="dm-note"><code>queued</code> · <code>running</code> · <code>succeeded</code> · <code>failed</code> · <code>skipped</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">reason</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (budget_exceeded | already_running | iteration_cap | error | stale)">CHECK</span>
+                      </td>
+                      <td class="dm-note">why <code>skipped</code> / <code>failed</code> · machine code, not free text · <code>skipped</code>: <code>budget_exceeded</code> · <code>already_running</code> · <code>failed</code>: <code>iteration_cap</code> · <code>error</code> · <code>stale</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">output</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">agent's final answer · the whole output, read on the agent screen</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">tokens_used</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="server_default=0">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">run spend · summed into the weekly <a href="governance.html#budget" class="xref-page">budget</a></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">error</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">failure detail on <code>failed</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">started_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">when it entered <code>running</code> · NULL for <code>skipped</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">finished_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">when it finished · the weekly budget window is measured by it</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">heartbeat_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">run worker's liveness · staleness releases the lock of a hung <code>running</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> · queued</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">A run is a state machine, but the journal carries only created_at</span>
+                </div>
+                <div class="stk-dec__d">
+                  The row lives by transitions: <code>queued</code> on enqueue,
+                  <code>running</code> on start, terminal at the end — this is
+                  an in-place <code>UPDATE</code>. But the run's progress is carried by the domain
+                  milestones <code>started_at</code> / <code>finished_at</code> /
+                  <code>heartbeat_at</code> (a heartbeat every ~30&nbsp;s — finer than
+                  a generic <code>updated_at</code>), so a separate
+                  <code>updated_at</code> is redundant: the run journal carries only
+                  <code>created_at</code>. The same run-journal pattern as
+                  <code>sync_runs</code> (Harvester) and <code>curation_runs</code> /
+                  <code>backup_snapshots</code> (Knowledge&nbsp;Store).
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">One active run per agent — a lock in the DB, not just a check in code</span>
+                </div>
+                <div class="stk-dec__d">
+                  The lock is a partial unique index
+                  <code>UNIQUE (agent_id) WHERE state IN ('queued','running')</code>:
+                  an agent has at most one unfinished run. A race (a manual
+                  start coinciding with an arrived slot, two workers grabbing the row)
+                  is settled by the database itself — the second <code>INSERT</code> of an unfinished
+                  run hits the lock; the engine catches the rejection and writes a
+                  terminal <code>skipped</code> with
+                  <code>reason=already_running</code> (that state is outside the lock's
+                  predicate, so it does not block the write). If a worker dies without
+                  closing the run, unattended the row would hang in <code>running</code> forever: it would
+                  both lock the agent and hold tokens outside the budget. It is cleared by
+                  <code>heartbeat_at</code>: a stale run is reaped into
+                  <code>failed</code> with <code>reason=stale</code>, the lock is
+                  released, and the agent starts again. The same lock and the same
+                  heartbeat are carried by Harvester's <code>sync_runs</code> and Knowledge Store's
+                  <a href="../../knowledge-store/_workzone/lifecycle.html#curation-runs" class="xref-module"
+                    >curation_runs</a> — a single run-journal
+                  pattern across the platform. The staleness threshold is a <strong>module
+                  constant</strong> (proximity principle), not a magic number in the reaper's
+                  code: the worker bumps <code>heartbeat_at</code> every ~30 s, a run
+                  is considered hung after ~90 s of silence (three missed beats) — the same
+                  order of magnitude as the neighbors' run journals.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">The budget is derived — a sum over <code>tokens_used</code>, not a counter</span>
+                </div>
+                <div class="stk-dec__d">
+                  There is no separate spend table: the weekly cap is checked as
+                  <code>SUM(tokens_used)</code> over the runs of all the owner's agents
+                  where <code>finished_at</code> falls in the current week (calendar week,
+                  Sunday 00:00 in the organization's zone —
+                  <a href="governance.html#budget" class="xref-page">budget</a>).
+                  Windowing by <code>finished_at</code> means a still-running
+                  run's spend enters the sum only at the end: the run starting next sees
+                  it as zero, and within a week a small cap
+                  overrun is possible, tapering to nothing as runs finish. For
+                  rare personal runs the overrun is narrow and acceptable. At this scale
+                  (personal agents, rare runs) the sum copes without an aggregate;
+                  a materialized counter is an optimization for later. The limit itself
+                  is not stored here — it is a platform value, in
+                  <code>platform_settings</code> (<a href="#boundary" class="xref-anchor">boundary</a>).
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><code>skipped</code> is a record, not the absence of a run</span>
+                </div>
+                <div class="stk-dec__d">
+                  A <code>state=skipped</code> row is written only when the engine
+                  set out to start a run but the runtime gate closed:
+                  the weekly budget is spent (<code>budget_exceeded</code>) or
+                  the agent's previous run is still going (<code>already_running</code>).
+                  Both are invisible from the agent's static config — which is why the
+                  record is needed: the rejection is visible in the journal (“limit exceeded”) rather than lost
+                  in silence; <code>tokens_used = 0</code>, no loop ran. The locks, by contrast,
+                  stop the agent <em>before</em> the gate: with the owner's switch
+                  or the admin's lock, <a href="#agents" class="xref-anchor">next_run_at</a>
+                  is cleared, the scheduler does not scan the agent, and the manual
+                  start button is disabled — a durable stop spawns no rows, it is shown by the
+                  <a href="../../admin-panel/_wireframes/agents.html" class="xref-module">agent's status</a>,
+                  not by a stream of <code>skipped</code>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ AGENT TOOLS ════════════════
+           Thin link: which optional tool the owner attached to the agent.
+           The core 3 KS tools are locked and not stored in the table. Runtime filters the
+           selection by tools.agents_allowed; removal/deletion → agent on the core (graceful
+           degradation). -->
+      <div class="section" id="agent-tools">
+        <div class="section__title">Tool selection: <code>agent_tools</code></div>
+        <p class="desc">
+          Which <strong>optional</strong> tools the owner attached to the
+          agent on top of the core — a thin many-to-many link between
+          <a href="#agents" class="xref-anchor">agents</a> and the catalog
+          (<a href="../../ai-foundation/_workzone/data-model.html#tools" class="xref-module">tools</a>).
+          The core three <a href="runtime.html#tools" class="xref-page">KS tools</a>
+          are locked and <strong>not stored</strong> in the table — every agent has them by
+          default; the rows here are only about the selection on top of it.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--run">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Link</span>
+              <span class="stk-layer__role">Optional tools chosen by the owner.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">agent_tools</span>
+                  <span class="dm-tbl__sub">agent's tool selection</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → agents</span>
+                    <span class="dm-badge dm-badge--fk">FK → tools</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (agent, tool)</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">agent_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → agents, ON DELETE CASCADE">FK→agents</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">whose selection · CASCADE · goes away with the agent</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">tool_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → tools, ON DELETE CASCADE">FK→tools</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">which tool from the <a href="../../ai-foundation/_workzone/data-model.html#tools" class="xref-module">catalog</a> · CASCADE</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> · append-only selection link, no <code>updated_at</code></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Removing a tool is graceful degradation, not a stop</span>
+                </div>
+                <div class="stk-dec__d">
+                  Access can be revoked two ways, and neither brings the agent down. If the admin
+                  removes the tool from the allowlist (<code>tools.agents_allowed =
+                  false</code>), the link row stays, but the runtime
+                  <strong>does not offer</strong> it in the toolset, filtering the selection by the current
+                  flag at the run's start. If the tool itself is deleted from the catalog
+                  (or the agent altogether), the link is cleaned up by <code>ON DELETE
+                  CASCADE</code>. In both cases the agent
+                  <strong>continues on the KS core</strong>; this does not enter the
+                  <a href="governance.html#gate" class="xref-page">start gate</a>
+                  — unlike a removed model, which stops the run.
+                  Write access and MCP tool sources are <span class="iter v2">v2</span>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ BOUNDARY ════════════════ -->
+      <div class="section" id="boundary">
+        <div class="section__title">Boundary: what the engine stores, what belongs to neighbors</div>
+        <p class="desc">
+          Agent Engine keeps <strong>agents and runs</strong> — and only that. Everything
+          else the agent touches belongs to neighbors: account and identity —
+          Auth and Knowledge Store; the model registry and budget cap — Admin; the
+          knowledge itself — Knowledge Store. The only foreign data kept here is
+          <strong>two references</strong> — the owner's <code>user_id</code> and the chosen model's
+          <code>model_id</code>; the budget cap is not even kept as a
+          reference — the engine reads it from platform_settings at the start of each
+          run.
+        </p>
+
+        <div class="dm-border">
+          <div class="dm-border__col dm-border__col--here">
+            <div class="dm-border__head">
+              <span class="dm-border__who">Agent Engine</span>
+              <span class="dm-border__act">stores</span>
+            </div>
+            <p class="dm-border__d">
+              <code>agents</code> (definitions) and <code>agent_runs</code> (the journal
+              with output and spend). It does not store identity — it takes the ACL by
+              <code>user_id</code>. It does not store the model — <code>model_id</code>
+              references the allowed list. It does not store the weekly spend
+              as an aggregate — it sums from runs. It does not store the cap — it reads it
+              from <code>platform_settings</code>. It does not store knowledge — it reads from the KS under permissions.
+            </p>
+          </div>
+          <div class="dm-border__seam">▸</div>
+          <div class="dm-border__col dm-border__col--there">
+            <div class="dm-border__head">
+              <span class="dm-border__who">Neighbors</span>
+              <span class="dm-border__act">own</span>
+            </div>
+            <p class="dm-border__d">
+              <code>users</code> and identities — Auth and
+              <a href="../../knowledge-store/_workzone/acl-identity.html#identity" class="xref-module"
+                >Knowledge Store</a>; allowed models
+              (<a href="../../ai-foundation/_workzone/data-model.html#ai-models" class="xref-module"
+                >agent_models</a>) and the token cap
+              (<code>platform_settings</code>) — Admin; the body of knowledge, the graph, the vectors
+              — Knowledge Store, from which the agent only reads.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

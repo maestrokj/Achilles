@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Knowledge Store</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="knowledge-store.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← Back to architecture</a>
+        <h1 class="header__title">Knowledge Store</h1>
+        <div class="header__sub">persistent knowledge storage</div>
+      </div>
+
+      <p class="desc">
+        A multi-model store: a single knowledge entity lives as three projections in
+        one Postgres — a relational body, chunk vectors, a graph of relations. This is
+        the platform's retrieval layer: Harvester writes here, Query Engine draws
+        context from here for RAG. The distinctive trait — four search paradigms fused
+        under a single ACL in one SQL query.
+      </p>
+
+      <div class="section">
+        <div class="section__title">Architecture</div>
+        <div class="ksa">
+          <div class="ksa__stack">
+            <!-- Tier 1 — producers -->
+            <div class="ksa__layer ksa__layer--l1">
+              <div class="ksa__cap">
+                <b>Producers</b><span>tier 1 · surface</span>
+              </div>
+              <div class="ksa__producer">
+                <div class="ksa__box ksa__box--in">
+                  <div class="ksa__box-t">Harvester</div>
+                  <div class="ksa__box-d">
+                    writes: content · structural edges · access rights · people
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="ksa__flow ksa__flow--write">writes ▼</div>
+
+            <!-- Tier 2 — storage -->
+            <div class="ksa__layer ksa__layer--l2">
+              <div class="ksa__cap">
+                <b>Storage · one PostgreSQL</b><span>tier 2 · core</span>
+              </div>
+              <div class="ksa__entity">
+                <b>entity</b><span>knowledge node · source of truth</span>
+              </div>
+              <div class="ksa__proj">
+                <div class="ksa__card ksa__card--rel">
+                  <div class="ksa__card-t">entities</div>
+                  <div class="ksa__card-r">relational body</div>
+                  <div class="ksa__card-d">exact filters and joins</div>
+                </div>
+                <div class="ksa__card ksa__card--vec">
+                  <div class="ksa__card-t">chunks</div>
+                  <div class="ksa__card-r">chunk text</div>
+                  <div class="ksa__card-d">
+                    vector pgvector·HNSW + lexical tsvector·GIN
+                  </div>
+                </div>
+                <div class="ksa__card ksa__card--gph">
+                  <div class="ksa__card-t">entity_edge</div>
+                  <div class="ksa__card-r">graph of relations</div>
+                  <div class="ksa__card-d">recursive SQL·CTE · no Neo4j</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tier 3 — retrieval -->
+            <div class="ksa__layer ksa__layer--l3">
+              <div class="ksa__cap">
+                <b>Retrieval</b><span>tier 3 · fusion</span>
+              </div>
+              <div class="ksa__acl">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <rect x="2" y="6" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6" />
+                  <path d="M4.2 6V4.2a2.8 2.8 0 015.6 0V6" stroke="currentColor" stroke-width="1.6" />
+                </svg>
+                <span>
+                  one <b>ACL pre-filter</b> · identity at the entry narrows
+                  candidates before ranking · a single JOIN for all 4 primitives
+                </span>
+              </div>
+              <div class="ksa__prims">
+                <div class="ksa__prim ksa__prim--vec">
+                  <div class="ksa__prim-t">vector</div>
+                  <div class="ksa__prim-d">semantics</div>
+                </div>
+                <div class="ksa__prim ksa__prim--lex">
+                  <div class="ksa__prim-t">lexical</div>
+                  <div class="ksa__prim-d">words</div>
+                </div>
+                <div class="ksa__prim ksa__prim--gph">
+                  <div class="ksa__prim-t">graph</div>
+                  <div class="ksa__prim-d">relations · CTE</div>
+                </div>
+                <div class="ksa__prim ksa__prim--sql">
+                  <div class="ksa__prim-t">sql</div>
+                  <div class="ksa__prim-d">exact facts</div>
+                </div>
+              </div>
+              <div class="ksa__fuse">▼</div>
+              <div class="ksa__rrf">
+                <b>RRF fusion</b><span>fusion key = entity</span>
+              </div>
+            </div>
+
+            <div class="ksa__flow ksa__flow--read">reads ▲</div>
+
+            <!-- Tier 4 — consumers -->
+            <div class="ksa__layer ksa__layer--l4">
+              <div class="ksa__cap">
+                <b>Consumers</b><span>tier 4 · output</span>
+              </div>
+              <div class="ksa__cons">
+                <div class="ksa__box ksa__box--out">
+                  <div class="ksa__box-t">Query Engine</div>
+                  <div class="ksa__box-d">RAG over knowledge · owns the dialogue</div>
+                </div>
+                <div class="ksa__box ksa__box--out">
+                  <div class="ksa__box-t">Agent Engine</div>
+                  <div class="ksa__box-d">4 primitives as tools</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Side process — Curation Pass -->
+          <aside class="ksa__rail">
+            <div class="ksa__cur">
+              <div class="ksa__cur-h">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path d="M15 9a6 6 0 11-1.8-4.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                  <path d="M14.8 1.6v3.4h-3.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <b>Curation Pass</b>
+              </div>
+              <ul>
+                <li>background graph curation</li>
+                <li>edge materialization</li>
+                <li>staleness decay</li>
+                <li>journal — <code>curation_runs</code></li>
+              </ul>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <!-- ═══ API ═══ Full contract paths of the module under its version. -->
+      <section class="section" id="api">
+        <div class="section__title">API</div>
+        <ul class="api-list">
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/retrieval/vector · lexical · graph · sql</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/retrieval/hybrid</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/admin/knowledge/sources</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/admin/knowledge/reindex</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/admin/knowledge/re-embed</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/admin/knowledge/backup</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/admin/knowledge/restore</span></li>
+        </ul>
+        <p class="note">
+          Curation, re-embed and backup status reach open screens as push nudges over the
+          platform
+          <a href="../api/_workzone/live-updates.html#boards" class="xref-module">live-updates stream</a>;
+          the endpoints above stay the single source the client refetches.
+        </p>
+      </section>
+
+      <!-- ═══ Workzone ═══ -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Design</span>
+        </div>
+        <p class="workzone-hint">
+          Detailed design decisions for the module.
+        </p>
+
+        <div class="wz-nav">
+          <a class="wz-link" href="_workzone/data-model.html">
+            <span>Data model</span>
+          </a>
+          <a class="wz-link" href="_workzone/hybrid-search.html">
+            <span>Hybrid search</span>
+          </a>
+          <a class="wz-link" href="_workzone/acl-identity.html">
+            <span>ACL and identities</span>
+          </a>
+          <a class="wz-link" href="_workzone/lifecycle.html">
+            <span>Lifecycle</span>
+          </a>
+          <a class="wz-link" href="_workzone/stack.html">
+            <span>Stack</span>
+          </a>
+          <a class="wz-link" href="_workzone/embedding-runtime.html">
+            <span>Embeddings runtime</span>
+          </a>
+          <a class="wz-link" href="_workzone/tests.html">
+            <span>Tests</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

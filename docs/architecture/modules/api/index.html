@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — HTTP API</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="api.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <!-- ═══ Header ═══ -->
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← Back to architecture</a>
+        <h1 class="header__title">HTTP API</h1>
+        <div class="header__sub">front↔back contract · surface map</div>
+      </div>
+
+      <!-- ════════════════ SURFACE MAP ════════════════
+           A list: which resource families exist, at which tier and whose. An
+           index of links, not a copy — the concrete request/response lives in the
+           owner's tests.html. The two tiers read down the "Tier" column. -->
+      <section class="section" id="surface-map">
+        <div class="section__title">API surfaces</div>
+        <p class="note">
+          Internal <code>/api/v1</code> — our shells (Web&nbsp;App,
+          Admin&nbsp;Panel).<br/>External <code>/public/v1</code> — a curated slice of
+          the same engine (<a href="../public-api/index.html#contract" class="xref-module">Public API</a>).
+          <br/>The concrete contract — in the owner's <code>tests.html</code>.
+        </p>
+        <table class="api-map">
+          <thead>
+            <tr>
+              <th>Resource family</th>
+              <th>Tier</th>
+              <th>Owner</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="api-map__fam">session · users · api-keys · invites · messenger-link · password · audit</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../auth-security/index.html#api" class="xref-module">Auth / Security</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">conversations · messages <code>(SSE)</code> · chat-models</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../query-engine/index.html#api" class="xref-module">Query Engine</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">agents · agent-runs</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../agent-engine/index.html#api" class="xref-module">Agent Engine</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">retrieval: vector · lexical · graph · sql · hybrid</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../knowledge-store/index.html#api" class="xref-module">Knowledge Store</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">KS-admin: sources · reindex · re-embed · backup · restore</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../knowledge-store/index.html#api" class="xref-module">Knowledge Store</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">sources · connectors · sync-runs · test-connection</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../harvester/index.html#api" class="xref-module">Harvester</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">ai: providers · models · assignments · tools · discovery</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../ai-foundation/index.html#api" class="xref-module">AI Foundation</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">inbox · feed · unread <code>(personal)</code></td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../notifications/index.html#api" class="xref-module">Notifications</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">config: platform-settings · ai-prompt · usage/budgets · channels</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../admin-panel/index.html#api" class="xref-module">Admin Panel</a> · facade</td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">slack: events <code>(webhook)</code> · admin/slack</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../slack/index.html#api" class="xref-module">Slack</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">telegram: webhook · admin/telegram</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../telegram/index.html#api" class="xref-module">Telegram</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">admin/mattermost <code>(no webhook — dial-out listener)</code></td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../mattermost/index.html#api" class="xref-module">Mattermost</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">search · ask <span class="iter v2">v2</span></td>
+              <td class="api-map__tier">/public/v1</td>
+              <td><a href="../public-api/index.html#api" class="xref-module">Public API</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">search_knowledge <code>(JSON-RPC, streamable HTTP)</code></td>
+              <td class="api-map__tier">/mcp</td>
+              <td><a href="../mcp/index.html#model" class="xref-module">MCP</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">events: stream <code>(SSE · push nudges)</code></td>
+              <td class="api-map__tier">/api/v1</td>
+              <td>this layer · <a href="_workzone/live-updates.html#contract" class="xref-page">Live updates</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">health · version</td>
+              <td class="api-map__tier">—</td>
+              <td>infra layer · <code>backend/api/</code></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note">
+          <strong>Admin&nbsp;Panel and Web&nbsp;App are facades:</strong> they hold no
+          domain resources of their own, bringing owners' contracts together under a
+          role. The Admin row is about the <code>/admin/*</code> config surface, not
+          ownership.
+        </p>
+      </section>
+
+      <!-- ════════════════ COMMON RULES ════════════════
+           Cross-cutting invariants of both tiers — what OpenAPI doesn't specify.
+           In one compact band, without expanding. -->
+      <section class="section" id="conventions">
+        <div class="section__title">Common rules</div>
+        <ul class="api-rules">
+          <li><b>Version in the path</b> — <code>/api/v1</code> · <code>/public/v1</code>; breaking → a new version</li>
+          <li><b>Identity</b> — a JWT or an <code>ach_…</code> key → <code>user_id</code> → role → ACL</li>
+          <li><b>Error — a code, not 500</b> — <code>401 · 403 · 404 · 409 · 422 · 429</code>, one shape</li>
+          <li><b>Lists</b> — one contract for pagination/filter/sort (<a href="../admin-panel/_workzone/list-controls.html#pagination" class="xref-module">list-controls</a>)</li>
+          <li><b>Chat</b> — an <code>SSE</code> stream: tokens incrementally, citations in the tail</li>
+          <li><b>Live boards</b> — the server nudges, the client refetches over REST (<a href="_workzone/live-updates.html#concept" class="xref-page">Live updates</a>)</li>
+          <li><b>Idempotency</b> — queued by <code>job_id</code>: a retry doesn't double</li>
+          <li><b>Rate limit</b> — window → <code>429</code> (<a href="../cache-workers/_workzone/rate-limit.html#primitive" class="xref-module">Cache&nbsp;&amp;&nbsp;Workers</a>)</li>
+          <li><b>Time</b> — UTC ISO&nbsp;8601 (<code>…Z</code>); the timezone is applied by the frontend</li>
+        </ul>
+      </section>
+
+      <!-- ═══ Workzone ═══ One L3 leaf: cross-cutting contract checks. -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Design</span>
+        </div>
+        <p class="workzone-hint">
+          The layer's own mechanics: the platform push channel that keeps live boards
+          fresh, and the conformance suite enforcing the rules above — error shape, UTC,
+          pagination and rate limit checked parametrically across all routers, not by a
+          copy in each module.
+        </p>
+
+        <div class="wz-nav">
+          <a class="wz-link" href="_workzone/live-updates.html">
+            <span>Live updates</span>
+          </a>
+          <a class="wz-link" href="_workzone/tests.html">
+            <span>Contract checks</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

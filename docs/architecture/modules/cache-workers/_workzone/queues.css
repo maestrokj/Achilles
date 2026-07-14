@@ -1,0 +1,204 @@
+/* Queues & workers — what the execution substrate looks like: three load
+   lanes, the worker-service grid, and the queue registry table. Diagrams
+   bespoke to this one page; the layered-stack kit (stk-*) carries the worker
+   band, module.css the chrome.
+   Loaded by queues.html on top of module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Worker layer accent — names the band's color, as the kit expects. ── */
+.stk-layer--worker {
+  --stk-lc: var(--s2);
+  --stk-lc-pale: var(--s2-pale);
+}
+
+/* ═══════════════════════════════════════════
+   Lanes — three load columns
+   ═══════════════════════════════════════════ */
+.lanes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+}
+
+.lane {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--lane-c, var(--accent));
+  border-radius: var(--radius-md);
+}
+
+.lane--interactive {
+  --lane-c: var(--s1);
+}
+.lane--background {
+  --lane-c: var(--s3);
+}
+.lane--agents {
+  --lane-c: var(--s4);
+}
+
+.lane__h {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--lane-c, var(--accent));
+}
+
+.lane__t {
+  font-size: 0.74rem;
+  font-style: italic;
+  color: var(--text-dim);
+}
+
+.lane__list {
+  list-style: none;
+  margin: 0.1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+.lane__list li {
+  position: relative;
+  padding-left: 0.85rem;
+}
+
+.lane__list li::before {
+  content: "";
+  position: absolute;
+  left: 0.15rem;
+  top: 0.55em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--lane-c, var(--accent));
+}
+
+/* ═══════════════════════════════════════════
+   Worker service grid
+   ═══════════════════════════════════════════ */
+.wk-grid {
+  flex-basis: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.55rem;
+}
+
+.wk-svc {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.6rem 0.7rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+/* The API service stands apart from the worker pool — it scales on its own. */
+.wk-svc--api {
+  border-style: dashed;
+  border-color: var(--accent-muted);
+}
+
+.wk-svc__name {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.wk-svc__d {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* Tighter bullet rhythm for the in-layer rule list. */
+.cw-rules {
+  margin-top: 0.4rem;
+}
+
+/* ═══════════════════════════════════════════
+   Queue registry table
+   ═══════════════════════════════════════════ */
+.reg {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.reg th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.reg td {
+  padding: 0.55rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+  vertical-align: top;
+  line-height: 1.4;
+}
+
+.reg tr:last-child td {
+  border-bottom: none;
+}
+
+.reg__q {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.reg__c {
+  color: var(--text);
+}
+
+.reg__note {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Lane pill — colored chip tying a registry row to its lane. */
+.lane-pill {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 0.16rem 0.45rem;
+  border-radius: var(--tag-radius);
+  color: #fff;
+}
+
+.lane-pill--interactive {
+  background: var(--s1);
+}
+.lane-pill--background {
+  background: var(--s3);
+}
+.lane-pill--agents {
+  background: var(--s4);
+}
+
+.reg-notes {
+  margin-top: 0.75rem;
+}
+
+/* Solo stage carries no bottom margin — give the registry section that follows
+   its own air so it doesn't read as part of the worker-topology stack above. */
+.stk-stage--solo + .section {
+  margin-top: 2rem;
+}

@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — HTTP API: Проверки контракта</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← HTTP API</a>
+        <h1 class="header__title">Проверки контракта</h1>
+        <div class="header__sub">http api · conformance</div>
+      </div>
+
+      <!-- ── Overview band: зачем набор живёт у слоя ── -->
+      <div class="test-overview">
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Принятые решения</div>
+          <div class="decision-box">
+            <strong>Сквозные инварианты владеет слой, не модуль</strong>
+            Форма ошибки, UTC-сериализация, пагинация, лимит частоты — одинаковы
+            на всех роутерах. Один параметризованный набор идёт против ASGI-приложения
+            и обходит зарегистрированные роуты автоматически: новый эндпойнт наследует
+            проверки, не заводя своей копии. Модули тестируют семантику своих ресурсов
+            (кто владелец, какой код на какое нарушение) — эти общие грани там не дублируются.
+          </div>
+          <div class="decision-box">
+            <strong>Правила — на <a href="../index.html#conventions" class="xref-page">карте HTTP&nbsp;API</a></strong>
+            Здесь — их исполнение тестом. Правило задаёт «как должно быть», кейс ниже
+            проверяет, что так и есть, на каждом роутере обоих ярусов (<code>/api/v1</code>,
+            <code>/public/v1</code>).
+          </div>
+        </div>
+
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Стек и охват</div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Инструмент</span>
+            <span>httpx · ASGI-transport — реальное приложение без сети</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Обход роутов</span>
+            <span>интроспекция <code>app.routes</code> — каждый зарегистрированный роут в параметрах</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Схема</span>
+            <span>Schemathesis по OpenAPI — ловит 500 и расхождение со схемой; envelope и семантику покрывают кейсы ниже</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Маркеры</span>
+            <span><code>@pytest.mark.api</code> — контрактный слой поверх приложения</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ API P1 ═══ Сквозной контракт: то, чего OpenAPI не задаёт, но что
+           обязано держаться единообразно на каждом роутере. -->
+      <div class="test-sec" id="conformance">
+        <span class="test-sec__badge test-sec__badge--p1">API · P1</span>
+        <span class="test-sec__title">Сквозные инварианты — единый контракт всех роутеров</span>
+        <span class="test-sec__meta">httpx · ASGI · параметризация по <code>app.routes</code></span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg></span><span class="name">test_api_conformance.py</span></div>
+            <div class="test-card__sub">Ошибка · коды · время · версия · личность · лимит</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="../index.html#conventions">→ Общие правила</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">единая форма ошибки</span><span class="test-case__e">любой отказ → RFC 9457 <code>application/problem+json</code>: <code>{type, title, status, detail, code, request_id}</code> (+ <code>errors[]</code> на 422); клиент читает машинный <code>code</code>, не парсит текст; форма одна на всех роутерах</span></div>
+              <div class="test-case"><span class="test-case__k">бизнес-нарушение → 4xx, не 500</span><span class="test-case__e">нарушение правила отдаёт свой код (<code>401 · 403 · 404 · 409 · 422 · 429</code>), не проваливается в <code>500</code>; <code>500</code> — только незапланированный сбой</span></div>
+              <div class="test-case"><span class="test-case__k">словарь кодов размечен</span><span class="test-case__e"><code>401</code> нет личности · <code>403</code> нет права · <code>404</code> нет ресурса (приватное маскируем под 404, не 403) · <code>409</code> конфликт/замок · <code>422</code> валидация тела · <code>429</code> лимит</span></div>
+              <div class="test-case"><span class="test-case__k">время — UTC ISO-8601</span><span class="test-case__e">каждое <code>datetime</code> в ответе сериализуется как <code>…Z</code> (UTC); ни naive, ни локальная зона; пояс применяет фронт</span></div>
+              <div class="test-case"><span class="test-case__k">версия в пути</span><span class="test-case__e"><code>/api/v1</code> · <code>/public/v1</code>; без версии → <code>404</code>; ломающее изменение → новая версия, старая жива</span></div>
+              <div class="test-case"><span class="test-case__k">личность до обработчика</span><span class="test-case__e">JWT или ключ <code>ach_…</code> резолвится в <code>user_id</code> → роль → ACL прежде входа в хендлер; нет личности → <code>401</code> единообразно на защищённых роутах</span></div>
+              <div class="test-case"><span class="test-case__k">лимит частоты → 429 + Retry-After</span><span class="test-case__e">превышение окна → <code>429</code> с заголовком <code>Retry-After</code>; тело — тот же envelope (<a href="../../cache-workers/_workzone/rate-limit.html#primitive" class="xref-module">rate-limit</a>)</span></div>
+              <div class="test-case"><span class="test-case__k">нет голых роутов</span><span class="test-case__e">параметризация по <code>app.routes</code>: каждый защищённый роут отвечает <code>401</code> без личности — новый эндпойнт не проскочит мимо проверки</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9" /><path d="M14 17H5" /><circle cx="17" cy="17" r="3" /><circle cx="7" cy="7" r="3" /></svg></span><span class="name">test_api_pagination.py</span></div>
+            <div class="test-card__sub">Единый list-контракт списочных GET</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge" href="../../admin-panel/_workzone/list-controls.html#pagination">→ list-controls</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">единая обёртка страницы</span><span class="test-case__e">списочный <code>GET</code> отдаёт одинаковую форму (элементы + курсор/итог), одну на всех роутерах, а не свою схему у каждого</span></div>
+              <div class="test-case"><span class="test-case__k">потолок размера страницы</span><span class="test-case__e">запрос сверх серверного потолка усечён до предела, не безлимитная выдача; дефолтный размер при отсутствии параметра</span></div>
+              <div class="test-case"><span class="test-case__k">стабильный порядок</span><span class="test-case__e">сортировка детерминирована при равных ключах (tie-break по <code>id</code>) — страницы не пересекаются и не теряют строк</span></div>
+              <div class="test-case"><span class="test-case__k">курсор переживает вставку</span><span class="test-case__e">курсорная пагинация не сдвигает окно при вставке новых строк между запросами страниц</span></div>
+              <div class="test-case"><span class="test-case__k">кривой параметр → 422</span><span class="test-case__e">отрицательный/нечисловой <code>limit</code>, битый курсор → <code>422</code> (envelope), не <code>500</code> и не тихий дефолт</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

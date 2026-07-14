@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Уведомления</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Уведомления</h1>
+        <div class="header__sub">
+          admin panel · макеты · настройки
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Экран рендерится в контентной области каркаса">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Загрузка экрана — каркас (skeleton)">
+              <span class="in-load__icon"></span>загрузка
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">
+        Куда и кому уходят алерты организации: каналы доставки, маршрутизация по типам и получатели.
+        <a href="../../notifications/_workzone/dispatcher.html#dispatch" class="xref-module">→ Механика</a>
+      </p>
+
+      <!-- ═══ Каналы доставки ═══ -->
+      <div class="section" id="channels">
+        <div class="section__title">Каналы доставки</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">куда уходит алерт</div>
+          <div class="wf-screen wf-screen--wide wf-screen--pops">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/notifications
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/notifications · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-stack">
+                  <span class="wf-label">Встроенные</span>
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text"><strong>In-app</strong> — центр уведомлений в шапке</span>
+                      <span class="wf-row">
+                        <span class="wf-toggle wf-toggle--on wf-toggle--locked"></span>
+                        <span class="wf-annot">1</span>
+                      </span>
+                    </div>
+                    <span class="wf-hint">всегда включён; гарант доставки, не зависит от почты</span>
+                  </div>
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text"><strong>Email</strong> — личным адресатам, через SMTP организации</span>
+                      <span class="wf-row">
+                        <span class="wf-toggle wf-toggle--on"></span>
+                        <span class="wf-annot">2</span>
+                      </span>
+                    </div>
+                    <div class="wf-row wf-spread">
+                      <span class="wf-hint">через очередь — повторы и тротлинг серий при всплеске</span>
+                      <span class="wf-row">
+                        <span class="wf-chip wf-chip--ok">SMTP настроен</span>
+                        <a href="platform-settings.html#smtp" class="wf-a">Настройки</a>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <div class="wf-stack">
+                  <span class="wf-label">Webhooks — внешние инструменты</span>
+                  <table class="wf-table wf-table--pops">
+                    <thead>
+                      <tr>
+                        <th>Канал</th>
+                        <th>Endpoint</th>
+                        <th>Проверка</th>
+                        <th>Активен</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><strong>Slack</strong> <span class="wf-chip">пресет</span></td>
+                        <td><code>hooks.slack.com/services/…</code></td>
+                        <td><span class="wf-chip wf-chip--ok">проверен</span></td>
+                        <td>
+                          <span class="wf-row">
+                            <span class="wf-toggle wf-toggle--on"></span>
+                            <span class="wf-annot">3</span>
+                          </span>
+                        </td>
+                        <td>
+                          <span class="wf-pop">
+                            <button class="wf-btn">⋯</button>
+                            <div class="wf-menu">
+                              <span class="wf-menu__item">Test — пробное событие</span>
+                              <hr class="wf-menu__sep" />
+                              <span class="wf-menu__item wf-menu__item--danger"><span class="wf-guarded">Удалить<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a></span></span>
+                            </div>
+                          </span>
+                        </td>
+                      </tr>
+                      <tr class="wf-table__row--muted">
+                        <td><strong>Ops on-call</strong> <span class="wf-chip">generic JSON</span></td>
+                        <td><code>ops.company.com/hooks/achilles</code></td>
+                        <td><span class="wf-chip wf-chip--ok">проверен</span></td>
+                        <td>
+                          <span class="wf-row">
+                            <span class="wf-toggle"></span>
+                            <span class="wf-chip wf-dim">пауза</span>
+                          </span>
+                        </td>
+                        <td>
+                          <span class="wf-pop">
+                            <button class="wf-btn">⋯</button>
+                            <div class="wf-menu">
+                              <span class="wf-menu__item">Test — пробное событие</span>
+                              <hr class="wf-menu__sep" />
+                              <span class="wf-menu__item wf-menu__item--danger"><span class="wf-guarded">Удалить<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a></span></span>
+                            </div>
+                          </span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div class="wf-pop wf-pop--block">
+                    <button class="wf-btn wf-btn--block">+ Добавить webhook</button>
+                    <div class="wf-menu">
+                      <a class="wf-opt">Slack — пресет формата</a>
+                      <a class="wf-opt">Generic — JSON payload</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Тумблер in-app залочён — выключить канал нельзя: это страховка, алерт виден при входе, даже если почта и webhooks молчат.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Тумблер включает рассылку по email; опирается на <a href="platform-settings.html#smtp" class="xref-page">SMTP организации</a> — пока SMTP не настроен, чип краснеет, а письма не уходят, остаются in-app и webhooks.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Webhook — исходящий POST на endpoint админа. Slack — пресет с готовым форматом сообщения; generic шлёт <a href="../../notifications/_workzone/dispatcher.html#payload" class="xref-module">JSON-payload</a>. «Test» отправляет пробное событие. Тумблер ставит канал на паузу: проверенный endpoint держим про запас (Ops), маршруты целы, рассылка не идёт, пока не включим. Как заводится новый канал — <a href="#add-webhook" class="xref-anchor">форма добавления</a>.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">Каналы и маршрутизацию правит только Owner; Admin видит их read-only.</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Маршрутизация: тип × канал ═══ -->
+      <div class="section" id="routing">
+        <div class="section__title">
+          Маршрутизация — тип × канал
+          <a href="../../notifications/_workzone/dispatcher.html#catalog" class="xref-badge">→ Каталог событий</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">defaults организации</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-row wf-spread">
+                  <span class="wf-title">Куда уходит каждый тип</span>
+                  <span class="wf-chip">defaults</span>
+                </div>
+                <span class="wf-text">
+                  Пилюли — каналы типа; погасить все — тип не идёт никому. Слева от черты личные адресатам, справа webhooks.
+                  <span class="wf-pill wf-pill--on">вкл</span>
+                  <span class="wf-pill wf-pill--off">выкл</span>
+                  <span class="wf-pill wf-pill--paused">пауза</span>
+                  <span class="wf-pill wf-pill--locked"><span class="wf-lock"></span>замок</span>
+                  <span class="wf-annot">4</span>
+                </span>
+
+                <div class="wf-card wf-stack wf-stack--tight">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-text"><strong>Sync</strong> — серия сбоев, источник отвалился, прогон с потерями</span>
+                    <span class="wf-chip wf-chip--err">critical</span>
+                  </div>
+                  <div class="wf-route">
+                    <span class="wf-pill wf-pill--locked"><span class="wf-lock"></span>In-app</span>
+                    <span class="wf-annot">5</span>
+                    <span class="wf-pill wf-pill--on">Email</span>
+                    <span class="wf-route__sep"></span>
+                    <span class="wf-pill wf-pill--on">Slack</span>
+                    <span class="wf-pill wf-pill--off">Ops</span>
+                  </div>
+                </div>
+
+                <div class="wf-card wf-stack wf-stack--tight">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-text"><strong>Security</strong> — brute force, смена ролей</span>
+                    <span class="wf-chip wf-chip--err">critical</span>
+                  </div>
+                  <div class="wf-route">
+                    <span class="wf-pill wf-pill--locked"><span class="wf-lock"></span>In-app</span>
+                    <span class="wf-pill wf-pill--on">Email</span>
+                    <span class="wf-route__sep"></span>
+                    <span class="wf-pill wf-pill--off">Slack</span>
+                    <span class="wf-pill wf-pill--paused">Ops</span>
+                  </div>
+                </div>
+
+                <div class="wf-card wf-stack wf-stack--tight">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-text"><strong>Budget</strong> — порог расходов AI</span>
+                    <span class="wf-chip wf-chip--err">critical</span>
+                  </div>
+                  <div class="wf-route">
+                    <span class="wf-pill wf-pill--on">In-app</span>
+                    <span class="wf-pill wf-pill--on">Email</span>
+                    <span class="wf-route__sep"></span>
+                    <span class="wf-pill wf-pill--off">Slack</span>
+                    <span class="wf-pill wf-pill--off">Ops</span>
+                  </div>
+                </div>
+
+                <div class="wf-card wf-stack wf-stack--tight">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-text"><strong>System</strong> — провайдер недоступен, backup провалился, Curation Pass упал</span>
+                    <span class="wf-chip wf-chip--err">critical</span>
+                  </div>
+                  <div class="wf-route">
+                    <span class="wf-pill wf-pill--on">In-app</span>
+                    <span class="wf-pill wf-pill--on">Email</span>
+                    <span class="wf-route__sep"></span>
+                    <span class="wf-pill wf-pill--on">Slack</span>
+                    <span class="wf-pill wf-pill--paused">Ops</span>
+                  </div>
+                </div>
+
+                <div class="wf-card wf-stack wf-stack--tight">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-text"><strong>Discovery</strong> <span class="iter v2">v2</span> — новый контейнер вне scope источника</span>
+                    <span class="wf-chip">info</span>
+                  </div>
+                  <div class="wf-route">
+                    <span class="wf-pill wf-pill--on">In-app</span>
+                    <span class="wf-annot">6</span>
+                    <span class="wf-pill wf-pill--off">Email</span>
+                    <span class="wf-route__sep"></span>
+                    <span class="wf-pill wf-pill--off">Slack</span>
+                    <span class="wf-pill wf-pill--off">Ops</span>
+                  </div>
+                </div>
+
+                <div class="wf-alert" id="recipients">
+                  <strong>Адресаты — только роли Owner / Admin.</strong> Динамический срез по роли: выдали роль на экране <a href="users.html" class="wf-a">Пользователи</a> — человек в получателях, сняли — выбыл. Личные каналы (in-app · email) каждый правит у себя в <a href="../../auth-security/_wireframes/profile-account.html#notifications" class="xref-module">профиле</a>; внешний получатель не заводится — для команды или дежурного служит webhook. Матрица — про <strong>broadcast</strong>-типы организации; личные типы <code>agent</code> и <code>account</code> адресованы конкретному пользователю (<a href="../../notifications/_workzone/dispatcher.html#addressing" class="xref-module">targeted</a>) и каждый правит их только у себя в профиле.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Пилюли — каналы этого типа: залитая точка идёт сюда, пустая — нет, приглушённая — канал на паузе (Ops, см. блок Каналы).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Замок на пилюле in-app у <code>security</code> и <code>sync</code> — этот канал выключить нельзя: критичный сигнал всегда доходит хотя бы в ленту. Замок организационный и только на in-app — email и webhooks по этим типам свободны, а лично отписаться можно в профиле. На severity он не завязан: <code>system</code> тоже critical, но гасится весь. <a href="../../auth-security/_workzone/protection.html#brute-force" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              Discovery <span class="iter v2">v2</span> — «новый проект X в Jira вне разрешённого scope, добавить?» с кнопкой действия прямо в уведомлении. Срабатывает в режиме scope «Только выбранное», когда источник отдаёт объект за пределами allow-list; в режиме «Всё» границы scope нет — уведомлять не о чем. <a href="../../harvester/_workzone/sources.html#allowlist" class="xref-module">Harvester</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Добавление webhook (модал) ═══ -->
+      <div class="section" id="add-webhook">
+        <div class="section__title">
+          Добавление webhook
+          <a href="#channels" class="xref-anchor">→ Каналы</a>
+        </div>
+        <div class="wf-stage wf-stage--backdrop">
+          <div class="wf-stage__caption">диалог «+ Добавить webhook» · форма по пресету</div>
+          <div class="wf-gallery">
+
+            <!-- ── Пресет Slack — проверен ── -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">пресет Slack</div>
+              <div class="wf-screen wf-screen--modal">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <span class="wf-title">Новый webhook <span class="wf-annot">7</span></span>
+
+                    <div class="wf-field wf-field--inline">
+                      <span class="wf-label">Формат</span>
+                      <span class="wf-chip">Slack — пресет</span>
+                      <span class="wf-hint">готовый формат сообщения</span>
+                      <span class="wf-annot">8</span>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Название</span>
+                      <div class="wf-input">Команда #alerts</div>
+                      <span class="wf-hint">метка канала в списке и матрице</span>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Incoming Webhook URL</span>
+                      <div class="wf-input wf-input--focus">https://hooks.slack.com/services/T…/B…/…</div>
+                      <span class="wf-hint">из Slack → Incoming Webhooks; хранится зашифрованно <span class="wf-annot">9</span></span>
+                    </div>
+
+                    <div class="wf-row wf-spread">
+                      <button class="wf-btn">Проверить</button>
+                      <span class="wf-row">
+                        <span class="wf-chip wf-chip--ok">проверен</span>
+                        <span class="wf-annot">10</span>
+                      </span>
+                    </div>
+
+                    <hr class="wf-divider" />
+                    <div class="wf-row wf-spread">
+                      <button class="wf-btn wf-btn--ghost">Отмена</button>
+                      <button class="wf-btn wf-btn--primary">Добавить</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Пресет Generic — проверка не прошла ── -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">пресет Generic · проверка не прошла</div>
+              <div class="wf-screen wf-screen--modal">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <span class="wf-title">Новый webhook</span>
+
+                    <div class="wf-field wf-field--inline">
+                      <span class="wf-label">Формат</span>
+                      <span class="wf-chip">Generic — JSON</span>
+                      payload
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Название</span>
+                      <div class="wf-input">Ops on-call</div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Endpoint URL</span>
+                      <div class="wf-input">https://ops.company.com/hooks/achilles</div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Подпись запроса (secret)</span>
+                      <div class="wf-input">••••••••••••</div>
+                      <span class="wf-hint">опционально — HMAC тела для проверки на приёмнике; write-only <span class="wf-annot">11</span></span>
+                    </div>
+
+                    <div class="wf-row wf-spread">
+                      <button class="wf-btn">Проверить</button>
+                      <span class="wf-row">
+                        <span class="wf-chip wf-chip--err">не отвечает · 503</span>
+                      </span>
+                    </div>
+                    <span class="wf-hint wf-hint--error">endpoint вернул ошибку — исправьте адрес и проверьте снова</span>
+
+                    <hr class="wf-divider" />
+                    <div class="wf-row wf-spread">
+                      <button class="wf-btn wf-btn--ghost">Отмена</button>
+                      <button class="wf-btn wf-btn--disabled">Добавить</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              Модал открывается из «+ Добавить webhook» в блоке <a href="#channels" class="xref-anchor">Каналы</a> с уже выбранным пресетом. Канал создаётся выключенным — после добавления его включают тумблером «Активен» в списке.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              Пресет задаёт и форму полей, и формат <a href="../../notifications/_workzone/dispatcher.html#payload" class="xref-module">payload</a>: Slack — готовое сообщение (нужен лишь Incoming Webhook URL), Generic — нейтральный JSON на произвольный приёмник (URL + опц. подпись). Только эти два: Microsoft Teams отдельным пресетом не делаем — Teams принимает generic JSON через Power Automate Workflow (старые Office 365 Connectors Microsoft отключил в мае 2026).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">9</span>
+              URL пишется в <a href="../../notifications/_workzone/data-model.html#notifications-data" class="xref-module"><code>url_enc</code></a>, опц. HMAC-secret — в отдельный <code>secret_enc</code>; оба зашифрованы и обратно в UI не отдаются (write-only). При правке существующего канала поля приходят пустыми: пусто = «оставить как есть», ввод = заменить.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">10</span>
+              «Проверить» шлёт пробное событие на endpoint до сохранения — та же проба, что потом живёт в столбце «Проверка» и в пункте меню «Test». Зелёный чип — endpoint принял.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">11</span>
+              Провал проверки показывает код ответа и блокирует «Добавить»: нерабочий канал в список не попадёт. Secret для Generic — необязательный: подпишем тело, если приёмник её проверяет.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">Границы v1: кастомные заголовки и <code>Authorization: Bearer</code> — <span class="iter v2">v2</span>; свой формат payload не редактируем шаблоном — для нестандартного приёмника служит <a href="../../notifications/_workzone/dispatcher.html#payload" class="xref-module">generic + n8n</a>.</li>
+            <li class="wf-legend__item wf-legend__item--note">Заводит и правит каналы только Owner; Admin видит форму read-only.</li>
+          </ol>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Shared UI: Toasts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Shared UI</a>
+        <h1 class="header__title">Toasts</h1>
+        <div class="header__sub">shared ui · макеты · общий компонент</div>
+      </div>
+
+      <p class="desc">Короткое всплывающее сообщение об исходе действия — для того, что пользователь иначе не увидит.</p>
+
+      <!-- ═══ Когда показывать ═══ Политика компонента: тост — для невидимого
+           на месте, против «слепоты к уведомлениям». -->
+      <div class="section">
+        <h2 class="section__title">Когда показывать</h2>
+        <ul class="wf-legend">
+          <li class="wf-legend__item">
+            <strong>✓ Ошибка / сбой</strong> — системная или фоновая. Ошибки <em>формы</em> — inline у поля.</li>
+          <li class="wf-legend__item">
+            <strong>✓ Фоновый / отложенный исход</strong> — синхронизация запущена, письмо в очереди.</li>
+          <li class="wf-legend__item">
+            <strong>✓ Изменение вне видимости</strong> — элемент, с которого ушли; массовое действие.</li>
+          <li class="wf-legend__item">
+            <strong>✓ Значимое действие без видимого следа</strong> — отзыв доступа, отправка приглашения.</li>
+          <li class="wf-legend__item">
+            <strong>✕ Результат виден на месте</strong> — тост дублирует; подтверждение inline.</li>
+          <li class="wf-legend__item">
+            <strong>✕ Рутинное, мгновенно обратимое</strong> —
+            тумблер, разворот блока: фидбэк не нужен.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ═══ Варианты ═══ Четыре семантических тона. -->
+      <div class="section">
+        <h2 class="section__title">Варианты</h2>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <!-- success -->
+            <div class="wf-frame" id="success">
+              <div class="wf-stage__caption">success</div>
+              <div class="wf-toaststack">
+                <div class="wf-toast wf-toast--success">
+                  <span class="wf-toast__icon">✓</span>
+                  <div class="wf-toast__body">
+                    <div class="wf-toast__title">Сохранено</div>
+                    Настройки организации обновлены.
+                  </div>
+                  <span class="wf-toast__close">×</span>
+                </div>
+              </div>
+            </div>
+            <!-- error -->
+            <div class="wf-frame" id="error">
+              <div class="wf-stage__caption">error</div>
+              <div class="wf-toaststack">
+                <div class="wf-toast wf-toast--error">
+                  <span class="wf-toast__icon">!</span>
+                  <div class="wf-toast__body">
+                    <div class="wf-toast__title">Не удалось подключиться</div>
+                    SMTP-сервер не ответил (timeout).
+                    <span class="wf-toast__action">Открыть настройки SMTP →</span>
+                  </div>
+                  <span class="wf-toast__close">×</span>
+                </div>
+              </div>
+            </div>
+            <!-- info -->
+            <div class="wf-frame" id="info">
+              <div class="wf-stage__caption">info</div>
+              <div class="wf-toaststack">
+                <div class="wf-toast wf-toast--info">
+                  <span class="wf-toast__icon">i</span>
+                  <div class="wf-toast__body">
+                    <div class="wf-toast__title">Синхронизация запущена</div>
+                    Источник «GitLab» — результат появится в логе.
+                  </div>
+                  <span class="wf-toast__close">×</span>
+                </div>
+              </div>
+            </div>
+            <!-- warn -->
+            <div class="wf-frame" id="warn">
+              <div class="wf-stage__caption">warn</div>
+              <div class="wf-toaststack">
+                <div class="wf-toast wf-toast--warn">
+                  <span class="wf-toast__icon">!</span>
+                  <div class="wf-toast__body">
+                    <div class="wf-toast__title">Приглашение отправлено</div>
+                    Письмо в очереди — доставка зависит от SMTP.
+                  </div>
+                  <span class="wf-toast__close">×</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ol class="wf-legend">
+          <li class="wf-legend__item">
+            <strong>success</strong> — значимое действие прошло: отправлено, создано, отозвано.</li>
+          <li class="wf-legend__item">
+            <strong>error</strong> — действие не прошло; причина + опциональная ссылка к исправлению.</li>
+          <li class="wf-legend__item">
+            <strong>info</strong> — нейтральный статус: фоновая задача запущена.</li>
+          <li class="wf-legend__item">
+            <strong>warn</strong> — выполнено с оговоркой.</li>
+        </ol>
+      </div>
+
+      <!-- ═══ Поведение ═══ Позиция, стек, авто-скрытие. -->
+      <div class="section">
+        <h2 class="section__title">Поведение</h2>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">стек · несколько подряд</div>
+          <div class="wf-toaststack">
+            <div class="wf-toast wf-toast--success">
+              <span class="wf-toast__icon">✓</span>
+              <div class="wf-toast__body">
+                <div class="wf-toast__title">Роль изменена</div>
+                Анна Петрова — теперь Admin.
+              </div>
+              <span class="wf-toast__close">×</span>
+            </div>
+            <div class="wf-toast wf-toast--success">
+              <span class="wf-toast__icon">✓</span>
+              <div class="wf-toast__body">
+                <div class="wf-toast__title">Приглашение отправлено</div>
+                ivan@example.com — действует 48 часов.
+              </div>
+              <span class="wf-toast__close">×</span>
+            </div>
+          </div>
+        </div>
+        <ul class="wf-legend">
+          <li class="wf-legend__item">
+            <strong>Позиция</strong> — нижний правый угол, поверх контента, без сдвига layout.</li>
+          <li class="wf-legend__item">
+            <strong>Авто-скрытие</strong> — ~5 секунд; наведение/фокус паузят таймер, <code>×</code> закрывает вручную.
+          </li>
+          <li class="wf-legend__item">
+            <strong>Стек</strong> — столбцом, свежий снизу; сверх лимита старые сворачиваются.</li>
+          <li class="wf-legend__item">
+            <strong>Доступность</strong> — <code>role="status"</code> или <code>role="alert"</code> (error), <code>aria-live</code> для
+            скринридеров.
+          </li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

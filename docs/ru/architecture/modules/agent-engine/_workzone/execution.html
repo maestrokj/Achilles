@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Agent Engine: Запуск и полосы</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="execution.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Agent Engine</a>
+        <h1 class="header__title">Запуск и полосы</h1>
+        <div class="header__sub">agent-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        Когда агент срабатывает и где исполняется его прогон. Запуск — два
+        повода: <strong>вручную</strong> кнопкой и по <strong>простому
+        расписанию</strong>. А сам <a href="runtime.html#loop" class="xref-page"
+          >агентный цикл</a> идёт <strong>отдельной фоновой полосой</strong> —
+        многошаговый и неторопливый, он не должен ни тормозить живой чат, ни
+        ждать синхронизацию источников.
+      </p>
+
+      <!-- ════════════════ SCHEDULE ════════════════
+           Два повода запуска: ручной «Запустить сейчас» и простое
+           расписание (интервал либо календарный HH:MM). Хранится в
+           agents.schedule; NULL = только ручной. Event-триггеры, сырой cron — v2. -->
+      <div class="section" id="schedule">
+        <h2 class="section__title">Два повода запуска <a class="xref-badge" href="../../cache-workers/_workzone/scheduling.html#registry">→ Cache &amp; Workers</a></h2>
+        <p class="desc">
+          Ручной «Запустить сейчас» расписания не требует, но чтит замки: прогон
+          стартует, если агент включён владельцем, не заперт админом и бюджет
+          недели не выбран. Расписание — необязательная надстройка:
+          <strong>интервал</strong> («каждые N часов») либо
+          <strong>календарный</strong> слот («ежедневно / еженедельно в HH:MM»).
+          Хранится одним полем <a href="data-model.html#agents" class="xref-page"
+            ><code>schedule</code></a>; пустое — агент чисто ручной. Сырой cron и
+          событийные триггеры намеренно за бортом: <span class="iter v2">v2</span>.
+        </p>
+
+        <div class="ex-triggers">
+          <div class="ex-trig ex-trig--manual">
+            <div class="ex-trig__h">▶ Вручную</div>
+            <span class="ex-trig__ex">Запустить сейчас</span>
+            <div class="ex-trig__desc">
+              кнопка на экране агента — расписания не требует; доступна, пока
+              агент включён и не заперт админом.
+            </div>
+          </div>
+          <div class="ex-trig ex-trig--interval">
+            <div class="ex-trig__h">↻ Интервал</div>
+            <span class="ex-trig__ex">каждые 6 ч</span>
+            <div class="ex-trig__desc">
+              простой период — для регулярного фонового присмотра.
+            </div>
+          </div>
+          <div class="ex-trig ex-trig--calendar">
+            <div class="ex-trig__h"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></svg> Календарно</div>
+            <span class="ex-trig__ex">пн 09:00</span>
+            <div class="ex-trig__desc">
+              ежедневно или еженедельно в заданный час — утренняя сводка.
+            </div>
+          </div>
+        </div>
+
+        <p class="note">
+          Расписание считает следующий слот в
+          <a href="data-model.html#agents" class="xref-page"><code>next_run_at</code></a>;
+          планировщик будит агента по нему и ставит прогон в фоновую очередь.
+          Выключенный владельцем, запертый админом или оставшийся без модели
+          агент в скане не участвует: его <code>next_run_at</code> обнулён —
+          закрытое условие <a href="governance.html#gate" class="xref-page">гейта</a>
+          не оставляет следа в журнале (наложение ниже — оставляет).
+          Календарный «09:00» резолвится против часового пояса
+          <strong>владельца</strong> (его <code>timezone</code>, при <code>NULL</code>
+          — пояс организации из <code>platform_settings</code>) и только затем
+          ложится в <code>next_run_at</code> как UTC. Событийные триггеры (новый
+          коммит, инцидент) и сырой cron — горизонт v2.
+        </p>
+        <p class="note">
+          Прогоны одного агента не накладываются: у агента максимум один
+          незавершённый прогон — это держит замок в самой базе (partial unique
+          на <code>state</code> <code>queued</code>/<code>running</code> —
+          <a href="data-model.html#agent-runs" class="xref-page">модель
+            данных</a>). Наступивший слот или ручной запуск поверх ещё идущего
+          нового цикла не плодит — пишется <code>skipped</code> с
+          <code>reason=already_running</code>, пропуск виден в журнале, а не
+          теряется молчанием. Умер воркер, не закрыв прогон, — протухший
+          <code>heartbeat_at</code> отпускает замок (зависший прогон жнётся в
+          <code>failed</code>/<code>stale</code>), и агент стартует снова: зомби
+          его не запирает.
+        </p>
+      </div>
+
+      <!-- ════════════════ LANE ════════════════
+           Прогоны — отдельная фоновая полоса (свой пул воркеров), не на пути
+           живого чата и не в очереди синхронизации. Чтение KS read-only,
+           поэтому полоса безопасно идёт параллельно записям графа. -->
+      <div class="section" id="lane">
+        <h2 class="section__title">Фоновая полоса исполнения <a class="xref-badge" href="../../cache-workers/_workzone/queues.html#lanes">→ Cache &amp; Workers</a></h2>
+        <p class="desc">
+          Прогон агента — это секунды-минуты многошагового цикла. Пустить такое
+          по пути живого чата значило бы подвесить пользователя; встать в очередь
+          синхронизации — ждать импорт. Поэтому агенты бегут
+          <strong>своей фоновой полосой</strong>, отдельным пулом воркеров. А раз
+          чтение KS у них <a href="identity.html#ks-boundary" class="xref-page"
+            >строго read-only</a>, полоса спокойно идёт <strong>параллельно
+            записям графа</strong> — синхронизации и доводке: конкурировать за
+          данные не за что.
+        </p>
+
+        <div class="ex-lanes">
+          <div class="ex-lane">
+            <div class="ex-lane__rail">
+              <span class="ex-lane__name">Живой чат</span>
+              <span class="ex-lane__kind">синхронно</span>
+            </div>
+            <div class="ex-lane__body">
+              <span class="ex-lane__tag ex-lane__tag--live">low-latency</span>
+              ответ пользователю здесь и сейчас — приоритет на отклик
+            </div>
+          </div>
+          <div class="ex-lane">
+            <div class="ex-lane__rail">
+              <span class="ex-lane__name">Синхронизация</span>
+              <span class="ex-lane__kind">фоново</span>
+            </div>
+            <div class="ex-lane__body">
+              <span class="ex-lane__tag ex-lane__tag--write">пишет граф</span>
+              импорт и доводка знаний — Harvester и Curation Pass
+            </div>
+          </div>
+          <div class="ex-lane ex-lane--agent">
+            <div class="ex-lane__rail">
+              <span class="ex-lane__name">Агенты</span>
+              <span class="ex-lane__kind">фоново · наша полоса</span>
+            </div>
+            <div class="ex-lane__body">
+              <span class="ex-lane__tag ex-lane__tag--read">читает граф</span>
+              агентные циклы — свой пул воркеров, read-only к KS
+            </div>
+          </div>
+        </div>
+        <p class="ex-lanes__cap">
+          три независимые полосы · агенты не ждут запись и не тормозят чат
+        </p>
+      </div>
+
+      <!-- ════════════════ CONCURRENCY ════════════════
+           Лимит одновременных LLM-вызовов агентов отделён от живого чата —
+           чтобы многошаговый цикл не выедал общий rate-limit провайдера и не
+           морил голодом интерактивные ответы. -->
+      <div class="section" id="concurrency">
+        <h2 class="section__title">Отдельный лимит на модель <a class="xref-badge" href="../../cache-workers/_workzone/queues.html#lanes">→ Cache &amp; Workers</a></h2>
+        <p class="desc">
+          У провайдера модели один общий rate-limit на всю платформу. Агентный
+          цикл прожорлив — много вызовов за прогон, — и если пустить его в общий
+          котёл, он <strong>выест лимит у живого чата</strong>: пользователь
+          будет ждать, пока чей-то фоновый агент крутит десятый шаг. Поэтому у
+          агентов <strong>свой потолок одновременных LLM-вызовов</strong>,
+          отделённый от интерактивного трафика: фон уступает дорогу отклику.
+        </p>
+        <p class="note">
+          Сам потолок — платформенная настройка
+          (<a href="../../admin-panel/_workzone/data-model.html#singleton" class="xref-module"
+            ><code>platform_settings.agent_max_concurrency</code></a>, одно число на
+          организацию), рядом с
+          <a href="runtime.html#loop" class="xref-page">потолком итераций</a> и
+          недельным <a href="governance.html#budget" class="xref-page">бюджетом</a>.
+          Это потолок <em>параллелизма</em> полосы, не недельный расход: бюджет
+          ограничивает, сколько сотрудник тратит за неделю; здесь — сколько
+          прогонов крутится разом, чтобы не задеть чат.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

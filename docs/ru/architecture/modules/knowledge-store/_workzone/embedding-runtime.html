@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Knowledge Store: Embeddings-рантайм</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="embedding-runtime.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Knowledge Store</a>
+        <h1 class="header__title">Embeddings-рантайм</h1>
+        <div class="header__sub">knowledge-store · workzone</div>
+      </div>
+
+      <p class="desc">
+        Эмбеддер — <strong>один общий сервис</strong> для всей платформы:
+        преобразует текст в вектор, к нему обращаются Harvester, Knowledge Store,
+        Query Engine и Agent Engine. Несущее решение уже принято на стороне
+        реестра моделей: эмбеддер вынесен
+        <strong>отдельным сетевым сервисом</strong> (OpenAI-совместимый,
+        веса грузятся
+        <a
+          href="../../ai-foundation/_workzone/data-model.html#ai-builtin"
+          class="xref-module"
+          >лениво</a
+        >), а не вшит в backend. Поэтому масштаб здесь — вопрос эксплуатации, а
+        не передизайна.
+      </p>
+
+      <!-- ════════════════ LOAD PATHS ════════════════ -->
+      <div class="section" id="load-paths">
+        <div class="section__title">Потоки нагрузки</div>
+        <p class="desc">
+          Четыре источника нагрузки сходятся в <strong>один общий</strong> рантайм.
+        </p>
+
+        <div class="er-flow">
+          <div class="er-sources">
+            <div class="er-src er-src--bulk">
+              <div class="er-src__name">Harvester · инжест</div>
+              <div class="er-src__role">
+                <a href="../../harvester/_workzone/pipeline.html#embed" class="xref-module"
+                  >этап <code>embed</code></a
+                >
+                — фрагменты пачками при приёме
+              </div>
+              <span class="er-chip er-chip--bulk">фон · может ждать</span>
+            </div>
+            <div class="er-src er-src--bulk">
+              <div class="er-src__name">Knowledge Store · реэмбеддинг</div>
+              <div class="er-src__role">
+                <a href="lifecycle.html#embedding-refresh" class="xref-page"
+                  >массовый прогон</a
+                >
+                при смене модели
+              </div>
+              <span class="er-chip er-chip--bulk">фон · может ждать</span>
+            </div>
+            <div class="er-src er-src--live">
+              <div class="er-src__name">Query Engine · поиск</div>
+              <div class="er-src__role">
+                <a href="hybrid-search.html#primitives" class="xref-page"
+                  >вектор запроса</a
+                >
+                на каждый запрос пользователя
+              </div>
+              <span class="er-chip er-chip--live">юзер ждёт ответа</span>
+            </div>
+            <div class="er-src er-src--agent">
+              <div class="er-src__name">Agent Engine · поиск</div>
+              <div class="er-src__role">
+                <a href="../../agent-engine/_workzone/runtime.html#tools" class="xref-module"
+                  >примитив <code>search</code> KS</a
+                >
+                в агентном цикле — вектор намерения
+              </div>
+              <span class="er-chip er-chip--agent">фон · мелкий · online-путь</span>
+            </div>
+          </div>
+
+          <div class="er-merge">→</div>
+
+          <div class="er-runtime">
+            <div class="er-runtime__name">embeddings :80</div>
+            <div class="er-runtime__sub">
+              OpenAI-совместимый · model-agnostic · веса лениво, назначенная прогрета
+            </div>
+          </div>
+
+          <div class="er-out">
+            <span class="er-out__arr">→</span><span>вектор</span>
+          </div>
+        </div>
+
+        <table class="er-tbl">
+          <thead>
+            <tr>
+              <th>Путь</th>
+              <th>Объём</th>
+              <th>Латентность</th>
+              <th>Ожидание</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="er-row--live">
+              <th>Поиск · QE</th>
+              <td>маленький запрос</td>
+              <td>юзер ждёт ответа</td>
+              <td><span class="er-tag er-tag--now">критично</span></td>
+            </tr>
+            <tr>
+              <th>Поиск · Agent</th>
+              <td>маленький запрос</td>
+              <td>фон, но мелкий</td>
+              <td><span class="er-tag er-tag--agent">терпит · online</span></td>
+            </tr>
+            <tr>
+              <th>Инжест · Harvester</th>
+              <td>большие пачки</td>
+              <td>фон</td>
+              <td><span class="er-tag er-tag--wait">терпит</span></td>
+            </tr>
+            <tr>
+              <th>Реэмбеддинг · KS</th>
+              <td>массовый прогон, редко</td>
+              <td>фон</td>
+              <td><span class="er-tag er-tag--wait">терпит</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p class="note">
+          <strong>Неравномерность по источникам — не забота эмбеддера.</strong>
+          В потоке фрагментов источника уже нет: эмбеддеру важен только суммарный
+          объём, а темп и устойчивость приёма по каждому источнику держат
+          <a href="../../harvester/_workzone/reliability.html#worker" class="xref-module"
+            >воркеры приёма Harvester</a
+          >.
+        </p>
+      </div>
+
+      <!-- ════════════════ CONTENTION ════════════════ -->
+      <div class="section" id="contention">
+        <div class="section__title">Узкое место — конкуренция, не мощность <a class="xref-badge" href="../../cache-workers/_workzone/queues.html#lanes">→ Cache &amp; Workers</a></div>
+        <p class="desc">
+          Риск — не сам объём, а <strong>разная форма нагрузки</strong> у путей.
+          Большой реиндекс на сотни тысяч фрагментов способен занять рантайм
+          целиком — и запрос пользователя встанет в очередь за ним, поиск
+          затормозит. Это вопрос приоритета, а не количества железа.
+        </p>
+        <div class="decision-box">
+          <strong>Поиск не делит лимит с массовым прогоном.</strong>
+          Фоновая нагрузка (инжест + реэмбеддинг) идёт через очередь задач с
+          ограниченным параллелизмом; запросы поиска зовут рантайм напрямую,
+          вне этого лимита. Так интерактивный путь не встаёт в очередь за всем
+          реиндексом — лимиты раздельные, не общий. Инжест и так исполняется
+          фоновыми воркерами, их предел параллелизма просто не общий с поиском.
+          Полной развязки это в v1 не даёт: рантайм один, и онлайн-запрос ещё
+          подождёт <em>текущую</em> bulk-пачку на исполнении — но задержку
+          ограничивает одна пачка, а не вся очередь; совсем поток разводят
+          раздельные пулы online/bulk уже в v2 (ниже).
+        </div>
+        <div class="decision-box">
+          <strong>Агентный поиск едет прямым путём, не через bulk-очередь.</strong>
+          Хотя агентный цикл — фоновый, его обращение к эмбеддеру это
+          <em>мелкий вектор запроса</em> через тот же примитив
+          <code>search</code> KS, что и у пользователя: ставить его в очередь за
+          реиндексом значило бы заморозить цикл на минуты ради задачи на
+          миллисекунды. Поэтому он делит <strong>online-путь</strong> с поиском, а
+          не bulk-лимит. Объёма это не добавляет: темп агентных запросов ограничен
+          сверху
+          <a
+            href="../../agent-engine/_workzone/execution.html#concurrency"
+            class="xref-module"
+            >агентным потолком параллелизма</a
+          >, а не пропускной способностью эмбеддера.
+        </div>
+        <div class="decision-box">
+          <strong>Первый запрос не ждёт весов.</strong>
+          Ленивая загрузка бережёт деплой, но на латентно-критичном пути
+          обернулась бы секундами холодного старта. Поэтому рантайм греет
+          назначенную модель <strong>проактивно</strong> — по её
+          <a
+            href="../../admin-panel/_wireframes/ai-models.html#model-assignment"
+            class="xref-module"
+            >назначению в Admin</a
+          >
+          и при собственном старте, а не на первом обращении поиска: к первому
+          живому запросу веса уже в памяти. Желаемая модель персистится рядом с
+          кэшем весов, поэтому перезапущенный контейнер перезагружает её сам —
+          рестарт посреди закачки продолжает её, а не возвращает пустой рантайм.
+        </div>
+        <div class="decision-box">
+          <strong>Память — бюджет, а не надежда.</strong>
+          Рантайм читает лимит своего контейнера при старте и держит загруженные
+          модели, <strong>пока они помещаются</strong>: при смене новая модель
+          грузится рядом со старой, и старая продолжает обслуживать поиск, пока
+          новые веса не готовы, — вытеснение (LRU) срабатывает только под
+          реальным давлением, так что просторный хост получает бесшовную смену,
+          а маленький, как и раньше, держит пик в одну резидентную модель.
+          Модель, не помещающаяся даже в одиночку,
+          <strong>отклоняется при назначении</strong>
+          (<code>MODEL_TOO_LARGE</code>; предпроверка идёт до любого коммита), а
+          не всплывает позже OOM-убийством. Пофазовое состояние модели
+          (loading / ready / error) отдаётся отдельным статусным endpoint'ом —
+          экраны Admin показывают «загрузку весов» и «переиндексацию» как разные
+          стадии, — а <code>/healthz</code> остаётся чистым liveness: контейнер,
+          занятый загрузкой весов, жив, и autoheal-сторож не должен его
+          пристреливать.
+        </div>
+        <div class="decision-box">
+          <strong>Эмбеддер не ответил — поиск деградирует, не падает.</strong>
+          Обращение к рантайму на онлайн-пути идёт под
+          <strong>ограниченным таймаутом</strong>: висеть в ожидании вектора,
+          пока пользователь ждёт ответа, недопустимо. Не уложился или недоступен —
+          поиск отдаёт результат по оставшимся
+          <a href="hybrid-search.html#primitives" class="xref-page"
+            >примитивам, которым вектор не нужен</a
+          >
+          (лексика, граф, фильтры): вектор лишь одна из двух текстовых ног, без
+          него выдача беднеет, но запрос не остаётся без ответа — провал вектора
+          виден честно, а не прячется за зависанием. На bulk-пути сбой ничего не
+          роняет: фрагмент возвращается в очередь и берётся
+          <a href="../../harvester/_workzone/reliability.html#retry" class="xref-module"
+            >ретраем воркеров приёма</a
+          >, пользователь этого не ждёт.
+        </div>
+      </div>
+
+      <!-- ════════════════ SCALING v1 → v2 ════════════════ -->
+      <div class="section" id="scaling">
+        <div class="section__title">Масштаб: v1 → v2</div>
+        <p class="desc">
+          У сервиса два рычага мощности. <strong>Батчинг</strong> — рантайм
+          копит запросы на несколько миллисекунд и считает их одной пачкой; даёт
+          кратный рост пропускной способности на <em>одном</em> контейнере,
+          берётся бесплатно с батчинг-способным рантаймом.
+          <strong>Реплики за балансировщиком</strong> — N копий: эмбеддинг
+          <strong>stateless</strong> (текст на входе, вектор на выходе, без
+          состояния между запросами), поэтому любой запрос обслужит любая копия.
+          Сначала выжимается батчинг, потом реплики.
+        </p>
+
+        <div class="er-scale">
+          <!-- v1 panel -->
+          <div class="er-panel">
+            <div class="er-panel__head">
+              Делаем сейчас <span class="iter v1">v1</span>
+            </div>
+            <div class="er-lane er-lane--live">
+              <span class="er-lane__tag">поиск</span>
+              <span class="er-lane__arr">───→</span>
+              <div class="er-node">embeddings :80</div>
+            </div>
+            <div class="er-lane er-lane--bulk">
+              <span class="er-lane__tag">инжест · реэмб.</span>
+              <span class="er-lane__arr">→</span>
+              <span class="er-gate">очередь · лимит</span>
+              <span class="er-lane__arr">→</span>
+            </div>
+            <ul class="er-panel__notes">
+              <li>Один логический сервис за адресом-конфигом.</li>
+              <li>Рантайм с динамическим батчингом — как требование.</li>
+              <li>Один хост → масштаб вертикально.</li>
+            </ul>
+          </div>
+
+          <!-- v2 panel -->
+          <div class="er-panel er-panel--v2">
+            <div class="er-panel__head">
+              Откладываем <span class="iter v2">v2</span>
+            </div>
+            <div class="er-node er-node--lb">балансировщик</div>
+            <div class="er-fan">⤋</div>
+            <div class="er-reps">
+              <div class="er-node">реплика</div>
+              <div class="er-node">реплика</div>
+              <div class="er-node">реплика</div>
+            </div>
+            <ul class="er-panel__notes">
+              <li>Пул из N реплик за тем же адресом.</li>
+              <li>Автомасштабирование под нагрузку.</li>
+              <li>Разделение пулов: «online» (поиск) vs «bulk» (инжест).</li>
+              <li>Требует оркестрации (k8s / GPU).</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="decision-box">
+          <strong>Переход v1 → v2 — без правок у потребителей.</strong>
+          Оба деплоя живут за одним адресом
+          (<a href="../../ai-foundation/_workzone/data-model.html#ai-builtin" class="xref-module"
+            ><code>base_url</code></a
+          >): нарастить пул — это сменить цель адреса, код Harvester, Knowledge
+          Store и Query Engine не меняется.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,761 @@
+/* Email — bespoke diagrams of the outbound-mail module (eml-*).
+   The module is a backend service ("the post office"): consumers hand it a
+   message, it composes + sends over SMTP. Three diagram groups — the
+   architecture flow board, the two delivery modes (inline vs queued), and the
+   letter previews — share one calm, framed register (surface fills, hairline borders,
+   accent edges for the focal element).
+   Loaded by index.html and the _workzone/* pages that draw these, on top of
+   ../module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ═══════════════════════════════════════════
+   Flow board — the whole module at a glance
+   A left-to-right "production line": stacked consumer requests gather onto one
+   wire into the focal Email service (compose | send), which forks into two
+   delivery tracks (inline / queued) that merge back into SMTP → inbox. A dashed
+   service bus underneath feeds the line — the smtp_settings singleton plus the
+   three modules Email leans on (Auth, Admin, Broker). Connectors are CSS
+   hairlines; the two tracks are pinned to equal-height rows so the fork / merge
+   arms land exactly on each track's centre (25% / 75%) whatever the content.
+   The board breaks out of the 720px page to a wider canvas, centred on the
+   viewport — the flow needs the horizontal room; the page chrome stays narrow.
+   ═══════════════════════════════════════════ */
+.eml-flow {
+  width: min(1080px, calc(100vw - 3rem));
+  margin-left: 50%;
+  transform: translateX(-50%);
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  padding: 1.8rem 1.9rem 1.6rem;
+  --eml-wire: var(--s2-glow);
+  --eml-wire-w: 2px;
+}
+
+.eml-flow__cap {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 0.7rem;
+}
+
+/* ── The line: input · gather · rail (core + fork) ── */
+.eml-flow__line {
+  display: grid;
+  grid-template-columns: 150px 30px 1fr;
+  align-items: stretch;
+}
+
+/* input — stacked consumer requests */
+.eml-in {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.eml-in__lbl {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-align: center;
+}
+.eml-req {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.45rem 0.55rem;
+  text-align: center;
+}
+.eml-req b {
+  display: block;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.15;
+}
+.eml-req code {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--text-muted);
+}
+.eml-req--v2 {
+  border-style: dashed;
+  opacity: 0.75;
+}
+.eml-req--v2 b {
+  color: var(--text-dim);
+}
+.eml-v2 {
+  font-family: var(--mono);
+  font-size: 0.52rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--text-muted);
+  border-radius: var(--pill-radius);
+  padding: 0.05rem 0.26rem;
+  margin-left: 0.25rem;
+  vertical-align: middle;
+}
+
+/* gather — consumers collected onto one wire into the core */
+.eml-join {
+  position: relative;
+}
+.eml-join::before {
+  /* vertical collector spanning the request stack */
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 16%;
+  bottom: 16%;
+  width: var(--eml-wire-w);
+  background: var(--eml-wire);
+}
+.eml-join::after {
+  /* horizontal wire to the core */
+  content: "";
+  position: absolute;
+  left: 5px;
+  right: 8px;
+  top: 50%;
+  height: var(--eml-wire-w);
+  background: var(--eml-wire);
+  transform: translateY(-50%);
+}
+.eml-join > i {
+  /* arrowhead into the core */
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 8px solid var(--eml-wire);
+  transform: translateY(-50%);
+}
+
+/* rail — focal core + the fork */
+.eml-rail {
+  display: grid;
+  grid-template-columns: 210px 1fr;
+  align-items: center;
+}
+
+/* ── Focal node: Email ── */
+.eml-core {
+  position: relative;
+  background: var(--tint-6);
+  border: var(--border-w) solid var(--accent);
+  border-radius: var(--radius);
+  padding: 0.85rem 0.9rem 0.95rem;
+  box-shadow: 0 4px 18px rgba(184, 96, 48, 0.16);
+  z-index: 2;
+}
+.eml-core__name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1.18rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--accent);
+}
+.eml-core__glyph {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+.eml-core__role {
+  font-size: 0.66rem;
+  color: var(--text-dim);
+  margin: 0.1rem 0 0.6rem;
+  line-height: 1.25;
+}
+.eml-cams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+}
+.eml-cam {
+  background: var(--paper);
+  border: 1.5px solid var(--tint-25);
+  border-radius: var(--radius-md);
+  padding: 0.45rem 0.5rem;
+  text-align: center;
+}
+.eml-cam b {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.eml-cam span {
+  display: block;
+  margin-top: 0.12rem;
+  font-size: 0.57rem;
+  color: var(--text-muted);
+  line-height: 1.2;
+}
+.eml-core__helpers {
+  margin-top: 0.6rem;
+  font-family: var(--mono);
+  font-size: 0.57rem;
+  color: var(--text-dim);
+  text-align: center;
+}
+
+/* ── Fork: branch · two tracks · merge · sink ── */
+.eml-fork {
+  display: grid;
+  grid-template-columns: 44px 1fr 50px 150px;
+  align-items: stretch;
+}
+
+/* branch — core stub, vertical spine, two arrowed arms into the tracks */
+.eml-branch {
+  position: relative;
+}
+.eml-branch__stub {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 18px;
+  height: var(--eml-wire-w);
+  background: var(--eml-wire);
+  transform: translateY(-50%);
+}
+.eml-branch::before {
+  /* spine 25% → 75% */
+  content: "";
+  position: absolute;
+  left: 18px;
+  top: 25%;
+  bottom: 25%;
+  width: var(--eml-wire-w);
+  background: var(--eml-wire);
+}
+.eml-branch > i {
+  position: absolute;
+  left: 18px;
+  right: 0;
+  height: var(--eml-wire-w);
+  background: var(--eml-wire);
+  transform: translateY(-50%);
+}
+.eml-branch > i.t {
+  top: 25%;
+}
+.eml-branch > i.b {
+  top: 75%;
+}
+.eml-branch > i::after {
+  /* arrowhead into a track */
+  content: "";
+  position: absolute;
+  right: -2px;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 7px solid var(--eml-wire);
+  transform: translateY(-50%);
+}
+
+/* two tracks — equal-height rows pin each centre to 25% / 75% */
+.eml-tracks {
+  align-self: stretch;
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  row-gap: 0;
+  min-height: 12rem;
+}
+.eml-track {
+  margin: 0.3rem 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border);
+  padding: 0.55rem 0.7rem;
+}
+.eml-track--inline {
+  background: var(--s4-pale);
+  border-color: var(--s4-glow);
+}
+.eml-track--queue {
+  background: var(--s3-pale);
+  border-color: var(--s3-glow);
+}
+.eml-track__top {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+.eml-track__name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.eml-track--inline .eml-track__name {
+  color: var(--s4);
+}
+.eml-track--queue .eml-track__name {
+  color: var(--s3);
+}
+.eml-track__sync {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.eml-track__for {
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  margin-bottom: 0.32rem;
+}
+.eml-track__for::before {
+  content: "▸ ";
+  color: var(--accent-muted);
+}
+.eml-track__for b {
+  color: var(--text);
+  font-weight: 600;
+}
+.eml-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.eml-chip {
+  font-family: var(--mono);
+  font-size: 0.57rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--pill-radius);
+  padding: 0.1rem 0.36rem;
+  color: var(--text-dim);
+}
+.eml-track__note {
+  margin-top: 0.3rem;
+  font-size: 0.6rem;
+  color: var(--text-dim);
+}
+.eml-track__note code {
+  font-family: var(--mono);
+  font-size: 0.57rem;
+  color: var(--s4);
+}
+
+/* merge — arms collect both tracks into the spine, one arrow to the sink */
+.eml-merge {
+  position: relative;
+}
+.eml-merge::before {
+  content: "";
+  position: absolute;
+  right: 26px;
+  top: 25%;
+  bottom: 25%;
+  width: var(--eml-wire-w);
+  background: var(--eml-wire);
+}
+.eml-merge > i {
+  position: absolute;
+  height: var(--eml-wire-w);
+  background: var(--eml-wire);
+  transform: translateY(-50%);
+}
+.eml-merge > i.t {
+  left: 0;
+  right: 26px;
+  top: 25%;
+}
+.eml-merge > i.b {
+  left: 0;
+  right: 26px;
+  top: 75%;
+}
+.eml-merge > i.out {
+  left: calc(100% - 26px);
+  right: 0;
+  top: 50%;
+}
+.eml-merge > i.out::after {
+  /* arrowhead into the sink */
+  content: "";
+  position: absolute;
+  right: -2px;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 7px solid var(--eml-wire);
+  transform: translateY(-50%);
+}
+
+/* sink — SMTP transport → inbox */
+.eml-sink {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.eml-smtp {
+  flex: 1;
+  background: var(--s2-pale);
+  border: 1.5px solid var(--s2-glow);
+  border-radius: var(--radius-md);
+  padding: 0.5rem 0.4rem;
+  text-align: center;
+}
+.eml-smtp b {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--s2);
+}
+.eml-smtp span {
+  font-family: var(--mono);
+  font-size: 0.54rem;
+  color: var(--text-muted);
+}
+.eml-sink__to {
+  color: var(--eml-wire);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.eml-mbox {
+  text-align: center;
+  font-size: 1.5rem;
+  line-height: 1;
+}
+.eml-mbox small {
+  display: block;
+  font-size: 0.56rem;
+  color: var(--text-dim);
+  margin-top: 0.15rem;
+}
+
+/* ── Service bus — what feeds the line ── */
+.eml-bus {
+  position: relative;
+  margin-top: 1.6rem;
+  padding-top: 1.4rem;
+  border-top: 2px dashed var(--border);
+  display: grid;
+  grid-template-columns: 1.35fr 1fr 1fr 1fr;
+  gap: 0.8rem;
+}
+.eml-bus::before {
+  content: "feeds the line";
+  position: absolute;
+  top: -0.62rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--paper);
+  padding: 0 0.6rem;
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+.eml-sat {
+  position: relative;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  padding: 0.6rem 0.7rem;
+}
+.eml-sat::before {
+  /* feed arrowhead up to the line */
+  content: "";
+  position: absolute;
+  top: -1.4rem;
+  left: 1.1rem;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 8px solid var(--eml-wire);
+}
+.eml-sat::after {
+  /* feed stem */
+  content: "";
+  position: absolute;
+  top: -0.62rem;
+  left: calc(1.1rem + 5px);
+  width: var(--eml-wire-w);
+  height: 0.62rem;
+  background: var(--eml-wire);
+  transform: translateX(-50%);
+}
+.eml-sat__name {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.18rem;
+}
+.eml-sat__name a {
+  font-weight: 700;
+}
+.eml-sat__role {
+  font-size: 0.62rem;
+  color: var(--text-dim);
+  line-height: 1.35;
+}
+
+.eml-sat--cfg {
+  background: var(--tint-8);
+  border-color: var(--tint-25);
+}
+.eml-sat--cfg .eml-sat__name {
+  color: var(--accent);
+}
+.eml-sat--cfg .eml-sat__name code {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+
+/* stack footer */
+.eml-foot {
+  margin-top: 1.2rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+.eml-foot__lbl {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.eml-stk {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--pill-radius);
+  padding: 0.12rem 0.4rem;
+  color: var(--text-dim);
+}
+
+@media (max-width: 720px) {
+  .eml-flow__line,
+  .eml-rail,
+  .eml-fork,
+  .eml-bus {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Notes set below a diagram inside a section — restore vertical rhythm
+   (the global reset zeroes margins; .notes itself carries none). */
+.eml-gap {
+  margin-top: 0.7rem;
+}
+
+/* ═══════════════════════════════════════════
+   Delivery modes — inline (sync) vs queued (SAQ)
+   Two cards side by side; edge hue separates the two paths.
+   ═══════════════════════════════════════════ */
+.eml-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+
+.eml-mode {
+  padding: 0.85rem 0.95rem;
+  border-left-width: var(--border-w);
+  border-left-style: solid;
+}
+
+.eml-mode--inline {
+  border-left-color: var(--s3);
+}
+
+.eml-mode--queue {
+  border-left-color: var(--s2);
+}
+
+.eml-mode__head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.4rem;
+}
+
+.eml-mode__name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.eml-mode__tag {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.4rem;
+  border-radius: var(--pill-radius);
+  color: #fff;
+}
+
+.eml-mode--inline .eml-mode__tag {
+  background: var(--s3);
+}
+
+.eml-mode--queue .eml-mode__tag {
+  background: var(--s2);
+}
+
+.eml-mode__body {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+
+.eml-mode__use {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.eml-mode__use b {
+  color: var(--text-dim);
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .eml-modes {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   Letter preview — a schematic of a rendered email
+   Framed like a mail client: header band (from · subject), prose body, a
+   CTA button, a muted footer. Paired RU / EN side by side for i18n.
+   ═══════════════════════════════════════════ */
+.eml-mails {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+
+.eml-mail {
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.eml-mail__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--tint-6);
+  border-bottom: 1px solid var(--border);
+}
+
+.eml-mail__from {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--text-dim);
+}
+
+.eml-mail__lang {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--pill-radius);
+  background: var(--accent-muted);
+  color: #fff;
+}
+
+.eml-mail__body {
+  padding: 0.75rem 0.8rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.eml-mail__subj {
+  display: block;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+
+.eml-mail__btn {
+  display: inline-block;
+  margin: 0.55rem 0;
+  padding: 0.35rem 0.85rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 6px;
+}
+
+.eml-mail__link {
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
+.eml-mail__foot {
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 640px) {
+  .eml-mails {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Compact letter spec — for the shorter letters (reset, test) shown as a
+   row of facts rather than a full preview. ── */
+.eml-spec {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.3rem 0.8rem;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.eml-spec dt {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  padding-top: 0.1rem;
+}
+
+.eml-spec dd {
+  color: var(--text);
+}

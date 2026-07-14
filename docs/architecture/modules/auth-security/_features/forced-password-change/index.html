@@ -1,0 +1,83 @@
+<!doctype html>
+<!--
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  FEATURE: forced-password-change — mandatory change of the temporary  │
+  │  password on first login. Triggers when an admin resets a password    │
+  │  with no SMTP configured and issues a temporary one — the system      │
+  │  won't let the user into the app until a permanent password is set.   │
+  │                                                                       │
+  │  OWNS change-temp-password.html (its own flow node, beside this        │
+  │  file; orphan test: remove the feature — the screen has no home).      │
+  │  login and profile-account — SHARED (_wireframes, they live on their   │
+  │  own), the flow marks them .flow-stop--shared. No dependency-without-  │
+  │  screen: the feature triggers precisely on the ABSENCE of SMTP — no    │
+  │  "Dependencies" block needed. Conventions: README → "Features".        │
+  └─────────────────────────────────────────────────────────────────────┘
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Forced password change</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · feature-flow kit (no wireframe
+         kit — screens link out) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../feature-flow.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../index.html">← Auth / Security</a>
+        <h1 class="header__title">Forced password change</h1>
+        <div class="header__sub">auth / security · features</div>
+      </div>
+
+      <!-- ═══ Description ═══ Product only: what the feature is and the user journey. -->
+      <p class="desc">
+        A user whose password an administrator has reset with no SMTP configured
+        receives a temporary password. On the first login with it, the system won't
+        let them into the app: it takes them to the change screen and holds them
+        there until a permanent password is set. Only then does the role-specific
+        workspace open.
+      </p>
+
+      <!-- ═══ Flow ═══ Metro storyboard: screen stations on the line, on the
+           segments — the transition condition. The local node (password change) is
+           a plain .flow-stop; the shared screens from _wireframes (login,
+           role-specific app) are .flow-stop--shared (double ring). No forks:
+           "re-login with the temporary password lands here again" isn't a separate
+           screen but a property of the gate; it lives in the screen's legend. -->
+      <div class="section">
+        <div class="section__title">Flow</div>
+        <div class="flow">
+          <div class="flow-stop flow-stop--shared">
+            <a class="flow-stop__name" href="../../_wireframes/login.html">Login</a>
+            <span class="flow-stop__role">shared · start · temporary password</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">signed in · must_change_password</span>
+          </div>
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="change-temp-password.html">Change Temp Password</a>
+            <span class="flow-stop__role">gate · new password</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">permanent password set</span>
+          </div>
+          <div class="flow-stop flow-stop--shared">
+            <a class="flow-stop__name" href="../../_wireframes/profile-account.html">Role-specific app</a>
+            <span class="flow-stop__role">shared · finish · workspace</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

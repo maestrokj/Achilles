@@ -1,0 +1,167 @@
+<!doctype html>
+<!--
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  FEATURE: password-recovery — password reset via an email link.       │
+  │  Reference example of the Features layer (built from _template/).     │
+  │                                                                       │
+  │  Two entries, one mechanic: self-service (forgot-password) and        │
+  │  admin-initiated (user-card, admin-panel) — both converge on          │
+  │  reset-password, so this is ONE feature with two flow lines, not two  │
+  │  features. OWNS forgot-password.html + reset-password.html (its own   │
+  │  flow nodes, beside this file; orphan test: remove the feature and    │
+  │  they have no home). login / user-card / status-screen are SHARED     │
+  │  (_wireframes, they live on their own) — the flows mark them          │
+  │  .flow-stop--shared. The admin modals are STATES of user-card, not    │
+  │  local screens (README → "Features": feature-specific tweak of a      │
+  │  shared screen is a state); the flow links to their anchors.          │
+  │  Promote a local screen to _wireframes/ only when a 2nd feature uses  │
+  │  it as its OWN node. README → "Features".                              │
+  └─────────────────────────────────────────────────────────────────────┘
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Password recovery</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · feature-flow kit (no wireframe
+         kit — screens link out) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../feature-flow.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../index.html">← Auth / Security</a>
+        <h1 class="header__title">Password recovery</h1>
+        <div class="header__sub">auth / security · features</div>
+      </div>
+
+      <!-- ═══ Description ═══ Product only: what the feature is and the user
+           journey. Dependencies, fallbacks, links to mechanics — NOT here (see
+           below). -->
+      <p class="desc">
+        Password reset via an email link — two ways: the user requests the link
+        themselves ("forgot password" on the sign-in screen), or an administrator
+        sends it from the user card. From there the path is shared: follow the link
+        from the email, set a new password, terminate all previous sessions.
+      </p>
+
+      <!-- ═══ Dependencies ═══ feature-level deps with no screen home live here —
+           this is NOT duplication (SMTP has no screen, the block is its only
+           home). The fallback is stated as a consequence of SMTP's absence, not
+           as part of the product description — it's the only home for this
+           scenario (it used to be duplicated in the Forgot Password legend). Don't
+           copy the token mechanic / policy — only links to workzone. -->
+      <div class="section">
+        <div class="section__title">Dependencies</div>
+        <p class="desc">
+          Both scenarios require configured SMTP — a section in
+          <a href="../../../admin-panel/_wireframes/platform-settings.html#smtp" class="xref-module">Admin Panel</a>
+          (platform settings). Until SMTP is configured, a fallback applies: no
+          self-service reset, and the administrator issues a temporary password — a
+          modal in
+          <a href="../../../admin-panel/_wireframes/user-card.html#temp-password" class="xref-module">Admin Panel</a>,
+          the CLI, or Owner.<br />
+          The mechanic is in workzone:
+          <a href="../../_workzone/authentication.html#forgot-password" class="xref-page">"forgot password" reset</a>
+          ·
+          <a href="../../_workzone/authentication.html#admin-reset" class="xref-page">administrator reset</a>
+          ·
+          <a href="../../_workzone/authentication.html#password-policy" class="xref-page">password policy</a>
+          ·
+          <a href="../../_workzone/protection.html#brute-force" class="xref-page">brute-force defense boundary</a>.
+        </p>
+      </div>
+
+      <!-- ═══ Flows ═══ Metro storyboard: screen stations on the line, on the
+           segments — the transition condition. Local nodes are plain .flow-stop,
+           shared screens from _wireframes are .flow-stop--shared (double ring).
+           An edge case (expired link → Status) is a .flow-branch dropping from the
+           segment where the fork happens; .flow--branch reserves the space.
+           Two entries = two lines, their tail is shared (Reset Password → Login). -->
+      <div class="section">
+        <div class="section__title">Flow · user self-service</div>
+        <div class="flow flow--branch">
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="forgot-password.html">Forgot Password</a>
+            <span class="flow-stop__role">start · enter email</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">link from the email · single-use</span>
+            <div class="flow-branch">
+              <span class="flow-branch__label">link expired / used</span>
+              <span class="flow-branch__elbow"></span>
+              <span class="flow-branch__stop"></span>
+              <a class="flow-branch__name" href="../../_wireframes/status-screen.html">Status Screen</a>
+              <span class="flow-branch__role">reset-expired · request again</span>
+            </div>
+          </div>
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="reset-password.html">Reset Password</a>
+            <span class="flow-stop__role">new password</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">sessions reset</span>
+          </div>
+          <div class="flow-stop flow-stop--shared">
+            <a class="flow-stop__name" href="../../_wireframes/login.html">Login</a>
+            <span class="flow-stop__role">shared · finish · sign in</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Line 2 ═══ Start — a shared admin screen (user card, an "external
+           station" node in admin-panel/_wireframes). There's one fork here — its
+           own, the SMTP fallback; the link expiry is already drawn on the first
+           segment of line 1, and the tail is shared between the lines — we don't
+           keep a copy (altitude rule, README). The "temporary password" fallback
+           isn't a screen but a state of user-card: the link points at its anchor. -->
+      <div class="section">
+        <div class="section__title">Flow · administrator</div>
+        <div class="flow flow--branch">
+          <div class="flow-stop flow-stop--shared">
+            <a
+              class="flow-stop__name"
+              href="../../../admin-panel/_wireframes/user-card.html#user-card"
+              >User Card</a
+            >
+            <span class="flow-stop__role">shared · start · admin panel</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">admin sent the link · single-use</span>
+            <div class="flow-branch">
+              <span class="flow-branch__label">SMTP not configured</span>
+              <span class="flow-branch__elbow"></span>
+              <span class="flow-branch__stop"></span>
+              <a
+                class="flow-branch__name"
+                href="../../../admin-panel/_wireframes/user-card.html#temp-password"
+                >Temporary password</a
+              >
+              <span class="flow-branch__role">fallback · modal in the card</span>
+            </div>
+          </div>
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="reset-password.html">Reset Password</a>
+            <span class="flow-stop__role">new password</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">sessions reset</span>
+          </div>
+          <div class="flow-stop flow-stop--shared">
+            <a class="flow-stop__name" href="../../_wireframes/login.html">Login</a>
+            <span class="flow-stop__role">shared · finish · sign in</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

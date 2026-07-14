@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Slack</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="slack.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <!-- ═══ Header ═══ -->
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← Back to architecture</a>
+        <h1 class="header__title">Slack</h1>
+        <div class="header__sub">chat integration · knowledge in the messenger</div>
+      </div>
+
+      <!-- ════════════════ HERO ════════════════
+           Slack is an inbound surface: an employee asks the bot, Query Engine
+           answers. The hero states this in one line, without the mechanics. -->
+      <header class="sl-hero">
+        <p class="sl-title">Company knowledge — right in&nbsp;your&nbsp;Slack&nbsp;chat</p>
+        <p class="sl-lede">
+          An employee messages the bot in a DM — Query&nbsp;Engine answers under
+          their own permissions, with links to sources. Everything the web chat
+          can do, without leaving the messenger.
+        </p>
+      </header>
+
+      <!-- ── Flow of a single message: DM → intake → engine, returning to the thread ── -->
+      <div
+        class="sl-flow"
+        role="img"
+        aria-label="Flow: an employee messages the bot in Slack, the event is received and queued, Query Engine searches under ACL and assembles an answer, the answer returns as a post in the thread"
+      >
+        <div class="sl-station sl-station--user">
+          <span class="sl-station__tag">employee</span>
+          <span class="sl-station__glyph"><svg class="doc-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg></span>
+          <span class="sl-station__name">Direct message</span>
+          <span class="sl-station__desc">question to the bot in a DM</span>
+        </div>
+
+        <div class="sl-link">
+          <span class="sl-link__rail sl-link__rail--fwd">
+            <span class="sl-link__lbl">event · <code>ack&nbsp;&lt;3s</code></span>
+            <span class="sl-link__wire"></span>
+          </span>
+          <span class="sl-link__rail sl-link__rail--back">
+            <span class="sl-link__wire"></span>
+            <span class="sl-link__lbl">answer as a post in the thread</span>
+          </span>
+        </div>
+
+        <div class="sl-station sl-station--door">
+          <span class="sl-station__tag sl-station__tag--on">door</span>
+          <span class="sl-station__glyph"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5" /><path d="M15 8V2" /><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" /><path d="M9 8V2" /></svg></span>
+          <span class="sl-station__name">Achilles</span>
+          <span class="sl-station__desc">signature · queue · Slack&nbsp;id&nbsp;→&nbsp;user_id</span>
+        </div>
+
+        <div class="sl-link sl-link--single">
+          <span class="sl-link__rail sl-link__rail--fwd">
+            <span class="sl-link__lbl">search under ACL</span>
+            <span class="sl-link__wire"></span>
+          </span>
+        </div>
+
+        <div class="sl-station sl-station--engine">
+          <span class="ai-tag" title="This step uses a neural network — model inference"
+            ><span class="ai-tag__icon"></span>AI</span
+          >
+          <span class="sl-station__glyph sl-station__glyph--graph" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none">
+              <line x1="11" y1="14" x2="24" y2="9" /><line x1="11" y1="14" x2="13" y2="28" />
+              <line x1="24" y1="9" x2="30" y2="22" /><line x1="13" y1="28" x2="30" y2="22" />
+              <circle cx="11" cy="14" r="3.4" /><circle cx="24" cy="9" r="2.8" />
+              <circle class="sl-graph__hub" cx="30" cy="22" r="4" /><circle cx="13" cy="28" r="3" />
+            </svg>
+          </span>
+          <span class="sl-station__name">Query Engine</span>
+          <span class="sl-station__desc">searches the base, assembles the answer</span>
+        </div>
+      </div>
+
+      <!-- ── The heart of the concept in one line ── -->
+      <p class="sl-thesis" id="model">
+        Slack is one more <strong>thin window</strong> into the same conversation:
+        <strong>Query Engine</strong> does the thinking and searching under the
+        employee's identity, Slack merely carries the message in and the answer
+        out. All that's new lives at the edges: connection, identity bridge,
+        deferred delivery.
+        <a href="../query-engine/_workzone/conversation.html#surface-api" class="xref-module"
+          >One conversation model across all surfaces →</a
+        >
+      </p>
+
+      <!-- ════════════════ THREE SLACKS — DON'T CONFUSE ════════════════
+           Admin sees Slack in three places; tell them apart by the verb, not the tech. -->
+      <section class="section" id="three-slacks">
+        <h2 class="section__title">Three Slacks — don't confuse them</h2>
+        <div class="sl-trio">
+          <div class="sl-trio__cell">
+            <span class="sl-trio__dir">→ outbound</span>
+            <span class="sl-trio__verb">Alerts</span>
+            <span class="sl-trio__desc">alerts to a channel via webhook, impersonal</span>
+            <a href="../notifications/_workzone/data-model.html#notif-channels" class="xref-module"
+              >Notifications</a
+            >
+          </div>
+          <div class="sl-trio__cell sl-trio__cell--here">
+            <span class="sl-trio__dir">← inbound</span>
+            <span class="sl-trio__verb">Assistant</span>
+            <span class="sl-trio__desc">personal conversation under the employee's ACL</span>
+            <span class="sl-trio__self">this page</span>
+          </div>
+          <div class="sl-trio__cell">
+            <span class="sl-trio__dir">← inbound · data</span>
+            <span class="sl-trio__verb">Ingestion</span>
+            <span class="sl-trio__desc">channel history into the knowledge base (ETL)</span>
+            <a href="../harvester/_workzone/connectors.html#slack" class="xref-module">Harvester</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════════════ CARDS ════════════════ -->
+      <div class="sl-cards">
+        <!-- Connection -->
+        <section class="sl-card" id="connect">
+          <span class="sl-card__num">01</span>
+          <h2 class="sl-card__title">Connection</h2>
+          <p class="sl-card__sub">
+            Admin installs the Achilles app into the workspace <strong>once</strong> — the bot token
+            and signing secret land in <code>slack_settings</code>, like SMTP in Email. The screen is
+            <a href="../admin-panel/_wireframes/platform-settings.html#slack" class="xref-module"
+              >platform settings</a
+            >, a single toggle turns the bot on.
+          </p>
+          <p class="sl-card__foot">
+            The install model is <strong>internal-app</strong>: the customer registers the app in their
+            own workspace. That's exactly how it should be for self-hosted.
+          </p>
+        </section>
+
+        <!-- Identity -->
+        <section class="sl-card" id="identity">
+          <span class="sl-card__num">02</span>
+          <h2 class="sl-card__title">Identity</h2>
+          <p class="sl-card__sub">
+            The sender is resolved to an account via
+            <a href="../auth-security/_workzone/data-model.html#identity-mapping" class="xref-module"
+              ><code>identity_mapping</code></a
+            >
+            (<code>source='slack'</code>) — the <strong>sign-in</strong> identity, distinct from the
+            content identity of the Slack source in Knowledge&nbsp;Store. If the workspace's
+            provisioned email matches, the link is automatic; if not, a
+            <a href="../auth-security/_workzone/authentication.html#messenger-link" class="xref-module">link code</a>:
+            whoever signed in on the web gets a code and returns it to the bot in a DM (linking the
+            Slack that returned it to the account that issued it). Only an admin creates the account
+            (<a href="../auth-security/_workzone/authentication.html#admission-model" class="xref-module">by invitation</a>) —
+            Slack membership grants no access.
+          </p>
+          <p class="sl-card__foot">From there on it's only <code>user_id</code> → role → ACL.</p>
+        </section>
+
+        <!-- Conversation -->
+        <section class="sl-card" id="conversation">
+          <span class="sl-card__num">03</span>
+          <h2 class="sl-card__title">Conversation</h2>
+          <p class="sl-card__sub">
+            <a href="../query-engine/_workzone/conversation.html#session-boundary" class="xref-module"
+              >A thread is a conversation</a
+            >: replies within it continue the conversation, a new message opens a new one. Context is
+            truncated by tokens — the engine's shared mechanism, not its own. "Summarize" is an ordinary
+            question to the bot, not a command.
+          </p>
+          <p class="sl-card__foot">Channels · @mention · slash command — <span class="iter v2">v2</span>.</p>
+        </section>
+
+        <!-- Delivery -->
+        <section class="sl-card" id="delivery">
+          <span class="sl-card__num">04</span>
+          <h2 class="sl-card__title">Delivery</h2>
+          <p class="sl-card__sub">
+            Slack expects an acknowledgment within 3 seconds, but the model takes longer: intake
+            acknowledges immediately, processing goes to the
+            <a href="../cache-workers/_workzone/queues.html#registry" class="xref-module"
+              ><code>interactive</code></a
+            >
+            queue, the answer comes back as a post. It survives restarts and retries.
+          </p>
+          <p class="sl-card__foot">
+            A repeated Slack event is dropped by <code>event_id</code>; the public endpoint is
+            <a href="../cache-workers/_workzone/rate-limit.html#consumers" class="xref-module">rate-limited</a>.
+          </p>
+        </section>
+      </div>
+
+      <!-- ════════════════ WHAT IT LOOKS LIKE ════════════════
+           Literal DM mockup: bot answer with a source link, continuing in the thread. -->
+      <section class="section" id="mockup">
+        <h2 class="section__title">What it looks like</h2>
+        <div class="sl-chat" role="img" aria-label="Mockup of a DM with the Achilles Slack bot: employee's question, bot's answer with a source link, follow-up in the thread">
+          <div class="sl-chat__bar">
+            <span class="sl-chat__dm"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg> Achilles</span>
+            <span class="sl-chat__hint">direct messages</span>
+          </div>
+
+          <div class="sl-msg sl-msg--user">
+            <span class="sl-msg__av">MK</span>
+            <div class="sl-msg__body">
+              <span class="sl-msg__who">Maxim Kotov <span class="sl-msg__t">14:32</span></span>
+              <p class="sl-msg__text">What's the status of release 4.2 and who owns the ajax bug?</p>
+            </div>
+          </div>
+
+          <div class="sl-msg sl-msg--bot">
+            <span class="sl-msg__av sl-msg__av--bot">A</span>
+            <div class="sl-msg__body">
+              <span class="sl-msg__who">Achilles <span class="sl-msg__app">APP</span> <span class="sl-msg__t">14:32</span></span>
+              <p class="sl-msg__text">
+                Release 4.2 is in regression testing, ship date planned for Friday. The ajax bug
+                is owned by Dina Safina<span class="sl-cite">1</span>.
+              </p>
+              <div class="sl-src"><span class="sl-cite">1</span> Jira · RELEASE-482 · “4.2 regression”</div>
+              <div class="sl-thread"><span class="sl-thread__arr">↳</span> 1 reply in thread</div>
+            </div>
+          </div>
+        </div>
+        <p class="sl-chat__note">
+          The answer is scoped to Maxim's permissions: anything he can't see won't appear in it. The
+          follow-up stays in the thread of the same conversation.
+        </p>
+
+        <p class="sl-chat__lead">First contact — linking the account with a code:</p>
+        <div class="sl-chat" role="img" aria-label="Mockup of first contact: the bot doesn't recognize the employee, gives a sign-in link, the employee sends the link code, the bot confirms the link to the account">
+          <div class="sl-chat__bar">
+            <span class="sl-chat__dm"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg> Achilles</span>
+            <span class="sl-chat__hint">direct messages</span>
+          </div>
+
+          <div class="sl-msg sl-msg--user">
+            <span class="sl-msg__av">MK</span>
+            <div class="sl-msg__body">
+              <span class="sl-msg__who">Maxim Kotov <span class="sl-msg__t">09:14</span></span>
+              <p class="sl-msg__text">Hi! What's the status of release 4.2?</p>
+            </div>
+          </div>
+
+          <div class="sl-msg sl-msg--bot">
+            <span class="sl-msg__av sl-msg__av--bot">A</span>
+            <div class="sl-msg__body">
+              <span class="sl-msg__who">Achilles <span class="sl-msg__app">APP</span> <span class="sl-msg__t">09:14</span></span>
+              <p class="sl-msg__text">
+                To continue, confirm your account: sign in at
+                <span class="sl-code">achilles.local/link</span> and send me the code.
+                After that I'll answer under your permissions.
+              </p>
+            </div>
+          </div>
+
+          <div class="sl-msg sl-msg--user">
+            <span class="sl-msg__av">MK</span>
+            <div class="sl-msg__body">
+              <span class="sl-msg__who">Maxim Kotov <span class="sl-msg__t">09:15</span></span>
+              <p class="sl-msg__text"><span class="sl-code">K7P2-9XQ4</span></p>
+            </div>
+          </div>
+
+          <div class="sl-msg sl-msg--bot">
+            <span class="sl-msg__av sl-msg__av--bot">A</span>
+            <div class="sl-msg__body">
+              <span class="sl-msg__who">Achilles <span class="sl-msg__app">APP</span> <span class="sl-msg__t">09:15</span></span>
+              <p class="sl-msg__text">
+                Done — linked to <strong>maxim@company.com</strong>. Ask away <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M8 14s1.5 2 4 2 4-2 4-2" /><line x1="9" x2="9.01" y1="9" y2="9" /><line x1="15" x2="15.01" y1="9" y2="9" /></svg>
+              </p>
+            </div>
+          </div>
+        </div>
+        <p class="sl-chat__note">
+          The code is visible only in the signed-in browser and comes back through Slack — a forwarded
+          link can't hijack the account.
+          <a href="../auth-security/_wireframes/messenger-link.html" class="xref-module">Linking screen →</a>
+        </p>
+      </section>
+
+      <!-- ════════════════ WHAT'S IN THE DATABASE ════════════════ -->
+      <section class="section" id="data">
+        <h2 class="section__title">What's in the database</h2>
+        <div class="sl-data">
+          <div class="sl-data__row">
+            <span class="sl-data__tbl">identity_mapping</span>
+            <span class="sl-data__home">Auth · edited</span>
+            <span class="sl-data__role">+ <code>source='slack'</code> → sign-in identity bridge</span>
+          </div>
+          <div class="sl-data__row">
+            <span class="sl-data__tbl">link_tokens</span>
+            <span class="sl-data__home">Auth · shared</span>
+            <span class="sl-data__role">one-time link code (signed in on the web → returned in a DM)</span>
+          </div>
+          <div class="sl-data__row">
+            <span class="sl-data__tbl">conversations.meta</span>
+            <span class="sl-data__home">Query Engine</span>
+            <span class="sl-data__role">conversation key <code>(team, channel, thread_ts)</code></span>
+          </div>
+          <div class="sl-data__row">
+            <span class="sl-data__tbl">dedup:job:slack-event-…</span>
+            <span class="sl-data__home">Cache &amp; Workers</span>
+            <span class="sl-data__role">idempotency for repeated events</span>
+          </div>
+        </div>
+
+        <!-- ── slack_settings — the only table we own, spelled out ── -->
+        <div class="sl-tbl">
+          <div class="sl-tbl__head">
+            <span class="sl-tbl__name">slack_settings</span>
+            <span class="sl-tbl__sub">workspace connection · shared core</span>
+            <span class="sl-tbl__badge">singleton · CHECK (id = 1)</span>
+          </div>
+          <table class="sl-fields">
+            <tbody>
+              <tr>
+                <td class="sl-f">id</td>
+                <td class="sl-t">BigInteger</td>
+                <td class="sl-cons">
+                  <span class="sl-c sl-c--pk">PK</span
+                  ><span class="sl-c sl-c--chk" title="CHECK (id = 1)">CHECK</span>
+                </td>
+                <td class="sl-n">always <code>1</code> · singleton</td>
+              </tr>
+              <tr>
+                <td class="sl-f">team</td>
+                <td class="sl-t">Text</td>
+                <td class="sl-cons"><span class="sl-c sl-c--null">NULL</span></td>
+                <td class="sl-n">
+                  workspace id (<code>T…</code>) · <code>NULL</code> until connected
+                </td>
+              </tr>
+              <tr>
+                <td class="sl-f">team_name</td>
+                <td class="sl-t">Text</td>
+                <td class="sl-cons"><span class="sl-c sl-c--null">NULL</span></td>
+                <td class="sl-n">workspace name for the UI (<code>company.slack.com</code>) · from <code>auth.test</code></td>
+              </tr>
+              <tr>
+                <td class="sl-f">bot_token_enc</td>
+                <td class="sl-t">Text</td>
+                <td class="sl-cons"><span class="sl-c sl-c--null">NULL</span></td>
+                <td class="sl-n">
+                  OAuth bot token (<code>xoxb-…</code>), AES-256-GCM ciphertext · → encryption
+                </td>
+              </tr>
+              <tr>
+                <td class="sl-f">signing_secret_enc</td>
+                <td class="sl-t">Text</td>
+                <td class="sl-cons"><span class="sl-c sl-c--null">NULL</span></td>
+                <td class="sl-n">secret for signing inbound requests, ciphertext</td>
+              </tr>
+              <tr>
+                <td class="sl-f">bot_user_id</td>
+                <td class="sl-t">Text</td>
+                <td class="sl-cons"><span class="sl-c sl-c--null">NULL</span></td>
+                <td class="sl-n">
+                  bot id (<code>U…</code>) · filters out own messages and mentions
+                </td>
+              </tr>
+              <tr>
+                <td class="sl-f">enabled</td>
+                <td class="sl-t">Boolean</td>
+                <td class="sl-cons">
+                  <span class="sl-c sl-c--nn">NOT NULL</span
+                  ><span class="sl-c sl-c--def" title="DEFAULT false">DEFAULT</span>
+                </td>
+                <td class="sl-n">master switch · DEFAULT <code>false</code> · off → the bot stays silent</td>
+              </tr>
+              <tr>
+                <td class="sl-f">last_test_ok</td>
+                <td class="sl-t">Boolean</td>
+                <td class="sl-cons"><span class="sl-c sl-c--null">NULL</span></td>
+                <td class="sl-n">result of the last "Test connection"</td>
+              </tr>
+              <tr>
+                <td class="sl-f">last_test_at</td>
+                <td class="sl-t">DateTime(tz)</td>
+                <td class="sl-cons"><span class="sl-c sl-c--null">NULL</span></td>
+                <td class="sl-n">when it was tested · feeds the status chip on the screen</td>
+              </tr>
+              <tr>
+                <td class="sl-f">created_at</td>
+                <td class="sl-t">DateTime(tz)</td>
+                <td class="sl-cons">
+                  <span class="sl-c sl-c--def" title="server_default=now()">DEFAULT</span>
+                </td>
+                <td class="sl-n"><code>server_default=now()</code></td>
+              </tr>
+              <tr>
+                <td class="sl-f">updated_at</td>
+                <td class="sl-t">DateTime(tz)</td>
+                <td class="sl-cons">
+                  <span class="sl-c sl-c--def" title="server_default=now()">DEFAULT</span>
+                </td>
+                <td class="sl-n">
+                  <code>server_default=now()</code> · trigger <code>set_updated_at()</code>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="sl-tbl__derived">
+            <code>is_available()</code> — a model property, not a column:
+            <code>enabled</code> and <code>team</code> · <code>bot_token_enc</code> ·
+            <code>signing_secret_enc</code> all filled in. Mirrors SMTP in Email.
+          </p>
+        </div>
+
+        <p class="sl-tests">
+          <span class="sl-tests__lbl">Checks:</span>
+          <span class="sl-chip">Slack signature</span><span class="sl-chip">ack &lt; 3 s</span
+          ><span class="sl-chip">identity resolution</span><span class="sl-chip">retry dedup</span
+          ><span class="sl-chip">thread = conversation</span><span class="sl-chip">ACL pass-through</span
+          ><span class="sl-chip">unlinked user</span><span class="sl-chip">settings singleton</span>
+        </p>
+      </section>
+
+      <!-- ════════════════ API ════════════════ -->
+      <section class="section" id="api">
+        <h2 class="section__title">API</h2>
+        <ul class="api-list">
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/slack/events</span></li>
+          <li><span class="api-list__m">GET · PATCH</span><span class="api-list__p">/api/v1/admin/slack</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/admin/slack/test</span></li>
+        </ul>
+        <p class="note">The webhook is anonymous by design: the lock is the Slack signature, the rate-limit window is fail-closed.</p>
+      </section>
+
+      <!-- ════════════════ LINKS ════════════════ -->
+      <section class="section" id="links">
+        <h2 class="section__title">Related modules</h2>
+        <ul class="notes">
+          <li class="note">
+            <strong>Auth / Security</strong> — Slack sign-in and the
+            <code>identity_mapping</code> → <code>user_id</code> bridge.
+            <a href="../auth-security/_workzone/authentication.html#entry-channels" class="xref-badge"
+              >→ Auth / Security</a
+            >
+          </li>
+          <li class="note">
+            <strong>Query Engine</strong> — conversation, search under ACL, context truncation.
+            <a href="../query-engine/_workzone/conversation.html#surface-api" class="xref-badge"
+              >→ Query Engine</a
+            >
+          </li>
+          <li class="note">
+            <strong>Cache &amp; Workers</strong> — queue intake, event dedup, webhook rate-limit.
+            <a href="../cache-workers/_workzone/queues.html#registry" class="xref-badge"
+              >→ Cache &amp; Workers</a
+            >
+          </li>
+          <li class="note">
+            <strong>Public API</strong> — Slack as a reference "on-behalf-of-many" surface
+            on the shared contract.
+            <a href="../public-api/index.html#reference" class="xref-badge">→ Public API</a>
+          </li>
+          <li class="note">
+            <strong>HTTP API</strong> — the <code>/api/v1/slack/*</code> paths on the shared surface map.
+            <a href="../api/index.html#surface-map" class="xref-badge">→ HTTP API</a>
+          </li>
+        </ul>
+      </section>
+    </div>
+  </body>
+</html>

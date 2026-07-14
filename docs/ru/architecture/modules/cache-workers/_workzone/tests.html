@@ -1,0 +1,1068 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Cache &amp; Workers: Тесты</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Cache &amp; Workers</a>
+        <h1 class="header__title">Тесты</h1>
+        <div class="header__sub">cache-workers · workzone</div>
+      </div>
+
+      <div class="section" id="tests">
+        <!-- ── Overview band: решения + стек ── -->
+        <div class="test-overview">
+          <div class="test-panel">
+            <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Принятые решения</div>
+            <div class="decision-box">
+              <strong>Тестируем конвенции слоя, не библиотеки</strong>
+              Redis и SAQ как библиотеки доверены их авторам — здесь проверяются
+              <em>наши</em> правила поверх них: единственность задачи, очистка
+              протухших прогонов, ретраи и backoff, политика кэша, изоляция
+              лейнов. Не дублируем тесты брокера и драйвера.
+            </div>
+            <div class="decision-box">
+              <strong>Единственность и очистку — на реальной БД и поддельном
+              времени</strong>
+              Замок одного активного прогона держит партиал-UNIQUE индекс
+              Postgres, а не проверка в коде — значит, тест поднимает БД и бьёт
+              в индекс. Протухание <code>heartbeat_at</code> и окна TTL/cron
+              гоним через подменённые часы (<code>time-machine</code>), не
+              реальным ожиданием.
+            </div>
+            <div class="decision-box">
+              <strong>Rate-limit Lua — под конкурентной нагрузкой</strong>
+              Атомарность token-bucket / sliding-window видна только при гонке:
+              тест шлёт параллельные запросы и проверяет, что сверх лимита не
+              просочилось ни одного — последовательная проверка такой баг не
+              ловит.
+            </div>
+          </div>
+
+          <div class="test-panel">
+            <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Стек и инфраструктура</div>
+            <div class="test-stack-row">
+              <span class="test-stack-row__lbl"
+                >Имеется <span class="iter done">done</span></span
+              >
+              <span>pytest, pytest-asyncio</span>
+            </div>
+            <div class="test-stack-row">
+              <span class="test-stack-row__lbl">Redis</span>
+              <span
+                >fakeredis для unit-логики ключей; поднятый Redis для атомарности
+                Lua и переживания рестарта</span
+              >
+            </div>
+            <div class="test-stack-row">
+              <span class="test-stack-row__lbl">Время</span>
+              <span
+                >time-machine — TTL кэша, протухание <code>heartbeat_at</code>,
+                cron-окна и пересчёт следующего тика</span
+              >
+            </div>
+            <div class="test-stack-row">
+              <span class="test-stack-row__lbl">Воркер</span>
+              <span
+                >SAQ-обработчик вызовом напрямую — без поднятия воркера и
+                реального опроса очереди</span
+              >
+            </div>
+            <div class="test-stack-row">
+              <span class="test-stack-row__lbl">Маркеры</span>
+              <span
+                ><code>@pytest.mark.unit</code> /
+                <code>@pytest.mark.integration</code> — по типу;
+                <code>p0</code> / <code>p1</code> — по приоритету, ортогонально
+                типу</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ Unit ═══ Идемпотентность постановки задачи в очередь. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--unit">Unit · P0</span>
+          <span class="test-sec__title">Идемпотентность постановки</span>
+          <span class="test-sec__meta">детерминированно · каждый PR</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--unit">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 19H4.815a1.83 1.83 0 0 1-1.57-.881 1.785 1.785 0 0 1-.004-1.784L7.196 9.5" /><path d="M11 19h8.203a1.83 1.83 0 0 0 1.556-.89 1.784 1.784 0 0 0 0-1.775l-1.226-2.12" /><path d="m14 16-3 3 3 3" /><path d="M8.293 13.596 7.196 9.5 3.1 10.598" /><path d="m9.344 5.811 1.093-1.892A1.83 1.83 0 0 1 11.985 3a1.784 1.784 0 0 1 1.546.888l3.943 6.843" /><path d="m13.378 9.633 4.096 1.098 1.097-4.096" /></svg></span
+                ><span class="name">test_enqueue_idempotency.py</span>
+              </div>
+              <div class="test-card__sub">
+                Повтор того же job_id отбрасывается, окно после терминала
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Unit</span
+                ><span class="test-tag test-tag--p0">P0</span>
+                <a
+                  class="xref-badge xref-badge--page"
+                  href="lifecycle.html#uniqueness"
+                  >→ Единственность</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Кейсы</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">дубль в очереди</span
+                  ><span class="test-case__e"
+                    >повторный enqueue того же <code>job_id</code>, пока задача
+                    ещё в очереди или выполняется, отбрасывается — второй задачи
+                    не появляется</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">окно после успеха</span
+                  ><span class="test-case__e"
+                    ><code>job_id</code> завершённой
+                    <code>succeeded</code>-задачи держится ~24ч (time-machine) —
+                    повтор в окне отбрасывается, после окна проходит</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">окно после провала</span
+                  ><span class="test-case__e"
+                    >после <code>failed</code> окно короткое — задачу можно
+                    переставить раньше, чем после успеха</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Integration P0 ═══ Единственность активного прогона + очистка stale. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p0"
+            >Integration · P0</span
+          >
+          <span class="test-sec__title">Единственность и очистка stale</span>
+          <span class="test-sec__meta">БД · отдельный шаг CI</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p0">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span
+                ><span class="name">test_uniqueness_reaping.py</span>
+              </div>
+              <div class="test-card__sub">
+                Второй активный прогон отвергнут индексом, протухший heartbeat
+                очищается
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Integration</span
+                ><span class="test-tag test-tag--p0">P0</span>
+                <a
+                  class="xref-badge xref-badge--page"
+                  href="lifecycle.html#uniqueness"
+                  >→ Единственность</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Кейсы</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">второй активный отвергнут</span
+                  ><span class="test-case__e"
+                    >при ещё активном прогоне попытка второго отбивается
+                    партиал-UNIQUE индексом — гонку гасит сама база, не только
+                    проверка в коде</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">протухший heartbeat → stale</span
+                  ><span class="test-case__e"
+                    >воркер умер, не закрыв прогон → по протуханию
+                    <code>heartbeat_at</code> (time-machine) прогон очищается в
+                    <code>failed/stale</code>
+                    (<a class="xref-page" href="lifecycle.html#heartbeat"
+                      >очистка</a
+                    >)</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">замок отпущен после очистки</span
+                  ><span class="test-case__e"
+                    >после очистки stale-прогона замок снимается, следующий прогон
+                    стартует — зомби не запирает задачу навсегда</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">реапинг стоит с singleton, разгребает на возврате</span
+                  ><span class="test-case__e"
+                    >сторож живёт на singleton — пока тот лежит, реапинг тоже
+                    стоит и протухшие прогоны копятся; на возврате несколько
+                    накопившихся протухших очищаются одним проходом, а не по
+                    одному за тик
+                    (<a class="xref-page" href="lifecycle.html#heartbeat"
+                      >сторож на singleton</a
+                    >)</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">мягкий слив по SIGTERM</span
+                  ><span class="test-case__e"
+                    >штатная остановка (не крах): воркер доводит начатое, а
+                    недоведённая задача возвращается в очередь и подхватывается
+                    заново — повтор безопасен по идемпотентности
+                    <code>job_id</code>, не через реапинг
+                    (<a class="xref-page" href="lifecycle.html#heartbeat"
+                      >мягкий слив</a
+                    >)</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Unit/Integration P0 ═══ Ретраи и backoff. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p0">Unit · P0</span>
+          <span class="test-sec__title">Ретраи и backoff</span>
+          <span class="test-sec__meta">логика детерминированна · каждый PR</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p0">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg></span
+                ><span class="name">test_retry_backoff.py</span>
+              </div>
+              <div class="test-card__sub">
+                Короткий vs долгий ретрай, классификация, exp-backoff + jitter
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Unit</span
+                ><span class="test-tag test-tag--p0">P0</span>
+                <a class="xref-badge xref-badge--page" href="lifecycle.html#retry"
+                  >→ Ретраи</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Кейсы</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">короткий ретрай in-memory</span
+                  ><span class="test-case__e"
+                    >задержка ≤60с — повтор внутри того же слота, без возврата в
+                    очередь</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">долгий — defer/re-enqueue</span
+                  ><span class="test-case__e"
+                    >задержка больше порога → задача откладывается и
+                    переставляется в очередь, слот воркера освобождается на время
+                    ожидания</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">transient vs permanent</span
+                  ><span class="test-case__e"
+                    >временный сбой классифицируется как
+                    <code>transient</code> и ретраится; постоянный
+                    (<code>permanent</code>) уходит в терминал сразу, без
+                    попыток</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">exp-backoff + full jitter</span
+                  ><span class="test-case__e"
+                    >задержка растёт экспоненциально с полным джиттером — две
+                    серии попыток не совпадают по таймингу</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">cap и потолок попыток</span
+                  ><span class="test-case__e"
+                    >задержка упирается в верхний cap; на исчерпании числа попыток
+                    задача уходит в терминал, не ретраится бесконечно</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Integration P1 ═══ Терминал и DLQ. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p1"
+            >Integration · P1</span
+          >
+          <span class="test-sec__title">Терминал и DLQ</span>
+          <span class="test-sec__meta">БД</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p1">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="5" x="2" y="3" rx="1" /><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8" /><path d="M10 12h4" /></svg></span
+                ><span class="name">test_terminal_dlq.py</span>
+              </div>
+              <div class="test-card__sub">
+                Итог в строке потребителя, падение по политике (не в Redis)
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Integration</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a class="xref-badge xref-badge--page" href="lifecycle.html#dlq"
+                  >→ Терминал и DLQ</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Кейсы</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">итог не теряется</span
+                  ><span class="test-case__e"
+                    >результат прогона записан в Postgres-строку модуля-потребителя
+                    — durable, переживает завершение задачи в брокере</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">падение по политике</span
+                  ><span class="test-case__e"
+                    >исчерпавшее попытки падение пишется по политике потребителя —
+                    DLQ-таблица / статус «не доставлено» / <code>failed-items</code>
+                    — а не в durable Redis-очередь</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">очередь не копит мёртвое</span
+                  ><span class="test-case__e"
+                    >Redis-очередь не накапливает терминальные задачи — после
+                    терминала запись о ней живёт в Postgres, не в брокере</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Integration P1 ═══ Rate-limit атомарность. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p1"
+            >Integration · P1</span
+          >
+          <span class="test-sec__title">Rate-limit под нагрузкой</span>
+          <span class="test-sec__meta">поднятый Redis · конкурентно</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p1">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4" /><path d="M3.34 19a10 10 0 1 1 17.32 0" /></svg></span
+                ><span class="name">test_rate_limit.py</span>
+              </div>
+              <div class="test-card__sub">
+                Атомарность Lua при гонке, переживание рестарта
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Integration</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a
+                  class="xref-badge xref-badge--page"
+                  href="rate-limit.html#primitive"
+                  >→ Общий примитив</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Кейсы</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">не пропускает сверх лимита</span
+                  ><span class="test-case__e"
+                    >пачка параллельных запросов на token-bucket / sliding-window
+                    — пропущено ровно по лимиту, ни одного сверх: Lua считает
+                    атомарно</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">общий примитив для всех</span
+                  ><span class="test-case__e"
+                    >один примитив обслуживает разные ключи (провайдер, источник)
+                    — счётчики не пересекаются между ключами</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">переживает рестарт</span
+                  ><span class="test-case__e"
+                    >состояние лимита живёт в durable Redis — после рестарта
+                    процесса счётчик не обнуляется, окно продолжается</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">режим отказа при недоступности</span
+                  ><span class="test-case__e"
+                    >redis-durable недоступен в момент решения → примитив не
+                    проглатывает сбой, а отдаёт его потребителю; безопасный дефолт
+                    — fail-closed (защита блокирует перебор), послабление до
+                    fail-open потребитель объявляет осознанно
+                    (<a class="xref-page" href="rate-limit.html#consumers"
+                      >режим отказа</a
+                    >)</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Unit/Integration P1 ═══ Кэш: TTL и состав ключа (запрос + identity). -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p1">Unit · P1</span>
+          <span class="test-sec__title">Кэш — TTL и ключ</span>
+          <span class="test-sec__meta">fakeredis + time-machine</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p1">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></svg></span
+                ><span class="name">test_cache.py</span>
+              </div>
+              <div class="test-card__sub">
+                Попадание/промах, разделение по ключу, протухание по TTL
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Unit</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a class="xref-badge xref-badge--page" href="caching.html#policy"
+                  >→ Политика кэша</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Кейсы</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">попадание / промах</span
+                  ><span class="test-case__e"
+                    >первый запрос — промах, считает и кладёт; повтор тем же
+                    ключом — попадание, источник не дёргается</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">ключ от запроса и identity</span
+                  ><span class="test-case__e"
+                    >иная личность или иной запрос дают другой ключ → промах:
+                    кандидаты одного не утекают другому через общий кэш
+                    (<a class="xref-page" href="caching.html#key"
+                      >состав ключа</a
+                    >)</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">протухание по TTL</span
+                  ><span class="test-case__e"
+                    >по истечении TTL (time-machine) запись пропадает — следующий
+                    запрос промахивается и пересчитывает</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">кэш не настаивает</span
+                  ><span class="test-case__e"
+                    >кэш — подсказка, не источник истины: при расхождении trim
+                    досверяет по источнику, значение из кэша не навязывается</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Integration P1 ═══ Single-flight пересборки горячего ключа. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p1"
+            >Integration · P1</span
+          >
+          <span class="test-sec__title">Кэш — single-flight</span>
+          <span class="test-sec__meta">поднятый Redis · конкурентный промах</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p1">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20H2" /><path d="M11 4.562v16.157a1 1 0 0 0 1.242.97L19 20V5.562a2 2 0 0 0-1.515-1.94l-4-1A2 2 0 0 0 11 4.561z" /><path d="M11 4H8a2 2 0 0 0-2 2v14" /><path d="M14 12h.01" /><path d="M22 20h-3" /></svg></span
+                ><span class="name">test_cache_singleflight.py</span>
+              </div>
+              <div class="test-card__sub">
+                Одна пересборка на пачку промахов, замок в durable
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Integration</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a class="xref-badge xref-badge--page" href="caching.html#policy"
+                  >→ Политика кэша</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Кейсы</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">один считает, прочие ждут</span
+                  ><span class="test-case__e"
+                    >пачка параллельных промахов горячего ключа — дорогой
+                    retrieval запускается ровно раз, прочие дожидаются готового
+                    результата, источник не пересобирается N раз</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">замок в durable, не в кэше</span
+                  ><span class="test-case__e"
+                    >замок пересборки (<code>lock:</code>) живёт в
+                    <code>redis-durable</code> — LRU вытесняемого кэша его не
+                    выбросит под памятью, single-flight не разваливается</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">замок отпускается</span
+                  ><span class="test-case__e"
+                    >после пересборки (успех или сбой) замок снимается — следующий
+                    промах после TTL берёт его заново, ключ не залипает</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Integration P1 ═══ Изоляция лейнов. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p1"
+            >Integration · P1</span
+          >
+          <span class="test-sec__title">Изоляция лейнов</span>
+          <span class="test-sec__meta">отдельные пулы воркеров</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p1">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3" /><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" /><circle cx="18" cy="5" r="3" /></svg></span
+                ><span class="name">test_lane_isolation.py</span>
+              </div>
+              <div class="test-card__sub">
+                Лейн agents не выедает интерактив, падение лейна локально
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Integration</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a class="xref-badge xref-badge--page" href="queues.html#lanes"
+                  >→ Три лейна</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Кейсы</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">потолок лейна держит</span
+                  ><span class="test-case__e"
+                    >лейн <code>agents</code> со своим потолком насыщен задачами —
+                    интерактивный лейн при этом обслуживается, не голодает</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">падение лейна локально</span
+                  ><span class="test-case__e"
+                    >падение воркера одного лейна не роняет воркеры другого —
+                    топология держит лейны порознь
+                    (<a class="xref-page" href="queues.html#worker"
+                      >воркер-топология</a
+                    >)</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Unit P1 ═══ Развёртка cron-окон из локального времени в UTC. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--unit">Unit · P1</span>
+          <span class="test-sec__title">Cron-окна — таймзона и тик</span>
+          <span class="test-sec__meta">time-machine · детерминированно</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--unit">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg></span
+                ><span class="name">test_cron_timezone.py</span>
+              </div>
+              <div class="test-card__sub">
+                Naive-окно → UTC по поясу, NULL → пояс организации
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Unit</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a class="xref-badge xref-badge--page" href="scheduling.html#cron"
+                  >→ Окна в UTC</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Кейсы</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">окно орг-пояса → UTC</span
+                  ><span class="test-case__e"
+                    >naive <code>HH:MM</code> разворачивается к UTC через
+                    <code>platform_settings.timezone</code> (IANA) — тик встаёт на
+                    верный момент, а не на локальные часы, принятые за UTC</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">пояс владельца, NULL → орг</span
+                  ><span class="test-case__e"
+                    >расписание агента считается по <code>timezone</code>
+                    владельца; <code>NULL</code> падает на пояс организации — не на
+                    UTC и не на серверный пояс</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">граница DST</span
+                  ><span class="test-case__e"
+                    >пересчёт следующего тика через переход летнее/зимнее время
+                    (time-machine) не сдвигает окно на час и не теряет тик</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Integration P1 ═══ Singleton-планировщик. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p1"
+            >Integration · P1</span
+          >
+          <span class="test-sec__title">Singleton-планировщик</span>
+          <span class="test-sec__meta">несколько реплик · один тик</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p1">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></svg></span
+                ><span class="name">test_scheduler_singleton.py</span>
+              </div>
+              <div class="test-card__sub">
+                Cron-tick и скан next_run_at: один раз на N реплик, батч наступивших
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Integration</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a
+                  class="xref-badge xref-badge--page"
+                  href="scheduling.html#cron"
+                  >→ Планировщик</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Кейсы</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">один тик — одна задача</span
+                  ><span class="test-case__e"
+                    >cron-tick при N репликах планировщика публикует задачу один
+                    раз, не N раз (time-machine на cron-окно)</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">двойной запуск погашен</span
+                  ><span class="test-case__e"
+                    >гонка двух реплик на одном тике гасится замком
+                    единственности — вторая публикация отбивается
+                    (<a class="xref-page" href="lifecycle.html#uniqueness"
+                      >единственность</a
+                    >)</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">скан next_run_at — все наступившие</span
+                  ><span class="test-case__e"
+                    >второй источник триггера: один проход по расписаниям агентов
+                    публикует <em>все</em> прогоны, чей <code>next_run_at</code>
+                    уже наступил — не первый попавшийся и не по одному за тик
+                    (<a class="xref-page" href="scheduling.html#cron"
+                      >два источника</a
+                    >)</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">пропущенный тик не доганяется</span
+                  ><span class="test-case__e"
+                    >тик, выпавший на простой singleton, при возврате
+                    <em>не</em> публикуется задним числом — backfill не делаем,
+                    ждём следующего окна (time-machine перескакивает плановое
+                    окно)
+                    (<a class="xref-page" href="scheduling.html#cron"
+                      >пропущенный тик</a
+                    >)</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Integration P1 ═══ pub/sub push-уведомлений. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p1"
+            >Integration · P1</span
+          >
+          <span class="test-sec__title">pub/sub push-уведомлений</span>
+          <span class="test-sec__meta">fan-out по подписчикам · добор опросом</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p1">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0" /><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" /></svg></span
+                ><span class="name">test_pubsub_push.py</span>
+              </div>
+              <div class="test-card__sub">
+                Сигнал доходит до всех подписчиков, пропажа безвредна
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Integration</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a class="xref-badge xref-badge--page" href="redis-keys.html#instances"
+                  >→ pub/sub-канал</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Кейсы</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">веер по подписчикам</span
+                  ><span class="test-case__e"
+                    >publish сигнала получают все висящие подписчики — событие с
+                    одной api-реплики доходит до соединения на другой</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">пропажа безвредна</span
+                  ><span class="test-case__e"
+                    >подписчик пропустил publish (нет соединения в момент
+                    события) — следующий опрос добирает счётчик, истина в Postgres
+                    не теряется</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Integration P1 ═══ Дедуп входящих доставок. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p1"
+            >Integration · P1</span
+          >
+          <span class="test-sec__title">Дедуп входящих доставок</span>
+          <span class="test-sec__meta">поднятый Redis · time-machine</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p1">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></svg></span
+                ><span class="name">test_webhook_dedup.py</span>
+              </div>
+              <div class="test-card__sub">
+                Одно событие — одна доставка; окно приёма, ключ в durable
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Integration</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a
+                  class="xref-badge xref-badge--page"
+                  href="redis-keys.html#registry"
+                  >→ Реестр ключей</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Кейсы</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">повтор в окне отброшен</span
+                  ><span class="test-case__e"
+                    >повторная та же входящая доставка (<code>dedup:webhook:</code>
+                    / <code>dedup:slack-event:</code> /
+                    <code>dedup:telegram-update:</code>) в окне отбрасывается —
+                    событие обрабатывается ровно раз</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">после TTL проходит снова</span
+                  ><span class="test-case__e"
+                    >по истечении окна приёма (time-machine) отметка гаснет — та же
+                    доставка проходит заново, не залипает навсегда</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">ключ в durable-инстансе</span
+                  ><span class="test-case__e"
+                    >дедуп-ключ живёт в <code>redis-durable</code>, не в кэше —
+                    LRU не выбросит его в окне приёма и повтор не просочится</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">ортогонально dedup:job:</span
+                  ><span class="test-case__e"
+                    >дедуп входящей доставки (событие) и идемпотентность
+                    <code>dedup:job:</code> (постановка задачи) — разные namespace,
+                    не пересекаются
+                    (<a class="xref-page" href="redis-keys.html#blacklist"
+                      >одно событие — одна доставка</a
+                    >)</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Integration P1 ═══ Политика памяти durable. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--p1"
+            >Integration · P1</span
+          >
+          <span class="test-sec__title">Политика памяти durable</span>
+          <span class="test-sec__meta">поднятый Redis · maxmemory</span>
+        </div>
+        <div class="test-grid">
+          <div class="test-card test-card--p1">
+            <div class="test-card__head">
+              <div class="test-card__file">
+                <span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 19v-3" /><path d="M10 19v-3" /><path d="M14 19v-3" /><path d="M18 19v-3" /><path d="M8 11V9" /><path d="M16 11V9" /><path d="M12 11V9" /><path d="M2 15h20" /><path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1.1a2 2 0 0 0 0 3.837V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5.1a2 2 0 0 0 0-3.837Z" /></svg></span
+                ><span class="name">test_memory_policy.py</span>
+              </div>
+              <div class="test-card__sub">
+                noeviction: отказ записи вместо тихого вытеснения, backpressure
+              </div>
+              <div class="test-card__badges">
+                <span class="test-tag">Integration</span
+                ><span class="test-tag test-tag--p1">P1</span>
+                <a
+                  class="xref-badge xref-badge--page"
+                  href="redis-keys.html#instances"
+                  >→ Два инстанса</a
+                >
+              </div>
+            </div>
+            <details class="test-cases">
+              <summary>Кейсы</summary>
+              <div class="test-case-list">
+                <div class="test-case">
+                  <span class="test-case__k">потолок → отказ, не вытеснение</span
+                  ><span class="test-case__e"
+                    >при достижении <code>maxmemory</code> на
+                    <code>redis-durable</code> новая запись отклоняется ошибкой
+                    (<code>noeviction</code>) — данные не выкидываются молча</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">backpressure продьюсера</span
+                  ><span class="test-case__e"
+                    >продьюсер упирается в отказ записи и тормозит — инстанс не
+                    растёт без предела и не уходит под OOM-killer</span
+                  >
+                </div>
+                <div class="test-case">
+                  <span class="test-case__k">durable переживает давление, cache под LRU уходит</span
+                  ><span class="test-case__e"
+                    >под тем же давлением памяти durable-ключ остаётся на месте, а
+                    cache-ключ вытесняется LRU — роли разведены физически, не
+                    политикой одного инстанса</span
+                  >
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <!-- ═══ Структура ═══ Каталог тестов: уровень — каталогом, приоритет — маркерами. -->
+        <div class="test-sec">
+          <span class="test-sec__badge test-sec__badge--struct">Structure</span>
+          <span class="test-sec__title">Файловая структура тестов</span>
+        </div>
+        <div class="test-struct">
+          <p class="test-struct__lead">
+            Разделение — по типу. <code>unit/</code> идёт на каждом PR
+            детерминированно — fakeredis и подменённые часы, без поднятой БД и
+            реального ожидания: логика ключа кэша, идемпотентность, backoff.
+            <code>integration/</code> — отдельным, более редким шагом на поднятой
+            БД и Redis: единственность и очистка бьют в индекс, rate-limit гонится
+            конкурентно, лейны и планировщик проверяются на реальных пулах.
+            Приоритет (P0–P1) ортогонален каталогам и задаётся маркерами
+            (<code>pytest -m p0</code>).
+          </p>
+          <div class="test-tree">
+            <ul>
+              <li>
+                <span class="test-tree__row"
+                  ><code>tests/cache_workers/</code
+                  ><span class="d">каталог модуля</span></span
+                >
+                <ul>
+                  <li>
+                    <span class="test-tree__row"
+                      ><code>conftest.py</code
+                      ><span class="d"
+                        >fakeredis / поднятый Redis · time-machine · фабрики
+                        задач и прогонов · SAQ-обработчик напрямую</span
+                      ></span
+                    >
+                  </li>
+                  <li>
+                    <span class="test-tree__row"
+                      ><code>unit/</code
+                      ><span class="d"
+                        >детерминированно, каждый PR — без БД и реального
+                        ожидания</span
+                      ></span
+                    >
+                    <ul>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code>test_enqueue_idempotency.py</code
+                          ><span class="d"
+                            >повтор job_id и окно после терминала</span
+                          ></span
+                        >
+                      </li>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code>test_retry_backoff.py</code
+                          ><span class="d"
+                            >классификация, exp-backoff + jitter, cap и
+                            потолок</span
+                          ></span
+                        >
+                      </li>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code>test_cache.py</code
+                          ><span class="d"
+                            >состав ключа, изоляция по identity, TTL</span
+                          ></span
+                        >
+                      </li>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code>test_cron_timezone.py</code
+                          ><span class="d"
+                            >развёртка cron-окна в UTC, NULL → пояс орг, DST</span
+                          ></span
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                  <li>
+                    <span class="test-tree__row"
+                      ><code>integration/</code
+                      ><span class="d">поднятая БД и Redis</span></span
+                    >
+                    <ul>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code>test_uniqueness_reaping.py</code
+                          ><span class="d"
+                            >единственность на партиал-UNIQUE индексе, очистка
+                            stale по heartbeat, мягкий слив по SIGTERM</span
+                          ></span
+                        >
+                      </li>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code>test_terminal_dlq.py · test_rate_limit.py</code
+                          ><span class="d"
+                            >терминал/DLQ потребителя, rate-limit под конкурентной
+                            нагрузкой и режим отказа</span
+                          ></span
+                        >
+                      </li>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code>test_cache_singleflight.py</code
+                          ><span class="d"
+                            >одна пересборка на пачку промахов, замок в
+                            durable</span
+                          ></span
+                        >
+                      </li>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code
+                            >test_lane_isolation.py ·
+                            test_scheduler_singleton.py</code
+                          ><span class="d"
+                            >изоляция лейнов, singleton-планировщик на N
+                            репликах</span
+                          ></span
+                        >
+                      </li>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code
+                            >test_webhook_dedup.py ·
+                            test_memory_policy.py</code
+                          ><span class="d"
+                            >дедуп входящих доставок в окне приёма, noeviction на
+                            durable и backpressure</span
+                          ></span
+                        >
+                      </li>
+                      <li>
+                        <span class="test-tree__row"
+                          ><code>test_pubsub_push.py</code
+                          ><span class="d"
+                            >fan-out сигнала по подписчикам, добор опросом при
+                            пропаже</span
+                          ></span
+                        >
+                      </li>
+                    </ul>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

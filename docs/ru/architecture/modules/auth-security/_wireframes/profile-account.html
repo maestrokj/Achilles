@@ -1,0 +1,476 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Profile / Account</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Profile / Account</h1>
+        <div class="header__sub">
+          auth / security · макеты · пользовательские
+          <a class="in-shell" href="../../web-app/_wireframes/layout.html"><span class="in-shell__frame"></span>shell</a>
+          <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Загрузка экрана — каркас (skeleton)">
+            <span class="in-load__icon"></span>загрузка
+          </a>
+        </div>
+      </div>
+
+      <p class="desc">Личный кабинет: свои данные, смена пароля, сессии.</p>
+
+      <div class="section">
+        <div class="section__title">Макет</div>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <!-- Состояние: по умолчанию (пароль свёрнут) -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">по умолчанию</div>
+              <div class="wf-screen">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/account
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/account · после входа</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-appbar">
+                  <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                  <span class="wf-appbar__spacer"></span>
+                  <span class="wf-chip">Member</span>
+                  <span class="wf-avatar">ДС</span>
+                </div>
+
+                <div class="wf-body">
+                  <div class="wf-stack wf-stack--loose">
+                    <!-- Профиль -->
+                    <div class="wf-stack">
+                      <span class="wf-label">Профиль</span>
+
+                      <div class="wf-field">
+                        <span class="wf-label">Полное имя</span>
+                        <div class="wf-input wf-input--focus">Дмитрий Соколов</div>
+                      </div>
+
+                      <!-- Email -->
+                      <div class="wf-field">
+                        <span class="wf-label">Email</span>
+                        <div class="wf-input wf-input--locked">
+                          dmitry@company.com
+                          <span class="wf-input__action" title="Email задаёт администратор">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                          </span>
+                          <span class="wf-annot">1</span>
+                        </div>
+                      </div>
+
+                      <div class="wf-field">
+                        <span class="wf-label">Роль</span>
+                        <div class="wf-row">
+                          <span class="wf-chip">Member</span>
+                          <span class="wf-hint">назначает администратор</span>
+                          <span class="wf-annot">2</span>
+                        </div>
+                      </div>
+
+                      <button class="wf-btn wf-btn--block">Сохранить</button>
+                    </div>
+
+                    <hr class="wf-divider" />
+
+                    <!-- Язык и регион -->
+                    <div class="wf-stack" id="locale">
+                      <span class="wf-label">Язык и регион</span>
+
+                      <div class="wf-field">
+                        <span class="wf-label">Timezone</span>
+                        <div class="wf-input">
+                          Как в организации · Europe/Moscow
+                          <span class="wf-input__action" title="Выбрать">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                          </span>
+                          <span class="wf-annot">3</span>
+                        </div>
+                      </div>
+                      <div class="wf-row">
+                        <div class="wf-field">
+                          <span class="wf-label">Язык UI</span>
+                          <div class="wf-input wf-input--sm">Авто · RU ▾</div>
+                        </div>
+                        <div class="wf-field">
+                          <span class="wf-label">Формат дат</span>
+                          <div class="wf-input wf-input--sm">Авто · DD.MM.YYYY ▾</div>
+                        </div>
+                      </div>
+
+                      <button class="wf-btn wf-btn--block">Сохранить</button>
+                    </div>
+
+                    <hr class="wf-divider" />
+
+                    <!-- Смена пароля — свёрнуто (disclosure) -->
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">Смена пароля</span>
+                      <span class="wf-row">
+                        <span class="wf-hint">Развернуть</span>
+                        <span class="wf-input__action" title="Развернуть">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </span>
+                    </div>
+
+                    <hr class="wf-divider" />
+
+                    <!-- Безопасность -->
+                    <div class="wf-stack">
+                      <span class="wf-label">Безопасность</span>
+
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-text">
+                          Двухфакторная аутентификация
+                          <span class="iter v2">v2</span><br />
+                          <span class="wf-hint">Не настроена</span>
+                        </span>
+                        <span class="wf-row">
+                          <a class="wf-a" href="../_features/mfa/mfa-setup.html">Настроить</a>
+                          <span class="wf-annot">4</span>
+                          </span>
+                      </div>
+
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-text">
+                          Активные сессии<br />
+                          <span class="wf-hint">это устройство</span>
+                        </span>
+                        <span class="wf-row">
+                          <a class="wf-a" href="session-management.html">Управление</a>
+                          <span class="wf-annot">5</span>
+                          </span>
+                      </div>
+                    </div>
+
+                    <hr class="wf-divider" />
+
+                    <!-- API-ключи — свёрнуто (disclosure) -->
+                    <div class="wf-card wf-row wf-spread" id="api-keys">
+                      <span class="wf-text">
+                        API-ключи
+                      </span>
+                      <span class="wf-row">
+                        <span class="wf-hint">1 активный</span>
+                        <span class="wf-input__action" title="Развернуть">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </span>
+                    </div>
+
+                    <hr class="wf-divider" />
+
+                    <!-- Сессия -->
+                    <div class="wf-stack">
+                      <span class="wf-label">Сессия</span>
+                      <button class="wf-btn wf-btn--block">Выйти</button>
+                      <div class="wf-center">
+                        <span class="wf-guarded"
+                          ><a class="wf-a" href="login.html">Выйти на всех устройствах</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                        ></span>
+                        <span class="wf-annot">6</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wf-frame-col">
+            <!-- Состояние: смена пароля развёрнута -->
+              <div class="wf-frame">
+              <div class="wf-stage__caption">смена пароля — развёрнуто</div>
+              <div class="wf-screen">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/account
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/account · после входа</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-appbar">
+                  <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                  <span class="wf-appbar__spacer"></span>
+                  <span class="wf-chip">Member</span>
+                  <span class="wf-avatar">ДС</span>
+                </div>
+
+                <div class="wf-body">
+                  <div class="wf-card wf-stack">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text">Смена пароля</span>
+                      <span class="wf-row">
+                        <span class="wf-hint">Свернуть</span>
+                        <span class="wf-input__action" title="Свернуть">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+                        </span>
+                      </span>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Текущий пароль</span>
+                      <div class="wf-input">
+                        ••••••••••
+                        <span class="wf-input__action" title="Показать пароль">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Новый пароль</span>
+                      <div class="wf-input wf-input--focus">
+                          ••••••••••
+                          <span class="wf-input__action" title="Показать пароль">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                      </div>
+                      <!-- Индикатор силы: 4 сегмента залиты → strong -->
+                        <div class="wf-meter wf-meter--strong">
+                        <span class="wf-meter__seg"></span>
+                        <span class="wf-meter__seg"></span>
+                        <span class="wf-meter__seg"></span>
+                        <span class="wf-meter__seg"></span>
+                      </div>
+                      <div class="wf-row wf-spread">
+                        <span class="wf-hint">
+                          От 8 символов · не совпадает с текущим <span class="wf-annot">7</span></span>
+                          <span class="wf-hint">Надёжный <span class="wf-annot">8</span></span>
+                      </div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Повторите новый пароль</span>
+                      <div class="wf-input">
+                        ••••••••••••
+                        <span class="wf-input__action" title="Показать пароль">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                      </div>
+                    </div>
+
+                    <button class="wf-btn wf-btn--primary wf-btn--block">
+
+                        Сменить пароль
+                        <span class="wf-annot wf-annot--on-accent">9</span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Состояние: API-ключи развёрнуты -->
+              <div class="wf-frame">
+              <div class="wf-stage__caption">API-ключи — развёрнуто</div>
+              <div class="wf-screen">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/account
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/account · после входа</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-appbar">
+                  <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                  <span class="wf-appbar__spacer"></span>
+                  <span class="wf-chip">Member</span>
+                  <span class="wf-avatar">ДС</span>
+                </div>
+
+                <div class="wf-body">
+                  <div class="wf-card wf-stack">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text">API-ключи</span>
+                      <span class="wf-row">
+                        <span class="wf-hint">Свернуть</span>
+                        <span class="wf-input__action" title="Свернуть">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+                        </span>
+                      </span>
+                    </div>
+
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">
+                        <span class="wf-code">ach_7f2k…</span>
+                        <span class="wf-chip">read-only</span>
+                        <span class="wf-chip">Jira</span><br />
+                        <span class="wf-hint">истекает через 84 дня</span>
+                      </span>
+                      <span class="wf-guarded"
+                          ><a class="wf-a wf-a--danger">Отозвать</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#irreversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                        ></span>
+                    </div>
+
+                    <a class="wf-btn wf-btn--primary wf-btn--block" href="../_features/api-keys/api-key-create-modal.html#api-key-create">
+
+                        Создать ключ
+                        <span class="wf-annot wf-annot--on-accent">10</span></a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Состояние: профиль администратора — личные настройки уведомлений -->
+              <div class="wf-frame">
+              <div class="wf-stage__caption">Owner / Admin — уведомления</div>
+              <div class="wf-screen">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/account
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/account · Owner / Admin</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-appbar">
+                  <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                  <span class="wf-appbar__spacer"></span>
+                  <span class="wf-chip">Admin</span>
+                  <span class="wf-avatar">ДМ</span>
+                </div>
+
+                <div class="wf-body">
+                  <div class="wf-stack" id="notifications">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-label">Уведомления</span>
+                      <span class="wf-hint">получаете как Admin</span>
+                    </div>
+                    <span class="wf-hint">Каналы по типам — in-app и email раздельно; любой выключите, либо оба, если тип не ваша зона <span class="wf-annot">11</span></span>
+
+                    <span class="wf-label">Организация — для Owner / Admin</span>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">Sync <span class="wf-chip wf-chip--warn">warning</span></span>
+                      <span class="wf-row"><span class="wf-hint">in-app</span><span class="wf-toggle wf-toggle--on"></span><span class="wf-hint">email</span><span class="wf-toggle wf-toggle--on"></span></span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">Security <span class="wf-chip wf-chip--err">critical</span></span>
+                      <span class="wf-row"><span class="wf-hint">in-app</span><span class="wf-toggle wf-toggle--on"></span><span class="wf-hint">email</span><span class="wf-toggle"></span></span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">Budget <span class="wf-chip wf-chip--warn">warning</span></span>
+                      <span class="wf-row"><span class="wf-hint">in-app</span><span class="wf-toggle"></span><span class="wf-hint">email</span><span class="wf-toggle"></span></span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">System <span class="wf-chip wf-chip--err">critical</span></span>
+                      <span class="wf-row"><span class="wf-hint">in-app</span><span class="wf-toggle wf-toggle--on"></span><span class="wf-hint">email</span><span class="wf-toggle wf-toggle--on"></span></span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">Discovery <span class="wf-chip">info</span></span>
+                      <span class="wf-row"><span class="wf-hint">in-app</span><span class="wf-toggle"></span><span class="wf-hint">email</span><span class="wf-toggle"></span></span>
+                    </div>
+
+                    <span class="wf-label">Личные — у каждого <span class="wf-annot">12</span></span>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">Agent <span class="wf-chip wf-chip--warn">warning</span></span>
+                      <span class="wf-row"><span class="wf-hint">in-app</span><span class="wf-toggle wf-toggle--on"></span><span class="wf-hint">email</span><span class="wf-toggle"></span></span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">Account <span class="wf-chip">info</span></span>
+                      <span class="wf-row"><span class="wf-hint">in-app</span><span class="wf-toggle wf-toggle--on"></span><span class="wf-hint">email</span><span class="wf-toggle"></span></span>
+                    </div>
+
+                    <div class="wf-alert">Defaults организации задаёт Owner на экране уведомлений; здесь — личное сужение. У личных типов email по умолчанию выключен — opt-in.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Email — read-only, логин-идентификатор. Меняет администратор в
+              <a href="../../admin-panel/_wireframes/user-card.html#user-card" class="xref-module">Admin Panel</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Роль — read-only, свою роль не меняют. Назначает Owner / Admin в
+              <a href="../../admin-panel/_wireframes/users.html#users-tabs" class="xref-module">Admin Panel</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Язык и регион — личный override дефолтов организации (timezone, язык UI, формат дат). Влияет только на отображение. Механика —
+              <a href="../../admin-panel/_workzone/locale.html#locale-resolution" class="xref-module">Язык и регион</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              MFA <span class="iter v2">v2</span> — обязателен для Owner / Admin, опционален для Member. Настройка — <a href="../_features/mfa/index.html" class="xref-page">Двухфакторная аутентификация</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Активные сессии — список устройств
+              с отзывом по одному. Экран —
+              <a href="session-management.html" class="xref-page">управление сессиями</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              «Выйти на всех устройствах» завершает все сессии; обычный «Выйти» — только текущую. Механика —
+              <a href="../_workzone/authentication.html#session-end" class="xref-page">Завершение сессии</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              Правила пароля —
+              <a href="../_workzone/authentication.html#password-policy" class="xref-page">Парольная политика</a>. Новый пароль обязан отличаться от текущего.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              Индикатор силы — оценка надёжности по мере ввода.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">9</span>
+              Смена пароля требует ввода текущего. Механика —
+              <a href="../_workzone/authentication.html#change-password" class="xref-page">Смена пароля</a>.
+              <span class="iter v2">v2</span>: текущий пароль заменяет sudo-mode через <a href="re-auth-modal.html" class="xref-page">re-auth-modal</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">10</span>
+              API-ключи — пользователь сам выпускает и отзывает свои ключи. «Создать ключ» открывает <a href="../_features/api-keys/api-key-create-modal.html#api-key-create" class="xref-page">диалог создания</a>. Механика — <a href="../_workzone/authentication.html#api-keys" class="xref-page">API-ключи</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">11</span>
+              На каждый тип два независимых тумблера, in-app и email; выключить можно любой или оба, привязки и замков нет. Организационные типы (Sync · Security · Budget · System · Discovery) видны только Owner / Admin — лишь они адресаты этих алертов. Общие webhooks команды (Slack / Ops) и defaults организации — <a href="../../admin-panel/_wireframes/notifications.html#recipients" class="xref-module">Уведомления</a> в Admin Panel.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">12</span>
+              Личные типы (Agent — прогоны его агентов; Account — роль, временный пароль) приходят каждому пользователю, включая member — это <a href="../../notifications/_workzone/dispatcher.html#addressing" class="xref-module">targeted</a>-события на самого человека. Email у них по умолчанию выключен (<a href="../../notifications/_workzone/data-model.html#notif-defaults" class="xref-module">opt-in</a>); in-app виден сразу.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

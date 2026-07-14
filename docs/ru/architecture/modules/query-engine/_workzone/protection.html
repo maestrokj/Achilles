@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Query Engine: Защита и приватность</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../query-engine.css" />
+    <link rel="stylesheet" href="protection.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Query Engine</a>
+        <h1 class="header__title">Защита и приватность</h1>
+        <div class="header__sub">query-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        Поверхность безопасности диалогового слоя — что Query Engine держит сам, а
+        что лишь предъявляет. Инъекцию во <em>вход</em> уже разобрал
+        <a href="grounding.html#untrusted-context" class="xref-page">grounding</a>
+        (найденное — данные, не команды), а инъекцию через
+        <em>аргументы инструмента</em> —
+        <a href="retrieval.html#identity" class="xref-page">retrieval</a>
+        (личность для ACL — из сессии, не из аргументов модели, потому подмена
+        доступа невозможна); права на знания и аутентификацию держит Auth. Здесь —
+        четыре вещи, которыми владеет именно диалог: доступ к самому
+        <a href="#ownership" class="xref-anchor">треду</a>, ответ как недоверенный
+        <a href="#output" class="xref-anchor">канал вывода</a>,
+        <a href="#egress" class="xref-anchor">egress</a> контекста к модели и
+        <a href="#traces" class="xref-anchor">следы</a> запросов. Остальное —
+        аутентификация, права, лимиты, конфиг моделей, рендер — у соседей; карта
+        ниже разводит одно от другого.
+      </p>
+
+      <!-- ════════════════ RESPONSIBILITY MAP ════════════════
+           Что держит сам QE-слой (ссылки вниз на секции) vs на что опирается у
+           соседей (только имя дома; реальные кросс-ссылки — в прозе секций). -->
+      <div class="prot-map">
+        <div class="prot-map__col prot-map__col--own">
+          <div class="prot-map__head">Query Engine держит</div>
+          <a class="prot-map__item" href="#ownership">
+            <span class="prot-map__k">Владение беседой</span>
+            <span class="prot-map__v">тред — только владельцу, не по знанию id</span>
+          </a>
+          <a class="prot-map__item" href="#output">
+            <span class="prot-map__k">Вывод под подозрением</span>
+            <span class="prot-map__v">ответ не исполняется и не грузит внешнее</span>
+          </a>
+          <a class="prot-map__item" href="#egress">
+            <span class="prot-map__k">Egress контекста</span>
+            <span class="prot-map__v">контекст уходит выбранной модели</span>
+          </a>
+          <a class="prot-map__item" href="#traces">
+            <span class="prot-map__k">Следы и приватность</span>
+            <span class="prot-map__v">трейсы и история — корпоративные данные</span>
+          </a>
+        </div>
+        <div class="prot-map__col prot-map__col--lean">
+          <div class="prot-map__head">опирается на</div>
+          <span class="prot-map__item">
+            <span class="prot-map__k">Аутентификация и права</span>
+            <span class="prot-map__v">кто ты · что видишь — Auth &amp; Security</span>
+          </span>
+          <span class="prot-map__item">
+            <span class="prot-map__k">Лимиты и стоимость</span>
+            <span class="prot-map__v">per-user rate limit, дорогие LLM — Auth</span>
+          </span>
+          <span class="prot-map__item">
+            <span class="prot-map__k">Конфиг и допуск моделей</span>
+            <span class="prot-map__v">allow-list, ось чувствительности — Admin</span>
+          </span>
+          <span class="prot-map__item">
+            <span class="prot-map__k">Рендер ответа</span>
+            <span class="prot-map__v">санитизация разметки — оболочка Web App</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- ════════════════ OWNERSHIP — A THREAD BELONGS TO ITS OWNER ════════════════
+           Доступ к беседе — по владению, не по знанию conversation_id. Проверка
+           user_id поверх RBAC, тем же паттерном, что Auth применяет к личным
+           агентам и ключам. resume по чужому id — типовой IDOR. -->
+      <div class="section" id="ownership">
+        <div class="section__title">Владение беседой</div>
+        <p class="desc">
+          <code>conversation_id</code> адресует тред, но не доказывает право на
+          него. Доступ — только у владельца: на чтении, продолжении
+          (<a href="conversation.html#session-boundary" class="xref-page">resume</a>)
+          и удалении эндпоинт сверяет <code>user_id</code> владельца беседы с
+          текущим — <strong>поверх</strong> RBAC, тем же паттерном «над своим ли
+          объектом», что
+          <a href="../../auth-security/_workzone/authorization.html#resource-ownership" class="xref-module"
+            >Auth</a
+          >
+          применяет к личным агентам и ключам. Основа уже в модели:
+          <a href="data-model.html#conversations" class="xref-page">conversations</a>
+          несут <code>user_id</code> владельца.
+        </p>
+
+        <div class="decision-box">
+          <strong>Тред — только владельцу.</strong> Знание
+          <code>conversation_id</code> не даёт доступа: его даёт совпадение
+          <code>user_id</code>. Без этой сверки продолжение разговора по чужому
+          идентификатору — типовой IDOR: A читал бы переписку B.
+        </div>
+      </div>
+
+      <!-- ════════════════ OUTPUT — UNTRUSTED RENDER CHANNEL ════════════════
+           Зеркало grounding#untrusted-context: вход разобран, выход — тоже под
+           подозрением. Подложенная в найденное строка может заставить модель
+           вывести exfil-ссылку/картинку; обезвреживает её рендер surface'а. -->
+      <div class="section" id="output">
+        <div class="section__title">Вывод тоже под подозрением</div>
+        <p class="desc">
+          <a href="grounding.html#untrusted-context" class="xref-page">Grounding</a>
+          закрыл вход — найденное не команда. Зеркало — выход: ответ модели для
+          рисующего его surface тоже <strong>недоверенный</strong>. Подложенная в
+          найденный фрагмент строка может заставить модель вывести ссылку или
+          картинку вида <code>http://чужой/?leak=…</code>; чат, авто-загрузив
+          ресурс, утащит контекст наружу. Поэтому рендер ответа обезвреживает
+          разметку: не исполняет её, не авто-грузит внешние ресурсы (картинки,
+          fetch), экранирует вывод.
+        </p>
+
+        <div class="decision-box decision-box--warn">
+          <strong>Канал утечки — рендер, не промпт.</strong> Прорыв доступа закрыт
+          в SQL+ACL; «зубы» инъекции — в выводе. Ответ рисует оболочка Web App, там
+          же и санитизация с запретом авто-загрузки внешнего.
+        </div>
+      </div>
+
+      <!-- ════════════════ EGRESS — CONTEXT LEAVES TO THE PROVIDER ════════════════
+           RAG-контекст уезжает выбранной chat-модели; облачный провайдер видит
+           найденные фрагменты. Allow-list Admin сужает по стоимости, не по
+           чувствительности. Контроль (ось чувствительности, редакция) — v2. -->
+      <div class="section" id="egress">
+        <div class="section__title">Куда уходит контекст</div>
+        <p class="desc">
+          Пользователь выбирает chat-модель, и генерация шлёт ей упакованный
+          контекст — найденные корпоративные фрагменты. Если модель облачная, эти
+          фрагменты <strong>покидают периметр</strong> и уходят провайдеру.
+          <a href="../../admin-panel/_wireframes/ai-models.html#model-assignment" class="xref-module"
+            >Allow-list моделей</a
+          >
+          у Admin уже сужает выбор — но по стоимости и доступности, не по
+          чувствительности данных.
+        </p>
+
+        <div class="decision-box decision-box--warn">
+          <strong>Контекст уходит выбранной модели.</strong> Облачный провайдер
+          видит найденные фрагменты целиком. Сейчас выбор ограничен
+          allow-list'ом Admin. <span class="iter v2">v2</span> — ось чувствительности
+          «класс данных → допустимая модель» (облако запрещено для закрытого
+          класса) и редакция/минимизация контекста перед отправкой — дом контроля
+          у Admin / ai-models (см. open-questions).
+        </div>
+      </div>
+
+      <!-- ════════════════ TRACES — QUERY TRAIL IS DATA, NOT DEBUG ════════════════
+           Диалог оставляет следы (история + retrieval_trace) — корпоративные
+           данные. Два просмотра: своя история у владельца (v1, экран — Web App)
+           и доступ админа к чужим следам (v2, на первой итерации не тянем).
+           Минимизация в логах, retention — с управлением беседами (Web App,
+           open-question); каскад при удалении юзера уже в модели. -->
+      <div class="section" id="traces">
+        <div class="section__title">Следы и приватность</div>
+        <p class="desc">
+          Диалог оставляет следы — история
+          (<a href="data-model.html#conversations" class="xref-page">conversations</a>
+          /<a href="data-model.html#messages" class="xref-page">messages</a> с
+          текстами запросов и ответов) и
+          <a href="data-model.html#retrieval-trace" class="xref-page">retrieval_trace</a>
+          (что искали и что нашлось). Это корпоративные данные: живут под теми же
+          правами и уходят каскадом при удалении пользователя; в логи не пишем
+          полный контекст и секреты.
+        </p>
+
+        <p class="desc">
+          Просмотр следов — два разных случая, не путать.
+          <strong>Своя история</strong>: пользователь листает собственные беседы
+          — что спрашивал и что ответили; видна только владельцу (по
+          <code>user_id</code>, как
+          <a href="#ownership" class="xref-anchor">владение тредом</a>), а сам
+          экран — оболочка Web App. <strong>Доступ администратора</strong> к
+          чужим беседам и <code>retrieval_trace</code> — право редкое,
+          надзорное <span class="iter v2">v2</span>: на первой итерации не тянем.
+        </p>
+
+        <div class="decision-box">
+          <strong>Следы — это данные, не отладка.</strong> Минимизация в логах;
+          свою историю видит владелец, чужую — только администратор, не сосед по
+          чату. Срок хранения и автоочистка решаются вместе с управлением
+          беседами (дом — оболочка Web App, см. open-questions); модель данных к
+          каскадному удалению уже готова.
+        </div>
+      </div>
+
+      <p class="note">
+        Чего этот слой не держит, а лишь уважает: <em>кто</em> пользователь и
+        <em>что</em> ему видно — устанавливает
+        <a href="../../auth-security/_workzone/authentication.html#entry-channels" class="xref-module"
+          >Auth</a
+        >
+        (surface предъявляет токен, не диктует личность), а
+        <a href="../../auth-security/_workzone/authentication.html#api-keys" class="xref-module"
+          >прикладные лимиты</a
+        >
+        и стоимость (per-user rate limit, отдельная корзина для дорогих
+        LLM-запросов) спроектированы там же и помечены <span class="iter v2">v2</span>.
+        Query Engine их предъявляет и соблюдает, схему не строит.
+      </p>
+    </div>
+  </body>
+</html>

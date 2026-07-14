@@ -1,0 +1,107 @@
+/* Rate-limit — token-bucket visual + consumer table for the rate-limit
+   workzone page.
+   Loaded by _workzone/rate-limit.html on top of module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Token bucket — capacity refilled over time; a request takes a token or
+   is refused when empty. A single drawn primitive, no kit needed. ── */
+.rl-bucket {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem 1.25rem;
+  align-items: center;
+  padding: 1rem 1.2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.rl-jar {
+  width: 88px;
+  height: 96px;
+  border: 2px solid var(--accent-muted);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 4px;
+  padding: 8px;
+  background: var(--tint-4);
+}
+
+.rl-token {
+  height: 14px;
+  border-radius: 4px;
+  background: var(--accent);
+}
+
+.rl-token--spent {
+  background: none;
+  border: 1px dashed var(--accent-muted);
+}
+
+.rl-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.rl-step {
+  display: grid;
+  grid-template-columns: 1.4rem 1fr;
+  gap: 0.6rem;
+  align-items: baseline;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.rl-step__n {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-align: center;
+}
+
+.rl-step b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ── Consumers table ── */
+.rl-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.rl-tbl th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.rl-tbl td {
+  padding: 0.6rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+  vertical-align: top;
+  line-height: 1.45;
+}
+
+.rl-tbl tr:last-child td {
+  border-bottom: none;
+}
+
+.rl-tbl__c {
+  color: var(--text);
+  font-weight: 600;
+  white-space: nowrap;
+}

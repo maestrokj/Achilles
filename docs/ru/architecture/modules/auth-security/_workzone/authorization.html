@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Авторизация и ACL</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="authorization.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Авторизация и ACL</h1>
+        <div class="header__sub">auth / security · workzone</div>
+      </div>
+
+      <div class="stk-stage">
+        <!-- ═══════════ ОСНОВНОЙ СТЕК ═══════════ -->
+        <div class="stk-stack">
+          <!-- ── L1 · Роли ── -->
+          <div class="stk-layer stk-layer--roles" id="roles-permissions">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Роли</span>
+              <a
+                class="xref-badge"
+                href="../../admin-panel/_wireframes/layout.html#sidebar"
+                >→ Admin Panel</a
+              >
+              <span class="stk-layer__role"
+                >Кто пользователь на платформе.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Owner</span>
+                </div>
+                <ul class="stk-dec__d stk-dec__list">
+                  <li>Полный доступ</li>
+                  <li>Управление админами</li>
+                  <li>Критичные настройки</li>
+                </ul>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Admin</span>
+                </div>
+                <ul class="stk-dec__d stk-dec__list">
+                  <li>Пользователи</li>
+                  <li>Источники</li>
+                  <li>Company-агенты</li>
+                  <li>Мониторинг</li>
+                </ul>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Member</span>
+                </div>
+                <ul class="stk-dec__d stk-dec__list">
+                  <li>Запросы</li>
+                  <li>Личные агенты</li>
+                  <li>Данные в рамках ACL</li>
+                </ul>
+              </div>
+              <div class="stk-dec stk-dec--wide">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Team Lead — capability, не роль</span>
+                  <span class="iter v2">v2</span>
+                  <a
+                    class="xref-badge"
+                    href="../../agent-engine/_workzone/horizon-identity.html#scope"
+                    >→ Agent Engine</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Member получает права на свою команду: управление её
+                  агентами и настройками.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ── L2 · Проверка прав ── -->
+          <div class="stk-layer stk-layer--perms">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Проверка прав</span>
+              <span class="stk-layer__role"
+                >Можно ли это действие.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Абстракция require()</span>
+                </div>
+                <div class="stk-dec__d">
+                  Эндпоинт проверяет наличие нужного <i>permission</i>, а не
+                  конкретную роль.
+                </div>
+                <details>
+                  <summary>как</summary>
+                  <div>
+                    В v1 <code>require()</code> сопоставляет permission с ролью
+                    по статической таблице <code>ROLE_PERMISSIONS</code>. Сюда же
+                    подключится тонкая настройка прав из v2.
+                  </div>
+                </details>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">RBAC middleware</span>
+                </div>
+                <div class="stk-dec__d">
+                  FastAPI-зависимость — единая точка проверки: принимает
+                  требуемый <i>permission</i>, не роль. Роль на эндпоинтах
+                  напрямую не проверяется.
+                </div>
+                <details>
+                  <summary>смена роли</summary>
+                  <div>
+                    Роль берётся из claim access-токена — её свежесть и чтение
+                    из БД для критичных проверок описаны в
+                    <a class="xref-page" href="authentication.html#jwt-claims"
+                      >JWT claims</a
+                    >.
+                  </div>
+                </details>
+              </div>
+              <div class="stk-dec stk-dec--wide" id="resource-ownership">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Проверка владения ресурсом</span>
+                </div>
+                <div class="stk-dec__d">
+                  RBAC отвечает «можно ли действие вообще», владение — «над
+                  своим ли объектом». Личные агенты и API-ключи доступны
+                  только владельцу: эндпоинт сверяет <code>owner_id</code>
+                  ресурса с текущим <code>user_id</code> поверх permission.
+                  Защита от IDOR.
+                </div>
+                <div class="stk-dec__d">
+                  <span class="iter v2">v2</span> Командное владение — доступ
+                  участников к ресурсам своей команды — появляется с
+                  capability Team Lead.
+                </div>
+                <details>
+                  <summary>зачем поверх RBAC</summary>
+                  <div>
+                    Без проверки владения один Member
+                    редактировал бы агента другого — типовой IDOR. Owner /
+                    Admin обходят проверку владения только там, где это их
+                    штатная зона (управление пользователями), не для доступа к
+                    данным источников.
+                  </div>
+                </details>
+              </div>
+              <div class="stk-dec stk-dec--wide">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Граница админских прав</span>
+                </div>
+                <div class="stk-dec__d">
+                  Owner и Admin видят данные
+                  строго в рамках source ACL, как Member. Сквозного обхода ACL
+                  по роли нет.
+                </div>
+                <details>
+                  <summary>break-glass и аудит</summary>
+                  <div>
+                    Экстренный доступ в обход source ACL —
+                    это отдельная явная настройка с обязательной
+                    записью в журнал.
+                    <a
+                      class="xref-module"
+                      href="../../admin-panel/_wireframes/audit-log.html#audit-log"
+                      >Admin Panel</a
+                    >.
+                  </div>
+                </details>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Гранулярные permissions</span
+                  ><span class="iter v2">v2</span>
+                </div>
+                <div class="stk-dec__d">
+                  Таблицы <code>permissions</code> и
+                  <code>user_permissions</code> дают тонкую настройку прав поверх
+                  ролей.
+                </div>
+                <details>
+                  <summary>детали и приоритет</summary>
+                  <div>
+                    Позволяют расширить или урезать права отдельного
+                    пользователя. Назначаются через
+                    <a
+                      class="xref-module"
+                      href="../../admin-panel/_wireframes/user-card.html#user-card"
+                      >Admin Panel</a
+                    >. Приоритет однозначный: <b>явный запрет (deny) важнее
+                    любого разрешения</b> — от роли или точечного гранта.
+                    Сначала складываются гранты (роль + расширения), затем
+                    вычитаются deny.
+                  </div>
+                </details>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ── L3 · Идентичность ── -->
+          <div class="stk-layer stk-layer--ident" id="identity">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Идентичность</span>
+              <span class="stk-layer__role"
+                >Внешние идентичности пользователя.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Таблица identity_mapping</span>
+                  <a class="xref-badge xref-badge--page" href="data-model.html#federation"
+                    >→ Модель данных</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Связывает пользователя платформы с его внешними
+                  <b>логин-идентичностями</b> — универсальный мост входа:
+                  боты мессенджеров (<code>source='slack'</code> · <code>'telegram'</code> · <code>'mattermost'</code>,
+                  <span class="iter v1">v1</span>),
+                  SSO-провайдеры (Okta, Azure AD, <span class="iter v2">v2</span>).
+                  Поля и ограничения — в модели данных.
+                </div>
+                <details>
+                  <summary>наполнение</summary>
+                  <div>При старте пустая — наполняется при входе через любой источник: в v1 это боты Slack, Telegram и Mattermost.</div>
+                </details>
+              </div>
+              <div class="stk-dec stk-dec--wide">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Личности из контент-источников — в Knowledge Store</span>
+                  <a class="xref-badge" href="../../knowledge-store/_workzone/acl-identity.html#identity"
+                    >→ Knowledge Store</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Кто пользователь в Jira / Slack / Confluence — это
+                  <code>source_principal</code> → <code>identity</code> в
+                  Knowledge Store, не здесь. Мост к платформенному аккаунту —
+                  <code>identity.user_id → users</code>: так логин-федерация и
+                  контент-личности не смешиваются в одной таблице.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--wide">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Свод личностей по email</span>
+                  <a class="xref-badge" href="../../knowledge-store/_workzone/acl-identity.html#source-principal"
+                    >→ Knowledge Store</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Люди источника сводятся в одну <code>identity</code> только по
+                  точному <b>email</b>;
+                  <a class="xref-module"
+                    href="../../harvester/_workzone/acl-identity.html#identity"
+                    >Harvester</a
+                  >
+                  производит. Нечёткое «разные email, тот же человек» — v2 (deep
+                  entity resolution).
+                </div>
+                <details>
+                  <summary>несовпавшие</summary>
+                  <div>
+                    Нет email, коллизия или неоднозначность — запись остаётся
+                    unmatched и уходит в ручную привязку администратором через
+                    <a
+                      class="xref-module"
+                      href="../../admin-panel/_wireframes/users.html#identity-mapping"
+                      >Admin Panel</a
+                    >.
+                  </div>
+                </details>
+              </div>
+              <div class="stk-dec stk-dec--wide">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Мост к аккаунту — авто-связь по email</span>
+                  <a class="xref-badge" href="../../knowledge-store/_workzone/acl-identity.html#identity"
+                    >→ Knowledge Store</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Когда человек заводится в платформе — инвайт принят, setup,
+                  смена email админом — его <code>users</code> связывается с уже
+                  существующей <code>identity</code> того же
+                  <a class="xref-module"
+                    href="../../knowledge-store/_workzone/acl-identity.html#identity"
+                    >свода Knowledge Store</a
+                  >
+                  по точному <b>email</b> (<code>identity.user_id</code>). Так
+                  вошедший сразу видит свои аккаунты в источниках. Правило и
+                  хранение — в Knowledge Store; здесь — момент срабатывания со
+                  стороны входа.
+                </div>
+                <details>
+                  <summary>адрес не совпал</summary>
+                  <div>
+                    Email входа ≠ email в источнике — личность остаётся без моста
+                    и привязывается вручную в
+                    <a
+                      class="xref-module"
+                      href="../../admin-panel/_wireframes/users.html#identity-mapping"
+                      >Admin Panel</a
+                    >; нечёткое авто-сведение по разным адресам — v2.
+                  </div>
+                </details>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ── L4 · ACL данных ── -->
+          <div class="stk-layer stk-layer--acl" id="data-acl">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">4</span>
+              <span class="stk-layer__name">ACL данных</span>
+              <a class="xref-badge" href="../../knowledge-store/_workzone/acl-identity.html#acl"
+                >→ Knowledge Store</a
+              >
+              <a class="xref-badge" href="../../harvester/_workzone/acl-identity.html#acl"
+                >→ Harvester</a
+              >
+              <a class="xref-badge" href="../../query-engine/_workzone/retrieval.html#identity"
+                >→ Query Engine</a
+              >
+              <span class="stk-layer__role"
+                >Что пользователю доступно.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--wide">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"
+                    >Подход — Hybrid, маппинг при запросе</span>
+                </div>
+                <div class="stk-dec__d">
+                  Source ACL хранится в оригинальных терминах источника в
+                  <a class="xref-module"
+                    href="../../knowledge-store/_workzone/acl-identity.html#resolution"
+                    >Knowledge Store</a
+                  >. При запросе платформа резолвит аккаунты пользователя и
+                  фильтрует выдачу pre-filter'ом: запрос ведёт Query Engine,
+                  фильтр исполняется в хранилище одним SQL.
+                </div>
+                <details>
+                  <summary>принцип</summary>
+                  <div>Кто что видит, определяет только сам источник.</div>
+                </details>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Container-level ACL</span>
+                </div>
+                <div class="stk-dec__d">
+                  Права задаются на контейнерах (Jira-проект,
+                  Confluence-пространство, Slack-канал), а вложенные сущности их
+                  наследуют.
+                </div>
+                <details>
+                  <summary>override</summary>
+                  <div>
+                    Ограничения на отдельный документ важнее контейнерных и
+                    переопределяют их.
+                  </div>
+                </details>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Двойной фильтр</span
+                  ><span class="iter v2">v2</span>
+                </div>
+                <div class="stk-dec__d">
+                  Доступ проверяется дважды: по source ACL и по платформенным
+                  ограничениям <a
+                    class="xref-module"
+                    href="../../admin-panel/_wireframes/platform-acl.html#platform-acl"
+                    >Admin Panel</a
+                  >. Снять должны оба.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Fail-safe</span>
+                </div>
+                <div class="stk-dec__d">
+                  Сквозной принцип всего слоя: по умолчанию доступ закрыт.
+                  Любая неоднозначность, ошибка проверки или нехватка данных о
+                  правах трактуется в пользу запрета — лучше не показать
+                  доступное, чем показать запрещённое.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ── L5 · Хранилище ── -->
+          <div class="stk-layer stk-layer--store">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">5</span>
+              <span class="stk-layer__name">Хранилище</span>
+              <a class="xref-badge" href="../../knowledge-store/_workzone/acl-identity.html#entity-acl"
+                >→ Knowledge Store</a
+              >
+              <span class="stk-layer__role"
+                >Где физически хранится ACL.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Хранение ACL</span>
+                </div>
+                <ul class="stk-dec__d stk-dec__list">
+                  <li>
+                    <b>PostgreSQL</b> — таблица <code>entity_acl</code> (source
+                    of truth)
+                  </li>
+                  <li>
+                    <b>Postgres-граф</b> — node/edge-таблицы в той же базе;
+                    единый ACL-JOIN покрывает и обход, без отдельной проекции прав
+                  </li>
+                  <li>
+                    <b>pgvector</b> — ACL-фильтр <code>SQL WHERE/JOIN</code>
+                    сужает множество <i>до</i> поиска → vector search top-N
+                    уже по разрешённому (pre-filter, не отсев после)
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══════════ БОКОВОЙ ВХОД ═══════════ -->
+        <div class="stk-side">
+          <div class="stk-side__chan">
+            <div class="stk-side__head">
+              <span class="stk-side__name"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" /><path d="m21 2-9.6 9.6" /><circle cx="7.5" cy="15.5" r="5.5" /></svg> Боковой вход</span>
+            </div>
+            <span class="stk-side__tag">API-ключ · OAuth</span>
+            <div class="stk-side__flow">
+              <b>key / токен</b> → user_id → роль / ACL
+            </div>
+
+            <div class="stk-side__decs">
+              <div class="stk-dec">
+                <div class="stk-dec__d">
+                  <a class="xref-page" href="authentication.html#api-keys"
+                    >API-ключи</a
+                  >
+                  и
+                  <a class="xref-page" href="authentication.html#oauth">OAuth</a>
+                  — описаны в Аутентификации.<br />Здесь важно одно: любой такой
+                  вход сводится к
+                  <code>user_id</code> и дальше идёт обычным путём.
+                </div>
+              </div>
+            </div>
+
+            <div class="stk-side__into">включается в слой 2</div>
+            <div class="stk-side__merge">
+              key / токен сводится к user_id → проверка прав → ACL
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

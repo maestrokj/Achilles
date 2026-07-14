@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Query Engine: граница с Knowledge Store</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../query-engine.css" />
+    <link rel="stylesheet" href="retrieval.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Query Engine</a>
+        <h1 class="header__title">Граница с Knowledge Store</h1>
+        <div class="header__sub">query-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        Retrieval (поиск и права) принадлежит
+        <a href="../../knowledge-store/_workzone/hybrid-search.html#boundary" class="xref-module"
+          >Knowledge Store</a
+        >; Query Engine — RAG-слой поверх. Страница держит стык: где кончается
+        хранилище и начинается RAG —
+        <a href="#boundary" class="xref-anchor">граница вызова</a>; как
+        <a href="#identity" class="xref-anchor">личность</a> уходит вниз как вход
+        фильтра; какой <a href="#access-signal" class="xref-anchor">сигнал
+        обращений</a> хранилище читает для staleness; и где
+        <a href="#live-check" class="xref-anchor">живая проверка прав</a>
+        достраивает pre-filter в v2. Узел реципрокности модуля: сюда сходятся
+        входящие ссылки KS, Auth и Harvester.
+      </p>
+
+      <!-- ════════════════ ГРАНИЦА ════════════════ -->
+      <div class="section" id="boundary">
+        <div class="section__title">Граница вызова: запрос вниз, кандидаты вверх</div>
+        <p class="desc">
+          Когда chat-модель зовёт <code>search_knowledge</code>, Query Engine
+          вызывает у Knowledge Store
+          <a
+            href="../../knowledge-store/_workzone/hybrid-search.html#boundary"
+            class="xref-module"
+            >собранный hybrid-результат</a
+          >
+          одним запросом — это и есть тело инструмента. Четыре примитива поиска
+          (vector · lexical · graph · sql), их слияние (fusion / RRF) и ACL
+          pre-filter живут в KS целиком; QE их не повторяет и не собирает
+          кросс-сторово. Контракт узкий: вниз уходит запрос с личностью, вверх
+          приходит готовый список кандидатов под правами — дальше начинается RAG.
+        </p>
+        <p class="note">
+          Граница не пересекается при пустой базе. Если Knowledge Store пуст
+          (<a href="../../knowledge-store/_workzone/hybrid-search.html#emptiness" class="xref-module"
+            ><code>is_empty</code></a>), <code>search_knowledge</code> модели не
+          подан — звать нечего, вызов вниз не идёт, и QE просто возвращает ответ
+          модели из общих знаний.
+        </p>
+
+        <div class="rt-bound">
+          <div class="rt-bound__col rt-bound__col--ks">
+            <div class="rt-bound__head">
+              <span class="rt-bound__who">Knowledge Store</span>
+              <span class="rt-bound__act">retrieval</span>
+            </div>
+            <ul class="rt-bound__list">
+              <li>Четыре примитива: vector · lexical · graph · sql.</li>
+              <li>Слияние списков — fusion / RRF в один результат.</li>
+              <li>ACL pre-filter — права как условие запроса, до ранжирования.</li>
+              <li>Отдаёт кандидатов: фрагменты и сущности, под правами.</li>
+            </ul>
+          </div>
+          <div class="rt-bound__seam">
+            <span class="rt-bound__seam-down">запрос + identity&nbsp;▾</span>
+            <span class="rt-bound__seam-up">▴&nbsp;кандидаты под правами</span>
+          </div>
+          <div class="rt-bound__col rt-bound__col--qe">
+            <div class="rt-bound__head">
+              <span class="rt-bound__who">Query Engine</span>
+              <span class="rt-bound__act">RAG</span>
+            </div>
+            <ul class="rt-bound__list">
+              <li>Один вызов hybrid-результата — без сборки поиска у себя.</li>
+              <li>Rerank кандидатов — порядок RRF из KS.</li>
+              <li>Упаковка контекста из лучших фрагментов.</li>
+              <li>
+                Генерация
+                <span class="ai-tag" title="Этап использует нейросеть — инференс модели"
+                  ><span class="ai-tag__icon"></span>AI</span
+                >
+                ответа LLM.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ ЛИЧНОСТЬ — ВХОД ════════════════ -->
+      <div class="section" id="identity">
+        <div class="section__title">Личность — вход фильтра, не схема прав у QE</div>
+        <p class="desc">
+          Query Engine передаёт вниз личность пользователя — email и его маппинг
+          на source-аккаунты. Knowledge Store разворачивает её в
+          <a href="../../knowledge-store/_workzone/acl-identity.html#resolution" class="xref-module"
+            >резолв-джойн</a
+          >
+          и фильтрует кандидатов одним SQL <em>до</em> ранжирования.
+        </p>
+
+        <div class="rt-flow">
+          <div class="rt-flow__node rt-flow__node--qe">
+            <span class="rt-flow__t">Query Engine</span>
+            <span class="rt-flow__s">передаёт identity</span>
+          </div>
+          <div class="rt-flow__arr">
+            <span class="rt-flow__arr-line">──▶</span>
+            <span class="rt-flow__arr-cap">email → source-аккаунты</span>
+          </div>
+          <div class="rt-flow__node rt-flow__node--ks">
+            <span class="rt-flow__t">Knowledge Store</span>
+            <span class="rt-flow__s">резолв-джойн + pre-filter</span>
+          </div>
+          <div class="rt-flow__arr">
+            <span class="rt-flow__arr-line">──▶</span>
+            <span class="rt-flow__arr-cap">одним SQL · до ранжирования</span>
+          </div>
+          <div class="rt-flow__node rt-flow__node--out">
+            <span class="rt-flow__t">кандидаты под правами</span>
+            <span class="rt-flow__s">вход RAG</span>
+          </div>
+        </div>
+
+        <p class="note">
+          Источник прав — у других модулей, QE их лишь предъявляет.
+          <a href="../../harvester/_workzone/acl-identity.html#acl" class="xref-module"
+            >Harvester</a
+          >
+          захватывает права и личности из источников и пишет в KS; их разворот в
+          доступные сущности — резолюция KS. Платформенную же сторону доступа
+          держит
+          <a href="../../auth-security/_workzone/authorization.html#data-acl" class="xref-module"
+            >Auth&nbsp;&amp;&nbsp;Security</a
+          >
+          — слой «ACL&nbsp;данных»: в v1 Hybrid, где доступ определяет сам
+          источник; платформенная интерпретация поверх source-прав —
+          <span class="iter v2">v2</span>.
+        </p>
+
+        <p class="note">
+          <strong>Пометка о скрытом — content-free.</strong> Pre-filter убирает
+          запретное насовсем: в списке под правами скрытого нет, и «сколько
+          убрали» из него не видно. Поэтому рядом с кандидатами хранилище отдаёт
+          лёгкую пометку об <em>отфильтрованном-но-релевантном</em> — был ли
+          скрытый кандидат, в какой системе-источнике и кто его автор
+          (<code>author_principal_id</code>, резолвится в email), без заголовка и
+          содержимого. На ней стоит
+          <a href="grounding.html#access-hints" class="xref-page">подсказка о
+            скрытом доступе</a>: автор-контакт «к кому идти» есть в v1; формальный
+          грантор «кто выдаёт доступ» потребует нового поля в модели прав —
+          <span class="iter v2">v2</span>.
+        </p>
+
+        <p class="note">
+          <strong>Аргументы модели — недоверенный ввод.</strong>
+          <code>search_knowledge</code> принимает запрос и фильтры как
+          <em>значения</em>, не как SQL, а identity — из сессии, не из аргументов
+          модели. Поэтому prompt-инъекция бессильна: чужого доступа модели не
+          даст (права — не её аргумент), SQL-инъекцию не построит (значение не
+          станет кодом — это
+          <a href="../../knowledge-store/_workzone/hybrid-search.html#acl-prefilter" class="xref-module"
+            >забота retrieval-слоя</a
+          >). text-to-SQL не даём осознанно — он открыл бы оба вектора.
+        </p>
+      </div>
+
+      <!-- ════════════════ СИГНАЛ ОБРАЩЕНИЙ ════════════════ -->
+      <div class="section" id="access-signal">
+        <div class="section__title">
+          Сигнал обращений для staleness
+          <a
+            class="xref-badge xref-badge--page"
+            href="data-model.html#access-counter"
+            >→ access_counter</a
+          >
+        </div>
+        <p class="desc">
+          Что и как часто запрашивают — видит только Query Engine. Этот сигнал
+          нужен
+          <a
+            href="../../knowledge-store/_workzone/lifecycle.html#staleness"
+            class="xref-module"
+            >staleness-decay</a
+          >
+          Knowledge Store как вход «частота обращений»: востребованное держит вес,
+          забытое опускается. Носителя в модели KS нет намеренно — единственный,
+          кто видит обращения, этот модуль; он и держит счётчик
+          <code>access_counter</code>
+          (<code>hits</code>, <code>last_accessed_at</code> на сущность). Сам
+          decay и его формула — у Knowledge Store.
+        </p>
+
+        <p class="note">
+          <strong>«Обращение» ≠ сырой retrieve.</strong> Засчитываем, когда
+          сущность реально попала в ответ или по её источнику кликнули. Сырой
+          retrieve шумен: попадание в кандидаты ещё не польза, и считать его —
+          подкреплять то, что лишь однажды всплыло. Каждое засчитанное обращение —
+          дешёвый upsert в <code>access_counter</code> (<code>hits++</code>,
+          <code>last_accessed_at</code>); кросс-модульного вызова на горячем пути
+          ответа нет.
+        </p>
+
+        <p class="note">
+          <strong>Сигнал не отправляется — читается при пересчёте.</strong>
+          Decay — это абсолютный пересчёт <code>trust_score</code> в
+          <a
+            href="../../knowledge-store/_workzone/lifecycle.html#staleness"
+            class="xref-module"
+            >Curation&nbsp;Pass</a
+          >
+          из текущих входов. Спрос он берёт так же, как авторитет: JOIN'ом к
+          таблице-носителю в момент прогона — <code>authority_tier</code> из
+          Harvester, частота обращений из <code>access_counter</code> Query
+          Engine. Отдельного расписания «отправки» нет: каденс сигнала = каденс
+          Curation Pass, горячий путь ответа и холодный путь доводки развязаны.
+          Давно не запрашиваемое (<code>last_accessed_at</code> давний) затухает
+          к нейтрали — забытое опускается само, без удаления.
+        </p>
+
+        <div class="rt-flow">
+          <div class="rt-flow__node rt-flow__node--qe">
+            <span class="rt-flow__t">access_counter · QE</span>
+            <span class="rt-flow__s">hits · last_accessed_at</span>
+          </div>
+          <div class="rt-flow__arr">
+            <span class="rt-flow__arr-line">──▶</span>
+            <span class="rt-flow__arr-cap">JOIN при пересчёте · как authority_tier</span>
+          </div>
+          <div class="rt-flow__node rt-flow__node--ks">
+            <span class="rt-flow__t">Curation Pass · KS</span>
+            <span class="rt-flow__s">авторитет × свежесть × спрос</span>
+          </div>
+          <div class="rt-flow__arr">
+            <span class="rt-flow__arr-line">──▶</span>
+            <span class="rt-flow__arr-cap">абсолютный пересчёт</span>
+          </div>
+          <div class="rt-flow__node rt-flow__node--out">
+            <span class="rt-flow__t">entities.trust_score</span>
+            <span class="rt-flow__s">ранжирующий вес</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ LIVE-CHECK ════════════════ -->
+      <div class="section" id="live-check">
+        <div class="section__title">
+          Живая проверка прав на выдаче<span class="iter v2">v2</span>
+        </div>
+        <p class="desc">
+          Pre-filter по сохранённому ACL отвечает быстро, но кэш отстаёт от
+          источника: отозванный доступ может ещё висеть в нашей базе —
+          <a href="../../harvester/_workzone/acl-identity.html#permission-sync" class="xref-module"
+            >Harvester</a
+          >
+          синхронизирует права eventually. Чтобы устаревший отзыв не утёк в
+          ответ, для финальных top-N кандидатов делаем живую проверку прав у
+          источника (late-binding security trim): подтверждаем доступ перед самым
+          показом.
+        </p>
+
+        <div class="rt-trim">
+          <div class="rt-trim__stage rt-trim__stage--fast">
+            <span class="rt-trim__t">pre-filter</span>
+            <span class="rt-trim__d">
+              По сохранённому ACL — весь индекс, один SQL. Быстро, но
+              eventually consistent.
+            </span>
+          </div>
+          <div class="rt-trim__arr">▸</div>
+          <div class="rt-trim__stage rt-trim__stage--rank">
+            <span class="rt-trim__t">rerank → top-N</span>
+            <span class="rt-trim__d">
+              Кандидаты доведены до горстки финалистов.
+            </span>
+          </div>
+          <div class="rt-trim__arr">▸</div>
+          <div class="rt-trim__stage rt-trim__stage--live">
+            <span class="rt-trim__t">live-check у источника</span>
+            <span class="rt-trim__d">
+              Подтверждаем доступ к каждому финалисту перед показом — только
+              на top-N.
+            </span>
+          </div>
+        </div>
+
+        <p class="note">
+          <strong>Источник не ответил — закрываем (fail-closed).</strong> Если в
+          момент проверки источник недоступен (сбой, таймаут), кандидата не
+          показываем: неподтверждённый доступ трактуем как запрет — то же
+          fail-safe-умолчание, что и во всём слое доступа.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

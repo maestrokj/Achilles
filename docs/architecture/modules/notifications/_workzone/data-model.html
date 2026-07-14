@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Notifications: data model</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="data-model.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Notifications</a>
+        <h1 class="header__title">Data model</h1>
+        <div class="header__sub">notifications · workzone</div>
+      </div>
+
+      <p class="desc">
+        Five tables in <code>core</code>: channels, routes, personal
+        preferences, an event journal, and delivery. One dispatcher writes the
+        event, splits it across two addressing models and journals delivery —
+        the mechanics live
+        <a href="dispatcher.html#dispatch" class="xref-page">in the dispatcher</a>,
+        the feed views live in
+        <a href="../../web-app/_wireframes/notification-feed.html" class="xref-module">Web App</a>
+        and
+        <a href="../../admin-panel/_wireframes/notification-feed.html" class="xref-module">Admin Panel</a>.
+      </p>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ── L1 · Notification tables ── -->
+          <div class="stk-layer stk-layer--notif" id="notifications-data">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Tables</span>
+              <span class="stk-layer__role"
+                >Channels · routes · personal preferences · feed · delivery.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">notification_channels</span>
+                  <span class="dm-tbl__sub">where we deliver</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--flag">seed: in_app · email</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">kind</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (in_app | email | webhook)">CHECK</span>
+                      </td>
+                      <td class="dm-note">channel type · <a href="#notif-channels" class="xref-anchor">→ Slack — a preset</a></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">preset</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (slack | generic) · only when kind=webhook">CHECK</span>
+                      </td>
+                      <td class="dm-note">webhook payload format · <code>NULL</code> for built-ins</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">name</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">channel pill label in the matrix</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">url_enc</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">webhook endpoint · write-only, <a href="../../auth-security/_workzone/protection.html#crypto-core" class="xref-module">AES-256-GCM</a> · <code>NULL</code> for built-ins</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">secret_enc</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">HMAC secret for body signing (generic) · write-only, AES-256-GCM · optional, <code>NULL</code> for built-ins and Slack</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">is_builtin</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                      </td>
+                      <td class="dm-note"><code>true</code> for in_app / email · undeletable</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">enabled</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT true">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (kind <> 'in_app' OR enabled) — in_app cannot be disabled">CHECK</span>
+                      </td>
+                      <td class="dm-note"><code>false</code> = channel paused: routes intact, delivery held · in_app — CHECK always <code>true</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">last_test_ok</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">result of the “Test” button · <code>NULL</code> = never tested</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">last_test_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">meta</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="server_default '{}'">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">preset specifics (Slack channel, headers)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">notification_routes</span>
+                  <span class="dm-tbl__sub">type × channel matrix · defaults</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → notification_channels</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE(event_type, channel_id)</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">event_type</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--uq" title="UNIQUE(event_type, channel_id)">UNIQUE*</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (sync | security | budget | system | discovery | agent | account)">CHECK</span>
+                      </td>
+                      <td class="dm-note">category · <a href="../../admin-panel/_wireframes/notifications.html#routing" class="xref-badge">→ Matrix</a></td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">channel_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → notification_channels, ON DELETE CASCADE">FK→channels</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">matrix column</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">enabled</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT true">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (enabled OR NOT locked) — a locked route cannot be disabled">CHECK</span>
+                      </td>
+                      <td class="dm-note">channel pill in the matrix · orthogonal to channel pause · <a href="#notif-critical" class="xref-anchor">→ Lock</a></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">locked</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">in-app × security · sync — <code>true</code>: this route cannot be disabled</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">notification_prefs</span>
+                  <span class="dm-tbl__sub">personal narrowing · profile</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → users</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE(user_id, event_type)</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">user_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">any user · <a href="../../auth-security/_workzone/data-model.html#data-model" class="xref-module">users</a></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">event_type</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--uq" title="UNIQUE(user_id, event_type)">UNIQUE*</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (sync | security | budget | system | discovery | agent | account)">CHECK</span>
+                      </td>
+                      <td class="dm-note">category</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">in_app_enabled</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT true">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">personal in-app toggle per type · free opt-out</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">email_enabled</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span>
+                      </td>
+                      <td class="dm-note">personal email toggle per type · the value at INSERT is written by code from the <a href="#notif-defaults" class="xref-anchor">type catalog</a>, not a column DEFAULT (personal types are opt-in <code>false</code>)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · no row = catalog default</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">notifications</span>
+                  <span class="dm-tbl__sub">event · in-app feed · audit</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--flag">journal · series dedup within a window</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">event_type</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (sync | security | budget | system | discovery | agent | account)">CHECK</span>
+                      </td>
+                      <td class="dm-note">category · <a href="dispatcher.html#catalog" class="xref-page">catalog</a></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">severity</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (info | warning | critical)">CHECK</span>
+                      </td>
+                      <td class="dm-note">severity chip · orthogonal to type</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">target_user_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                        ><span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">recipient of a targeted event (agent · account) · <code>NULL</code> = broadcast by role · <a href="#notif-addressing" class="xref-anchor">→ Two models</a></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">title</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">title · i18n key (<code>agent.run_failed</code>), not a rendered string</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">body</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">body · i18n key · <code>NULL</code> = title only</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">title_params</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="server_default '{}'">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">substitution params for title / body (<code>{agent:"Sales watch"}</code>) · rendered in the reader’s language</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">source module (harvester · auth · agent_engine · knowledge_store · admin)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_ref</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">deep link to an entity (<code>agent/7</code> · <code>run/42</code> · <code>source/17</code>)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">meta</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="server_default '{}'">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">action payload (Discovery: container for “into scope”)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">dedup_key</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span><span class="dm-c dm-c--idx">IDX</span></td>
+                      <td class="dm-note">series collapse key · <code>NULL</code> = not deduped · <a href="dispatcher.html#throttle" class="xref-page">→ Throttling</a></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">dedup_count</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 1">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">series counter “×N” · grows on a repeat within the window</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">last_seen_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">timestamp of the latest event in the series · compared against the dedup window</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> · first event of the series</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · mutates on a dedup increment</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">notification_deliveries</span>
+                  <span class="dm-tbl__sub">per-channel delivery · read-state</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → notifications · channels · users</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE(notification_id, channel_id, user_id)</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE(notification_id, channel_id) WHERE user_id IS NULL</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">notification_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → notifications, ON DELETE CASCADE">FK→notifications</span
+                        ><span class="dm-c dm-c--uq" title="UNIQUE(notification_id, channel_id, user_id) · idempotency: a dispatcher repeat / SAQ retry updates the row, not duplicates it">UNIQUE*</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">which event · delivery idempotency key</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">channel_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → notification_channels, ON DELETE SET NULL">FK→channels</span
+                        ><span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">in_app · email · webhook · webhook channel deleted → <code>NULL</code>, delivery row intact (audit)</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">user_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                        ><span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">personal recipient (in_app / email) · <code>NULL</code> for webhook</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">state</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (queued | sent | failed | read)">CHECK</span>
+                      </td>
+                      <td class="dm-note">delivery status · <code>read</code> only for in_app</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">error</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">reason for <code>failed</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">sent_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">send timestamp</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">read_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">in_app: when read · unread = <code>NULL</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · state mutates</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full" id="notif-addressing">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Two addressing models — split by one column, <code>target_user_id</code></span>
+                  <a class="xref-badge xref-badge--page" href="dispatcher.html#addressing"
+                    >→ Dispatcher</a
+                  >
+                </div>
+                <div class="dm-cmp">
+                  <div class="dm-cmp__col dm-cmp__col--b">
+                    <div class="dm-cmp__h">broadcast <code>target_user_id = NULL</code></div>
+                    <div class="dm-cmp__row"><span class="dm-cmp__k">Recipients</span>a role slice: <code>users</code> with <code>owner</code>/<code>admin</code> and <code>status=active</code>, computed by query — promote someone to Admin → they’re a recipient, revoke the role → they drop out</div>
+                    <div class="dm-cmp__row"><span class="dm-cmp__k">Types</span><code>sync</code> · <code>security</code> · <code>budget</code> · <code>system</code> · <code>discovery</code></div>
+                    <div class="dm-cmp__row"><span class="dm-cmp__k">Webhook</span>yes — delivery has <code>user_id = NULL</code></div>
+                  </div>
+                  <div class="dm-cmp__col dm-cmp__col--t">
+                    <div class="dm-cmp__h">targeted <code>target_user_id = N</code></div>
+                    <div class="dm-cmp__row"><span class="dm-cmp__k">Recipient</span>one user, any — including a member</div>
+                    <div class="dm-cmp__row"><span class="dm-cmp__k">Types</span><code>agent</code> (run, governance) · <code>account</code> (role, temporary password)</div>
+                    <div class="dm-cmp__row"><span class="dm-cmp__k">Webhook</span>no — personal types don’t go over webhooks</div>
+                  </div>
+                </div>
+                <div class="stk-dec__d">
+                  The column is additive: old types write <code>NULL</code> and follow the previous path,
+                  the targeted branch is a single condition in the dispatcher; <code>deliveries.user_id</code>
+                  is already per-user, so the delivery schema didn’t change. There is no separate
+                  recipients table — personal narrowing lives in <code>notification_prefs</code>
+                  (per-user × type, flags <code>in_app</code> and <code>email</code>). We deliberately keep
+                  no external human recipient — that role is played by a webhook channel,
+                  not a recipient row outside the role system
+                  (<a href="../../auth-security/_wireframes/profile-account.html#notifications" class="xref-module">personal settings</a>).
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full" id="notif-channels">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Slack — a webhook preset, not a separate entity</span>
+                  <a class="xref-badge" href="../../admin-panel/_wireframes/notifications.html#channels"
+                    >→ Channels screen</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  A single <code>notification_channels</code> holds all channels — the
+                  “Slack” and “any tool” scenarios converge into one table, and the
+                  <code>notification_routes</code> matrix references channels uniformly by
+                  <code>channel_id</code>.
+                </div>
+                <ul class="stk-dec__list">
+                  <li>in_app · email — <code>is_builtin</code> rows from the migration: undeletable, in_app can’t be disabled</li>
+                  <li>webhook — an ordinary row with a <code>preset</code> (slack · generic) that selects the <a href="dispatcher.html#payload" class="xref-page">payload</a> format; Slack has no dedicated column</li>
+                  <li>webhook — a broadcast-only channel: it has <code>user_id = NULL</code>, personal types don’t fan out over it</li>
+                  <li>these are <strong>outbound alerts</strong> into a channel — the conversational <a href="../../slack/index.html#three-slacks" class="xref-module">Slack bot</a> is a separate entity: inbound and personal</li>
+                </ul>
+              </div>
+
+              <div class="stk-dec stk-dec--full" id="notif-defaults">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Channel default lives in the type catalog; email for user types is opt-in</span>
+                  <a class="xref-badge xref-badge--page" href="dispatcher.html#catalog"
+                    >→ Catalog</a
+                  >
+                </div>
+                <div class="dm-formula">
+                  per-channel delivery = <code>routes.enabled</code> ∧ (<code>prefs.&lt;channel&gt;_enabled</code> or the catalog default)
+                  <span class="dm-formula__note">— one formula for broadcast and targeted</span>
+                </div>
+                <dl class="dm-map">
+                  <dt>platform</dt>
+                  <dd>sync · security · budget · system · discovery → in-app + email</dd>
+                  <dt>agent · account</dt>
+                  <dd>in-app only; email <strong>opt-in</strong> — the user turns it on in their profile</dd>
+                </dl>
+                <div class="stk-dec__d">
+                  With no <code>notification_prefs</code> row, the value falls back to the
+                  <a href="dispatcher.html#catalog" class="xref-page">type catalog</a> default, not a
+                  global “both on”. So a member sees the notification bell by default but
+                  receives no emails until they choose to.
+                </div>
+              </div>
+
+              <div class="stk-dec" id="notif-critical">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">What cannot be disabled centrally</span>
+                </div>
+                <div class="stk-dec__d">
+                  One route is guaranteed — <strong>in-app</strong> for
+                  <code>security</code> and <code>sync</code>: a critical type is always visible at
+                  least in the feed, so a single admin can’t leave the organization without a signal.
+                </div>
+                <ul class="stk-dec__list">
+                  <li>Lock: the in_app × security and in_app × sync routes are seeded <code>locked=true</code>; <code>CHECK (enabled OR NOT locked)</code> prevents disabling them</li>
+                  <li>The level is <strong>organizational</strong>, in-app only: email and webhook for these types, like all channels for other types, stay free</li>
+                  <li>Personal opt-out is always available (<code>notification_prefs</code>); <code>agent</code> · <code>account</code> are not held by the lock</li>
+                </ul>
+              </div>
+
+              <div class="stk-dec" id="notif-journal">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Event is a journal, delivery is state</span>
+                </div>
+                <ul class="stk-dec__list">
+                  <li><code>notifications</code> — a journal, ~append-only; the only mutation is <strong>series dedup</strong> within a window (same <code>dedup_key</code> → <code>dedup_count++</code>, <code>last_seen_at</code>), immutable past the window</li>
+                  <li>Text is <strong>i18n keys</strong> <code>title</code> · <code>body</code> + <code>title_params</code>, rendered in the reader’s language, not a frozen string</li>
+                  <li><code>notification_deliveries</code> — state (queued → sent → read); the in-app feed = <code>notifications</code> ⋈ own deliveries, unread = <code>read_at IS NULL</code></li>
+                  <li>Deletion: event → cascades deliveries; user → their personal rows (the broadcast fact stays intact); webhook channel → <code>channel_id = NULL</code> (audit lives on)</li>
+                </ul>
+                <div class="stk-dec__d">
+                  The dispatcher and event sources — <a href="dispatcher.html#dispatch" class="xref-page">in the mechanics</a>.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ── L2 · Migration ── -->
+          <div class="stk-layer stk-layer--migration" id="migration">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Migration</span>
+              <span class="stk-layer__role">Creates the tables and seeds channels and routes.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><code>alembic/versions/NNN_core_notifications.py</code></span>
+                </div>
+                <div class="stk-dec__d">
+                  Creates the five tables in dependency order:
+                  <code>notification_channels</code> →
+                  <code>notification_routes</code> · <code>notification_prefs</code> ·
+                  <code>notifications</code> → <code>notification_deliveries</code>.
+                </div>
+                <ul class="stk-dec__list">
+                  <li><code>INSERT</code> the two built-in channels (<code>is_builtin</code>: in_app, email)</li>
+                  <li>Seeds the <strong>full</strong> <code>routes</code> matrix — a row for every <code>type × built-in channel</code> cell (<code>enabled=true</code>); webhook for the targeted types <code>agent</code> · <code>account</code> is not seeded</li>
+                  <li>The in_app × security and in_app × sync cells — <code>locked=true</code> (<a href="#notif-critical" class="xref-anchor">what cannot be disabled</a>)</li>
+                  <li><code>downgrade()</code> drops the tables in reverse order</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

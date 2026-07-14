@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Audit Log</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Audit Log</h1>
+        <div class="header__sub">
+          admin panel · макеты · безопасность
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Экран рендерится в контентной области каркаса">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--keep" href="../../shared-ui/_wireframes/loading-states.html#keep-previous" title="Смена страницы или фильтра — прежние строки остаются (keep-previous)">
+              <span class="in-load__icon"></span>загрузка
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">Журнал security-событий платформы — только чтение.</p>
+
+      <!-- ═══ Макет ═══ -->
+      <div class="section" id="audit-log">
+        <div class="section__title">
+          Журнал событий
+          <a href="../../auth-security/_workzone/protection.html#audit-log" class="xref-badge">→ Auth &amp; Security</a>
+          <a href="../../auth-security/_workzone/data-model.html#audit-log" class="xref-badge">→ Auth &amp; Security</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">audit log</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/audit-log
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/audit-log · только Owner</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <span class="wf-title">Audit Log</span>
+                <div class="wf-input wf-input--sm">
+                  <span class="wf-input__icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                  </span>
+                  Поиск по объекту, актору или IP
+                </div>
+                <div class="wf-filters">
+                  <span class="wf-filter">Актор <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Тип действия <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter wf-filter--on">Период <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-annot">1</span>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr><th>Время</th><th>Актор</th><th>Действие</th><th>Объект</th><th>Результат</th><th>IP</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>14:02</td>
+                      <td><a href="user-card.html" class="wf-userlink">anna@…</a></td>
+                      <td>user.role_change <span class="wf-annot">2</span></td>
+                      <td><a href="user-card.html" class="wf-userlink">dmitry@…</a> → Admin</td>
+                      <td><span class="wf-chip wf-chip--ok">ok</span></td>
+                      <td>10.0.0.4</td>
+                    </tr>
+                    <tr>
+                      <td>13:47</td>
+                      <td>—</td>
+                      <td>auth.login</td>
+                      <td><a href="user-card.html" class="wf-userlink">igor@…</a></td>
+                      <td><span class="wf-chip wf-chip--err">fail</span> <span class="wf-annot">3</span></td>
+                      <td>83.4.…</td>
+                    </tr>
+                    <tr>
+                      <td>13:30</td>
+                      <td><a href="user-card.html" class="wf-userlink">dmitry@…</a></td>
+                      <td>api_key.revoke</td>
+                      <td>ach_p03d…</td>
+                      <td><span class="wf-chip wf-chip--ok">ok</span></td>
+                      <td>10.0.0.7</td>
+                    </tr>
+                    <tr>
+                      <td>12:58</td>
+                      <td><a href="user-card.html" class="wf-userlink">anna@…</a></td>
+                      <td>invite.create</td>
+                      <td>colleague@…</td>
+                      <td><span class="wf-chip wf-chip--ok">ok</span></td>
+                      <td>10.0.0.4</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="wf-pager">
+                  <span class="wf-pager__count">1–50 из 1 240</span>
+                  <div class="wf-pager__pages">
+                    <span class="wf-page wf-page--nav wf-page--off">‹</span>
+                    <span class="wf-page wf-page--active">1</span>
+                    <span class="wf-page">2</span>
+                    <span class="wf-page">3</span>
+                    <span class="wf-page wf-page--gap">…</span>
+                    <span class="wf-page">25</span>
+                    <span class="wf-page wf-page--nav">›</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">фильтр · тип действия</div>
+              <div class="wf-pop">
+                <span class="wf-filter" tabindex="0">Тип действия <span class="wf-filter__caret">▾</span></span>
+                <div class="wf-menu">
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> auth</span>
+                  <span class="wf-opt"><span class="wf-opt__box"></span> админ-действия</span>
+                  <span class="wf-opt"><span class="wf-opt__box"></span> API-ключи</span>
+                  <span class="wf-opt"><span class="wf-opt__box"></span> AI</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Поиск и фасеты Актор · Тип действия · Период — поведение
+              <a href="../_workzone/list-controls.html#facets" class="xref-page">единое для всех списков</a>. Состав событий — <a href="../../auth-security/_workzone/protection.html#audit-log" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Строка раскрывается в полную запись события —
+              <a href="../../auth-security/_workzone/data-model.html#audit-log" class="xref-module">модель данных</a>. По auth-событию журнал называет владельца сессии — дальше «завершить все сессии» в <a href="user-card.html#user-sessions" class="xref-page">карточке пользователя</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Неудачный вход фиксируется без актора; серия неудач поднимает alert —
+              <a href="../../auth-security/_workzone/protection.html#brute-force" class="xref-module">защита от перебора</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

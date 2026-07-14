@@ -1,0 +1,409 @@
+/* Admin Panel — bespoke diagrams.
+   Loaded by admin-panel/index.html on top of ../module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ═══════════════════════════════════════════
+   Console — the whole admin panel drawn as one framed window:
+   appbar on top, grouped sidebar left, content-legend right. The
+   architecture section IS the console, so the reader recognises the
+   module by its silhouette. Each sidebar section carries a badge of the
+   domain module it fronts; a lock marks the Owner-only zones.
+   ═══════════════════════════════════════════ */
+
+/* The console is a visualisation-first section: it breaks out of the page's
+   narrow reading column and centres on the viewport, while the rest of the
+   page keeps its normal width. Centred-full-bleed: the parent .page is itself
+   centred, so left:50% lands on the viewport centre and translateX pulls the
+   wider block back onto it; the width cap keeps it inside the viewport (no
+   horizontal scroll). */
+.adm-arch {
+  position: relative;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(1080px, calc(100vw - 4rem));
+}
+
+.adm-shell {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--paper);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+/* ── Appbar ── */
+.adm-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.7rem 1.1rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.adm-bar__logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.9rem;
+  height: 1.9rem;
+  border-radius: 7px;
+  background: var(--accent);
+  color: #fff;
+}
+
+.adm-bar__logo svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.adm-bar__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.adm-bar__title span {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.adm-bar__spacer {
+  flex: 1;
+}
+
+.adm-bar__profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.adm-bar__avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 50%;
+  background: var(--tint-15);
+  color: var(--accent);
+}
+
+.adm-bar__avatar svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+/* ── Body split: sidebar | content ── */
+.adm-body {
+  display: grid;
+  grid-template-columns: 17rem 1fr;
+}
+
+/* ═══════════════════════════════════════════
+   Sidebar — the grouped section catalogue
+   ═══════════════════════════════════════════ */
+.adm-side {
+  padding: 0.9rem 0.85rem;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+
+.adm-group + .adm-group {
+  margin-top: 0.95rem;
+}
+
+.adm-group__head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding: 0 0.45rem 0.4rem;
+}
+
+.adm-group__lock {
+  display: inline-flex;
+  color: var(--accent);
+}
+
+.adm-group__lock svg {
+  width: 0.72rem;
+  height: 0.72rem;
+}
+
+/* ── Nav item ── */
+.adm-item {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.4rem 0.45rem;
+  border-radius: 7px;
+}
+
+.adm-item + .adm-item {
+  margin-top: 0.12rem;
+}
+
+.adm-item__ico {
+  display: inline-flex;
+  flex: none;
+  color: var(--text-muted);
+}
+
+.adm-item__ico svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.adm-item__name {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.adm-item__spacer {
+  flex: 1;
+}
+
+/* Owner-only rows: faint accent lock trailing the group; per-item lock chip */
+.adm-item__lock {
+  display: inline-flex;
+  flex: none;
+  color: var(--accent);
+  opacity: 0.85;
+}
+
+.adm-item__lock svg {
+  width: 0.72rem;
+  height: 0.72rem;
+}
+
+/* Active row — the Dashboard home the content pane mirrors */
+.adm-item--active {
+  background: var(--tint-15);
+}
+
+.adm-item--active .adm-item__ico {
+  color: var(--accent);
+}
+
+.adm-item--active .adm-item__name {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ── Module badge — which domain a section fronts ── */
+.adm-mod {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.13rem 0.4rem;
+  border-radius: var(--pill-radius);
+  color: var(--text-dim);
+  background: var(--tint-8);
+  border: 1px solid var(--tint-15);
+  white-space: nowrap;
+}
+
+/* Core/self badge — sections backed by platform_settings / the shell itself */
+.adm-mod--core {
+  color: var(--text-muted);
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+/* ═══════════════════════════════════════════
+   Content pane — the "console legend"
+   ═══════════════════════════════════════════ */
+.adm-content {
+  padding: 1.3rem 1.5rem 1.5rem;
+  background: var(--paper);
+}
+
+.adm-content__crumb {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.adm-content__title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  margin-bottom: 1rem;
+}
+
+/* ── Legend cards — the 2–3 "what this console is" statements ── */
+.adm-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 1.3rem;
+}
+
+.adm-fact {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.adm-fact__ico {
+  display: inline-flex;
+  flex: none;
+  margin-top: 0.05rem;
+  color: var(--accent);
+}
+
+.adm-fact__ico svg {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.adm-fact__txt {
+  font-size: 0.83rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.adm-fact__txt strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ── Metric tiles — a nod to the Dashboard start screen ── */
+.adm-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+}
+
+.adm-tile {
+  padding: 0.7rem 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.adm-tile__label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.35rem;
+}
+
+.adm-tile__label svg {
+  width: 0.8rem;
+  height: 0.8rem;
+  flex: none;
+}
+
+.adm-tile__value {
+  font-family: var(--mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1;
+}
+
+.adm-tile__value span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 0.15rem;
+}
+
+/* ═══════════════════════════════════════════
+   Access legend — the Admin / Owner-only key
+   ═══════════════════════════════════════════ */
+.adm-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  margin-top: 1.1rem;
+  padding-top: 0.9rem;
+  border-top: 1px dashed var(--border);
+}
+
+.adm-key__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.76rem;
+  color: var(--text-dim);
+}
+
+.adm-key__lock {
+  display: inline-flex;
+  color: var(--accent);
+}
+
+.adm-key__lock svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.adm-key__swatch {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: var(--pill-radius);
+  background: var(--tint-8);
+  border: 1px solid var(--tint-15);
+  color: var(--text-muted);
+}
+
+.adm-key__swatch svg {
+  width: 0.72rem;
+  height: 0.72rem;
+}
+
+.adm-key strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════
+   Responsive — stack the pane below the sidebar
+   ═══════════════════════════════════════════ */
+@media (max-width: 860px) {
+  .adm-body {
+    grid-template-columns: 1fr;
+  }
+  .adm-side {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .adm-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

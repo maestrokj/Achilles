@@ -1,0 +1,439 @@
+/* AI Foundation — module poster diagram (af-*): the AI-resource registry drawn
+   as an operator's console. A row of provider connection slots (status dots)
+   feeds a model-catalog grid; below sit three instrument panels (function
+   assignments · chat/agent lists · spend gauge) and two module toggles
+   (tools · prompt_settings), closed by a status line — the registry stores,
+   runtimes execute, consumers read. Static — no hover affordance (README
+   §Hover) beyond the xref links themselves.
+   Loaded by index.html on top of ../module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+.af-console {
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+/* ── Shared instrument-panel chrome ── */
+.af-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow);
+  padding: 0.6rem 0.7rem 0.7rem;
+}
+.af-panel__cap {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.af-panel__label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.af-panel__tbl {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--accent);
+}
+
+/* ── Connections row — providers as slots ── */
+.af-bus {
+  position: relative;
+  background:
+    linear-gradient(180deg, var(--paper), var(--surface)),
+    var(--surface);
+  border: 1px solid var(--tint-25);
+  border-radius: var(--radius);
+  padding: 0.55rem 0.65rem 0.65rem;
+  box-shadow: var(--card-shadow);
+}
+.af-bus__cap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.45rem;
+}
+.af-bus__lbl {
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.af-bus__tbl {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--accent);
+}
+.af-bus__note {
+  margin-left: auto;
+  font-size: 0.64rem;
+  color: var(--text-dim);
+}
+.af-slots {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.45rem;
+}
+.af-slot {
+  position: relative;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm, 7px);
+  padding: 0.42rem 0.5rem 0.46rem;
+}
+.af-slot__hd {
+  display: flex;
+  align-items: center;
+  gap: 0.34rem;
+}
+.af-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+.af-dot--on {
+  background: var(--s3);
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 4px var(--s3-glow);
+}
+.af-dot--warn {
+  background: var(--s2);
+}
+.af-dot--off {
+  background: var(--accent-muted);
+}
+.af-slot__name {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.1;
+}
+.af-slot__meta {
+  margin-top: 0.22rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+
+/* ── Feed seam: providers → models ── */
+.af-feed {
+  text-align: center;
+  font-size: 0.66rem;
+  color: var(--text-dim);
+  margin: -0.1rem 0;
+}
+.af-feed b {
+  color: var(--accent);
+  font-weight: 700;
+  font-family: var(--mono);
+}
+
+/* ── Model catalog — central grid ── */
+.af-catalog {
+  background: var(--paper);
+  border: 1px solid var(--tint-25);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  padding: 0.6rem 0.7rem 0.7rem;
+}
+.af-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.34rem;
+}
+.af-cell {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.32rem 0.2rem;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  line-height: 1.15;
+}
+.af-cell b {
+  display: block;
+  font-size: 0.66rem;
+  color: var(--text);
+  font-weight: 700;
+}
+.af-cell--chat {
+  border-bottom: 2px solid var(--accent-muted);
+}
+.af-cell--emb {
+  border-bottom: 2px solid var(--s3-glow);
+}
+.af-legend {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 0.45rem;
+  font-size: 0.62rem;
+  color: var(--text-muted);
+}
+.af-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.af-key {
+  width: 16px;
+  height: 0;
+  border-bottom: 2px solid var(--border);
+  display: inline-block;
+}
+.af-key--chat {
+  border-color: var(--accent-muted);
+}
+.af-key--emb {
+  border-color: var(--s3-glow);
+}
+
+/* ── Three instrument panels ── */
+.af-gauges {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.55rem;
+}
+
+/* (1) Function assignments — function → model slots */
+.af-assign {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.af-asg {
+  display: flex;
+  align-items: center;
+  gap: 0.34rem;
+  font-size: 0.66rem;
+}
+.af-asg__fn {
+  flex: none;
+  color: var(--text);
+  font-weight: 600;
+}
+.af-asg__wire {
+  flex: 1;
+  height: 0;
+  border-bottom: 1px dotted var(--accent-muted);
+}
+.af-asg__mdl {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.26rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--text-dim);
+}
+
+/* (2) Chat / agent lists — pills */
+.af-lists {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.af-list__hd {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--s2);
+  margin-bottom: 0.2rem;
+}
+.af-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.24rem;
+}
+.af-pill {
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.08rem 0.4rem;
+}
+.af-pill--def {
+  color: var(--accent);
+  font-weight: 700;
+  background: var(--tint-6);
+  border-color: var(--tint-25);
+}
+.af-pill--def::before {
+  content: "★ ";
+  font-size: 0.56rem;
+}
+
+/* (3) Spend — mini gauge + bar */
+.af-cost {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.af-cost__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-size: 0.62rem;
+  color: var(--text-dim);
+}
+.af-cost__num {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.af-bar {
+  height: 7px;
+  border-radius: 4px;
+  background: var(--tint-8);
+  overflow: hidden;
+  border: 1px solid var(--tint-15);
+}
+.af-bar__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--s3), var(--accent));
+  border-radius: 4px;
+}
+.af-cost__cap {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+
+/* ── Two module toggles (tools · prompt_settings) ── */
+.af-mods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+.af-mod {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--s2-glow);
+  border-radius: var(--radius-md);
+  padding: 0.55rem 0.6rem 0.6rem;
+}
+.af-mod__name {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--s2);
+}
+.af-mod__role {
+  margin-top: 0.16rem;
+  font-size: 0.64rem;
+  color: var(--text-dim);
+  line-height: 1.3;
+}
+/* tools toggles: chat / agents */
+.af-toggles {
+  margin-top: 0.42rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.af-tg {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.64rem;
+  color: var(--text-dim);
+}
+.af-tg__sw {
+  position: relative;
+  width: 26px;
+  height: 14px;
+  border-radius: 999px;
+  flex: none;
+  background: var(--tint-15);
+  border: 1px solid var(--tint-25);
+}
+.af-tg__sw::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+.af-tg--on .af-tg__sw {
+  background: var(--s3);
+  border-color: var(--s3);
+}
+.af-tg--on .af-tg__sw::after {
+  left: auto;
+  right: 1px;
+}
+.af-tg__lbl b {
+  color: var(--text);
+  font-weight: 600;
+}
+/* prompt_settings layers — stair */
+.af-layers {
+  margin-top: 0.42rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.af-lyr {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--text-dim);
+  background: var(--tint-4);
+  border-radius: 4px;
+  padding: 1px 0.42rem;
+}
+.af-lyr--gov {
+  color: var(--accent);
+  background: var(--tint-8);
+}
+.af-lyr:nth-child(2) {
+  margin-left: 0.5rem;
+}
+.af-lyr:nth-child(3) {
+  margin-left: 1rem;
+}
+.af-lyr:nth-child(4) {
+  margin-left: 1.5rem;
+}
+
+/* ── Status line — registry stores, runtimes execute ── */
+.af-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--accent);
+  border-radius: var(--radius-md);
+  font-size: 0.64rem;
+  color: var(--text-dim);
+}
+.af-status b {
+  color: var(--accent);
+  font-weight: 700;
+}
+.af-status__sep {
+  color: var(--accent-muted);
+}
+.af-status__cons {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}

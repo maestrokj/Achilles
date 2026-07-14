@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — HTTP API</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="api.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <!-- ═══ Header ═══ -->
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← К схеме</a>
+        <h1 class="header__title">HTTP API</h1>
+        <div class="header__sub">контракт фронт↔бэк · карта поверхностей</div>
+      </div>
+
+      <!-- ════════════════ КАРТА ПОВЕРХНОСТЕЙ ════════════════
+           Список: какие семьи ресурсов есть, на каком ярусе и чьи. Индекс
+           ссылок, не копия — конкретные запрос/ответ живут в tests.html
+           владельца. Два яруса читаются столбцом «Ярус». -->
+      <section class="section" id="surface-map">
+        <div class="section__title">Поверхности API</div>
+        <p class="note">
+          Внутренний <code>/api/v1</code> — наши оболочки (Web&nbsp;App,
+          Admin&nbsp;Panel).<br/>Внешний <code>/public/v1</code> — курируемый срез того
+          же движка (<a href="../public-api/index.html#contract" class="xref-module">Public API</a>).
+          <br/>Конкретный контракт — в <code>tests.html</code> владельца.
+        </p>
+        <table class="api-map">
+          <thead>
+            <tr>
+              <th>Семья ресурсов</th>
+              <th>Ярус</th>
+              <th>Владелец</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="api-map__fam">session · users · api-keys · invites · messenger-link · password · audit</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../auth-security/index.html#api" class="xref-module">Auth / Security</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">conversations · messages <code>(SSE)</code> · chat-models</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../query-engine/index.html#api" class="xref-module">Query Engine</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">agents · agent-runs</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../agent-engine/index.html#api" class="xref-module">Agent Engine</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">retrieval: vector · lexical · graph · sql · hybrid</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../knowledge-store/index.html#api" class="xref-module">Knowledge Store</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">KS-admin: sources · reindex · re-embed · backup · restore</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../knowledge-store/index.html#api" class="xref-module">Knowledge Store</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">sources · connectors · sync-runs · test-connection</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../harvester/index.html#api" class="xref-module">Harvester</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">ai: providers · models · assignments · tools · discovery</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../ai-foundation/index.html#api" class="xref-module">AI Foundation</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">inbox · feed · unread <code>(личные)</code></td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../notifications/index.html#api" class="xref-module">Notifications</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">конфиг: platform-settings · ai-prompt · usage/budgets · каналы</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../admin-panel/index.html#api" class="xref-module">Admin Panel</a> · фасад</td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">slack: events <code>(вебхук)</code> · admin/slack</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../slack/index.html#api" class="xref-module">Slack</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">telegram: webhook · admin/telegram</td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../telegram/index.html#api" class="xref-module">Telegram</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">admin/mattermost <code>(без вебхука — исходящий слушатель)</code></td>
+              <td class="api-map__tier">/api/v1</td>
+              <td><a href="../mattermost/index.html#api" class="xref-module">Mattermost</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">search · ask <span class="iter v2">v2</span></td>
+              <td class="api-map__tier">/public/v1</td>
+              <td><a href="../public-api/index.html#api" class="xref-module">Public API</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">search_knowledge <code>(JSON-RPC, streamable HTTP)</code></td>
+              <td class="api-map__tier">/mcp</td>
+              <td><a href="../mcp/index.html#model" class="xref-module">MCP</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">events: stream <code>(SSE · push-сигналы)</code></td>
+              <td class="api-map__tier">/api/v1</td>
+              <td>этот слой · <a href="_workzone/live-updates.html#contract" class="xref-page">Живые обновления</a></td>
+            </tr>
+            <tr>
+              <td class="api-map__fam">health · version</td>
+              <td class="api-map__tier">—</td>
+              <td>инфраслой · <code>backend/api/</code></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note">
+          <strong>Admin&nbsp;Panel и Web&nbsp;App — фасады:</strong> своих доменных
+          ресурсов не держат, сводят контракты владельцев под ролью. Строка Admin —
+          про конфиг-поверхность <code>/admin/*</code>, не про владение.
+        </p>
+      </section>
+
+      <!-- ════════════════ ОБЩИЕ ПРАВИЛА ════════════════
+           Сквозные инварианты обоих ярусов — то, чего OpenAPI не задаёт. Одной
+           компактной полосой, без разворота. -->
+      <section class="section" id="conventions">
+        <div class="section__title">Общие правила</div>
+        <ul class="api-rules">
+          <li><b>Версия в пути</b> — <code>/api/v1</code> · <code>/public/v1</code>; ломающее → новая версия</li>
+          <li><b>Личность</b> — JWT или ключ <code>ach_…</code> → <code>user_id</code> → роль → ACL</li>
+          <li><b>Ошибка — код, не 500</b> — <code>401 · 403 · 404 · 409 · 422 · 429</code>, единая форма</li>
+          <li><b>Списки</b> — единый контракт пагинации/фильтра/сортировки (<a href="../admin-panel/_workzone/list-controls.html#pagination" class="xref-module">list-controls</a>)</li>
+          <li><b>Диалог</b> — поток <code>SSE</code>: токены инкрементами, цитаты в хвосте</li>
+          <li><b>Живые борды</b> — сервер шлёт сигнал, клиент рефетчит по REST (<a href="_workzone/live-updates.html#concept" class="xref-page">Живые обновления</a>)</li>
+          <li><b>Идемпотентность</b> — очередное по <code>job_id</code>: повтор не задваивает</li>
+          <li><b>Лимит частоты</b> — окно → <code>429</code> (<a href="../cache-workers/_workzone/rate-limit.html#primitive" class="xref-module">Cache&nbsp;&amp;&nbsp;Workers</a>)</li>
+          <li><b>Время</b> — UTC ISO&nbsp;8601 (<code>…Z</code>); пояс применяет фронт</li>
+        </ul>
+      </section>
+
+      <!-- ═══ Workzone ═══ Один L3-лист: проверки сквозного контракта. -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Проектирование</span>
+        </div>
+        <p class="workzone-hint">
+          Собственная механика слоя: платформенный push-канал, который держит живые
+          борды свежими, и conformance-набор, исполняющий правила выше — форма ошибки,
+          UTC, пагинация и лимит частоты проверяются параметрически по всем роутерам,
+          а не копией в каждом модуле.
+        </p>
+
+        <div class="wz-nav">
+          <a class="wz-link" href="_workzone/live-updates.html">
+            <span>Живые обновления</span>
+          </a>
+          <a class="wz-link" href="_workzone/tests.html">
+            <span>Проверки контракта</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

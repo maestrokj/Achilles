@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Cache &amp; Workers: rate-limit</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="rate-limit.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Cache &amp; Workers</a>
+        <h1 class="header__title">Rate-limit</h1>
+        <div class="header__sub">cache-workers · workzone</div>
+      </div>
+
+      <p class="desc">
+        One rate-limiting primitive for the whole platform: modules don't count
+        limits themselves — they ask a shared counter. The counter and its
+        consumers are separate concerns; the first is covered below, then the
+        second.
+      </p>
+
+      <!-- ═══ Primitive ═══ Shared token-bucket in Redis: atomic, survives
+           restart; consumers only tune the thresholds. -->
+      <div class="section" id="primitive">
+        <h2 class="section__title">Shared primitive</h2>
+
+        <p class="desc">
+          A shared rate-limiting service for the whole platform. Atomicity — a
+          Lua script in Redis counts and debits in a single pass, with no races
+          between workers. The service offers two strategies for different jobs:
+          <b>token-bucket</b> (burst plus average rate) and <b>sliding
+          window</b> (exact event count over an interval) — the consumer
+          chooses, the counter infrastructure is shared. The threshold is set
+          statically (platform default plus a config override, no hardcoding)
+          and dynamically — a consumer may change the rate at runtime, which
+          adaptive consumers need (see Harvester below). The counter lives in
+          <a href="redis-keys.html#instances" class="xref-page">redis-durable</a>:
+          it survives restart and is never evicted under memory pressure. A
+          coarse network rate-limit at Nginx —
+          <a href="../../auth-security/_workzone/protection.html#edge-hardening" class="xref-module">Auth &amp; Security</a>
+          — stands as an outer barrier <b>ahead of</b> the application one: it
+          cuts a packet storm before it reaches the app. This primitive is the
+          home of the “rate limit” rule in the
+          <a href="../../api/index.html#conventions" class="xref-module">HTTP API</a> conventions.
+        </p>
+
+        <div class="rl-bucket">
+          <div class="rl-jar" aria-hidden="true">
+            <span class="rl-token"></span>
+            <span class="rl-token"></span>
+            <span class="rl-token"></span>
+            <span class="rl-token--spent"></span>
+            <span class="rl-token--spent"></span>
+          </div>
+          <div class="rl-flow">
+            <div class="rl-step">
+              <span class="rl-step__n">1</span>
+              <span><b>Capacity</b> — the maximum tokens in the bucket (peak burst).</span>
+            </div>
+            <div class="rl-step">
+              <span class="rl-step__n">2</span>
+              <span><b>Refill</b> — tokens drip in over time up to capacity (average rate).</span>
+            </div>
+            <div class="rl-step">
+              <span class="rl-step__n">3</span>
+              <span><b>A request takes a token</b> — one available → let through, token debited.</span>
+            </div>
+            <div class="rl-step">
+              <span class="rl-step__n">4</span>
+              <span><b>Bucket empty</b> → reject; wait for refill.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Consumers ═══ Who rate-limits through the shared primitive: what
+           it caps, with which strategy, in which window. -->
+      <div class="section" id="consumers">
+        <h2 class="section__title">Consumers</h2>
+
+        <table class="rl-tbl">
+          <thead>
+            <tr>
+              <th>Consumer</th>
+              <th>What it limits</th>
+              <th>Threshold nature</th>
+              <th>Strategy</th>
+              <th>Window / TTL</th>
+              <th>Failure mode</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="rl-tbl__c">
+                <a href="../../harvester/_workzone/security.html#rate-limiting" class="xref-module">Harvester</a>
+              </td>
+              <td>request rate to external sources</td>
+              <td><b>adaptive</b> — set by the external source</td>
+              <td>token-bucket with AIMD — gentle ramp-up, sharp drop on rejection</td>
+              <td>hours, per scope (account / site)</td>
+              <td><b>fail-open</b></td>
+            </tr>
+            <tr>
+              <td class="rl-tbl__c">
+                <a href="../../auth-security/_workzone/protection.html#brute-force" class="xref-module">Auth &amp; Security</a>
+              </td>
+              <td>login brute-forcing</td>
+              <td><b>fixed</b> — set by security</td>
+              <td>sliding window per IP + per-account delay (email)</td>
+              <td>15 min (sliding)</td>
+              <td><b>fail-closed</b></td>
+            </tr>
+            <tr>
+              <td class="rl-tbl__c">
+                <a href="../../auth-security/_workzone/authentication.html#api-keys" class="xref-module">Auth &amp; Security</a>
+              </td>
+              <td>application API (keys)</td>
+              <td><b>fixed</b> — set by the key's policy</td>
+              <td>token-bucket, single cap per key (per-role quotas — <span class="iter v2">v2</span>)</td>
+              <td>minute</td>
+              <td><b>fail-open</b></td>
+            </tr>
+            <tr>
+              <td class="rl-tbl__c">Messenger inbound (Slack · Telegram · Mattermost)</td>
+              <td>inbound event volume — the public webhook endpoint; Mattermost has no webhook, its listener stream is capped per channel</td>
+              <td><b>fixed</b> — set by security</td>
+              <td>sliding window per IP / source / channel</td>
+              <td>minute (sliding)</td>
+              <td><b>fail-closed</b></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="note">
+          <b>The failure mode is a property of the consumer, not the primitive.</b>
+          When redis-durable is unavailable, throttling lets the request through
+          (the limit is merely a rate optimization), while protection blocks it:
+          for brute-force, fail-open would open a guessing window, so it's
+          fail-closed. The safe default is fail-closed; a relaxation to fail-open
+          is something the consumer declares deliberately.
+        </div>
+
+        <div class="note">
+          A rejection to an application call is returned as <b>HTTP 429</b> with
+          <code>Retry-After</code> — the client learns when to retry; to an
+          internal consumer (Harvester) the same rejection is a signal to back
+          off.
+        </div>
+
+        <div class="note">
+          A separate bucket for expensive LLM calls — <span class="iter v2">v2</span>:
+          inference rate is capped not on a par with the ordinary API, but by its
+          own cost-based limit.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

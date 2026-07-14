@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: layout</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">layout</h1>
+        <div class="header__sub">
+          admin panel · макеты · layout
+          <a class="in-load in-load--progress" href="../../shared-ui/_wireframes/loading-states.html#progress" title="Переход между экранами — полоса прогресса">
+            <span class="in-load__icon"></span>переход
+          </a>
+        </div>
+      </div>
+
+      <p class="desc">Оболочка админки — шапка и боковая навигация, в которые обёрнуты все экраны разделов.</p>
+
+      <!-- ═══ Макет ═══ -->
+      <div class="section">
+        <div class="section__title">Макет</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">admin shell</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin · Owner / Admin</span>
+                  <span class="wf-urltip__body">Доступ только для ролей Owner и Admin.</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="wf-appbar" id="header">
+              <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles Admin</div>
+              <span class="wf-appbar__spacer"></span>
+              <span class="wf-input__action" title="Тема: dark / light">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+              </span>
+              <span class="wf-chip">RU</span>
+              <span class="wf-annot">1</span>
+              <a class="wf-bell" href="notification-feed.html" title="Уведомления — лента">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+                <span class="wf-bell__count">3</span>
+              </a>
+              <span class="wf-annot">2</span>
+              <span class="wf-chip">Admin</span>
+              <a class="wf-avatar" href="../../auth-security/_wireframes/profile-account.html">ДС</a>
+              <span class="wf-annot">3</span>
+            </div>
+
+            <div class="wf-shell">
+              <div class="wf-side">
+                <div class="wf-side__group">Обзор</div>
+                <a class="wf-side__item wf-side__item--active" href="dashboard.html">Dashboard <span class="wf-annot">4</span></a>
+                <div class="wf-side__group">Управление</div>
+                <a class="wf-side__item" href="users.html">Пользователи</a>
+                <div class="wf-side__group">Данные</div>
+                <a class="wf-side__item" href="harvester.html">Harvester</a>
+                <div class="wf-side__group">AI</div>
+                <a class="wf-side__item" href="ai-models.html">Модели</a>
+                <a class="wf-side__item" href="agents.html">Агенты</a>
+                <a class="wf-side__item" href="ai-behavior.html">Prompt</a>
+                <div class="wf-side__group">Безопасность</div>
+                <a class="wf-side__item" href="api-keys.html">API Keys</a>
+                <a class="wf-side__item" href="audit-log.html">Audit Log <span class="wf-annot">5</span></a>
+                <a class="wf-side__item" href="platform-acl.html">ACL</a>
+                <div class="wf-side__group">Настройки</div>
+                <a class="wf-side__item" href="platform-settings.html">Платформа</a>
+                <a class="wf-side__item" href="notifications.html">Уведомления</a>
+              </div>
+              <div class="wf-main">
+                <div class="wf-stack">
+                  <span class="wf-label">Контент раздела (Outlet)</span>
+                  <div class="wf-line wf-line--w60"></div>
+                  <div class="wf-line wf-line--full"></div>
+                  <div class="wf-line wf-line--w80"></div>
+                  <div class="wf-line wf-line--w40"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Переключатели темы (dark / light) и языка (RU / EN). Org-default языка — в
+              <a href="platform-settings.html" class="xref-page">настройках платформы</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Центр уведомлений — колокольчик с unread-счётчиком (непрочитанные in-app текущего админа), по клику открывает <a href="notification-feed.html" class="xref-page">ленту</a>; настройка каналов и типов — <a href="notifications.html" class="xref-page">уведомления</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Аватар открывает меню
+              <a href="../../auth-security/_wireframes/profile-account.html" class="xref-module">профиля</a>
+              с выходом из текущей и всех сессий.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Badge непрочитанных на пункте «Уведомления» — на том же push-канале (SSE), что колокольчик. Badges на прочих пунктах <span class="iter v2">v2</span> — pending invites · sync errors.
+            </li>
+            <li class="wf-legend__item" id="sidebar">
+              <span class="wf-annot wf-legend__num">5</span>
+              Видимость пунктов — по роли
+              (<a href="../../auth-security/_workzone/authorization.html#roles-permissions" class="xref-module">Auth &amp; Security</a>): Owner видит всё; Admin — всё, кроме Audit Log, а Платформа для него read-only. Active-пункт держится и на под-экранах раздела.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,698 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Презентация</title>
+    <meta
+      name="description"
+      content="Achilles — единая AI-платформа компании: хаб провайдеров, моделей, агентов и расходов + ответы на знаниях компании."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../shared.css" />
+    <link rel="stylesheet" href="presentation.css" />
+    <link rel="stylesheet" href="../landing.css" />
+  </head>
+
+  <body>
+    <a class="home-link" href="../index.html" title="На главную">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 10.5 12 3l9 7.5" />
+        <path d="M5 9.5V21h14V9.5" />
+      </svg>
+      Главная
+    </a>
+    <div class="page">
+      <!-- ══════════════════════════════════════ -->
+      <!-- HERO                                  -->
+      <!-- ══════════════════════════════════════ -->
+      <header class="hero">
+        <h1 class="hero__title">Achilles</h1>
+        <p class="hero__subtitle">Enterprise AI Platform</p>
+        <p class="hero__desc">
+          Единая AI-платформа компании: провайдеры и модели, агенты
+          сотрудников, инструменты и расходы — под управлением в одном
+          месте. Ответы заземлены на знаниях компании — со ссылками
+          на первоисточник и с учётом прав доступа.
+        </p>
+      </header>
+
+      <!-- Two pillars — anchor navigation -->
+      <nav class="nav-cards">
+        <a class="nav-card" href="#hub">
+          <div class="nav-card__kicker">Опора 1</div>
+          <div class="nav-card__title">Хаб управления AI</div>
+          <div class="nav-card__text">
+            Как одна система заменяет зоопарк склеенных
+            AI-инструментов.
+          </div>
+          <div class="nav-card__arrow">К разделу →</div>
+        </a>
+        <a class="nav-card" href="#knowledge">
+          <div class="nav-card__kicker">Опора 2</div>
+          <div class="nav-card__title">Знания компании</div>
+          <div class="nav-card__text">
+            Как платформа собирает контекст компании в единый граф
+            и заземляет на нём ответы.
+          </div>
+          <div class="nav-card__arrow">К разделу →</div>
+        </a>
+      </nav>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PILLAR 1: HUB                         -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="hub">
+        <div class="section__label section__label--solution">
+          Опора 1 · Хаб
+        </div>
+        <h2 class="section__title">Весь AI компании — в одном месте</h2>
+        <p class="section__text">
+          Небольшой и средней компании, которая хочет дать сотрудникам
+          нейросети и агентов, обычно приходится склеивать несколько
+          инструментов: шлюз для API-ключей, отдельный чат, отдельную
+          базу знаний, отдельный конструктор агентов — и писать клей
+          между ними. Achilles заменяет этот зоопарк одной системой:
+          подключили провайдеров, настроили доступ — и всё работает.
+        </p>
+
+        <div class="compare">
+          <div class="compare__item compare__item--old">
+            <div class="compare__tag">Своими силами</div>
+            <div class="compare__title">Зоопарк инструментов</div>
+            <div class="compare__steps">
+              <div class="step step--fail">
+                Шлюз ключей, чат, знания, агенты — четыре системы
+              </div>
+              <div class="step step--fail">
+                Между ними — самописный клей, который надо поддерживать
+              </div>
+              <div class="step step--fail">
+                Расходы размазаны по инструментам — общей картины нет
+              </div>
+              <div class="step step--fail">
+                Доступы и права — в каждом инструменте свои
+              </div>
+              <div class="step step--fail">
+                Онбординг сотрудника — четыре аккаунта
+              </div>
+            </div>
+          </div>
+          <div class="compare__item compare__item--new">
+            <div class="compare__tag">С Achilles</div>
+            <div class="compare__title">Подключил и работает</div>
+            <div class="compare__steps">
+              <div class="step step--ok">
+                Провайдеры и модели — в одном реестре
+              </div>
+              <div class="step step--ok">
+                Расходы видны по сотрудникам и моделям, лимиты держат бюджет
+              </div>
+              <div class="step step--ok">
+                Все агенты компании — в одном каталоге, под контролем админа
+              </div>
+              <div class="step step--ok">
+                Инструменты настраиваются один раз — для чата и агентов
+              </div>
+              <div class="step step--ok">
+                Веб-интерфейс, Slack-бот и API — из коробки
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hub scheme -->
+        <svg viewBox="0 0 560 350" class="hub-vis">
+          <text x="350" y="14" font-size="7.5" fill="#a09080" text-anchor="middle"
+                font-weight="700" letter-spacing="0.06em">AI-ПРОВАЙДЕРЫ</text>
+          <g>
+            <rect x="177" y="26" width="84" height="26" rx="13" fill="#886040" />
+            <rect x="275" y="26" width="72" height="26" rx="13" fill="#886040" />
+            <rect x="361" y="26" width="68" height="26" rx="13" fill="#886040" />
+            <rect x="443" y="26" width="80" height="26" rx="13" fill="#886040" />
+          </g>
+          <g font-size="10" fill="#fff" text-anchor="middle" font-weight="600">
+            <text x="219" y="43">Anthropic</text>
+            <text x="311" y="43">OpenAI</text>
+            <text x="395" y="43">Google</text>
+            <text x="483" y="43">свой LLM</text>
+          </g>
+          <g stroke="#d2c6b6" stroke-width="1.5">
+            <line x1="219" y1="52" x2="219" y2="70" />
+            <line x1="311" y1="52" x2="311" y2="70" />
+            <line x1="395" y1="52" x2="395" y2="70" />
+            <line x1="483" y1="52" x2="483" y2="70" />
+          </g>
+          <g fill="#d2c6b6">
+            <polygon points="215,70 219,78 223,70" />
+            <polygon points="307,70 311,78 315,70" />
+            <polygon points="391,70 395,78 399,70" />
+            <polygon points="479,70 483,78 487,70" />
+          </g>
+          <text x="65" y="96" font-size="7.5" fill="#a09080" text-anchor="middle"
+                font-weight="700" letter-spacing="0.06em">ИСТОЧНИКИ</text>
+          <g>
+            <rect x="15" y="106" width="100" height="24" rx="12" fill="#baa898" />
+            <rect x="15" y="138" width="100" height="24" rx="12" fill="#baa898" />
+            <rect x="15" y="170" width="100" height="24" rx="12" fill="#baa898" />
+            <rect x="15" y="202" width="100" height="24" rx="12" fill="#baa898" />
+          </g>
+          <g font-size="9.5" fill="#fff" text-anchor="middle" font-weight="600">
+            <text x="65" y="122">Jira</text>
+            <text x="65" y="154">Slack</text>
+            <text x="65" y="186">Confluence</text>
+            <text x="65" y="218">Wiki · диски</text>
+          </g>
+          <g stroke="#d2c6b6" stroke-width="1.5">
+            <line x1="115" y1="118" x2="150" y2="118" />
+            <line x1="115" y1="150" x2="150" y2="150" />
+            <line x1="115" y1="182" x2="150" y2="182" />
+            <line x1="115" y1="214" x2="150" y2="214" />
+          </g>
+          <g fill="#d2c6b6">
+            <polygon points="150,114 158,118 150,122" />
+            <polygon points="150,146 158,150 150,154" />
+            <polygon points="150,178 158,182 150,186" />
+            <polygon points="150,210 158,214 150,218" />
+          </g>
+          <rect x="160" y="78" width="380" height="150" rx="16" fill="#b84e30" />
+          <text x="350" y="104" font-size="13" fill="#fff" text-anchor="middle"
+                font-weight="700">Achilles</text>
+          <g fill="rgba(255,255,255,0.16)">
+            <rect x="220" y="118" width="70" height="24" rx="12" />
+            <rect x="302" y="118" width="70" height="24" rx="12" />
+            <rect x="384" y="118" width="96" height="24" rx="12" />
+            <rect x="241" y="152" width="76" height="24" rx="12" />
+            <rect x="329" y="152" width="130" height="24" rx="12" />
+          </g>
+          <g font-size="9.5" fill="#fff" text-anchor="middle" font-weight="600">
+            <text x="255" y="134">Модели</text>
+            <text x="337" y="134">Агенты</text>
+            <text x="432" y="134">Инструменты</text>
+            <text x="279" y="168">Расходы</text>
+            <text x="394" y="168">Знания компании</text>
+          </g>
+          <text x="350" y="206" font-size="8.5" fill="rgba(255,255,255,0.75)"
+                text-anchor="middle">
+            доступ · лимиты · учёт · права — в одном месте
+          </text>
+          <g stroke="#d2c6b6" stroke-width="1.5">
+            <line x1="219" y1="228" x2="219" y2="288" />
+            <line x1="325" y1="228" x2="325" y2="288" />
+            <line x1="407" y1="228" x2="407" y2="288" />
+            <line x1="491" y1="228" x2="491" y2="288" />
+          </g>
+          <g fill="#d2c6b6">
+            <polygon points="215,288 219,296 223,288" />
+            <polygon points="321,288 325,296 329,288" />
+            <polygon points="403,288 407,296 411,288" />
+            <polygon points="487,288 491,296 495,288" />
+          </g>
+          <g>
+            <rect x="167" y="296" width="104" height="26" rx="13" fill="#6a8048" />
+            <rect x="285" y="296" width="80" height="26" rx="13" fill="#6a8048" />
+            <rect x="379" y="296" width="56" height="26" rx="13" fill="#6a8048" />
+            <rect x="449" y="296" width="84" height="26" rx="13" fill="#6a8048" />
+          </g>
+          <g font-size="10" fill="#fff" text-anchor="middle" font-weight="600">
+            <text x="219" y="313">Веб-интерфейс</text>
+            <text x="325" y="313">Slack-бот</text>
+            <text x="407" y="313">MCP</text>
+            <text x="491" y="313">Public API</text>
+          </g>
+          <text x="350" y="344" font-size="7.5" fill="#a09080" text-anchor="middle"
+                font-weight="700" letter-spacing="0.06em">ПОВЕРХНОСТИ</text>
+        </svg>
+        <div class="graph-vis__caption">
+          Провайдеры и источники подключаются один раз — AI доступен
+          сотрудникам на каждой поверхности
+        </div>
+
+        <div class="benefits">
+          <div class="benefit">
+            <div class="benefit__title">Провайдеры и модели</div>
+            <div class="benefit__text">
+              Подключение по API-ключу, активация моделей из каталога,
+              назначение по функциям: чат, агенты, эмбеддинги.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Расходы под контролем</div>
+            <div class="benefit__text">
+              Учёт токенов по сотрудникам и моделям, недельные лимиты
+              агентов, оповещение при выходе за месячный бюджет.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Агенты сотрудников</div>
+            <div class="benefit__text">
+              Сотрудники создают агентов в интерфейсе, без кода: задача,
+              модель, расписание. Админ видит всех и может поставить
+              любого на паузу.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Инструменты — централизованно</div>
+            <div class="benefit__text">
+              Веб-поиск, загрузка страниц, поиск по базе знаний.
+              Доступность для чата и агентов настраивается в одном
+              месте; подключение MCP-серверов — на подходе.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Поведение AI</div>
+            <div class="benefit__text">
+              Системный промпт организации — тон, правила и контекст
+              компании — правится прямо в админ-панели.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Поверхности</div>
+            <div class="benefit__text">
+              Веб-интерфейс из коробки, Slack-бот, MCP для внешних
+              AI-ассистентов, Public API для своих поверхностей —
+              Telegram и другие мессенджеры добавляются по мере роста.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Доступ и безопасность</div>
+            <div class="benefit__text">
+              Роли, приглашения по email, API-ключи, журнал аудита —
+              управление людьми встроено, не приклеено сбоку.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Библиотека агентов — скоро</div>
+            <div class="benefit__text">
+              Предустановленные агенты под типовые задачи: аналитика
+              по компании, дайджесты, мониторинг — включил и пользуешься.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="bridge">
+        <p>
+          Хаб полезен с первого дня — сотрудники получают модели
+          и агентов без единой строки кода. Но настоящая глубина
+          появляется, когда платформа знает вашу компанию.
+        </p>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PILLAR 2: KNOWLEDGE                   -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="knowledge">
+        <div class="section__label section__label--solution">
+          Опора 2 · Знания
+        </div>
+        <h2 class="section__title">Ответы на знаниях компании</h2>
+        <p class="section__text">
+          Контекст компании разбросан по Jira, Slack, Confluence
+          и дискам — за ответом каждый идёт к каждому, и чем больше
+          команда, тем дороже эта координация. Achilles подключается
+          к источникам и строит единый граф знаний: люди, проекты,
+          задачи и решения связаны в одном месте.
+        </p>
+
+        <!-- Knowledge graph visualization -->
+        <svg viewBox="0 0 480 240" class="graph-vis">
+          <!-- Edges -->
+          <g stroke="#d2c6b6" stroke-width="1.5">
+            <line x1="240" y1="44" x2="400" y2="106" />
+            <line x1="240" y1="44" x2="80" y2="106" />
+            <line x1="240" y1="44" x2="340" y2="196" />
+            <line x1="400" y1="106" x2="340" y2="196" />
+            <line x1="340" y1="196" x2="140" y2="196" />
+            <line x1="140" y1="196" x2="80" y2="106" />
+          </g>
+          <!-- Edge labels -->
+          <g font-size="8.5" fill="#a09080">
+            <text x="332" y="65" text-anchor="middle">владелец</text>
+            <text x="148" y="65" text-anchor="middle">участник</text>
+            <text x="300" y="116" text-anchor="middle">создал</text>
+            <text x="382" y="156" text-anchor="middle">содержит</text>
+            <text x="240" y="218" text-anchor="middle">решение</text>
+            <text x="98" y="156" text-anchor="middle">обсуждение</text>
+          </g>
+          <!-- Type labels -->
+          <g font-size="7.5" fill="#a09080" text-anchor="middle"
+             font-weight="700" letter-spacing="0.06em">
+            <text x="240" y="22">ЧЕЛОВЕК</text>
+            <text x="400" y="84">ПРОЕКТ</text>
+            <text x="340" y="178">ЗАДАЧА</text>
+            <text x="140" y="178">ДОКУМЕНТ</text>
+            <text x="80" y="84">КАНАЛ</text>
+          </g>
+          <!-- Node pills -->
+          <rect x="202" y="30" width="76" height="28" rx="14" fill="#b84e30" />
+          <rect x="345" y="92" width="110" height="28" rx="14" fill="#886040" />
+          <rect x="296" y="182" width="88" height="28" rx="14" fill="#a05838" />
+          <rect x="100" y="182" width="80" height="28" rx="14" fill="#6a8048" />
+          <rect x="34" y="92" width="92" height="28" rx="14" fill="#baa898" />
+          <!-- Node labels -->
+          <g font-size="10.5" fill="#fff" text-anchor="middle" font-weight="600">
+            <text x="240" y="49">@alex</text>
+            <text x="400" y="111">Уведомления</text>
+            <text x="340" y="201">INFRA-891</text>
+            <text x="140" y="201">ADR-015</text>
+            <text x="80" y="111">#backend</text>
+          </g>
+        </svg>
+        <div class="graph-vis__caption">
+          Пример: как граф связывает людей, проекты, задачи
+          и документы
+        </div>
+
+        <!-- Topology: full mesh → star -->
+        <div class="topology">
+          <div class="topology__side topology__side--problem">
+            <svg width="160" height="120" viewBox="0 0 160 120">
+              <g stroke="#b84e30" stroke-width="1.3" opacity="0.3">
+                <line x1="80" y1="11" x2="118" y2="33" />
+                <line x1="80" y1="11" x2="118" y2="77" />
+                <line x1="80" y1="11" x2="80" y2="99" />
+                <line x1="80" y1="11" x2="42" y2="77" />
+                <line x1="80" y1="11" x2="42" y2="33" />
+                <line x1="118" y1="33" x2="118" y2="77" />
+                <line x1="118" y1="33" x2="80" y2="99" />
+                <line x1="118" y1="33" x2="42" y2="77" />
+                <line x1="118" y1="33" x2="42" y2="33" />
+                <line x1="118" y1="77" x2="80" y2="99" />
+                <line x1="118" y1="77" x2="42" y2="77" />
+                <line x1="118" y1="77" x2="42" y2="33" />
+                <line x1="80" y1="99" x2="42" y2="77" />
+                <line x1="80" y1="99" x2="42" y2="33" />
+                <line x1="42" y1="77" x2="42" y2="33" />
+              </g>
+              <g fill="#b84e30">
+                <circle cx="80" cy="11" r="7" />
+                <circle cx="118" cy="33" r="7" />
+                <circle cx="118" cy="77" r="7" />
+                <circle cx="80" cy="99" r="7" />
+                <circle cx="42" cy="77" r="7" />
+                <circle cx="42" cy="33" r="7" />
+              </g>
+            </svg>
+            <div class="topology__label">
+              <div class="topology__formula">C = n(n &minus; 1) &divide; 2</div>
+              <div class="topology__count">
+                6 человек = <strong>15</strong> связей
+              </div>
+            </div>
+          </div>
+          <div class="topology__arrow">&rarr;</div>
+          <div class="topology__side topology__side--solution">
+            <svg width="160" height="120" viewBox="0 0 160 120">
+              <g stroke="#6a8048" stroke-width="1.5" opacity="0.5">
+                <line x1="80" y1="11" x2="80" y2="55" />
+                <line x1="118" y1="33" x2="80" y2="55" />
+                <line x1="118" y1="77" x2="80" y2="55" />
+                <line x1="80" y1="99" x2="80" y2="55" />
+                <line x1="42" y1="77" x2="80" y2="55" />
+                <line x1="42" y1="33" x2="80" y2="55" />
+              </g>
+              <rect x="55" y="44" width="50" height="22" rx="11" fill="#6a8048" />
+              <text x="80" y="58.5" text-anchor="middle" font-size="8.5" fill="#fff" font-weight="700">Achilles</text>
+              <g fill="#b84e30">
+                <circle cx="80" cy="11" r="7" />
+                <circle cx="118" cy="33" r="7" />
+                <circle cx="118" cy="77" r="7" />
+                <circle cx="80" cy="99" r="7" />
+                <circle cx="42" cy="77" r="7" />
+                <circle cx="42" cy="33" r="7" />
+              </g>
+            </svg>
+            <div class="topology__label">
+              <div class="topology__formula">C = n</div>
+              <div class="topology__count">
+                6 человек = <strong>6</strong> связей
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="graph-vis__caption">
+          500 человек: 124 750 связей «каждый с каждым»
+          → 500 обращений к платформе
+        </div>
+
+        <div class="benefits">
+          <div class="benefit">
+            <div class="benefit__title">Один запрос вместо десяти диалогов</div>
+            <div class="benefit__text">
+              Вместо расспросов коллег и обхода Jira, Confluence,
+              Slack — один вопрос платформе, ответ со ссылками
+              на первоисточник.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Права доступа соблюдаются</div>
+            <div class="benefit__text">
+              Платформа переносит права источников в граф: сотрудник
+              получает в ответе только то, к чему у него есть доступ.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Знания остаются в компании</div>
+            <div class="benefit__text">
+              История решений сохраняется в графе — даже после
+              ухода ключевых людей.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Онбординг за дни, не за месяцы</div>
+            <div class="benefit__text">
+              Новый сотрудник получает полную картину с первого
+              дня — без десятков вводных встреч.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- USE CASE                              -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section">
+        <div class="section__label section__label--example">Пример</div>
+        <h2 class="section__title">Как это работает на практике</h2>
+        <p class="section__text">
+          Новый разработчик хочет понять, почему для сервиса
+          уведомлений выбрали PostgreSQL, а не MongoDB.
+        </p>
+
+        <div class="compare">
+          <div class="compare__item compare__item--old">
+            <div class="compare__tag">Без Achilles</div>
+            <div class="compare__title">4 дня, 0 ответов</div>
+            <div class="compare__steps">
+              <div class="step step--fail">
+                Поиск по Confluence — ничего
+              </div>
+              <div class="step step--fail">
+                Вопрос в Slack — «не помню, спроси Alex»
+              </div>
+              <div class="step step--fail">
+                Alex в отпуске
+              </div>
+              <div class="step step--fail">
+                Решение потеряно, время потрачено
+              </div>
+            </div>
+          </div>
+          <div class="compare__item compare__item--new">
+            <div class="compare__tag">С Achilles</div>
+            <div class="compare__title">1 запрос, полный контекст</div>
+            <div class="compare__steps">
+              <div class="step step--ok">
+                Обсуждение в #backend (март 2024)
+              </div>
+              <div class="step step--ok">
+                Связанный тикет INFRA-891
+              </div>
+              <div class="step step--ok">
+                ADR: нагрузка на write, требование ACID
+              </div>
+              <div class="step step--ok">
+                Автор решения: @alex, DBA: @john
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PROGRESSIVE VALUE                     -->
+      <!-- Хаб → гибрид → память компании по     -->
+      <!-- мере наполнения базы. Снимает порог   -->
+      <!-- входа: полезно с первого дня.         -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section">
+        <div class="section__label section__label--evolution">Развёртывание</div>
+        <h2 class="section__title">
+          Платформа растёт вместе с базой
+        </h2>
+        <p class="section__text">
+          Ценность не требует «сначала подключить всё». Achilles полезен с
+          первого дня как AI-хаб и дозревает до заземлённой памяти
+          компании по мере того, как наполняется база знаний — без переключения
+          режимов и переустановки.
+        </p>
+
+        <div class="phases">
+          <div class="phase">
+            <div class="phase__tag">База пуста</div>
+            <div class="phase__title">AI-хаб</div>
+            <div class="phase__text">
+              Развернули, подключили людей и мессенджеры, выбрали модель. Чат и
+              агенты отвечают на общих знаниях — из коробки, без интеграций и
+              кода.
+            </div>
+          </div>
+          <div class="phase__arrow">→</div>
+          <div class="phase">
+            <div class="phase__tag">База наполняется</div>
+            <div class="phase__title">Гибрид</div>
+            <div class="phase__text">
+              Подключили первые источники. Вопрос о делах компании — заземлённый
+              ответ со ссылкой на источник; остальное — как у консультанта.
+            </div>
+          </div>
+          <div class="phase__arrow">→</div>
+          <div class="phase phase--full">
+            <div class="phase__tag">База полна</div>
+            <div class="phase__title">Память компании</div>
+            <div class="phase__text">
+              Полный граф знаний под единым доступом. Каждый ответ заземлён на
+              корпоративных данных, агенты работают на всём контексте компании.
+            </div>
+          </div>
+        </div>
+
+        <p class="section__text">
+          Переход бесшовен, потому что режима как настройки нет: пустая база —
+          инструмент поиска модели просто не даётся, и платформа отвечает как
+          ассистент; первый загруженный фрагмент включает заземление сам. Ни
+          флага, ни переключателя — порог входа падает с недель до часа.
+        </p>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- OPEN SOURCE                           -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section">
+        <div class="section__label section__label--oss">Open Source</div>
+        <h2 class="section__title">Открытый код, полный контроль</h2>
+        <p class="section__text">
+          Achilles — платформа с открытым кодом: каждую строку можно
+          прочитать и проверить. Развёртывание гибкое — в облаке или
+          в собственном контуре компании.
+        </p>
+
+        <div class="oss-points">
+          <div class="oss-point">
+            <div class="oss-point__title">Аудируемый код</div>
+            <div class="oss-point__text">
+              Никаких чёрных ящиков. Безопасность, которую можно
+              проверить.
+            </div>
+          </div>
+          <div class="oss-point">
+            <div class="oss-point__title">Данные под контролем</div>
+            <div class="oss-point__text">
+              При необходимости платформа целиком работает в вашем
+              контуре — данные не покидают компанию.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- SUMMARY                               -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section">
+        <div class="section__label section__label--summary">Итог</div>
+        <h2 class="section__title">
+          Одна платформа вместо десяти инструментов
+        </h2>
+        <p class="section__text">
+          Achilles — единая инфраструктура для AI в компании:
+          хаб моделей, агентов и расходов, который дозревает
+          до памяти компании по мере подключения источников.
+        </p>
+
+        <div class="features">
+          <div class="feature">
+            <div class="feature__title">Хаб управления AI</div>
+            <div class="feature__text">
+              Провайдеры, модели, инструменты и расходы — в одном
+              реестре.
+            </div>
+          </div>
+          <div class="feature">
+            <div class="feature__title">Знания компании</div>
+            <div class="feature__text">
+              Граф знаний из ваших источников, ответы с учётом прав
+              доступа.
+            </div>
+          </div>
+          <div class="feature">
+            <div class="feature__title">Агенты без кода</div>
+            <div class="feature__text">
+              Сотрудники создают, платформа исполняет, админ управляет.
+            </div>
+          </div>
+          <div class="feature">
+            <div class="feature__title">Доступ там, где удобно</div>
+            <div class="feature__text">
+              Веб-интерфейс, Slack, MCP, Public API — из коробки.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- CTA                                   -->
+      <!-- ══════════════════════════════════════ -->
+      <footer class="cta">
+        <h2 class="cta__title">Попробуйте</h2>
+        <p class="cta__text">
+          От пустого сервера до работающей платформы — меньше часа.
+          Пошаговая инструкция проведёт через развёртывание и настройку.
+        </p>
+        <div class="cta__actions">
+          <a href="../get-started/index.html" class="cta__btn cta__btn--primary">
+            Get Started →
+          </a>
+          <a href="../architecture/architecture-scheme.html" class="cta__btn cta__btn--secondary">
+            Архитектура
+          </a>
+          <a href="vision.html" class="cta__btn cta__btn--secondary">
+            Vision
+          </a>
+          <a href="https://github.com/maestrokj/Achilles" class="cta__btn cta__btn--secondary">
+            GitHub
+          </a>
+        </div>
+      </footer>
+    </div>
+    <script defer src="../architecture/doc-nav.js"></script>
+  </body>
+</html>

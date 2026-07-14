@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Re-auth modal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Re-auth modal <span class="iter v2">v2</span></h1>
+        <div class="header__sub">
+          auth / security · макеты · пользовательские
+          <a class="in-load in-load--spinner" href="../../shared-ui/_wireframes/loading-states.html#spinner" title="Ожидание действия — спиннер">
+            <span class="in-load__icon"></span>загрузка
+          </a>
+        </div>
+      </div>
+
+      <p class="desc">
+        Повторное подтверждение паролем перед критичными действиями (sudo mode). Политика —
+        <a href="../_workzone/authentication.html#re-auth" class="xref-page">Повторная аутентификация</a>.
+      </p>
+
+      <!-- Модалка на затемнённом фоне: два состояния одного диалога — запрос пароля и ошибка ввода. -->
+      <div class="section">
+        <div class="section__title">Макет</div>
+        <div class="wf-stage wf-stage--backdrop">
+          <div class="wf-gallery">
+            <!-- Состояние: запрос пароля -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">подтверждение</div>
+              <div class="wf-screen wf-screen--modal">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <span class="wf-ico wf-center">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                      </span>
+                      <h2 class="wf-title">
+                        Подтвердите, что это вы <span class="wf-annot">1</span>
+                      </h2>
+                      <p class="wf-subtitle">
+                        Завершение сессии — защищённое действие. Введите пароль
+                        ещё раз, чтобы продолжить.
+                      </p>
+                    </div>
+
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-avatar">ДС</span>
+                        <span class="wf-text">
+                          Дмитрий Соколов<br />
+                          <span class="wf-hint">dmitry@company.com</span>
+                        </span>
+                      </span>
+                      <span class="wf-annot">2</span>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Пароль</span>
+                      <div class="wf-input wf-input--focus">
+                        ••••••••••••
+                        <span class="wf-input__action" title="Показать пароль">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                        <span class="wf-annot">3</span>
+                      </div>
+                      <div class="wf-row wf-spread">
+                        <span class="wf-hint">Тот же пароль, что для входа</span>
+                        <a class="wf-a" href="../_features/password-recovery/forgot-password.html">
+                           Забыли пароль? <span class="wf-annot">4</span></a>
+                      </div>
+                    </div>
+
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Подтвердить</button>
+                    <button class="wf-btn wf-btn--block">Отмена</button>
+
+                    <hr class="wf-divider" />
+
+                    <div class="wf-row wf-center">
+                      <span class="wf-hint"> После подтверждения пароль несколько минут не переспрашивают. </span>
+                      <span class="wf-annot">5</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Состояние: неверный пароль -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">неверный пароль</div>
+              <div class="wf-screen wf-screen--modal">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <span class="wf-ico wf-center">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                      </span>
+                      <h2 class="wf-title">Подтвердите, что это вы</h2>
+                      <p class="wf-subtitle">
+                        Завершение сессии — защищённое действие. Введите пароль
+                        ещё раз, чтобы продолжить.
+                      </p>
+                    </div>
+
+                    <div class="wf-alert wf-alert--error wf-row">
+
+                      Неверный пароль. Попробуйте ещё раз — частые неудачные попытки замедляются.
+                      <span class="wf-annot">6</span></div>
+
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-avatar">ДС</span>
+                        <span class="wf-text">
+                          Дмитрий Соколов<br />
+                          <span class="wf-hint">dmitry@company.com</span>
+                        </span>
+                      </span>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Пароль</span>
+                      <div class="wf-input wf-input--focus">
+                        •••••••
+                        <span class="wf-input__action" title="Показать пароль">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                      </div>
+                      <div class="wf-row wf-spread">
+                        <span class="wf-hint wf-hint--error">Проверьте раскладку и Caps Lock</span>
+                        <a class="wf-a" href="../_features/password-recovery/forgot-password.html">Забыли пароль?</a>
+                      </div>
+                    </div>
+
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Подтвердить</button>
+                    <button class="wf-btn wf-btn--block">Отмена</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Заголовок называет само подтверждаемое действие — пользователь видит, что именно подтверждает, до ввода пароля.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Контекст аккаунта — имя и email уже вошедшего пользователя, read-only. Это подтверждение, а не новый вход.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Тот же пароль, что при
+              <a href="login.html" class="xref-page">входе</a>. С включённым TOTP гейт принимает код из приложения (<a href="../_features/mfa/index.html" class="xref-page">MFA</a>).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              «Забыли пароль?» ведёт в
+              <a href="../_features/password-recovery/forgot-password.html" class="xref-page">сброс пароля</a>
+              — выход из sudo-потока; критичное действие при этом не выполняется.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              После успеха критичные действия несколько минут не переспрашивают пароль (sudo-окно), привязано к текущей сессии.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              Неверный пароль замедляется с ростом попыток — общий с входом
+              <a href="../_workzone/protection.html#brute-force" class="xref-page">рубеж защиты от перебора</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

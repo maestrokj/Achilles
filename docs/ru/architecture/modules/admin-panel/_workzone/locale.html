@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Язык и регион</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Язык и регион</h1>
+        <div class="header__sub">admin panel · workzone</div>
+      </div>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ── Откуда берётся локаль для показа ── -->
+          <div class="stk-layer stk-layer--config" id="locale-resolution">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Разрешение локали</span>
+              <span class="stk-layer__role"
+                >timezone · язык UI</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <!-- Главное правило: порядок приоритета. -->
+              <div class="stk-dec" id="resolution-chain">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Цепочка приоритета</span>
+                </div>
+                <div class="stk-dec__d">
+                  При показе дат, времени, языка интерфейса и формата фронтенд
+                  берёт первое заданное значение:
+                  <b
+                    >личный override пользователя → дефолт организации → locale
+                    браузера</b
+                  >. Локаль влияет только на отображение, не на сами данные.
+                </div>
+              </div>
+
+              <!-- Уровень 1: организация (admin). -->
+              <div class="stk-dec" id="org-default">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Дефолт организации</span>
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_wireframes/platform-settings.html#org-defaults"
+                    >→ Platform Settings</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Owner / Admin задаёт <code>timezone</code>,
+                  <code>locale</code>, <code>date_format</code> в
+                  <a class="xref-page" href="data-model.html#data-model"
+                    ><code>platform_settings</code></a
+                  >
+                  (singleton). Применяется ко всем, кто не переопределил, — и
+                  служит точкой отсчёта для расписаний sync, агентов и digest-ов.
+                </div>
+              </div>
+
+              <!-- Уровень 2: пользователь (профиль). -->
+              <div class="stk-dec" id="user-override">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Личный override</span>
+                  <a
+                    class="xref-badge"
+                    href="../../auth-security/_wireframes/profile-account.html#locale"
+                    >→ Профиль</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Пользователь переопределяет под себя в профиле. Хранится в
+                  per-user полях <code>timezone</code> / <code>locale</code> /
+                  <code>date_format</code> на
+                  <a
+                    class="xref-module"
+                    href="../../auth-security/_workzone/data-model.html#data-model"
+                    ><code>users</code></a
+                  >
+                  (nullable; <code>NULL</code> = наследовать дефолт
+                  организации). Незаданное поле прозрачно падает на уровень
+                  организации — переопределить можно и одну строку, не все три.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

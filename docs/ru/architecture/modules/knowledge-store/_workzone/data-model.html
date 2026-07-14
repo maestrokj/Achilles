@@ -1,0 +1,941 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Knowledge Store: модель данных</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../knowledge-store.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="data-model.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Knowledge Store</a>
+        <h1 class="header__title">Модель данных</h1>
+        <div class="header__sub">knowledge-store · workzone</div>
+      </div>
+
+      <p class="desc">
+        Ядро Knowledge Store — сущность знаний. Один логический контракт
+        <a
+          href="../../harvester/_workzone/data-model.html#entity"
+          class="xref-module"
+          >Entity</a
+        >, который производит Harvester, здесь персистится и расходится на
+        <a href="#projections" class="xref-anchor">три проекции</a> в одной базе
+        Postgres: реляционное тело (<a href="#entities" class="xref-anchor"
+          >entities</a
+        >), фрагменты с векторами и полнотекстом (<a href="#chunks" class="xref-anchor"
+          >chunks</a
+        >) и граф связей (<a href="#graph" class="xref-anchor">entity_edge</a>).
+        На <code>entities</code> нанизано всё остальное: права
+        (<a href="acl-identity.html#entity-acl" class="xref-page"
+          >entity_acl → entities</a
+        >), поиск
+        (<a href="hybrid-search.html#primitives" class="xref-page"
+          >четыре примитива</a
+        >) и доводка графа
+        (<a href="lifecycle.html#curation-pass" class="xref-page"
+          >Curation Pass</a
+        >). Как контракт Harvester ложится в эти таблицы — на
+        <a href="#boundary" class="xref-anchor">границе с производителем</a>.
+      </p>
+
+      <!-- ════════════════ ТРИ ПРОЕКЦИИ ════════════════ -->
+      <div class="section" id="projections">
+        <div class="section__title">Сущность → три проекции в одной базе</div>
+        <p class="desc">
+          Сущность — это не одна строка в одной базе и не три копии в трёх СУБД.
+          Это <strong>одна запись с тремя проекциями</strong> внутри одного
+          Postgres: тело фильтруют и джойнят точно, фрагменты ищут по смыслу,
+          рёбра обходят по связям. Все три живут рядом, поэтому
+          <a href="acl-identity.html#resolution" class="xref-page"
+            >единый ACL pre-filter</a
+          >
+          и <a href="hybrid-search.html#fusion" class="xref-page">слияние</a> четырёх
+          парадигм идут одним SQL-запросом, без кросс-базовой синхронизации.
+        </p>
+
+        <div class="ks-proj">
+          <div class="ks-proj__src">
+            entity<small>один логический контракт</small>
+          </div>
+          <div class="ks-proj__stem"></div>
+          <div class="ks-proj__fan">
+            <div class="ks-proj__col ks-proj__col--rel">
+              <div class="ks-proj__h">
+                <span class="ks-proj__t">Реляционное тело</span>
+                <span class="ks-proj__tbl">entities · структура · точные фильтры</span>
+              </div>
+              <p class="ks-proj__d">
+                Идентичность, тип, статус, метаданные, текст для выдачи — и
+                source of truth для прав (<code>entity_acl</code> ссылается сюда).
+                Всё, что фильтруют и джойнят точно.
+              </p>
+            </div>
+            <div class="ks-proj__col ks-proj__col--vec">
+              <div class="ks-proj__h">
+                <span class="ks-proj__t">Текст фрагментов</span>
+                <span class="ks-proj__tbl">chunks · вектор + лексика</span>
+              </div>
+              <p class="ks-proj__d">
+                Фрагменты сущности — дочерние строки (ключ — её <code>id</code>),
+                каждый с двумя индексами: плотным эмбеддингом для поиска по смыслу
+                и разреженным <code>tsvector</code> для поиска по словам. Опора
+                текстового retrieval — оба сигнала рядом.
+              </p>
+            </div>
+            <div class="ks-proj__col ks-proj__col--graph">
+              <div class="ks-proj__h">
+                <span class="ks-proj__t">Граф</span>
+                <span class="ks-proj__tbl">entity_edge · связи · обход</span>
+              </div>
+              <p class="ks-proj__d">
+                Сущность — узел, отдельной node-таблицы нет; связи — рёбра между
+                сущностями. Структурные приносит Harvester, cross-source —
+                материализует Curation Pass.
+              </p>
+            </div>
+          </div>
+          <div class="ks-proj__base">
+            один PostgreSQL · pgvector + recursive SQL (CTE) · одна транзакция,
+            один ACL pre-filter
+          </div>
+        </div>
+
+        <div class="decision-box">
+          <strong>Порядок обновления проекций — тело → векторы → рёбра.</strong>
+          Загрузка пишет проекции в одной транзакции, в одном порядке:
+          сперва строка <code>entities</code> (на неё ссылаются остальные по FK),
+          затем её <code>chunks</code> (переэмбеддинг только при смене
+          <code>content_hash</code>), затем структурные <code>entity_edge</code>,
+          чьи оба узла уже в базе. Cross-source рёбра и доводка — асинхронны, их ведёт
+          <a href="lifecycle.html#curation-pass" class="xref-page"
+            >Curation Pass</a
+          >.
+        </div>
+      </div>
+
+      <!-- ════════════════ ENTITIES ════════════════ -->
+      <div class="section" id="entities">
+        <div class="section__title">
+          Реляционное тело: <code>entities</code>
+        </div>
+        <p class="desc">
+          Центральная таблица модуля — каноничный снимок записи источника и
+          source of truth, на который ссылаются все остальные проекции и права.
+          Идентичность совпадает с ключом идемпотентности
+          <a
+            href="../../harvester/_workzone/data-model.html#entity"
+            class="xref-module"
+            >контракта Harvester</a
+          >: одна строка на запись источника, повторный прогон делает upsert.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--ks">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Сущность</span>
+              <span class="stk-layer__role">Тело записи — снимок и source of truth.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">entities</span>
+                  <span class="dm-tbl__sub">узлы знаний</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → sources</span>
+                    <span class="dm-badge dm-badge--fk">FK → source_principal</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (source_id, source_type, source_entity_id)</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">source_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → Harvester.sources, ON DELETE CASCADE">FK→sources</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">источник · CASCADE</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_type</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">подвид · ticket · page · message</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_entity_id</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">нативный id записи · часть ключа upsert</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">title</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">заголовок</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">body</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">текст для выдачи · режется на <code>chunks</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">url</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">пермалинк в источнике</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">status</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (draft | final | archived)">CHECK</span>
+                      </td>
+                      <td class="dm-note">draft · final · archived · ставит шаг classify</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">author_principal_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → source_principal, ON DELETE SET NULL">FK→principal</span
+                        ><span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">автор · мост в мир личностей</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">создано в источнике</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">правка в источнике · вход staleness</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">is_deleted</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="server_default=false">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">soft-delete · отдельная ось от <code>status</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">deleted_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">когда исчезла из источника · ставит reconciliation</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">content_hash</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">детект изменений · экономит переэмбеддинг</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">trust_score</td>
+                      <td class="dm-t">Real</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">ранжирующий вес · ведёт Curation Pass: авторитет источника, сниженный давностью и спросом (<a href="lifecycle.html#staleness" class="xref-page">decay</a>)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">meta</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">гибкие атрибуты по типу сущности</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Снимок, не лента · soft-delete отдельной осью</span>
+                </div>
+                <div class="stk-dec__d">
+                  Храним последнее состояние записи: upsert перезаписывает строку,
+                  прошлых редакций сущности не накапливаем (changelog полей не
+                  ведём — только <code>updated_at</code>). Пропажа записи из
+                  источника — это <code>is_deleted</code>, отдельная ось от
+                  <code>status</code>: запись прячут из выдачи, но физически
+                  держат ради аудита и восстановления. Момент исчезновения
+                  проставляет полный скан
+                  <a
+                    href="../../harvester/_workzone/sync-modes.html#reconciliation"
+                    class="xref-module"
+                    >reconciliation</a
+                  > — в инкремент удаление не приходит.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ CHUNKS ════════════════ -->
+      <div class="section" id="chunks">
+        <div class="section__title">
+          Текстовая проекция: <code>chunks</code>
+        </div>
+        <p class="desc">
+          Эмбеддинги — не один вектор на запись, а по фрагментам: длинный
+          документ
+          <a
+            href="../../harvester/_workzone/pipeline.html#chunk"
+            class="xref-module"
+            >режется на куски</a
+          >, каждый эмбеддится отдельно. Тот же текст фрагмента несёт и
+          разреженный полнотекстовый индекс (<code>tsvector</code> + GIN) —
+          лексический поиск по словам рядом с векторным по смыслу. Фрагмент —
+          дочерняя строка сущности, своего ACL не имеет: он наследует
+          <a href="acl-identity.html#entity-acl" class="xref-page"
+            >права родителя</a
+          >
+          через <code>entity_id</code>, поэтому отбор по правам идёт тем же
+          SQL-запросом, что и поиск по близости.
+        </p>
+
+        <div class="decision-box decision-box--warn" id="no-partition">
+          <strong>Не партиционируем по источнику — глобальный ANN важнее.</strong>
+          Соблазн нарезать <code>chunks</code> по <code>source_id</code> ради
+          объёма обманчив: у каждой партиции свой HNSW-индекс, а семантический
+          поиск идёт по всем источникам разом — запрос без предиката по ключу
+          партиции вынужден сканировать индекс каждой партиции и сливать, а
+          недобор под ACL множится по партициям (partition pruning не сработает,
+          пока запрос не сужен до источника — редкий случай). Профит партиций —
+          лишь дешёвое удаление источника (<code>DROP PARTITION</code>), но это
+          уже закрывает <code>ON DELETE CASCADE</code>. Поэтому одно глобальное
+          хранилище, не шардированное по источнику. Выделённый шардинг
+          (<span class="iter v2">v2</span>) — только при доказанном объёме и
+          сдвиге паттерна на source-scoped поиск: добавление, не переписывание.
+        </div>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--ks">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Фрагмент</span>
+              <span class="stk-layer__role">Часть текста, её вектор и полнотекст.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">chunks</span>
+                  <span class="dm-tbl__sub">фрагменты и эмбеддинги</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → entities</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (entity_id, ordinal)</span>
+                    <span class="dm-badge dm-badge--flag">HNSW (embedding) · halfvec</span>
+                    <span class="dm-badge dm-badge--flag">GIN (text_tsv)</span>
+                    <span class="dm-badge dm-badge--flag">partial · WHERE NOT is_deleted</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">entity_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → entities, ON DELETE CASCADE">FK→entities</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">родитель · CASCADE · носитель ACL</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">is_deleted</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="server_default=false">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">зеркало <code>entities.is_deleted</code> · условие частичных HNSW/GIN</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">ordinal</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">позиция фрагмента в сущности</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">text</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">текст фрагмента</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">embedding</td>
+                      <td class="dm-t">halfvec(N)</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--vec" title="pgvector · half-precision · индекс HNSW">pgvector</span
+                        ><span class="dm-c dm-c--idx">HNSW</span>
+                      </td>
+                      <td class="dm-note">N — размерность назначенной embedding-модели (встроенные — 1024) · half-precision · ANN по близости (cosine)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">text_tsv</td>
+                      <td class="dm-t">tsvector</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--def" title="GENERATED ALWAYS AS to_tsvector('simple', text) STORED">GENERATED</span
+                        ><span class="dm-c dm-c--idx">GIN</span>
+                      </td>
+                      <td class="dm-note">разреженный индекс из <code>text</code> · лексический поиск (<code>ts_rank</code>)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">token_count</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">длина фрагмента в токенах</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">content_hash</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">переэмбеддинг только при смене текста</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">embedding_model</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">чем эмбеддили · ключ <a href="lifecycle.html#embedding-refresh" class="xref-page">refresh</a></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · правка при переэмбеддинге</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full stk-dec--warn">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Фильтр поверх приближённого индекса · денормализация и частичные индексы</span>
+                </div>
+                <div class="stk-dec__d">
+                  pgvector применяет фильтр <strong>после</strong> скана индекса,
+                  не внутри обхода графа: жёсткий
+                  <a href="acl-identity.html#resolution" class="xref-page"
+                    >ACL pre-filter</a
+                  >
+                  может недобрать — top-K приближённого HNSW частью отсекается уже
+                  после выдачи, без ошибки. Лечится итеративными сканами
+                  (<code>hnsw.iterative_scan</code>, pgvector 0.8.0+) — но только
+                  для условий на самой <code>chunks</code>; предикат через JOIN на
+                  <code>entities</code> итеративный скан компенсировать не умеет.
+                  А таких предиката у нас два — <code>is_deleted</code> и сам
+                  ACL, — и решаются они врозь. <code>is_deleted</code>
+                  денормализуется: ось зеркалится на <code>chunks</code>, оба
+                  текстовых индекса (HNSW и GIN) строятся
+                  <strong>частичными</strong> — <code>WHERE NOT is_deleted</code>,
+                  так удалённое вообще вне обхода. ACL так не убрать — он остаётся
+                  самым жёстким фильтром, приходящим JOIN-ом; его recall под наши
+                  права замерить на реальных данных, не полагаться на общие
+                  оценки. См.
+                  <a href="hybrid-search.html#acl-prefilter" class="xref-page"
+                    >ACL pre-filter</a
+                  >.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full" id="model-metric">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Модель и метрика — единый платформенный выбор</span>
+                </div>
+                <div class="stk-dec__d">
+                  Эмбеддинг-модель — один глобальный выбор на платформу
+                  (<a
+                    href="../../admin-panel/_wireframes/ai-models.html#model-assignment"
+                    class="xref-module"
+                    >ai-models</a
+                  >); и размерность <code>N</code> колонки
+                  <code>halfvec(N)</code>, и метрика поиска наследуются от неё —
+                  Knowledge Store их не выбирает, а потребляет
+                  (<code>N</code> = <code>meta.embedding_dim</code> назначенной
+                  модели). Дефолта нет: платформа везёт встроенные модели из
+                  коробки (<a href="../../ai-foundation/_workzone/data-model.html#ai-builtin" class="xref-module"
+                    >Platform</a
+                  >), но <code>N</code> фиксируется при первом назначении —
+                  встроенной <em>или</em> своей, — до первого приёма. Метрика —
+                  <strong>косинус</strong> (эмбеддинги нормализованы, класс
+                  операторов <code>vector_cosine_ops</code> у HNSW). Один
+                  глобальный выбор задаёт и границу между обновлениями: смена на
+                  модель <em>той же</em> размерности — это
+                  <a href="lifecycle.html#embedding-refresh" class="xref-page"
+                    >refresh</a
+                  >
+                  (перегенерация векторов на месте); смена размерности
+                  перестраивает тип колонки и индекс — это миграция схемы, не
+                  refresh. В v1 колонка провизирована как
+                  <code>halfvec(1024)</code> (размерность обеих встроенных
+                  моделей), а назначение модели другой — или незаявленной —
+                  размерности отклоняется на уровне реестра (409); динамический
+                  <code>N</code> придёт вместе со сменой размерности как
+                  schema-операцией.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><code>halfvec</code> по умолчанию: половина хранения и индекса</span>
+                </div>
+                <div class="stk-dec__d">
+                  Эмбеддинги — доминирующая статья хранения: на миллионах
+                  фрагментов и колонка, и HNSW-индекс уходят в десятки ГБ.
+                  <code>halfvec</code> (half-precision, 2 байта на измерение против
+                  4 у <code>vector</code>; pgvector 0.7.0+) режет вдвое и то, и
+                  другое — индекс лучше держится в памяти, поиск быстрее. Потеря recall на half-precision
+                  практически нулевая, но абсолютное значение замерить на своих
+                  данных.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Размерность как рычаг: предпочесть MRL-модель</span>
+                </div>
+                <div class="stk-dec__d">
+                  Размерность <code>N</code> задаёт модель — и при её выборе стоит
+                  предпочесть MRL-совместимую (Matryoshka Representation Learning:
+                  ранние измерения несут больше смысла, усечение хвоста почти не
+                  роняет recall). Тогда сохраняется опцион
+                  <span class="iter v2">v2</span> — индексировать по усечённому
+                  вектору (<code>subvector</code>) при хранении полного: меньше
+                  индекс без переэмбеддинга. Усечение валидно
+                  <strong>только</strong> для MRL-моделей — обычной модели хвост
+                  резать нельзя, ломается пространство.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Когда индекс перестанет влезать в память</span>
+                </div>
+                <div class="stk-dec__d">
+                  Следующий потолок за <code>halfvec</code> — оперативная память
+                  под HNSW; путь эскалации <span class="iter v2">v2</span>:
+                  бинарная квантизация (<code>binary_quantize</code> →
+                  <code>bit</code> + расстояние Хэмминга) грубым первым проходом,
+                  затем rerank top-кандидатов на <code>halfvec</code>. Бинарь —
+                  1 бит на измерение против 16 у <code>halfvec</code>: ~16× по
+                  объёму <em>данных</em> вектора относительно нашего дефолта
+                  (полные 32× — лишь против fp32-<code>vector</code>, который мы
+                  не держим), и то по данным, не по размеру HNSW-индекса 1:1;
+                  <code>halfvec</code> остаётся для rerank. Добавление второго
+                  индекса, не переписывание — в v1 незачем.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Полнотекст — конфигурация <code>simple</code></span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>text_tsv</code> генерируется с конфигурацией
+                  <code>simple</code> — токенизация и приведение к нижнему
+                  регистру без стемминга и стоп-слов, язык-агностично. Две
+                  причины. Контент смешанный (RU + EN), а
+                  <code>GENERATED … STORED</code> требует
+                  <strong>immutable</strong>-выражения — язык по строке в
+                  генерируемой колонке невозможен. И роль: в гибриде лексический
+                  примитив несёт <strong>точные совпадения</strong> — имена, ID,
+                  аббревиатуры, код, — а смысл и кросс-язык даёт
+                  <a href="hybrid-search.html#primitives" class="xref-page"
+                    >векторный примитив</a
+                  >, поэтому потеря стемминга для lexical некритична.
+                  Стемминг по языку (детект + per-language конфигурация) —
+                  отложенная доводка, не переписывание схемы.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ GRAPH ════════════════ -->
+      <div class="section" id="graph">
+        <div class="section__title">
+          Графовая проекция: <code>entity_edge</code>
+        </div>
+        <p class="desc">
+          Граф сущностей живёт в том же Postgres: узел — это сама запись
+          <code>entities</code> (отдельной node-таблицы нет), а связи — рёбра
+          между сущностями. Обход — рекурсивным SQL (CTE) на ближний контекст
+          (1–3 шага), под тем же ACL
+          <a href="acl-identity.html#resolution" class="xref-page"
+            >pre-filter</a
+          >, что и остальные проекции. Выделенный графовый движок —
+          <a href="#graph-engine" class="xref-anchor">v2, если понадобится</a>.
+        </p>
+
+        <div class="decision-box decision-box--warn" id="graph-engine">
+          <strong>Граф — в том же Postgres, не в Neo4j.</strong>
+          Профиль модуля — связный RAG-retrieval ближнего контекста (1–3 шага):
+          рост источников расширяет граф вширь, не вглубь, а на такой глубине
+          рекурсивный CTE держит нагрузку — вторая СУБД с кросс-базовой
+          синхронизацией не нужна. Выделенный графовый движок (Neo4j) —
+          <span class="iter v2">v2</span>, только при устойчивом сдвиге к
+          глубоким (4+ шага) обходам или граф-аналитике: тогда отдельный графовый
+          слой добавляется на часть данных, реляционка остаётся source of truth —
+          добавление, не переписывание.
+        </div>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--ks">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Ребро</span>
+              <span class="stk-layer__role">Связь между двумя сущностями.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">entity_edge</span>
+                  <span class="dm-tbl__sub">рёбра графа</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → entities ×2</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (src, dst, rel_type)</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">src_entity_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → entities, ON DELETE CASCADE">FK→entities</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">сущность-исток · CASCADE</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">dst_entity_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → entities, ON DELETE CASCADE">FK→entities</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">сущность-цель · CASCADE</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">rel_type</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">вид связи · mentions · replies_to · links_to · child_of · duplicate_of</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">weight</td>
+                      <td class="dm-t">Real</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">вес / уверенность ребра</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">origin</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (harvester | curation)">CHECK</span>
+                      </td>
+                      <td class="dm-note">harvester (структурное на загрузке) · curation (материализовано прогоном: cross-source и отложенные forward-ссылки)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · правка веса при Curation Pass</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Две породы рёбер · единый ACL на обходе</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>origin</code> различает, кто провёл ребро. Структурные
+                  (<code>harvester</code>) приходят с загрузкой — связи внутри
+                  источника, что уже видны в записи (тред, иерархия страниц).
+                  Cross-source (<code>curation</code>) материализует
+                  <a href="lifecycle.html#curation-pass" class="xref-page"
+                    >Curation Pass</a
+                  >: упоминание становится ребром, когда оба узла уже в графе.
+                  Так как узлы — это <code>entities</code>, обход и его ACL —
+                  обычный JOIN <code>entity_acl</code> на посещённых id: единый
+                  pre-filter покрывает и граф, без отдельной проекции прав. Обход
+                  стартует от узла и идёт по виду связи, поэтому рёбра несут
+                  составной индекс <code>(src_entity_id, rel_type)</code>, а не
+                  только одиночные FK — рекурсивный CTE берёт следующий шаг по
+                  нему. Обход ограничен не только глубиной (1–3 шага), но и
+                  <strong>шириной</strong>: cap на fanout с узла, отсев по
+                  <code>weight</code>, явный visited-set против циклов — иначе
+                  хаб-узел (популярный автор, корневая страница пространства)
+                  разворачивает обход в десятки тысяч рёбер ещё до применения ACL.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Из refs в рёбра: канонический словарь и отложенная материализация</span>
+                  <a class="xref-badge" href="../../harvester/_workzone/data-model.html#refs-format"
+                    >→ Harvester · refs</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <code>rel_type</code> — канонический словарь графа; заявки на
+                  связь (<a href="#entity-ref" class="xref-anchor">entity_ref</a>)
+                  переводятся в него на материализации:
+                  <code>parent → child_of</code>,
+                  <code>duplicate → duplicate_of</code>,
+                  <code>mentions → mentions</code>, … Ребро рождается, когда
+                  <strong>оба</strong> узла уже в базе — иначе заявка ждёт в
+                  <code>entity_ref</code> и материализуется позже, наравне с
+                  cross-source: FK на оба конца не терпит висящей цели, в том
+                  числе для forward-ссылки внутри одного источника. Заявка, чья
+                  цель — не сущность (<code>author → user</code>), разрешается в
+                  реляционное тело (<code>author_principal_id</code>), а не в
+                  ребро: <code>entity_edge</code> связывает только сущности.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--ks" id="entity-ref">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">●</span>
+              <span class="stk-layer__name">Заявка на связь</span>
+              <span class="stk-layer__role">Staging-очередь рёбер до резолва.</span>
+            </div>
+            <div class="stk-layer__body">
+              <p class="desc">
+                Ссылка, чью цель ещё нельзя связать (узел не загружен или живёт в
+                другом источнике). Harvester пишет заявку при захвате,
+                <a href="lifecycle.html#curation-pass" class="xref-page"
+                  >Curation Pass</a
+                >
+                резолвит цель и гасит строку, материализуя ребро.
+              </p>
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">entity_ref</span>
+                  <span class="dm-tbl__sub">нерешённые заявки на связь</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → entities</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (src_entity_id, relation, target_kind, target_ref)</span>
+                    <span class="dm-badge dm-badge--flag">снимок нерешённых</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">src_entity_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → entities, ON DELETE CASCADE">FK→entities</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">сущность-владелец заявки · CASCADE</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">relation</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">вид связи в терминах источника · mentions · blocks · parent · author · duplicate · …</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">target_kind</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">вид цели · issue · page · user · commit · mr · message · …</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">target_ref</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">натуральный id цели в источнике · ключ резолва</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_hint</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">предполагаемый источник · jira · gitlab · <code>NULL</code> если неизвестен</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · при повторном захвате</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Очередь нерешённых · гаснет при материализации</span>
+                </div>
+                <div class="stk-dec__d">
+                  Зеркало <code>dead_letters</code> Harvester: строка живёт, пока
+                  заявку нельзя связать. Резолв нашёл цель — Curation Pass пишет
+                  ребро в <code>entity_edge</code> и <strong>удаляет</strong>
+                  строку; провенанс остаётся на ребре
+                  (<code>origin=curation</code>), дублировать его заявкой незачем.
+                  Повторный захват той же ссылки не плодит дубль — upsert по
+                  натуральному ключу
+                  (<code>src_entity_id + relation + target_kind + target_ref</code>).
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ ГРАНИЦА С HARVESTER ════════════════ -->
+      <div class="section" id="boundary">
+        <div class="section__title">Граница с производителем: Harvester → Knowledge Store</div>
+        <p class="desc">
+          Контракт между модулями уже зафиксирован: Harvester
+          <a
+            href="../../harvester/_workzone/data-model.html#storage"
+            class="xref-module"
+            >производит Entity и набрасывает три проекции</a
+          >, Knowledge Store даёт им точную форму и хранит. Та же граница на
+          стороне производителя — в его
+          <a
+            href="../../harvester/_workzone/data-model.html#cross-source"
+            class="xref-module"
+            >cross-source</a
+          >.
+        </p>
+
+        <div class="dm-border">
+          <div class="dm-border__col dm-border__col--there">
+            <div class="dm-border__head">
+              <span class="dm-border__who">Harvester</span>
+              <span class="dm-border__act">производит</span>
+            </div>
+            <p class="dm-border__d">
+              Нормализует запись в <code>Entity</code>, считает chunks и их
+              эмбеддинги, проводит <em>структурные</em> связи внутри источника и
+              захватывает права. Делает upsert по ключу идемпотентности — exact-match
+              дедупликация на загрузке.
+            </p>
+          </div>
+          <div class="dm-border__seam">▸</div>
+          <div class="dm-border__col dm-border__col--here">
+            <div class="dm-border__head">
+              <span class="dm-border__who">Knowledge Store</span>
+              <span class="dm-border__act">хранит и доводит</span>
+            </div>
+            <p class="dm-border__d">
+              Держит три проекции и права как source of truth, отдаёт
+              <a href="hybrid-search.html#primitives" class="xref-page"
+                >ACL-фильтрованный поиск</a
+              >, и доводит граф поверх всех источников
+              (<a href="lifecycle.html#curation-pass" class="xref-page"
+                >Curation Pass</a
+              >): cross-source рёбра и нечёткое сведение — догадка между
+              источниками, которой Harvester по одному источнику сделать не может.
+            </p>
+          </div>
+        </div>
+
+        <p class="note">
+          Граница: «точно внутри источника → Harvester, догадка между
+          источниками → Knowledge Store». Применение прав на выдаче —
+          <a
+            class="xref-badge"
+            href="../../query-engine/_workzone/retrieval.html#boundary"
+            >→ Query Engine</a
+          >.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

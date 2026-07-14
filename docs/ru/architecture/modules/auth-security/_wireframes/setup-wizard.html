@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Setup Wizard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Setup Wizard</h1>
+        <div class="header__sub">
+          auth / security · макеты · публичные
+          <a class="in-load in-load--spinner" href="../../shared-ui/_wireframes/loading-states.html#spinner" title="Ожидание действия — спиннер">
+            <span class="in-load__icon"></span>загрузка
+          </a>
+        </div>
+      </div>
+
+      <p class="desc">
+        Первый запуск на пустой базе: создание аккаунта владельца. Механика —
+        <a href="../_workzone/authentication.html#setup-wizard" class="xref-page">Setup Wizard</a>.
+      </p>
+
+      <!-- ═══ Макет ═══ Два состояния одного route рядом. -->
+      <div class="section">
+        <div class="section__title">Макет</div>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <!-- ── Состояние: форма ───────────────────────────────────── -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">форма</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/setup
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/setup · публичный</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                      <h2 class="wf-title">Добро пожаловать в Achilles</h2>
+                      <p class="wf-subtitle">
+                        Создайте аккаунт владельца — первого пользователя
+                        платформы.
+                      </p>
+                      <div class="wf-row">
+                        <span class="wf-chip">Owner</span>
+                        <span class="wf-hint">полный доступ к платформе<span class="wf-annot">1</span></span>
+                      </div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Полное имя</span>
+                      <div class="wf-input wf-input--focus">Анна Петрова</div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Email</span>
+                      <div class="wf-input">
+                        anna@company.com
+                        <span class="wf-annot">2</span>
+                      </div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Пароль</span>
+                      <div class="wf-input">
+                        ••••••••••••
+                        <span class="wf-input__action" title="Показать пароль">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                      </div>
+                      <div class="wf-meter wf-meter--strong">
+                        <span class="wf-meter__seg"></span>
+                        <span class="wf-meter__seg"></span>
+                        <span class="wf-meter__seg"></span>
+                        <span class="wf-meter__seg"></span>
+                      </div>
+                      <div class="wf-row wf-spread">
+                        <span class="wf-hint">
+                          От 8 символов <span class="wf-annot">3</span></span>
+                        <span class="wf-hint">Надёжный <span class="wf-annot">4</span></span>
+                      </div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Повторите пароль</span>
+                      <div class="wf-input">
+                        ••••••••••••
+                        <span class="wf-input__action" title="Показать пароль">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                      </div>
+                    </div>
+
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Создать аккаунт владельца</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Состояние: платформа уже настроена ── -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">платформа уже настроена</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots"><span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span></div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/setup
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/setup · публичный</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack wf-center">
+                    <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                    <h2 class="wf-title">Платформа уже настроена</h2>
+                    <p class="wf-subtitle">Аккаунт владельца создан. Перейдите ко входу.</p>
+                    <a class="wf-btn wf-btn--primary wf-btn--block" href="login.html"> Войти </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Роль фиксирована: первый аккаунт всегда Owner. Дальше он приглашает Admin / Member.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Email принимается без письма-подтверждения — на первом запуске.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Минимальная длина пароля.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Индикатор силы пароля. Правила —
+              <a href="../_workzone/authentication.html#password-policy" class="xref-page">Парольная политика</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

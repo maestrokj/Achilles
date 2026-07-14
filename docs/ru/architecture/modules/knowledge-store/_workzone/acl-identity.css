@@ -1,0 +1,152 @@
+/* Knowledge Store — acl-identity workzone diagrams.
+   Page-bespoke pieces only: a resolution ladder (ks-chain) walking
+   user → identity → principal → group → entity, and a three-role ownership
+   strip (ks-roles: Harvester writes · KS stores · Query Engine applies).
+   The shared DB-table matrix (dm-tbl · dm-fields · dm-c · dm-badge), the
+   v1/v2 split (dm-split) and the band accent (stk-layer--ks) live in the
+   module sheet ../knowledge-store.css.
+   Static — no hover affordance (README §Hover).
+   Loaded by _workzone/acl-identity.html on top of ../../module.css
+   + ../knowledge-store.css + ../../layered-stack.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ════════════════ RESOLUTION LADDER ════════════════ from a platform user
+   to the entities they may see — one hop per row, the join key on the edge. */
+.ks-chain {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 1.25rem 0;
+}
+
+.ks-chain__hop {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ks-chain__node {
+  flex: 0 0 auto;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text);
+  padding: 0.3rem 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--tint-25);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--tag-radius);
+  white-space: nowrap;
+}
+
+/* Auth-owned node (the platform account entering the chain). */
+.ks-chain__node--auth {
+  border-left-color: var(--s2);
+  color: var(--s2);
+}
+
+/* Terminal node — the entity the user is allowed to reach. */
+.ks-chain__node--goal {
+  background: var(--tint-6);
+  border-left-color: var(--accent);
+  color: var(--accent);
+}
+
+.ks-chain__edge {
+  flex: 1 1 7rem;
+  position: relative;
+  text-align: center;
+  min-height: 1.1rem;
+}
+
+.ks-chain__edge::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0.4rem;
+  height: 1px;
+  background: var(--accent-muted);
+}
+
+.ks-chain__edge::after {
+  content: "▸";
+  position: absolute;
+  right: -0.15rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--accent);
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.ks-chain__key {
+  position: relative;
+  background: var(--paper);
+  padding: 0 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* ════════════════ OWNERSHIP STRIP ════════════════ who writes / stores /
+   applies — the data plane split across three modules. */
+.ks-roles {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.35rem;
+}
+
+.ks-roles__col {
+  flex: 1;
+  padding: 0.85rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--dot);
+  border-radius: var(--radius-md);
+}
+
+.ks-roles__col--src {
+  border-top-color: var(--s2);
+}
+.ks-roles__col--here {
+  border-top-color: var(--accent);
+  background: var(--tint-6);
+}
+.ks-roles__col--dst {
+  border-top-color: var(--s4);
+}
+
+.ks-roles__who {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ks-roles__act {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin: 0.1rem 0 0.4rem;
+}
+
+.ks-roles__col--here .ks-roles__act {
+  color: var(--accent);
+}
+
+.ks-roles__d {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .ks-roles {
+    flex-direction: column;
+  }
+}

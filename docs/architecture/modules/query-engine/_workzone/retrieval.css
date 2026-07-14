@@ -1,0 +1,242 @@
+/* Query Engine — retrieval workzone diagrams.
+   The KS↔QE boundary drawn three ways: the two-column hand-off (rt-bound — KS
+   retrieval vs QE RAG, with a seam carrying the request down and candidates
+   up), the identity input chain (rt-flow — QE passes identity, KS resolves and
+   pre-filters, candidates rise as the RAG input), and the late-binding trim
+   strip (rt-trim — pre-filter → rerank → live-check, narrowing to top-N). All
+   sections land on .section (its :target flash lives in module.css), so these
+   blocks add none of their own.
+   Static — no hover affordance (README §Hover).
+   Loaded by _workzone/retrieval.html on top of ../../module.css
+   + ../query-engine.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ════════════════ BOUNDARY HAND-OFF ════════════════ KS retrieval ▾ seam ▴ QE
+   RAG — two columns either side of a vertical seam: one query down, candidates
+   up. */
+.rt-bound {
+  display: flex;
+  gap: 0.75rem;
+  margin: 1rem 0 0.4rem;
+}
+.rt-bound__col {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+}
+.rt-bound__col--ks {
+  border-left: 4px solid var(--accent);
+  background: var(--tint-6);
+}
+.rt-bound__col--qe {
+  border-left: 4px solid var(--s4);
+}
+.rt-bound__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.rt-bound__who {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.rt-bound__act {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.rt-bound__col--ks .rt-bound__act {
+  color: var(--accent);
+}
+.rt-bound__col--qe .rt-bound__act {
+  color: var(--s4);
+}
+.rt-bound__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.rt-bound__list li {
+  position: relative;
+  padding-left: 0.95rem;
+  margin-bottom: 0.3rem;
+}
+.rt-bound__list li::before {
+  content: "·";
+  position: absolute;
+  left: 0.2rem;
+  color: var(--accent);
+  font-weight: 700;
+}
+.rt-bound__col--qe .rt-bound__list li::before {
+  color: var(--s4);
+}
+/* Seam — the vertical channel between the two columns: query goes down,
+   candidates rise back up. */
+.rt-bound__seam {
+  flex: 0 0 auto;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: center;
+  white-space: nowrap;
+}
+.rt-bound__seam-down {
+  color: var(--s2);
+}
+.rt-bound__seam-up {
+  color: var(--accent);
+}
+
+/* ════════════════ IDENTITY INPUT CHAIN ════════════════ QE passes identity ▸
+   KS resolves + pre-filters ▸ candidates under rights — the RAG input. */
+.rt-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+  margin: 1rem 0 0.4rem;
+}
+.rt-flow__node {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.8rem;
+}
+.rt-flow__node--qe {
+  border-top: 3px solid var(--s2);
+}
+.rt-flow__node--ks {
+  border-top: 3px solid var(--accent);
+  background: var(--tint-6);
+}
+.rt-flow__node--out {
+  border-top: 3px solid var(--s4);
+}
+.rt-flow__t {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.rt-flow__s {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+.rt-flow__arr {
+  flex: 0 0 auto;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+.rt-flow__arr-line {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  color: var(--accent);
+  line-height: 1;
+}
+.rt-flow__arr-cap {
+  font-family: var(--mono);
+  font-size: 0.54rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-muted);
+  text-align: center;
+  max-width: 7rem;
+  line-height: 1.3;
+}
+
+/* ════════════════ LATE-BINDING TRIM ════════════════ pre-filter (whole index)
+   ▸ rerank → top-N ▸ live-check at the source — only on the finalists. */
+.rt-trim {
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+  margin: 1rem 0 0.4rem;
+}
+.rt-trim__stage {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.85rem;
+}
+.rt-trim__stage--fast {
+  border-left: 4px solid var(--accent);
+  background: var(--tint-6);
+}
+.rt-trim__stage--rank {
+  border-left: 4px solid var(--s2);
+}
+.rt-trim__stage--live {
+  border-left: 4px solid var(--s1);
+}
+.rt-trim__t {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.rt-trim__d {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.rt-trim__arr {
+  flex: 0 0 auto;
+  align-self: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .rt-bound,
+  .rt-flow,
+  .rt-trim {
+    flex-direction: column;
+  }
+  .rt-bound__seam {
+    flex-direction: row;
+    justify-content: center;
+    gap: 1.5rem;
+  }
+  .rt-flow__arr {
+    transform: rotate(90deg);
+    align-self: flex-start;
+    margin-left: 1.5rem;
+  }
+  .rt-trim__arr {
+    transform: rotate(90deg);
+    align-self: flex-start;
+    margin-left: 1.5rem;
+  }
+}

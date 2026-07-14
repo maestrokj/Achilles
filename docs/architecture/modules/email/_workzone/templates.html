@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Email: Email templates</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../email.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Email</a>
+        <h1 class="header__title">Email templates</h1>
+        <div class="header__sub">email · workzone</div>
+      </div>
+
+      <p class="desc">
+        A shared layout, two language versions, each built around short copy and
+        a single action link.
+      </p>
+
+      <!-- ═══ Shared layout ═══ One frame for all emails. -->
+      <div class="section" id="layout">
+        <h2 class="section__title">Shared layout</h2>
+        <p class="desc">
+          One frame for all emails — three parts, minimal styling (emails must
+          open anywhere):
+        </p>
+        <ul class="notes">
+          <li class="note">
+            <strong>Header</strong> — sender from <code>from_address</code>
+            (“Achilles &lt;no-reply@…&gt;”) and the product name.
+          </li>
+          <li class="note">
+            <strong>Body</strong> — a greeting, one or two sentences of
+            substance, an <b>action button</b>, and the same link as plain text
+            below (in case a client won't render the button).
+          </li>
+          <li class="note">
+            <strong>Footer</strong> — a “why you received this email” line and
+            what to do if it wasn't you.
+          </li>
+          <li class="note">
+            Every email carries an <b>HTML and a text version</b> at once
+            (<code>multipart/alternative</code>): some clients and spam filters
+            require plain text.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ═══ i18n ═══ Email language and where the copy lives. -->
+      <div class="section" id="i18n">
+        <h2 class="section__title">Languages RU / EN</h2>
+        <ul class="notes">
+          <li class="note">
+            <strong>Which language.</strong> Reset and test — the recipient's
+            language (from their profile); invite — the organization's default
+            language (the invitee isn't in the system yet).
+          </li>
+          <li class="note">
+            <strong>Where the copy lives.</strong> Emails are rendered on the
+            backend, so their strings are <b>server-side templates</b> per
+            language, separate from the frontend
+            <code>react-i18next</code> locales. Same principle — typed keys, not
+            a single string in the code.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ═══ Invite ═══ Full RU | EN preview — also a sample of the layout. -->
+      <div class="section" id="invite">
+        <h2 class="section__title">Invitation</h2>
+        <p class="desc">
+          The inviter's name and the role are substituted in. The link is valid
+          for 48 hours; clicking it starts registration (name + password). Token
+          mechanics —
+          <a href="../../auth-security/_workzone/authentication.html#invite-flow" class="xref-module">Auth&nbsp;/&nbsp;Security</a>.
+        </p>
+        <div class="eml-mails">
+          <div class="eml-mail">
+            <div class="eml-mail__bar">
+              <span class="eml-mail__from">Achilles &lt;no-reply@…&gt;</span>
+              <span class="eml-mail__lang">RU</span>
+            </div>
+            <div class="eml-mail__body">
+              <span class="eml-mail__subj">Анна Иванова приглашает вас в Achilles</span>
+              Здравствуйте! Анна Иванова приглашает вас в рабочее пространство
+              Achilles в роли «Аналитик». Чтобы создать аккаунт, перейдите по
+              ссылке ниже — она действует 48 часов.
+              <span class="eml-mail__btn">Принять приглашение</span>
+              <span class="eml-mail__link">https://achilles…/invite/&lt;token&gt;</span>
+              <p class="eml-mail__foot">
+                Не ждали приглашения? Это письмо можно спокойно проигнорировать.
+              </p>
+            </div>
+          </div>
+          <div class="eml-mail">
+            <div class="eml-mail__bar">
+              <span class="eml-mail__from">Achilles &lt;no-reply@…&gt;</span>
+              <span class="eml-mail__lang">EN</span>
+            </div>
+            <div class="eml-mail__body">
+              <span class="eml-mail__subj">Anna Ivanova invited you to Achilles</span>
+              Hi there! Anna Ivanova has invited you to the Achilles workspace as
+              an Analyst. To create your account, use the link below — it's valid
+              for 48 hours.
+              <span class="eml-mail__btn">Accept invitation</span>
+              <span class="eml-mail__link">https://achilles…/invite/&lt;token&gt;</span>
+              <p class="eml-mail__foot">
+                Weren't expecting this? You can safely ignore this email.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Password reset ═══ Compact spec. -->
+      <div class="section" id="reset">
+        <h2 class="section__title">Password reset</h2>
+        <dl class="eml-spec">
+          <dt>Subject</dt>
+          <dd>Сброс пароля в Achilles · Reset your Achilles password</dd>
+          <dt>Body</dt>
+          <dd>
+            “We received a request to reset your password. To set a new one, use
+            the link below — it's valid for 1 hour.”
+          </dd>
+          <dt>Action</dt>
+          <dd>“Set a new password” button + the link as text</dd>
+          <dt>Link</dt>
+          <dd>
+            Single-use, valid for 1 hour; a repeat request invalidates the
+            previous one. Mechanics —
+            <a href="../../auth-security/_workzone/authentication.html#forgot-password" class="xref-module">Auth&nbsp;/&nbsp;Security</a>.
+          </dd>
+          <dt>Footer</dt>
+          <dd>“If you didn't request a reset, ignore this email — your password stays the same.”</dd>
+        </dl>
+      </div>
+
+      <!-- ═══ Test ═══ No link — just confirms the config. -->
+      <div class="section" id="test">
+        <h2 class="section__title">Test</h2>
+        <dl class="eml-spec">
+          <dt>Subject</dt>
+          <dd>Achilles — проверка SMTP · Achilles SMTP test</dd>
+          <dt>Body</dt>
+          <dd>
+            “If you're seeing this email, mail delivery is configured correctly.”
+            No button, no link.
+          </dd>
+          <dt>To</dt>
+          <dd>
+            The current admin's address, triggered by the “Test connection”
+            button —
+            <a href="../../admin-panel/_wireframes/platform-settings.html#smtp" class="xref-module">Admin Panel</a>.
+          </dd>
+        </dl>
+      </div>
+    </div>
+  </body>
+</html>

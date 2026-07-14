@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Enterprise AI Platform</title>
+    <meta
+      name="description"
+      content="Achilles — a company's single AI platform: providers and models, agents, tools, and spend all governed in one place, with answers grounded in company knowledge."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="shared.css" />
+    <link rel="stylesheet" href="presentation/presentation.css" />
+    <link rel="stylesheet" href="landing.css" />
+  </head>
+
+  <body>
+    <div class="page">
+      <!-- ══════════════════════════════════════ -->
+      <!-- HERO                                  -->
+      <!-- ══════════════════════════════════════ -->
+      <header class="hero">
+        <!-- Hero image slot: drop assets/hero.png (2560×1280, PNG)
+             here and uncomment. The .hero-art img rule is ready.
+        <div class="hero-art">
+          <img src="assets/hero.png" alt="Achilles — Enterprise AI Platform" />
+        </div>
+        -->
+        <h1 class="hero__title">Achilles</h1>
+        <p class="hero__subtitle">Enterprise AI Platform</p>
+        <p class="hero__desc">
+          A company's single AI platform: providers and models, employee
+          agents, tools, and spend — all governed in one place. Answers are
+          grounded in company knowledge, cited to their source and scoped to
+          each user's access rights.
+        </p>
+      </header>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- HOW IT FITS TOGETHER                  -->
+      <!-- ══════════════════════════════════════ -->
+      <svg viewBox="0 0 560 350" class="hub-vis">
+        <!-- Providers band -->
+        <text x="350" y="14" font-size="7.5" fill="#a09080" text-anchor="middle"
+              font-weight="700" letter-spacing="0.06em">AI PROVIDERS</text>
+        <g>
+          <rect x="177" y="26" width="84" height="26" rx="13" fill="#886040" />
+          <rect x="275" y="26" width="72" height="26" rx="13" fill="#886040" />
+          <rect x="361" y="26" width="68" height="26" rx="13" fill="#886040" />
+          <rect x="443" y="26" width="80" height="26" rx="13" fill="#886040" />
+        </g>
+        <g font-size="10" fill="#fff" text-anchor="middle" font-weight="600">
+          <text x="219" y="43">Anthropic</text>
+          <text x="311" y="43">OpenAI</text>
+          <text x="395" y="43">Google</text>
+          <text x="483" y="43">your LLM</text>
+        </g>
+        <!-- Providers → Achilles -->
+        <g stroke="#d2c6b6" stroke-width="1.5">
+          <line x1="219" y1="52" x2="219" y2="70" />
+          <line x1="311" y1="52" x2="311" y2="70" />
+          <line x1="395" y1="52" x2="395" y2="70" />
+          <line x1="483" y1="52" x2="483" y2="70" />
+        </g>
+        <g fill="#d2c6b6">
+          <polygon points="215,70 219,78 223,70" />
+          <polygon points="307,70 311,78 315,70" />
+          <polygon points="391,70 395,78 399,70" />
+          <polygon points="479,70 483,78 487,70" />
+        </g>
+
+        <!-- Sources band (left) -->
+        <text x="65" y="96" font-size="7.5" fill="#a09080" text-anchor="middle"
+              font-weight="700" letter-spacing="0.06em">SOURCES</text>
+        <g>
+          <rect x="15" y="106" width="100" height="24" rx="12" fill="#baa898" />
+          <rect x="15" y="138" width="100" height="24" rx="12" fill="#baa898" />
+          <rect x="15" y="170" width="100" height="24" rx="12" fill="#baa898" />
+          <rect x="15" y="202" width="100" height="24" rx="12" fill="#baa898" />
+        </g>
+        <g font-size="9.5" fill="#fff" text-anchor="middle" font-weight="600">
+          <text x="65" y="122">Jira</text>
+          <text x="65" y="154">Slack</text>
+          <text x="65" y="186">Confluence</text>
+          <text x="65" y="218">Wiki · drives</text>
+        </g>
+        <!-- Sources → Achilles -->
+        <g stroke="#d2c6b6" stroke-width="1.5">
+          <line x1="115" y1="118" x2="150" y2="118" />
+          <line x1="115" y1="150" x2="150" y2="150" />
+          <line x1="115" y1="182" x2="150" y2="182" />
+          <line x1="115" y1="214" x2="150" y2="214" />
+        </g>
+        <g fill="#d2c6b6">
+          <polygon points="150,114 158,118 150,122" />
+          <polygon points="150,146 158,150 150,154" />
+          <polygon points="150,178 158,182 150,186" />
+          <polygon points="150,210 158,214 150,218" />
+        </g>
+
+        <!-- Achilles panel -->
+        <rect x="160" y="78" width="380" height="150" rx="16" fill="#b84e30" />
+        <text x="350" y="104" font-size="13" fill="#fff" text-anchor="middle"
+              font-weight="700">Achilles</text>
+        <g fill="rgba(255,255,255,0.16)">
+          <rect x="220" y="118" width="70" height="24" rx="12" />
+          <rect x="302" y="118" width="70" height="24" rx="12" />
+          <rect x="384" y="118" width="96" height="24" rx="12" />
+          <rect x="241" y="152" width="76" height="24" rx="12" />
+          <rect x="329" y="152" width="130" height="24" rx="12" />
+        </g>
+        <g font-size="9.5" fill="#fff" text-anchor="middle" font-weight="600">
+          <text x="255" y="134">Models</text>
+          <text x="337" y="134">Agents</text>
+          <text x="432" y="134">Tools</text>
+          <text x="279" y="168">Spend</text>
+          <text x="394" y="168">Company knowledge</text>
+        </g>
+        <text x="350" y="206" font-size="8.5" fill="rgba(255,255,255,0.75)"
+              text-anchor="middle">
+          access · limits · accounting · rights — in one place
+        </text>
+
+        <!-- Achilles → surfaces -->
+        <g stroke="#d2c6b6" stroke-width="1.5">
+          <line x1="219" y1="228" x2="219" y2="288" />
+          <line x1="325" y1="228" x2="325" y2="288" />
+          <line x1="407" y1="228" x2="407" y2="288" />
+          <line x1="491" y1="228" x2="491" y2="288" />
+        </g>
+        <g fill="#d2c6b6">
+          <polygon points="215,288 219,296 223,288" />
+          <polygon points="321,288 325,296 329,288" />
+          <polygon points="403,288 407,296 411,288" />
+          <polygon points="487,288 491,296 495,288" />
+        </g>
+        <!-- Surfaces band -->
+        <g>
+          <rect x="167" y="296" width="104" height="26" rx="13" fill="#6a8048" />
+          <rect x="285" y="296" width="80" height="26" rx="13" fill="#6a8048" />
+          <rect x="379" y="296" width="56" height="26" rx="13" fill="#6a8048" />
+          <rect x="449" y="296" width="84" height="26" rx="13" fill="#6a8048" />
+        </g>
+        <g font-size="10" fill="#fff" text-anchor="middle" font-weight="600">
+          <text x="219" y="313">Web interface</text>
+          <text x="325" y="313">Slack bot</text>
+          <text x="407" y="313">MCP</text>
+          <text x="491" y="313">Public API</text>
+        </g>
+        <text x="350" y="344" font-size="7.5" fill="#a09080" text-anchor="middle"
+              font-weight="700" letter-spacing="0.06em">SURFACES</text>
+      </svg>
+      <div class="graph-vis__caption">
+        Providers and sources are connected once — AI is then available to
+        employees on every surface
+      </div>
+
+      <!-- Two pillars -->
+      <div class="pillars">
+        <div class="pillar">
+          <div class="pillar__title">AI governance hub</div>
+          <div class="pillar__text">
+            Connecting providers and models, employee agents, tools, limits,
+            and spend accounting — one system instead of a zoo of glued-together
+            tools.
+          </div>
+        </div>
+        <div class="pillar">
+          <div class="pillar__title">Company knowledge</div>
+          <div class="pillar__text">
+            Connectors gather documents, tasks, and conversations into a single
+            knowledge graph. Answers come with links to the source and respect
+            access rights.
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- NAVIGATION                            -->
+      <!-- ══════════════════════════════════════ -->
+      <nav class="nav-cards">
+        <a class="nav-card" href="presentation/presentation.html">
+          <div class="nav-card__kicker">What it is</div>
+          <div class="nav-card__title">Presentation</div>
+          <div class="nav-card__text">
+            Why the platform exists, how the hub and the knowledge store work —
+            with examples and diagrams.
+          </div>
+          <div class="nav-card__arrow">View →</div>
+        </a>
+        <a class="nav-card" href="get-started/index.html">
+          <div class="nav-card__kicker">How to start</div>
+          <div class="nav-card__title">Get Started</div>
+          <div class="nav-card__text">
+            Deploy, sign in, configure AI, and invite your team — step by step,
+            from zero to a working system.
+          </div>
+          <div class="nav-card__arrow">Start →</div>
+        </a>
+        <a class="nav-card" href="architecture/architecture-scheme.html">
+          <div class="nav-card__kicker">How it works</div>
+          <div class="nav-card__title">Architecture</div>
+          <div class="nav-card__text">
+            An interactive map of the system: modules, data flows, screens —
+            the full design documentation.
+          </div>
+          <div class="nav-card__arrow">Explore →</div>
+        </a>
+        <a class="nav-card" href="presentation/vision.html">
+          <div class="nav-card__kicker">Where we're headed</div>
+          <div class="nav-card__title">Vision</div>
+          <div class="nav-card__text">
+            From a knowledge graph toward corporate memory and agents that help
+            you proactively.
+          </div>
+          <div class="nav-card__arrow">Take a look →</div>
+        </a>
+      </nav>
+
+      <div class="meta-line">
+        <a href="https://github.com/maestrokj/Achilles">GitHub</a>
+        &nbsp;·&nbsp; AGPL-3.0 &nbsp;·&nbsp; in active development
+      </div>
+    </div>
+    <script defer src="architecture/doc-nav.js"></script>
+  </body>
+</html>

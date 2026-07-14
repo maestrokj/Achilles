@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Email: Data model</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="data-model.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Email</a>
+        <h1 class="header__title">Data model</h1>
+        <div class="header__sub">email · workzone</div>
+      </div>
+
+      <p class="desc">
+        The transport stores exactly one thing: the SMTP settings. A singleton
+        <code>smtp_settings</code> in the shared core, the password as
+        ciphertext, readiness to send as a predicate on the model. The service,
+        the modes and delivery errors — <a href="delivery.html" class="xref-page">in delivery</a>.
+      </p>
+
+      <div class="stk-stack">
+        <!-- ── L1 · Transport configuration ── HOME of the SMTP domain: singleton,
+             fields, password encryption, optionality + liveness predicate.
+             Email is the functional owner; the editing screen is in Admin. -->
+        <div class="stk-layer stk-layer--config" id="data-model">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">1</span>
+            <span class="stk-layer__name">Transport configuration</span>
+            <span class="stk-layer__role"
+              >Singleton. One row per instance, secret at rest.</span
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="dm-tbl">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">smtp_settings</span>
+                <span class="dm-tbl__sub">SMTP settings</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--flag">singleton · CHECK (id = 1)</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--pk">PK</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (id = 1)">CHECK</span>
+                    </td>
+                    <td class="dm-note">always <code>1</code> · singleton</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">host</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">server address · <code>NULL</code> until configured</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">port</td>
+                    <td class="dm-t">Integer</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">port · <code>NULL</code> until configured</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">security</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'starttls'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (none | starttls | ssl_tls)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      none · starttls · ssl_tls · DEFAULT <code>'starttls'</code>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">username</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">SMTP account login</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">password_enc</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">AES-256-GCM ciphertext · → encryption</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">from_address</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">RFC 5322 · display name + sender address</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">is_enabled</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">master switch · DEFAULT <code>false</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">last_test_ok</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      result of “Test connection” · <code>NULL</code> = never tested
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">last_test_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">when tested · <code>NULL</code> = never tested</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>server_default=now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="ownership">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">A singleton in core, separate from platform_settings</span
+                >
+                <a class="xref-badge" href="../../admin-panel/_workzone/data-model.html#data-model"
+                  >→ platform_settings</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Its own table, not columns in <code>platform_settings</code>: a
+                secret and runtime state (<code>last_test_*</code>) don't bloat
+                the shared settings. The ORM model is in <code>core/models.py</code>
+                (the shared core, like <code>PlatformSettings</code>): it's read
+                by both Email and its consumers (invite, reset), with no cycles
+                between modules. Email owns the behavior; the editing screen and
+                the test button are in the
+                <a href="../../admin-panel/_wireframes/platform-settings.html#smtp" class="xref-module">Admin Panel</a>.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="smtp-encryption">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">The password — encryption at rest</span
+                >
+                <a class="xref-badge" href="../../auth-security/_workzone/protection.html#crypto-core"
+                  >→ Crypto core</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                <code>password_enc</code> is stored as ciphertext, not as a
+                plaintext password. It can't be hashed — logging in to the server
+                needs the original password, so reversible
+                <code>AES-256-GCM</code>. The cipher and key handling are the
+                crypto core of Auth&nbsp;/&nbsp;Security, and Email is its
+                consumer, running no mechanism of its own. Decryption happens only
+                at the moment of <code>send</code>; the password never leaves
+                outward (API, export) — the UI receives only a “set / not set”
+                flag. The credential is a <b>service</b> one — an app password or
+                provider API key for a system mailbox (<code>no-reply@…</code>),
+                not a person's login; the screen labels it “Password or API key”
+                to say so, and hints at App Passwords for Gmail&nbsp;/&nbsp;Office&nbsp;365.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="availability">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Optionality and liveness — <code>is_available()</code></span
+                >
+                <a class="xref-badge xref-badge--page" href="delivery.html#errors"
+                  >→ Error path</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Transport readiness is one predicate, a property of the model:
+                <code>is_enabled</code> AND the required fields are filled (host,
+                port, from_address). It lives on the model in core — Email and
+                its consumers (invite, reset) read one truth, rather than
+                reassembling it from columns.
+                <code>last_test_ok</code> is <b>advice</b>, not a gate: “never
+                tested” ≠ “broken”, and the real delivery insurance is queue
+                retries. It's a best-effort pre-check for UX (dim the button, pick
+                a fallback), not a delivery guarantee: SMTP can go down at the
+                moment of sending — the error path.
+                How exactly a consumer degrades (invite blocked, reset via a
+                temporary password) is its own call, described where it lives.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mod-conn">
+          <div class="mod-conn__line"></div>
+          <div class="mod-conn__arrow"></div>
+        </div>
+
+        <!-- ── L2 · Migration ── Creates the table and, in the same step, seeds
+             the singleton with a “not configured” row. -->
+        <div class="stk-layer stk-layer--migration" id="migration">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">2</span>
+            <span class="stk-layer__name">Migration</span>
+            <span class="stk-layer__role"
+              >Creates the table and seeds the singleton at once.</span
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t"><code>alembic/versions/NNN_core_smtp_settings.py</code></span
+                >
+              </div>
+              <div class="stk-dec__d">
+                Creates the <code>smtp_settings</code> table and, in the same
+                step, seeds the singleton with an <code>is_enabled = false</code>
+                row with NULL fields — “not configured” out of the box; the
+                application always does an <code>UPDATE</code>, never an
+                <code>INSERT</code>. <code>downgrade()</code> is
+                <code>DROP TABLE</code>.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

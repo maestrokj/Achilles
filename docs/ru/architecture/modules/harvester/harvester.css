@@ -1,0 +1,241 @@
+/* Harvester — bespoke metro-map overview diagram.
+   Pipeline drawn as a transit line: connectors feed the Extract hub on the
+   left, Transform stations ride the shared spine, storage projections are the
+   right-hand terminals. Three sync modes = three coloured lines on one track,
+   differing only in `since`.
+   Loaded by index.html on top of module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Map card ── */
+.metro {
+  /* Metro line hues — mapped onto the design-system mode family.
+     Each colour line is a sync mode that rides the SAME track. */
+  --line-full: var(--s1); /* Full Sync — terracotta */
+  --line-inc: var(--s2); /* Incremental — ochre   */
+  --line-rec: var(--s3); /* Reconciliation — olive */
+  --track: var(--s2-glow); /* the shared rail under all lines */
+
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  padding: 1.5rem 1.4rem 1.3rem;
+
+  /* Break out wider than the 720px text column so the dense map reads at a
+     larger scale, while staying centred and capped to the viewport (94vw)
+     so it never spills past the screen edges. */
+  width: min(960px, 94vw);
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
+
+.metro__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+/* ── SVG text ── */
+.svg-label {
+  font-family: var(--font);
+  font-weight: 600;
+  fill: var(--text);
+}
+.svg-mono {
+  font-family: var(--mono);
+  fill: var(--text-dim);
+}
+.svg-cap {
+  font-family: var(--mono);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  fill: var(--text-muted);
+}
+.hub-title {
+  font-family: var(--font);
+  font-weight: 700;
+  fill: #fff;
+}
+.hub-sub {
+  font-family: var(--mono);
+  fill: rgba(255, 255, 255, 0.85);
+}
+
+/* ── contract chips on the inter-hub legs ── */
+.contract-chip .contract {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.contract-key {
+  font-family: var(--mono);
+  font-weight: 700;
+  fill: var(--accent);
+}
+.contract-val {
+  font-family: var(--mono);
+  fill: var(--text-muted);
+}
+
+/* ── legend (modes) ── */
+.metro__legend {
+  margin-top: 1.6rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.85rem;
+}
+.metro__legend .mode {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 0.95rem 0.9rem;
+  overflow: hidden;
+  box-shadow: none;
+}
+/* one accent var per mode — the line hue this card legends */
+.mode--full {
+  --c: var(--line-full);
+}
+.mode--inc {
+  --c: var(--line-inc);
+}
+.mode--rec {
+  --c: var(--line-rec);
+}
+.metro__legend .mode::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 5px;
+  background: var(--c);
+}
+.mode__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+.mode__bullet {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 4px solid var(--c);
+  flex: none;
+}
+.metro__legend .mode__name {
+  font-weight: 700;
+  font-size: 0.92rem;
+  letter-spacing: -0.01em;
+  margin-bottom: 0;
+}
+.mode__code {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  display: block;
+  margin: 0.05rem 0 0.5rem 1.55rem;
+}
+.metro__legend .mode__desc {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+.mode__since {
+  margin-top: 0.55rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+.mode__since b {
+  color: var(--c);
+  font-weight: 700;
+}
+
+/* ── footing strip: outward connections ── */
+.ties {
+  margin-top: 1.7rem;
+  border-top: 1px dashed var(--border);
+  padding-top: 1.2rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.55rem 1.6rem;
+}
+.tie {
+  display: flex;
+  gap: 0.55rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+.tie__dir {
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--accent);
+  flex: none;
+  width: 2.2rem;
+}
+.tie b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ── glossary of map glyphs ── */
+.glyphs {
+  margin-top: 1.3rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.4rem;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  font-family: var(--mono);
+  align-items: center;
+}
+.glyphs span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.gl-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 3px solid var(--track);
+}
+.gl-hub {
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  background: linear-gradient(135deg, var(--s1) 0 50%, var(--s3) 50% 100%);
+}
+.gl-ai {
+  width: 12px;
+  height: 12px;
+  background: var(--accent);
+  clip-path: polygon(
+    50% 0%,
+    61% 39%,
+    100% 50%,
+    61% 61%,
+    50% 100%,
+    39% 61%,
+    0% 50%,
+    39% 39%
+  );
+}
+
+@media (max-width: 680px) {
+  .metro__legend,
+  .ties {
+    grid-template-columns: 1fr;
+  }
+  .metro {
+    padding: 1.1rem 0.8rem;
+  }
+}

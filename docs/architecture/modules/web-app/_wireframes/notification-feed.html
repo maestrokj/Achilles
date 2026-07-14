@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Web App: notifications — feed</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Web App</a>
+        <h1 class="header__title">Notifications — feed</h1>
+        <div class="header__sub">
+          web app · wireframes · notifications
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="The screen renders inside the shell's content area">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--keep" href="../../shared-ui/_wireframes/loading-states.html#keep-previous" title="On a page or filter change the previous rows stay (keep-previous)">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">
+        What an employee reads on clicking the bell: personal notifications — runs
+        of their agents and account events. The same
+        <a href="../../notifications/_workzone/dispatcher.html#dispatch" class="xref-module">dispatcher</a> as for admins, a different view; addressing is
+        <a href="../../notifications/_workzone/dispatcher.html#addressing" class="xref-module">targeted</a> at this user.
+      </p>
+
+      <!-- ═══ Bell and panel ═══ -->
+      <div class="section" id="bell">
+        <div class="section__title">
+          Bell and panel
+          <a href="layout.html#appbar" class="xref-page">→ App bar</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">in-app · entry to the feed</div>
+          <div class="wf-gallery">
+
+            <!-- ── Bell in the app bar ── -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">app bar — bell</div>
+              <div class="wf-screen">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/chat
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/chat · authenticated user</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-appbar">
+                  <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                  <span class="wf-appbar__spacer"></span>
+                  <span class="wf-chip">EN</span>
+                  <a class="wf-bell" href="#panel" title="Notifications — feed">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>
+                    <span class="wf-bell__count">2</span>
+                  </a>
+                  <span class="wf-annot">1</span>
+                  <span class="wf-avatar">DS</span>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-line wf-line--w60"></div>
+                    <div class="wf-line wf-line--full"></div>
+                    <div class="wf-line wf-line--w80"></div>
+                    <div class="wf-line wf-line--w40"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Notifications panel ── -->
+            <div class="wf-frame wf-frame--center" id="panel">
+              <div class="wf-stage__caption">panel · on clicking the bell</div>
+              <div class="wf-menu wf-menu--panel">
+                <div class="wf-notipanel__head">
+                  <span class="wf-row">
+                    <span class="wf-label">Notifications</span>
+                    <span class="wf-chip">2 new</span>
+                  </span>
+                  <span class="wf-row">
+                    <a class="wf-a" href="#inbox">Mark all read <span class="wf-annot">2</span></a>
+                    <a class="wf-input__action" href="../../auth-security/_wireframes/profile-account.html#notifications" title="Personal notification settings">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+                    </a>
+                  </span>
+                </div>
+
+                <div class="wf-notipanel__body">
+                  <!-- Agent · warning · run failed -->
+                  <div class="wf-noti wf-noti--unread">
+                    <span class="wf-noti__dot"></span>
+                    <div class="wf-noti__main">
+                      <div class="wf-row wf-spread">
+                        <span class="wf-row">
+                          <span class="wf-label">Agent</span>
+                          <span class="wf-chip wf-chip--warn">warning</span>
+                          <span class="wf-annot">3</span>
+                        </span>
+                        <span class="wf-noti__time">8 min</span>
+                      </div>
+                      <span class="wf-noti__title">Agent “Sales watch”: run failed</span>
+                      <a class="wf-a" href="agent-editor.html">agent_engine · run/318</a>
+                    </div>
+                  </div>
+
+                  <!-- Agent · warning · actionable — model removed -->
+                  <div class="wf-noti wf-noti--unread">
+                    <span class="wf-noti__dot"></span>
+                    <div class="wf-noti__main">
+                      <div class="wf-row wf-spread">
+                        <span class="wf-row">
+                          <span class="wf-label">Agent</span>
+                          <span class="wf-chip wf-chip--warn">warning</span>
+                        </span>
+                        <span class="wf-noti__time">2 h</span>
+                      </div>
+                      <span class="wf-noti__title">The model for agent “Risk daily” was removed by an admin</span>
+                      <div class="wf-row wf-spread">
+                        <span class="wf-hint">the agent is stopped until you pick another</span>
+                        <a class="wf-btn wf-btn--primary" href="agent-editor.html">Choose model <span class="wf-annot wf-annot--on-accent">4</span></a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="wf-notipanel__foot">
+                  <a class="wf-a" href="#inbox">Show all <span class="wf-annot">5</span></a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              The bell with an unread counter — the number of unread in-app items for the current user (deliveries with <code>read_at IS NULL</code>). The counter updates instantly over the push channel (SSE); polling is a background top-up. The in-app channel is locked on, so everyone has a bell — <a href="../../notifications/_workzone/data-model.html#notif-journal" class="xref-module">feed = notifications ⋈ own deliveries</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              The panel — the tail of recent events, opened from the bell on click. “Mark all read” sets <code>read_at</code> on all of the user's deliveries at once; the gear leads to personal <a href="../../auth-security/_wireframes/profile-account.html#notifications" class="xref-module">notification settings</a> (in-app / email toggles per type).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              The type on the left (Agent · Account) is the category of the personal event; the severity chip is its severity. The source is clickable: a deep link from <code>source_ref</code> leads to the entity — a run, an agent, a profile.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              The only actionable case for an employee is a removed model: the button leads to the <a href="agent-editor.html" class="xref-page">agent editor</a> to pick a model from those available. Other personal events are informational, with a deep link to “where to look”.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              “Show all” leads to the <a href="#inbox" class="xref-anchor">full screen</a> — history, filters, marking read one by one. The panel shows only the top.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              The feed is personal: only this user's <a href="../../notifications/_workzone/dispatcher.html#addressing" class="xref-module">targeted</a> events land here (their agents, their account). Organizational alerts (sync · security · budget) go to admins in the <a href="../../admin-panel/_wireframes/notification-feed.html" class="xref-module">Admin Panel</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Feed — full screen ═══ -->
+      <div class="section" id="inbox">
+        <div class="section__title">
+          Full screen — Inbox
+          <a href="../../notifications/_workzone/data-model.html#notifications-data" class="xref-badge">→ Data model</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">notification inbox</div>
+          <div class="wf-screen wf-screen--wide wf-screen--pops">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/inbox
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/inbox · authenticated user</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-row wf-spread">
+                  <span class="wf-row">
+                    <span class="wf-title">Notifications</span>
+                    <span class="wf-chip">feed</span>
+                  </span>
+                  <span class="wf-row">
+                    <button class="wf-btn">Mark all read</button>
+                    <a class="wf-input__action" href="../../auth-security/_wireframes/profile-account.html#notifications" title="Personal notification settings">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>
+                    </a>
+                  </span>
+                </div>
+
+                <div class="wf-input wf-input--sm">
+                  <span class="wf-input__icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                  </span>
+                  Search by title or agent
+                </div>
+                <div class="wf-filters">
+                  <span class="wf-filter">Type <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Severity <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter wf-filter--on">Unread <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Period <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-annot">6</span>
+                </div>
+
+                <span class="wf-label">Today</span>
+
+                <!-- Agent · warning · failed · unread · ⋯ -->
+                <div class="wf-noti wf-noti--unread">
+                  <span class="wf-noti__dot"></span>
+                  <div class="wf-noti__main">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-label">Agent</span>
+                        <span class="wf-chip wf-chip--warn">warning</span>
+                        <span class="wf-annot">7</span>
+                      </span>
+                      <span class="wf-noti__time">14:10 · 8 min ago</span>
+                    </div>
+                    <span class="wf-noti__title">Agent “Sales watch”: run failed</span>
+                    <span class="wf-text">The run hit the iteration cap and was stopped — the final answer wasn't produced.</span>
+                    <div class="wf-row wf-spread">
+                      <a class="wf-a" href="agent-editor.html">agent_engine · run/318 <span class="wf-annot">8</span></a>
+                      <span class="wf-pop">
+                        <button class="wf-btn">⋯</button>
+                        <div class="wf-menu">
+                          <span class="wf-menu__item">Mark read <span class="wf-annot">9</span></span>
+                          <span class="wf-menu__item">Open agent</span>
+                        </div>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Agent · info · budget · unread -->
+                <div class="wf-noti wf-noti--unread">
+                  <span class="wf-noti__dot"></span>
+                  <div class="wf-noti__main">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-label">Agent</span>
+                        <span class="wf-chip">info</span>
+                      </span>
+                      <span class="wf-noti__time">09:30 · today</span>
+                    </div>
+                    <span class="wf-noti__title">Weekly token budget exhausted — agents wait for the week's reset</span>
+                    <a class="wf-a" href="my-agents.html">agent_engine · budget</a>
+                  </div>
+                </div>
+
+                <!-- Agent · warning · model removed · actionable · unread -->
+                <div class="wf-noti wf-noti--unread">
+                  <span class="wf-noti__dot"></span>
+                  <div class="wf-noti__main">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-label">Agent</span>
+                        <span class="wf-chip wf-chip--warn">warning</span>
+                      </span>
+                      <span class="wf-noti__time">08:05 · today</span>
+                    </div>
+                    <span class="wf-noti__title">The model for agent “Risk daily” was removed by an admin</span>
+                    <div class="wf-row wf-spread">
+                      <span class="wf-hint">the agent is stopped until you pick another</span>
+                      <a class="wf-btn wf-btn--primary" href="agent-editor.html">Choose model</a>
+                    </div>
+                  </div>
+                </div>
+
+                <span class="wf-label">Earlier</span>
+
+                <!-- Account · info · role · read · ⋯ -->
+                <div class="wf-noti wf-noti--read">
+                  <span class="wf-noti__dot"></span>
+                  <div class="wf-noti__main">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-label">Account</span>
+                        <span class="wf-chip">info</span>
+                      </span>
+                      <span class="wf-noti__time">yesterday, 16:20</span>
+                    </div>
+                    <span class="wf-noti__title">Your role changed: member → admin</span>
+                    <div class="wf-row wf-spread">
+                      <a class="wf-a" href="../../auth-security/_wireframes/profile-account.html">auth · profile</a>
+                      <span class="wf-pop">
+                        <button class="wf-btn">⋯</button>
+                        <div class="wf-menu">
+                          <span class="wf-menu__item">Mark unread <span class="wf-annot">10</span></span>
+                          <span class="wf-menu__item">Open profile</span>
+                        </div>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Account · warning · temporary password · read -->
+                <div class="wf-noti wf-noti--read">
+                  <span class="wf-noti__dot"></span>
+                  <div class="wf-noti__main">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-label">Account</span>
+                        <span class="wf-chip wf-chip--warn">warning</span>
+                      </span>
+                      <span class="wf-noti__time">3 days ago</span>
+                    </div>
+                    <span class="wf-noti__title">A temporary password was issued — change it on sign-in</span>
+                    <a class="wf-a" href="../../auth-security/_wireframes/profile-account.html">auth · profile</a>
+                  </div>
+                </div>
+
+                <!-- Agent · info · pause · read -->
+                <div class="wf-noti wf-noti--read">
+                  <span class="wf-noti__dot"></span>
+                  <div class="wf-noti__main">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-label">Agent</span>
+                        <span class="wf-chip">info</span>
+                      </span>
+                      <span class="wf-noti__time">4 days ago</span>
+                    </div>
+                    <span class="wf-noti__title">Agent “Risk daily” was paused by an admin</span>
+                    <a class="wf-a" href="agent-editor.html">agent_engine · agent/12</a>
+                  </div>
+                </div>
+
+                <div class="wf-pager">
+                  <span class="wf-pager__count">1–20 of 47</span>
+                  <div class="wf-pager__pages">
+                    <span class="wf-page wf-page--nav wf-page--off">‹</span>
+                    <span class="wf-page wf-page--active">1</span>
+                    <span class="wf-page">2</span>
+                    <span class="wf-page">3</span>
+                    <span class="wf-page wf-page--nav">›</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <!-- ── Facet: type ── -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">filter · type</div>
+              <div class="wf-pop">
+                <span class="wf-filter" tabindex="0">Type <span class="wf-filter__caret">▾</span></span>
+                <div class="wf-menu">
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> Agent</span>
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> Account</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── Empty state ── -->
+            <div class="wf-frame wf-frame--center">
+              <div class="wf-stage__caption">empty — all read</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-body">
+                  <div class="wf-stack wf-center">
+                    <span class="wf-check">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    </span>
+                    <span class="wf-title">All clear</span>
+                    <span class="wf-text">No new notifications. Read ones are under the “Period” filter.</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              The Type · Severity · Unread · Period facets — behavior is uniform across all lists. “Unread” is a common default; clear it to see the history. Type here is the two personal ones: Agent · Account.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              The severity chip = <code>notifications.severity</code> (warning · info), colored from the <a href="../../notifications/_workzone/dispatcher.html#catalog" class="xref-module">event catalog</a>. The type on the left is the category (Agent · Account).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              The source is clickable — a deep link to the entity from <code>source_ref</code>: a run, an agent, a profile. It takes you to where you can dig in, straight from the feed.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">9</span>
+              “Mark read” writes <code>read_at</code> to your <a href="../../notifications/_workzone/data-model.html#notifications-data" class="xref-module">own delivery</a> — everyone has their own feed and their own read state. The event itself is append-only; it's never edited or deleted.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">10</span>
+              A read item dims (a muted card, no accent bar) but stays in the history; “Mark unread” returns it to the counter. Grouped by day — Today · Earlier.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              The email channel for personal types is off by default — opt-in: in-app is seen right away, and emails arrive only if you enable them in your <a href="../../auth-security/_wireframes/profile-account.html#notifications" class="xref-module">profile</a> (<a href="../../notifications/_workzone/data-model.html#notif-defaults" class="xref-module">the catalog default</a>).
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

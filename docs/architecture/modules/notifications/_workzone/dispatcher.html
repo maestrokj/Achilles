@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Notifications: dispatcher</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="dispatcher.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Notifications</a>
+        <h1 class="header__title">Dispatcher</h1>
+        <div class="header__sub">notifications · workzone</div>
+      </div>
+
+      <p class="desc">
+        How an event from any module reaches its recipient: a single dispatcher
+        assembles the event, splits it across two addressing models and
+        channels, and journals delivery. The schema of channels, routes and the
+        feed lives
+        <a href="data-model.html#notifications-data" class="xref-page">in the data model</a>;
+        the settings screen lives
+        <a href="../../admin-panel/_wireframes/notifications.html" class="xref-module">in Admin Panel</a>.
+      </p>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ── L1 · Dispatcher ── -->
+          <div class="stk-layer stk-layer--config" id="dispatch">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Dispatcher</span>
+              <span class="stk-layer__role">source → addressing → channels → delivery</span>
+            </div>
+            <div class="stk-layer__body">
+              <!-- The whole tract in one row — reads before the notes do. -->
+              <div class="dsp-flow">
+                <div class="dsp-flow__step">
+                  <span class="dsp-flow__n">1</span>
+                  <span class="dsp-flow__t">Source</span>
+                  <span class="dsp-flow__d">a module calls the dispatcher in core</span>
+                </div>
+                <div class="dsp-flow__step">
+                  <span class="dsp-flow__n">2</span>
+                  <span class="dsp-flow__t">Event</span>
+                  <span class="dsp-flow__d">a <code>notifications</code> row</span>
+                </div>
+                <div class="dsp-flow__step">
+                  <span class="dsp-flow__n">3</span>
+                  <span class="dsp-flow__t">Addressing</span>
+                  <span class="dsp-flow__d">broadcast / targeted</span>
+                </div>
+                <div class="dsp-flow__step">
+                  <span class="dsp-flow__n">4</span>
+                  <span class="dsp-flow__t">Fan-out</span>
+                  <span class="dsp-flow__d">route × channel → deliveries</span>
+                </div>
+                <div class="dsp-flow__step">
+                  <span class="dsp-flow__n">5</span>
+                  <span class="dsp-flow__t">Delivery</span>
+                  <span class="dsp-flow__d">in-app instant + push · email/webhook queued</span>
+                </div>
+              </div>
+
+              <!-- Modules don’t send themselves — they raise an event to the shared dispatcher. -->
+              <div class="stk-dec stk-dec--full" id="sources">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">A source raises the event, doesn’t send it itself</span>
+                </div>
+                <div class="stk-dec__d">
+                  Modules know nothing about email or Slack. On a failure, a threshold or a
+                  governance action they call the dispatcher in <code>core</code> — it writes the
+                  <a href="data-model.html#notifications-data" class="xref-page"><code>notifications</code></a>
+                  row and drives delivery from there. Raising an event and delivering it are separate
+                  concerns; there are no cycles between modules.
+                  <ul class="stk-dec__list dsp-rules">
+                    <li><b>Writers:</b> Harvester · Auth · Agent Engine · Knowledge Store · Admin — the full list is in the <a href="#catalog" class="xref-anchor">catalog</a> below.</li>
+                    <li><b>Row:</b> type · severity · source · entity reference · <code>target_user_id</code> (when targeted).</li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Two addressing models: broadcast by role vs targeted to the owner. -->
+              <div class="stk-dec stk-dec--full" id="addressing">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Two addressing models — by event type</span>
+                  <a class="xref-badge xref-badge--page" href="data-model.html#notif-addressing"
+                    >→ The target_user_id column</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  The event type carries its own addressing model; the dispatcher branches on a single
+                  condition — whether <code>target_user_id</code> is set. The old admin
+                  types always write <code>NULL</code> — their path is untouched.
+                  <div class="addr">
+                    <div class="addr__lane addr__lane--broadcast">
+                      <div class="addr__head">Broadcast</div>
+                      <div class="addr__cond">target_user_id IS NULL</div>
+                      <div class="addr__d">
+                        Recipients are a role slice (<a href="#recipients" class="xref-anchor">owner / admin, status=active</a>).
+                        Platform-level signals for the organization.
+                      </div>
+                      <div class="addr__tags">
+                        <span class="addr__tag">sync</span>
+                        <span class="addr__tag">security</span>
+                        <span class="addr__tag">budget</span>
+                        <span class="addr__tag">system</span>
+                        <span class="addr__tag">discovery</span>
+                      </div>
+                    </div>
+                    <div class="addr__lane addr__lane--targeted">
+                      <div class="addr__head">Targeted</div>
+                      <div class="addr__cond">target_user_id = X</div>
+                      <div class="addr__d">
+                        The sole recipient is a specific user (an agent’s owner,
+                        the subject of a record). Any role, including member.
+                      </div>
+                      <div class="addr__tags">
+                        <span class="addr__tag">agent</span>
+                        <span class="addr__tag">account</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Fan-out across channels: a delivery for each enabled route. -->
+              <div class="stk-dec stk-dec--full" id="fanout">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Fan-out across channels via routes</span>
+                  <a class="xref-badge" href="../../admin-panel/_wireframes/notifications.html#routing"
+                    >→ Matrix</a
+                  >
+                  <a class="xref-badge" href="../../cache-workers/_workzone/queues.html#lanes">→ Cache &amp; Workers</a>
+                </div>
+                <div class="stk-dec__d">
+                  The dispatcher takes the <code>notification_routes</code> for this type and, for each
+                  enabled route, creates a <code>notification_deliveries</code> row.
+                  <ul class="stk-dec__list dsp-rules">
+                    <li><b>Route <code>enabled=true</code></b> — otherwise the type doesn’t go over that channel. There is no separate “type switch”: with every route off, the type goes to no one.</li>
+                    <li><b>Channel <code>enabled=false</code></b> is skipped entirely — a tested webhook can be kept in reserve.</li>
+                    <li><b>Lock:</b> <code>in_app × security</code> and <code>in_app × sync</code> are <code>locked=true</code> — a critical type can’t be zeroed out, it’s always visible in the feed.</li>
+                    <li><b>Personal channels</b> (in-app, email) are also checked against the <a href="#recipients" class="xref-anchor">recipient’s settings</a>.</li>
+                  </ul>
+                  <div class="dsp-modes">
+                    <div class="dsp-mode">
+                      <span class="dsp-mode__k">in-app</span>written immediately and signals
+                      <a href="../../cache-workers/_workzone/redis-keys.html#instances" class="xref-module">pub/sub</a>
+                      — the notification bell updates instantly (push); the nudge reaches
+                      the client over the platform
+                      <a href="../../api/_workzone/live-updates.html#contract" class="xref-module">live-updates stream</a>.
+                    </div>
+                    <div class="dsp-mode dsp-mode--queue">
+                      <span class="dsp-mode__k">email · webhook</span>queued to
+                      <a href="../../email/_workzone/delivery.html#modes" class="xref-module">SAQ</a>
+                      — retries and throttling, so a burst doesn’t swamp delivery.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Personal-channel recipients are computed by role/target, not stored as a list. -->
+              <div class="stk-dec stk-dec--full" id="recipients">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Recipients minus personal opt-out</span>
+                  <a class="xref-badge" href="../../auth-security/_wireframes/profile-account.html#notifications"
+                    >→ Personal settings</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Recipients aren’t stored as a list — the dispatcher computes them on the fly and
+                  removes anyone who opted out.
+                  <ul class="stk-dec__list dsp-rules">
+                    <li><b>Broadcast →</b> all <a href="../../auth-security/_workzone/data-model.html#data-model" class="xref-module"><code>users</code></a> with role <code>owner</code> / <code>admin</code>, a dynamic <code>status = active</code> slice, not a manual list.</li>
+                    <li><b>Targeted →</b> one recipient, <code>target_user_id</code>.</li>
+                    <li><b>Personal opt-out:</b> each recipient is checked against <code>notification_prefs</code> (<code>in_app_enabled</code>, <code>email_enabled</code>) per type; with no row, the <a href="data-model.html#notif-defaults" class="xref-page">catalog default</a> applies (email is off for personal types, opt-in).</li>
+                    <li><b>No locks at the personal level</b> — you can unsubscribe from any type; the organizational lock holds in-app <code>security</code> / <code>sync</code> only at the organization level (<a href="data-model.html#notif-critical" class="xref-page">what cannot be disabled</a>).</li>
+                    <li><b>A webhook has no person</b> — it’s a shared team endpoint; personal settings don’t apply, and targeted events don’t go over it.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- Collapse a series of same-kind failures into one notification. -->
+              <div class="stk-dec" id="throttle">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Dedup and throttling</span>
+                </div>
+                <div class="stk-dec__d">
+                  Same-kind events within a window collapse into one notification with a growing
+                  counter — not <code>N</code> emails for every failure.
+                  <ul class="stk-dec__list dsp-rules">
+                    <li><b>Dedup key:</b> the specific event (not the <code>event_type</code> category) + the affected entity (<code>source_ref</code>); for targeted — plus the recipient.</li>
+                    <li><b>Kept apart:</b> “source went down” and “failure series” stay distinct notifications.</li>
+                    <li><b>Window and thresholds</b> are fixed in v1; per-instance fine-tuning is <span class="iter v2">v2</span>.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <!-- The webhook format is set by the channel preset. -->
+              <div class="stk-dec stk-dec--full" id="payload">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Webhook payload — by channel preset</span>
+                  <a class="xref-badge" href="../../admin-panel/_wireframes/notifications.html#channels"
+                    >→ Channels</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  The channel <code>preset</code> selects the POST body shape: Slack gets its own
+                  message format, generic gets neutral JSON for any receiver (a custom
+                  bot, n8n, Teams via Power Automate Workflow):
+                  <div class="pay">{
+  <span class="pay__c">// generic preset — neutral JSON</span>
+  "event": "sync.failure_series",
+  "severity": "critical",
+  "title": "Jira source: 5 failures in a row",
+  "source": "harvester",
+  "source_ref": "source/42",
+  "ts": "2026-05-27T14:30:00Z"
+}</div>
+                  <ul class="stk-dec__list dsp-rules">
+                    <li><b>Endpoint and secret</b> (<code>url_enc</code>, <code>secret_enc</code>) — write-only: not returned in the UI or in exports.</li>
+                    <li><b>“Test”</b> sends this same body with a dummy event.</li>
+                    <li><b>Only broadcast</b> goes over webhooks — targeted events are personal and don’t fan out over a team channel.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ── L2 · Event catalog ── -->
+          <div class="stk-layer stk-layer--ai" id="catalog">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Event catalog</span>
+              <span class="stk-layer__role">what raises a notification · by type</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="cat-cap cat-cap--first">
+                Admin events
+                <span class="cat-cap__aud">broadcast → to administrators</span>
+              </div>
+              <table class="cat">
+                <thead>
+                  <tr>
+                    <th>Event</th>
+                    <th>Source</th>
+                    <th>Severity</th>
+                    <th>Condition</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="cat__group"><td colspan="4">Sync</td></tr>
+                  <tr>
+                    <td class="cat__ev">Run failure series</td>
+                    <td class="cat__src">harvester</td>
+                    <td><span class="sev sev--crit">critical</span></td>
+                    <td>several <code>sync_runs.state=failed</code> in a row for a source</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Source went down</td>
+                    <td class="cat__src">harvester</td>
+                    <td><span class="sev sev--crit">critical</span></td>
+                    <td>source probe → <code>last_probe_status ≠ ok</code> (health <code>error</code>)</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Run with losses</td>
+                    <td class="cat__src">harvester</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td><code>succeeded</code> with <code>error_count &gt; 0</code> (some in DLQ)</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">DLQ building up <span class="iter v2">v2</span></td>
+                    <td class="cat__src">harvester</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td>dead-letter backlog grows past a threshold</td>
+                  </tr>
+
+                  <tr class="cat__group"><td colspan="4">Security</td></tr>
+                  <tr>
+                    <td class="cat__ev">Password brute-force</td>
+                    <td class="cat__src">auth</td>
+                    <td><span class="sev sev--crit">critical</span></td>
+                    <td>≥ 10 failed logins per account / 15 min</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Role change</td>
+                    <td class="cat__src">auth</td>
+                    <td><span class="sev sev--crit">critical</span></td>
+                    <td><code>users.role</code> changed (owner / admin / member)</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">API key expiring</td>
+                    <td class="cat__src">auth</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td>7 days before <code>expires_at</code></td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Last Owner <span class="iter v2">v2</span></td>
+                    <td class="cat__src">auth</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td>only one Owner left in the system — lockout risk</td>
+                  </tr>
+
+                  <tr class="cat__group"><td colspan="4">Budget</td></tr>
+                  <tr>
+                    <td class="cat__ev">AI spend threshold</td>
+                    <td class="cat__src">admin</td>
+                    <td><span class="sev sev--crit">critical</span></td>
+                    <td><code>SUM(cost)</code> for the month &gt; <code>ai_monthly_budget</code></td>
+                  </tr>
+
+                  <tr class="cat__group"><td colspan="4">System</td></tr>
+                  <tr>
+                    <td class="cat__ev">Provider unavailable</td>
+                    <td class="cat__src">admin</td>
+                    <td><span class="sev sev--crit">critical</span></td>
+                    <td>provider connection check → <code>error</code> (health, not spend)</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Service degraded / down <span class="iter v2">v2</span></td>
+                    <td class="cat__src">admin</td>
+                    <td><span class="sev sev--crit">critical</span></td>
+                    <td>postgres / redis / n8n not responding normally</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Backup failed</td>
+                    <td class="cat__src">knowledge_store</td>
+                    <td><span class="sev sev--crit">critical</span></td>
+                    <td>a scheduled KS snapshot ended in an error</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Curation Pass failed</td>
+                    <td class="cat__src">knowledge_store</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td><code>curation_runs.state=failed</code></td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Re-embedding overran <span class="iter v2">v2</span></td>
+                    <td class="cat__src">knowledge_store</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td>the run after a model change took longer than expected</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Storage near limit <span class="iter v2">v2</span></td>
+                    <td class="cat__src">admin</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td>PG / pgvector approaching their limit</td>
+                  </tr>
+
+                  <tr class="cat__group"><td colspan="4">Discovery</td></tr>
+                  <tr>
+                    <td class="cat__ev">New container <span class="iter v2">v2</span></td>
+                    <td class="cat__src">harvester</td>
+                    <td><span class="sev sev--info">info</span></td>
+                    <td>an object outside the source’s allowed scope — with an “into scope” action</td>
+                  </tr>
+
+                </tbody>
+              </table>
+
+              <div class="cat-cap cat-cap--user">
+                General events
+                <span class="cat-cap__aud">targeted → to a user</span>
+              </div>
+              <table class="cat">
+                <thead>
+                  <tr>
+                    <th>Event</th>
+                    <th>Source</th>
+                    <th>Severity</th>
+                    <th>Condition</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="cat__group cat__group--targeted"><td colspan="4">Agent · targeted → owner · <a href="../../agent-engine/_workzone/governance.html#admin-pause" class="xref-module">governance</a></td></tr>
+                  <tr>
+                    <td class="cat__ev">Run failed</td>
+                    <td class="cat__src">agent_engine</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td><code>agent_runs.state=failed</code> (<code>reason</code> error / iteration_cap / stale)</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Weekly budget exhausted</td>
+                    <td class="cat__src">agent_engine</td>
+                    <td><span class="sev sev--info">info</span></td>
+                    <td><code>agent_runs.state=skipped</code>, <code>reason=budget_exceeded</code></td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Agent paused by admin</td>
+                    <td class="cat__src">agent_engine</td>
+                    <td><span class="sev sev--info">info</span></td>
+                    <td><code>agents.admin_paused</code> → <code>true</code></td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Agent model removed</td>
+                    <td class="cat__src">agent_engine</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td><code>agents.model_id</code> → <code>NULL</code> (model removed from the list)</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Run completed successfully <span class="iter v2">v2</span></td>
+                    <td class="cat__src">agent_engine</td>
+                    <td><span class="sev sev--info">info</span></td>
+                    <td>run output delivery — deferred along with delivery into the chat thread</td>
+                  </tr>
+
+                  <tr class="cat__group cat__group--targeted"><td colspan="4">Account · targeted → user</td></tr>
+                  <tr>
+                    <td class="cat__ev">Role changed by admin</td>
+                    <td class="cat__src">auth</td>
+                    <td><span class="sev sev--info">info</span></td>
+                    <td><code>audit_log</code> of a role change (<code>meta</code> old→new)</td>
+                  </tr>
+                  <tr>
+                    <td class="cat__ev">Temporary password issued</td>
+                    <td class="cat__src">auth</td>
+                    <td><span class="sev sev--warn">warning</span></td>
+                    <td><code>users.must_change_password</code> → <code>true</code> (admin reset)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

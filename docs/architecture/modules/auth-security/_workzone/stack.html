@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Stack and structure</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../swimlane.css" />
+    <link rel="stylesheet" href="stack.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Stack and structure</h1>
+        <div class="header__sub">auth / security · workzone</div>
+      </div>
+
+      <!-- ════════════ LANE: BACKEND ════════════ -->
+      <div class="swl-lane swl-lane--be">
+        <div class="swl-lane__rail">
+          <span class="swl-lane__tag">Backend</span>
+        </div>
+        <div class="swl-lane__body">
+          <!-- col: stack -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg> stack — libraries</div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Framework</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="ASGI web framework">FastAPI</span>
+                <span class="swl-pill" data-tip="typed config from env">Pydantic Settings</span>
+                <span class="swl-pill" data-tip="ORM, async mode">SQLAlchemy · async</span>
+                <span class="swl-pill" data-tip="async PostgreSQL driver">asyncpg</span>
+                <span class="swl-pill" data-tip="cache and token store">Redis</span>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Authentication</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="password hashing (argon2id)">argon2-cffi</span>
+                <span class="swl-pill" data-tip="JWT encode / verify">PyJWT</span>
+                <span class="swl-pill" data-tip="email validation">email-validator</span>
+                <span class="swl-pill" data-tip="Form data parsing">python-multipart · Form</span>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Password policy</span>
+                <a
+                  class="xref-badge xref-badge--page"
+                  href="authentication.html#password-policy"
+                  >→ Password policy</a
+                >
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="password strength scoring">zxcvbn · strength</span>
+                <span class="swl-pill" data-tip="client for the HIBP API — breach check">httpx · HIBP API</span>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">stdlib</span>
+                <a
+                  class="xref-badge xref-badge--page"
+                  href="protection.html#crypto-core"
+                  >→ Crypto core</a
+                >
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill swl-pill--std" data-tip="CSPRNG — cryptographically strong tokens">secrets · CSPRNG</span>
+                <span class="swl-pill swl-pill--std" data-tip="constant-time comparison">hmac · const-time</span>
+                <span class="swl-pill swl-pill--std" data-tip="SHA-256 — hash of refresh tokens and reset links">hashlib · SHA-256</span>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Encryption</span>
+                <a
+                  class="xref-badge xref-badge--page"
+                  href="protection.html#crypto-core"
+                  >→ Crypto core</a
+                >
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="AES-256-GCM encryption — SMTP credentials (decryption lives in the Email module), mfa_secret (v2)">cryptography · AES-256-GCM</span>
+              </div>
+            </div>
+
+            <div class="swl-grp swl-grp--v2">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Additional</span>
+                <span class="iter v2">v2</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="TOTP — two-factor authentication">pyotp · TOTP</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- col: structure -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head">
+              <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.55l-.42-.85a1 1 0 0 0-.92-.6H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M3 5a2 2 0 0 0 2 2h3" /><path d="M3 3v13a2 2 0 0 0 2 2h3" /></svg> structure — files · <code>achilles/auth/</code>
+            </div>
+<pre class="file-tree">
+auth/              <span class="dim">module = its own package</span>
+├── *.py           <span class="dim">constants · models · schemas · security · dependencies · …</span>
+├── services/      <span class="dim">business logic — a folder from the start</span>
+└── routes/        <span class="dim">endpoints — a folder from the start</span>
+</pre>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════ LANE: FRONTEND ════════════ -->
+      <div class="swl-lane swl-lane--fe">
+        <div class="swl-lane__rail">
+          <span class="swl-lane__tag">Frontend</span>
+        </div>
+        <div class="swl-lane__body">
+          <!-- col: stack -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg> stack — libraries</div>
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Stack</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="UI library">React</span>
+                <span class="swl-pill" data-tip="server state / query cache">TanStack Query</span>
+                <span class="swl-pill" data-tip="client-side routing">react-router-dom</span>
+                <span class="swl-pill" data-tip="HTTP client with auth interceptors">ky · HTTP + auth</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- col: structure -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head">
+              <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.55l-.42-.85a1 1 0 0 0-.92-.6H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M3 5a2 2 0 0 0 2 2h3" /><path d="M3 3v13a2 2 0 0 0 2 2h3" /></svg> structure — files · <code>src/features/auth/</code>
+            </div>
+<pre class="file-tree">
+features/auth/     <span class="dim">module = its own package</span>
+├── *.ts / *.tsx   <span class="dim">api · types · constants · AuthProvider · useAuth · ProtectedRoute</span>
+└── pages/         <span class="dim">module screens</span>
+</pre>
+
+            <details class="swl-note">
+              <summary>
+                Why <code>features/</code> — domain modules
+              </summary>
+              <div class="swl-note__body">
+                Alongside the existing shared folders (<code>components/</code>,
+                <code>hooks/</code>, <code>lib/</code>). Future modules →
+                <code>features/admin/</code>, <code>features/agents/</code>, etc.
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── cross-cutting: blacklist ── -->
+      <div class="swl-black">
+        <span class="swl-black__ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M4.929 4.929 19.07 19.071" /></svg></span>
+        <div>
+          <b>Forbidden libraries — do not use:</b>
+          <span class="pkg">python-jose</span>
+          <span class="why">(history of CVEs, poorly maintained)</span>,
+          <span class="pkg">passlib</span>
+          <span class="why">(unmaintained since 2020)</span>.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

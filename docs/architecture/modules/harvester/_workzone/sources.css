@@ -1,0 +1,301 @@
+/* Harvester — sources workzone diagrams.
+   How a data source is described and connected: the source model card (type
+   + base URL + credential + scope), the Test Connection probe ladder, and the
+   connector fetch loop (listing → page → cursor). Reuses the stk-* kit for the
+   model band; adds the page-only primitives — the field rows of the source
+   card, the staged probe ladder, and the cyclic fetch loop.
+   Loaded by _workzone/sources.html on top of ../../module.css
+   + ../../layered-stack.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* Shared inline arrow, echoing the pipeline sheet's accent connector. */
+.src-arrow {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ════════ SOURCE MODEL ════════ */
+
+/* Single accent for the model band. */
+.stk-layer--model {
+  --stk-lc: var(--accent);
+  --stk-lc-pale: var(--tint-8);
+}
+
+/* Four named fields of a source descriptor, one row each. */
+.src-fields {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.src-field {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  padding: 0.55rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+}
+
+.src-field__key {
+  flex: 0 0 8.5rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.src-field__val {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+/* First .section after the model band needs air — otherwise its title sits
+   flush against the band above and reads as part of it. */
+.stk-stage + .section {
+  margin-top: 2rem;
+}
+
+/* Auth options laid out as a row of decision cards, no band padding. */
+.src-auth {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--grid-gap);
+}
+
+/* Two orthogonal axes — identity (who) then mechanism (how), each a
+   labelled row of cards. */
+.src-axis + .src-axis {
+  margin-top: 1.1rem;
+}
+
+.src-axis__label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+/* The recommended default carries an accent edge; the fallback stays plain. */
+.stk-dec--rec {
+  border-left: 3px solid var(--accent);
+}
+
+/* ════════ TEST CONNECTION ════════ */
+
+/* Three-step probe ladder: URL → creds → permissions. */
+.src-probe {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.src-probe__step {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius-md);
+}
+
+.src-probe__n {
+  flex: 0 0 auto;
+  width: 1.45rem;
+  height: 1.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--paper);
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+}
+
+.src-probe__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.src-probe__t {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.src-probe__d {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+/* Down-arrow stem joining two probe steps. */
+.src-probe__link {
+  align-self: center;
+  width: 0;
+  height: 14px;
+  border-left: 2px solid var(--dot);
+}
+
+/* Diagnostic verdict at the foot of the ladder. */
+.src-probe__verdict {
+  margin-top: 0.55rem;
+  padding: 0.6rem 0.85rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+  background: var(--s3-pale);
+  border-left: 3px solid var(--s3);
+  border-radius: var(--radius-md);
+}
+
+/* ════════ FETCH LOOP ════════ */
+
+/* The connector's cyclic pull: list → page → emit → next cursor → back. */
+.src-loop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.6rem;
+}
+
+.src-loop__step {
+  flex: 1 1 0;
+  min-width: 8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.7rem 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+}
+
+.src-loop__name {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.src-loop__d {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* Inline arrow between loop steps. */
+.src-loop__sep {
+  flex: 0 0 auto;
+  align-self: center;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* The closing "next cursor → back to listing" return edge. */
+.src-loop__back {
+  flex: 1 1 100%;
+  margin-top: 0.1rem;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.74rem;
+  font-style: italic;
+  color: var(--text-dim);
+  text-align: center;
+  background: var(--paper);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+}
+
+.src-loop__back b {
+  color: var(--accent);
+  font-style: normal;
+}
+
+/* The three increment levers — cursor / since / webhooks. */
+.src-levers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 0.2rem;
+}
+
+.src-lever {
+  flex: 1 1 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--s2);
+  border-radius: var(--radius-md);
+}
+
+.src-lever__name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.src-lever__name code {
+  font-size: 0.8rem;
+}
+
+.src-lever__d {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+/* ════════ WEBHOOK TRIGGER CHAIN ════════ */
+
+/* Linear event path — reuses the loop step kit but runs once (no return
+   edge) and carries the webhook lever's accent, tying diagram to lever. */
+.src-trigger {
+  margin-top: 0.9rem;
+}
+
+.src-trigger__label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.src-loop--trigger .src-loop__step {
+  border-top-color: var(--s2);
+}
+
+.src-loop--trigger .src-loop__sep {
+  color: var(--s2);
+}
+
+@media (max-width: 640px) {
+  .src-loop__step {
+    flex-basis: 100%;
+  }
+  .src-loop__sep {
+    transform: rotate(90deg);
+  }
+  .src-field {
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+}

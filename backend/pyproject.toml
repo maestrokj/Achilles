@@ -1,0 +1,158 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "achilles"
+version = "0.1.0"
+description = "AI-powered enterprise knowledge platform with unified agent management — full company context, accessible to every team"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "pydantic-settings>=2.4",
+    "sqlalchemy[asyncio]>=2.0.20",
+    # Direct use (shielded cancel scopes) — not just starlette's transitive dep
+    "anyio>=4.5",
+    "asyncpg>=0.30",
+    "alembic>=1.14",
+    "redis>=5.2",
+    # Auth & Security crypto core (python-jose and passlib are banned by design)
+    "argon2-cffi>=23.1",
+    "pyjwt>=2.10",
+    "zxcvbn>=4.5",
+    "httpx>=0.27",
+    "email-validator>=2.2",
+    "python-multipart>=0.0.18",
+    # Task queue + cron (cache-workers/_workzone/stack.html; arq was rejected in due diligence)
+    "saq>=0.25",
+    "cryptography>=49.0.0",
+    "tokenizers>=0.23.1",
+    "pgvector>=0.4.2",
+    "anthropic>=0.116.0",
+    "openai>=2.44.0",
+    "aioboto3>=15.5.0",
+    "mcp>=1.28,<2",
+    # Email transport + server-side letter templates (email/_workzone/stack.html)
+    "aiosmtplib>=3.0",
+    "jinja2>=3.1",
+    # Mattermost listener (mattermost/index.html) — direct use, not just uvicorn[standard]'s transitive dep
+    "websockets>=14",
+]
+
+[project.scripts]
+achilles = "achilles.cli:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.24",
+    "pytest-cov>=6.0",
+    "pytest-xdist>=3.6",
+    "httpx>=0.27",
+    "asgi-lifespan>=2.1",
+    "testcontainers>=4.9",
+    "time-machine>=2.16",
+    "respx>=0.22",
+    "schemathesis>=3.39",
+    "ruff>=0.8",
+    "pyright>=1.1",
+    "pre-commit>=4.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# Non-Python payload shipped inside the wheel — setuptools skips data files
+# unless listed (the editable dev install masks this; only Dockerfile.prod hits it).
+[tool.setuptools.package-data]
+"achilles.email" = ["templates/*.j2"]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+src = ["src"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "I", "UP", "B", "SIM",   # basics + pyupgrade + bugbear + simplify
+    "N", "RET", "PTH", "PERF", "RUF",   # naming, returns, pathlib, perf, ruff
+    "S",                                  # flake8-bandit — security
+    "ANN",                                # flake8-annotations — type hints
+    "D",                                  # pydocstyle — docstrings (google convention)
+    "ERA",                                # eradicate — commented-out code
+    "FBT",                                # flake8-boolean-trap
+    "ASYNC",                              # flake8-async — async antipatterns
+    "T20",                                # flake8-print — leftover print()
+    "DTZ",                                # flake8-datetimez — naive datetime
+    "C4",                                 # flake8-comprehensions — optimization
+    "PIE",                                # misc. lints
+    "PLC", "PLE",                         # pylint — conventions + errors
+]
+ignore = [
+    "D100",    # missing docstring in public module
+    "D101",    # missing docstring in public class
+    "D102",    # missing docstring in public method
+    "D103",    # missing docstring in public function
+    "D104",    # missing docstring in public package
+    "D107",    # missing docstring in __init__
+    "D203",    # blank line before class docstring (conflicts with D211)
+    "D213",    # multiline summary on second line (conflicts with D212)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "S105", "S106", "ANN", "D", "FBT"]
+"alembic/**/*.py" = ["ANN"]
+"src/achilles/cli.py" = ["T201"]
+# Server-side letter/notification strings mix Latin brand names into Cyrillic
+# text — the confusable-character lint has no signal here.
+"src/achilles/email/i18n.py" = ["RUF001"]
+"src/achilles/notifications/i18n.py" = ["RUF001"]
+"tests/email/**/*.py" = ["RUF001"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.lint.isort]
+known-first-party = ["achilles"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+docstring-code-format = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+# One event loop per xdist worker: lets the pooled session-scoped engine be shared
+# across tests. Per-test loops forced NullPool → a fresh TCP connect per checkout,
+# which under 6 workers overwhelms Docker Desktop's port proxy (ETIMEDOUT flakes).
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+strict_markers = true
+strict_config = true
+filterwarnings = [
+    "error",
+    # testcontainers' bundled redis module still uses its own deprecated wait decorator
+    "ignore:The @wait_container_is_ready decorator is deprecated:DeprecationWarning:testcontainers",
+    # aiobotocore sends multipart parts as raw bytes; aiohttp advises BytesIO —
+    # upstream plumbing, not ours (backup s3 tests exercise multipart uploads)
+    "ignore:Sending a large body directly with raw bytes:ResourceWarning",
+    # saq's lifecycle hooks still probe callables via asyncio.iscoroutinefunction
+    # (removal slated for 3.16) — upstream, surfaces once Worker gets startup hooks
+    "ignore:'asyncio.iscoroutinefunction' is deprecated:DeprecationWarning:saq",
+]
+markers = [
+    "unit: fast, no external services",
+    "integration: needs postgres/redis testcontainers",
+    "api: cross-router API conformance",
+    "p0: security invariants and core flows",
+    "p1: protection and access control",
+    "p2: business-logic guards",
+]
+
+[dependency-groups]
+dev = [
+    "minio>=7.2.20",
+    "types-aioboto3[s3]>=15.5.0",
+]

@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Harvester: Sync</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="sync-modes.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Harvester</a>
+        <h1 class="header__title">Sync</h1>
+        <div class="header__sub">harvester · workzone</div>
+      </div>
+
+      <p class="desc">
+        Когда и как обновляются данные источника. Три режима —
+        <a href="#full-sync" class="xref-anchor">Full Sync</a>,
+        <a href="#incremental" class="xref-anchor">Incremental</a> и
+        <a href="#reconciliation" class="xref-anchor">Reconciliation</a> —
+        отвечают на один вопрос по-разному: взять всё, взять только дельту или
+        свериться с источником целиком. Режим выбирает лишь окно выборки
+        (<code>since</code>) и агрессивность entity resolution; сам
+        <a href="pipeline.html" class="xref-page">конвейер</a> у всех трёх один и
+        тот же. Все режимы гоняет фоновый воркер — устойчивость прогона
+        (<code>SyncRun</code>, checkpoint, DLQ) держит
+        <a href="reliability.html" class="xref-page">reliability</a>.
+      </p>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ════════ FULL SYNC ════════ -->
+          <div class="stk-layer stk-layer--full" id="full-sync">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Full Sync</span>
+              <span class="stk-layer__role"
+                >Полный импорт от начала времён.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Берём всё: <code>since = epoch</code></span>
+                  <a
+                    href="../../admin-panel/_wireframes/data-sources.html#source-wizard"
+                    class="stk-dec__ui"
+                    title="Запускается автоматически при подключении источника"
+                    >мастер подключения</a
+                  >
+                  <a
+                    href="../../admin-panel/_wireframes/data-sources.html#sync-wizard"
+                    class="stk-dec__ui"
+                    title="Ручной запуск из карточки источника"
+                    >мастер синхронизации</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Окно выборки открыто от нуля — конвейер проходит каждую
+                  сущность источника. Режим включается, когда подключают новый
+                  источник или просят пересобрать существующий с чистого листа.
+                  Прогон долгий, но безопасный: на выходе всё тот же
+                  идемпотентный upsert, так что повтор не плодит дубли, а
+                  обновляет уже собранное —
+                  <a href="pipeline.html#load" class="xref-page">Load</a>.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ INCREMENTAL ════════ -->
+          <div class="stk-layer stk-layer--incremental" id="incremental">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Incremental</span>
+              <span class="stk-layer__role"
+                >Только дельты: что изменилось с прошлого раза.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Webhooks + polling</span>
+                  <a
+                    href="../../admin-panel/_wireframes/data-sources.html#webhooks"
+                    class="stk-dec__ui"
+                    title="Webhooks источника включаются в его карточке"
+                    >карточка источника</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Рабочий режим после первичной загрузки. Источник сам сообщает
+                  об изменениях через webhooks; чего он не присылает, добираем
+                  опросом (polling) по <code>since</code> от прошлого прогона.
+                  Конвейер видит только дельту — это дёшево и быстро. Механику
+                  событий и инкремента по <code>since</code> держит
+                  <a href="sources.html#fetch" class="xref-page">sources</a>.
+                  Два случая ниже — partial re-sync и dlq retry — не отдельные
+                  режимы, а тот же incremental с другим триггером и scope; «тип»
+                  в истории прогонов
+                  <a href="data-model.html#sync-runs-table" class="xref-page">выводится</a>
+                  из этой пары, отдельной колонкой не хранится.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full" id="partial-resync">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Потеря событий → partial re-sync</span>
+                  <span
+                    class="stk-dec__auto"
+                    title="Стартует автоматически по watchdog — ручного запуска в UI нет"
+                    >auto</span
+                  >
+                  <a
+                    href="../../admin-panel/_wireframes/data-sources.html#sync-history"
+                    class="stk-dec__ui"
+                    title="Виден своим типом в истории прогонов источника"
+                    >история прогонов</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Webhook может не дойти, источник — отлежаться в простое; на
+                  один поток событий полагаться нельзя. За источником следит
+                  watchdog: молчание дольше <em>порога тишины</em>
+                  (12&nbsp;часов — глобальный дефолт платформы, см.
+                  <a href="#scheduling" class="xref-anchor">Расписание</a>) — повод
+                  для подозрения, не приговор. Сначала идёт дешёвая проверка опросом
+                  по <code>since</code> — дельты нет, значит была просто тишина,
+                  разошлись даром; дельта нашлась — вот и пропущенное. Тогда
+                  watchdog запускает обычный incremental c
+                  <code>since = incremental_cursor</code> — отдельного «окна
+                  пересборки» нет: курсор продвигается лишь при успехе, а
+                  <a href="pipeline.html#load" class="xref-page">Load</a>
+                  идемпотентен, так что переспрос дельты безопасен. Всё без полного
+                  импорта и без участия человека. В истории прогонов такой re-sync
+                  помечен своим типом — череда их подряд читается как нездоровый
+                  webhook, а не как норма.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full" id="dlq-retry">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Сбойные items → dlq_retry</span>
+                  <a
+                    href="../../admin-panel/_wireframes/harvester.html#sync-errors"
+                    class="stk-dec__ui"
+                    title="Ручной запуск кнопкой «Повторить сбойные»"
+                    >разбор сбойных</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Точечный повтор по списку, а не по окну. Когда items копятся в
+                  <a href="reliability.html#dlq" class="xref-page">DLQ</a>,
+                  «Повторить сбойные» поднимает прогон со scope не из
+                  <code>since</code>, а из конкретных identity очереди разбора.
+                  Родня <code>partial_resync</code> — оба латают точечно, — но
+                  запускается вручную, после починки причины (права, источник), а
+                  не watchdog'ом. Обработанные уходят из очереди; её механику
+                  держат <a href="reliability.html#dlq" class="xref-page">reliability</a>
+                  и <a href="data-model.html#dead-letters-table" class="xref-page">модель данных</a>.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ RECONCILIATION ════════ -->
+          <div class="stk-layer stk-layer--reconciliation" id="reconciliation">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Reconciliation</span>
+              <span class="stk-layer__role"
+                >Сверка по расписанию: аудит и наведение порядка.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Комплексный аудит источника</span>
+                  <span
+                    class="stk-dec__auto"
+                    title="Стартует автоматически по расписанию — ручного запуска в UI нет"
+                    >auto</span
+                  >
+                  <a
+                    href="../../admin-panel/_wireframes/harvester.html#reconcile-schedule"
+                    class="stk-dec__ui"
+                    title="Частоту сверки задаёт расписание Admin Panel"
+                    >расписание сверки</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Идёт по расписанию — дефолт еженедельно (см.
+                  <a href="#scheduling" class="xref-anchor">Расписание</a>).
+                  Сверяет собранное с источником целиком: чего уже нет в
+                  источнике — чистит как устаревшее, расхождения — выправляет. Тот
+                  же конвейер, что у Full Sync и Incremental, но с агрессивным
+                  <code>resolve</code>. Разница — в размере окна видимости, не в
+                  логике: область resolve всегда ограничена тем, что попало в
+                  fetch-окно прогона. Incremental видит узкое окно по
+                  <code>since</code> → дедуп только локальный; reconciliation
+                  тянет источник целиком одним прогоном и схлопывает внутри-
+                  источниковые дубли, разнесённые по прежним инкрементам, — узкому
+                  окну они были не видны. Противоречия с конвейером тут нет:
+                  upsert-ключ
+                  (<code>source_id + source_type + source_entity_id</code>)
+                  покрывает один и тот же <code>source_entity_id</code> между
+                  прогонами, а агрессивный resolve работает с одной сущностью под
+                  <em>разными</em> id в пределах видимого полного источника
+                  (cross-source склейку держит
+                  <a href="data-model.html#cross-source" class="xref-page"
+                    >Knowledge Store</a
+                  >). Это режим гигиены, а не доставки свежих данных.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="workzone-divider" />
+
+      <!-- ════════ НЕЗАВИСИМОСТЬ PER-SOURCE ════════ -->
+      <div class="section" id="per-source">
+        <div class="section__title">Независимость per-source</div>
+        <p class="desc">
+          Режим — это всегда состояние одного источника, не платформы. Каждый
+          источник синхронизируется сам по себе и держит собственный
+          <code>since</code>, свой график и свой текущий режим. «Синхронизировать
+          всё» — не особый общий прогон, а запуск всех per-source синхронизаций
+          разом.
+        </p>
+        <p class="note">
+          Параллельно с доставкой идёт <strong>платформенная</strong> доводка
+          графа в Knowledge Store. Полосы по умолчанию не мешают друг другу; лишь
+          на время разрушительных шагов доводки (мёрж, retention) прогон
+          затронутого источника встаёт в <code>queued</code> — взаимное
+          исключение держит
+          <a
+            href="../../knowledge-store/_workzone/lifecycle.html#coordination"
+            class="xref-module"
+            >Knowledge Store · Координация полос</a
+          >.
+        </p>
+      </div>
+
+      <!-- ════════ РАСПИСАНИЕ ════════ -->
+      <div class="section" id="scheduling">
+        <div class="section__title">Расписание <a class="xref-badge" href="../../cache-workers/_workzone/scheduling.html#registry">→ Cache &amp; Workers</a></div>
+        <p class="desc">
+          Когда запускать Incremental и Reconciliation, задаёт расписание:
+          глобальный дефолт платформы плюс override на уровне источника. Источник
+          без своего графика наследует общий; со своим — идёт по нему.
+        </p>
+        <ul class="notes">
+          <li class="note">
+            <strong>Incremental polling</strong> — единый интервал по умолчанию
+            (15&nbsp;мин) для любого источника, плюс пер-источниковый override.
+            Webhook-осведомлённое разделение (более редкий ~6&nbsp;ч
+            safety-net-опрос для источников, что сами шлют изменения) — доработка
+            <span class="iter v2">v2</span>; v1 держит единый ритм и опирается на
+            пер-источниковый override там, где источнику нужен другой темп.
+          </li>
+          <li class="note">
+            <strong>Reconciliation</strong> — еженедельно, в заданное окно (день
+            недели и час; для суточной каденс — только час) в таймзоне
+            организации; по умолчанию — <strong>воскресенье, 03:00</strong>.
+          </li>
+          <li class="note">
+            <strong>Лёгкая health-проба</strong> — раз в сутки.
+          </li>
+          <li class="note">
+            <strong>Порог тишины watchdog</strong> — 12&nbsp;ч; молчание дольше
+            запускает
+            <a href="#partial-resync" class="xref-anchor">partial re-sync</a>.
+          </li>
+          <li class="note">
+            <strong>Дом дефолтов</strong> — <code>platform_settings</code> (та же
+            таблица платформенных настроек, что и timezone; правится из Admin без
+            деплоя). Per-source override живёт в полях
+            <code>sync_interval</code> / <code>reconcile_interval</code> /
+            <code>reconcile_window</code>: <code>NULL</code> = наследовать
+            глобальный дефолт. Окно reconciliation хранится минутой недели без
+            зоны — час из настройки в org-timezone планировщик разворачивает к
+            UTC-моменту запуска.
+          </li>
+        </ul>
+        <p class="desc">
+          Управление графиком — UI поверх backend-домена синхронизаций, не часть
+          конвейера. Оба расписания держат экраны —
+          <a
+            href="../../admin-panel/_wireframes/harvester.html#sync-schedule"
+            class="xref-module"
+            >Admin Panel · incremental</a
+          >
+          и
+          <a
+            href="../../admin-panel/_wireframes/harvester.html#reconcile-schedule"
+            class="xref-module"
+            >Admin Panel · reconciliation</a
+          >.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

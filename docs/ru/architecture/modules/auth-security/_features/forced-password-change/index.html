@@ -1,0 +1,83 @@
+<!doctype html>
+<!--
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  FEATURE: forced-password-change — обязательная смена временного      │
+  │  пароля при первом входе. Срабатывает, когда админ сбросил пароль     │
+  │  без настроенного SMTP и выдал временный — система не пускает в        │
+  │  приложение, пока не задан постоянный пароль.                         │
+  │                                                                       │
+  │  OWNS change-temp-password.html (свой узел потока, рядом с этим        │
+  │  файлом; orphan-тест: убери фичу — у экрана нет дома). login и        │
+  │  profile-account — SHARED (_wireframes, живут сами по себе),          │
+  │  поток помечает их .flow-stop--shared. Зависимостей-без-экрана нет:   │
+  │  фича срабатывает именно при отсутствии SMTP — блок «Зависимости»     │
+  │  не нужен. Конвенции: README → "Features".                            │
+  └─────────────────────────────────────────────────────────────────────┘
+-->
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Принудительная смена пароля</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · feature-flow kit (no wireframe
+         kit — screens link out) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../feature-flow.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../index.html">← Auth / Security</a>
+        <h1 class="header__title">Принудительная смена пароля</h1>
+        <div class="header__sub">auth / security · фичи</div>
+      </div>
+
+      <!-- ═══ Описание ═══ Только продукт: что за фича и путь пользователя. -->
+      <p class="desc">
+        Пользователь, которому администратор сбросил пароль без настроенного
+        SMTP, получает временный пароль. При первом входе по нему система не
+        пускает в приложение: уводит на экран смены и держит там, пока не задан
+        постоянный пароль. Только после этого открывается рабочая область по
+        роли.
+      </p>
+
+      <!-- ═══ Поток ═══ Метро-раскадровка: станции-экраны на линии, на
+           перегонах — условие перехода. Локальный узел (смена пароля) —
+           обычный .flow-stop; общие экраны из _wireframes (login, приложение
+           по роли) — .flow-stop--shared (двойное кольцо). Развилок нет:
+           «повторный вход с временным паролём снова сюда» — не отдельный
+           экран, а свойство гейта, живёт в легенде экрана. -->
+      <div class="section">
+        <div class="section__title">Поток</div>
+        <div class="flow">
+          <div class="flow-stop flow-stop--shared">
+            <a class="flow-stop__name" href="../../_wireframes/login.html">Login</a>
+            <span class="flow-stop__role">общий · старт · временный пароль</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">вход выполнен · must_change_password</span>
+          </div>
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="change-temp-password.html">Change Temp Password</a>
+            <span class="flow-stop__role">гейт · новый пароль</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">постоянный пароль задан</span>
+          </div>
+          <div class="flow-stop flow-stop--shared">
+            <a class="flow-stop__name" href="../../_wireframes/profile-account.html">Приложение по роли</a>
+            <span class="flow-stop__role">общий · финал · рабочая область</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

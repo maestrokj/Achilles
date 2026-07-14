@@ -1,0 +1,101 @@
+<!doctype html>
+<!--
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  WIREFRAME TEMPLATE — copy to _wireframes/<screen>.html per screen.   │
+  │  Underscore-prefixed (_template) so it's not mistaken for a screen.   │
+  │                                                                       │
+  │  Each screen page = (1) description — the screen's purpose and role,  │
+  │  in prose (route + access live in the mockup URL, not here); +        │
+  │  (2) the mockup, composed from the wf-* kit in modules/wireframe.css. │
+  │  Mockup = schematic, not pixel design.                                │
+  │                                                                       │
+  │  The wireframes nav in index.html is the screen catalog — add a       │
+  │  <a class="wz-link"> there for each new screen.                       │
+  │  Conventions: docs/architecture/README.md → "Wireframes".             │
+  └─────────────────────────────────────────────────────────────────────┘
+-->
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Макет (шаблон)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <!-- TODO: название экрана + статус .iter (v1 / v2) -->
+        <h1 class="header__title">Название экрана</h1>
+        <div class="header__sub">
+          admin panel · макеты · группа
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Экран рендерится в контентной области каркаса">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <!-- load marker: дефолт skeleton — при дизайне экрана замените механизм -->
+            <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Загрузка экрана — каркас (skeleton)">
+              <span class="in-load__icon"></span>загрузка
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Описание экрана ═══
+           Назначение и роль — прозой. Route и доступ не дублируем: они в
+           адресной строке макета (wf-chrome__url) и в группе nav. -->
+      <p class="desc">Краткое назначение экрана.</p>
+
+      <!-- ═══ Макет ═══ -->
+      <div class="section">
+        <div class="section__title">Макет</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">screen name</div>
+
+          <!-- Собрать экран из wf-* примитивов. Скелет ниже — раскомментировать
+               и наполнить. Полный кит и его регистр — modules/wireframe.css.
+               Админ-экраны — широкие (wf-screen по умолчанию), внутри AdminLayout:
+               sidebar + content area. -->
+          <div class="wf-screen">
+            <!--
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url">achilles.local/admin/route</div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-appbar">
+                <span class="wf-appbar__title">Раздел</span>
+              </div>
+              <div class="wf-stack">
+                ...
+              </div>
+            </div>
+            -->
+          </div>
+        </div>
+
+        <!-- Аннотации (опционально): пронумерованные пины .wf-annot на макете +
+             легенда здесь. Раскомментировать при необходимости.
+        <ol class="wf-legend">
+          <li class="wf-legend__item">
+            <span class="wf-annot wf-legend__num">1</span>
+            Пояснение к элементу макета.
+          </li>
+        </ol>
+        -->
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth / Security</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="auth.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← К схеме</a>
+        <h1 class="header__title">Auth / Security</h1>
+        <div class="header__sub">cross-cutting concern</div>
+      </div>
+
+      <p class="desc">
+        Сквозной слой безопасности, пронизывающий все модули. Отвечает за
+        аутентификацию пользователей, авторизацию действий и контроль доступа
+        к данным на уровне отдельных записей.
+      </p>
+
+      <!-- ═══ Architecture Overview ═══ -->
+      <div class="section">
+        <h2 class="section__title">Архитектура</h2>
+        <div class="perimeters">
+          <div class="arch-label">Точки входа</div>
+          <div class="arch-entries">
+            <a class="arch-entry" href="../admin-panel/index.html">
+              <span class="arch-entry__icon" aria-hidden="true"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg></span>
+              Admin Panel
+              <span class="arch-entry__sub">admin shell · email + пароль → JWT</span>
+            </a>
+            <a class="arch-entry" href="../web-app/index.html">
+              <span class="arch-entry__icon" aria-hidden="true"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg></span>
+              Web App
+              <span class="arch-entry__sub">user shell · email + пароль → JWT</span>
+            </a>
+            <a class="arch-entry" href="../mcp/index.html">
+              <span class="arch-entry__icon" aria-hidden="true"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" /></svg></span>
+              MCP
+              <span class="arch-entry__sub">API-ключ → user</span>
+            </a>
+            <a class="arch-entry" href="../slack/index.html">
+              <span class="arch-entry__icon" aria-hidden="true"><svg class="doc-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg></span>
+              Slack
+              <span class="arch-entry__sub">ID → identity map</span>
+            </a>
+            <a class="arch-entry" href="../telegram/index.html">
+              <span class="arch-entry__icon" aria-hidden="true"><svg class="doc-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg></span>
+              Telegram
+              <span class="arch-entry__sub">ID → identity map</span>
+            </a>
+            <a class="arch-entry" href="../mattermost/index.html">
+              <span class="arch-entry__icon" aria-hidden="true"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg></span>
+              Mattermost
+              <span class="arch-entry__sub">ID → identity map</span>
+            </a>
+            <a class="arch-entry" href="../extension/index.html">
+              <span class="arch-entry__icon" aria-hidden="true"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z" /></svg></span>
+              Extension
+              <span class="arch-entry__sub">OAuth / токен</span>
+            </a>
+          </div>
+
+          <div class="perim perim--authn">
+            <div class="perim__label">
+              <span class="perim__name">Authentication</span>
+              <span class="perim__q">— кто пользователь?</span>
+            </div>
+            <div class="perim__desc">
+              Идентификация пользователя. Все точки входа сходятся к единому
+              <code>user_id</code>.
+            </div>
+            <div class="mod-tags">
+              <span class="mod-tag">argon2id</span>
+              <span class="mod-tag">JWT HS256</span>
+              <span class="mod-tag">NIST 800-63B</span>
+              <span class="mod-tag">zxcvbn + HIBP</span>
+              <span class="mod-tag mod-tag--v2">SSO/OIDC</span>
+              <span class="mod-tag mod-tag--v2">MFA TOTP</span>
+            </div>
+
+            <div class="perim perim--authz">
+              <div class="perim__label">
+                <span class="perim__name">Authorization</span>
+                <span class="perim__q">— что разрешено?</span>
+              </div>
+              <div class="perim__roles">
+                <span class="mod-role mod-role--owner">Owner</span>
+                <span class="mod-chevron">›</span>
+                <span class="mod-role mod-role--admin">Admin</span>
+                <span class="mod-chevron">›</span>
+                <span class="mod-role mod-role--member">Member</span>
+              </div>
+              <div class="perim__desc">
+                Эндпоинты проверяют permissions через
+                <code>require()</code> → <code>ROLE_PERMISSIONS</code>,
+                а не роли напрямую
+              </div>
+
+              <div class="perim perim--acl">
+                <div class="perim__label">
+                  <span class="perim__name">Data-level ACL</span>
+                  <span class="perim__q">— что доступно?</span>
+                </div>
+                <div class="perim__desc">
+                  Источник данных — единственная инстанция, определяющая, кто что видит.<br/>
+                  Двойной фильтр: Source ACL + Platform ACL — доступ
+                  предоставляется лишь при срабатывании обоих.
+                </div>
+                <div class="mod-tags">
+                  <span class="mod-tag">Identity Mapping</span>
+                  <span class="mod-tag mod-tag--v2">Container ACL</span>
+                  <span class="mod-tag mod-tag--v2">Email auto-match</span>
+                  <span class="mod-tag mod-tag--v2">Fail-safe</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Token Architecture ═══ -->
+      <div class="section">
+        <h2 class="section__title">Токены и сессии</h2>
+        <div class="tok-loop">
+          <div class="tok-flow">
+            <span>запрос</span>
+            <span class="tok-flow__arrow">→</span>
+            <span class="tok-flow__node">Access</span>
+            <span class="tok-flow__arrow">→</span>
+            <span>истёк</span>
+            <span class="tok-flow__arrow">→</span>
+            <span class="tok-flow__node">Refresh</span>
+            <span class="tok-flow__arrow">→</span>
+            <span>новая пара</span>
+            <span class="tok-flow__arrow">↻</span>
+          </div>
+          <div class="tok-pair">
+            <div class="tok-card tok-card--access">
+              <div class="tok-card__head">
+                <span class="tok-card__icon" aria-hidden="true"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" /><path d="M13 5v2" /><path d="M13 17v2" /><path d="M13 11v2" /></svg></span>Access Token
+                <span class="tok-card__life">короткий · 15м</span>
+              </div>
+              <div class="tok-card__row"><b>Тип</b> JWT, stateless</div>
+              <div class="tok-card__row"><b>TTL</b> 15 минут</div>
+              <div class="tok-card__row"><b>Хранение</b> В памяти JS</div>
+              <div class="tok-card__row"><b>Передача</b> Authorization: Bearer</div>
+              <div class="tok-card__row"><b>Header</b> alg, typ, kid</div>
+              <div class="tok-card__row"><b>Claims</b> sub, role, exp, iat, jti, iss, aud</div>
+            </div>
+            <div class="tok-rotate">
+              <span class="tok-rotate__cap">ротация</span>
+            </div>
+            <div class="tok-card tok-card--refresh">
+              <div class="tok-card__head">
+                <span class="tok-card__icon" aria-hidden="true"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></svg></span>Refresh Token
+                <span class="tok-card__life">длинный · 30д</span>
+              </div>
+              <div class="tok-card__row"><b>Тип</b> Stateful (БД)</div>
+              <div class="tok-card__row"><b>TTL</b> 30д sliding / 90д ceiling</div>
+              <div class="tok-card__row"><b>Хранение</b> cookie</div>
+              <div class="tok-card__row"><b>Флаги</b> httpOnly, Secure, SameSite=Strict</div>
+              <div class="tok-card__row"><b>Семья</b> family_id (UUIDv7)</div>
+            </div>
+          </div>
+        </div>
+        <div class="tok-note">
+          <div class="tok-note__title">⟳ Rotation &amp; Reuse Detection</div>
+          <div class="tok-note__text">
+            Каждый refresh выдаёт новую пару, старый токен
+            инвалидируется. Повторное использование отозванного
+            токена влечёт аннулирование всей цепочки (token family),
+            но не всех сессий пользователя.
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Protection ═══ -->
+      <div class="section">
+        <h2 class="section__title">Защита</h2>
+        <div class="prot-pipe">
+          <span class="prot-pipe__io">запрос</span>
+          <span class="prot-pipe__arrow">→</span>
+          <span class="prot-pipe__node">TLS</span>
+          <span class="prot-pipe__arrow">→</span>
+          <span class="prot-pipe__node">Заголовки</span>
+          <span class="prot-pipe__arrow">→</span>
+          <span class="prot-pipe__node">CORS</span>
+          <span class="prot-pipe__arrow">→</span>
+          <span class="prot-pipe__node">CSRF</span>
+          <span class="prot-pipe__arrow">→</span>
+          <span class="prot-pipe__node prot-pipe__node--focus">Перебор</span>
+          <span class="prot-pipe__arrow">→</span>
+          <span class="prot-pipe__node">Крипто-ядро</span>
+          <span class="prot-pipe__arrow">→</span>
+          <span class="prot-pipe__node">Аудит-лог</span>
+          <span class="prot-pipe__arrow">→</span>
+          <span class="prot-pipe__io">✓ обработка</span>
+        </div>
+        <div class="esc-cap">Рубеж защиты от перебора — детально:</div>
+        <div class="esc-meter">
+          <div class="esc-meter__bar"></div>
+          <div class="esc-meter__ticks">
+            <span class="esc-meter__tick esc-meter__tick--1">по IP</span>
+            <span class="esc-meter__tick esc-meter__tick--2">с 3-й неудачи</span>
+            <span class="esc-meter__tick esc-meter__tick--3">10 неудач</span>
+          </div>
+        </div>
+        <div class="esc-steps">
+          <div class="esc-step esc-step--1">
+            <div class="esc-step__bar"></div>
+            <div class="esc-step__thr">
+              <span class="esc-step__thr-cap">порог</span>
+              <span class="esc-step__thr-n">по IP</span>
+            </div>
+            <div class="esc-step__body">
+              <div class="esc-step__title">Rate limit по IP</div>
+              <div class="esc-step__desc">20 попыток / 15 мин. Redis sliding window.</div>
+            </div>
+          </div>
+          <div class="esc-step esc-step--2">
+            <div class="esc-step__bar"></div>
+            <div class="esc-step__thr">
+              <span class="esc-step__thr-cap">с 3-й</span>
+              <span class="esc-step__thr-n">неудачи</span>
+            </div>
+            <div class="esc-step__body">
+              <div class="esc-step__title">Задержка на уровне аккаунта</div>
+              <div class="esc-step__desc">Первые 2 попытки без задержки, затем 1с → 2с → 4с → 8с (предел 30с). На стороне сервера.</div>
+            </div>
+          </div>
+          <div class="esc-step esc-step--3">
+            <div class="esc-step__bar"></div>
+            <div class="esc-step__thr">
+              <span class="esc-step__thr-cap">после</span>
+              <span class="esc-step__thr-n">10 неудач</span>
+            </div>
+            <div class="esc-step__body">
+              <div class="esc-step__title">Alert Owner/Admin</div>
+              <div class="esc-step__desc">
+                Уведомление Owner/Admin — без блокировки.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ API ═══ Полные пути контракта модуля под версией. -->
+      <section class="section" id="api">
+        <div class="section__title">API</div>
+        <ul class="api-list">
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/auth/login</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/auth/refresh</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/auth/logout</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/auth/logout-all</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/auth/setup</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/auth/password/change</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/auth/password/forgot</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/auth/password/reset</span></li>
+          <li><span class="api-list__m">GET · POST</span><span class="api-list__p">/api/v1/api-keys</span></li>
+          <li><span class="api-list__m">DELETE</span><span class="api-list__p">/api/v1/api-keys/{id}</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/invites</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/invites/bulk</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/invites/{token}/accept</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/link/{platform}</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/link/{platform}/confirm</span></li>
+          <li><span class="api-list__m">GET · PATCH</span><span class="api-list__p">/api/v1/admin/users · /{id}</span></li>
+          <li><span class="api-list__m">DELETE</span><span class="api-list__p">/api/v1/admin/users/{id}</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/admin/users/{id}/reset-password · /terminate-sessions</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/admin/audit-log</span></li>
+        </ul>
+      </section>
+
+      <!-- ═══ Workzone ═══ -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Проектирование</span>
+        </div>
+        <p class="workzone-hint">
+          Детальные решения по проектированию модуля.
+        </p>
+
+        <div class="wz-nav">
+          <a class="wz-link" href="_workzone/routing.html">
+            <span>Маршруты и редиректы</span>
+          </a>
+          <a class="wz-link" href="_workzone/authentication.html">
+            <span>Аутентификация</span>
+          </a>
+          <a class="wz-link" href="_workzone/authorization.html">
+            <span>Авторизация</span>
+          </a>
+          <a class="wz-link" href="_workzone/protection.html">
+            <span>Защита</span>
+          </a>
+          <a class="wz-link" href="_workzone/data-model.html">
+            <span>Модель данных и контракты</span>
+          </a>
+          <a class="wz-link" href="_workzone/stack.html">
+            <span>Стек и структура</span>
+          </a>
+          <a class="wz-link" href="_workzone/tests.html">
+            <span>Тесты</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ═══ Макеты (wireframes) ═══
+           Каталог экранов модуля — по одному файлу на экран в _wireframes/.
+           Каждая страница: описание экрана + схематичный макет (без точного
+           дизайна). Шаблон нового экрана — _wireframes/_template.html.
+           По мере добавления экранов — новый <a class="wz-link" …>. -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Макеты</span>
+          <span class="workzone-title">Wireframes</span>
+        </div>
+        <p class="workzone-hint">
+          Экраны — описание и макет каждого.
+        </p>
+
+        <div class="wz-nav">
+          <div class="wz-nav__group">Публичные — до входа</div>
+          <a class="wz-link" href="_wireframes/setup-wizard.html">
+            <span>Setup Wizard</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <a class="wz-link" href="_wireframes/login.html">
+            <span>Login</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <a class="wz-link" href="_wireframes/invite-accept.html">
+            <span>Invite Accept</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <a class="wz-link" href="_wireframes/status-screen.html">
+            <span>Status Screen</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <div class="wz-nav__group">Пользовательские — после входа</div>
+          <a class="wz-link" href="_wireframes/profile-account.html">
+            <span>Profile / Account</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <a class="wz-link" href="_wireframes/session-management.html">
+            <span>Session Management</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <a class="wz-link" href="_wireframes/re-auth-modal.html">
+            <span>Re-auth modal</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <a class="wz-link" href="_wireframes/messenger-link.html">
+            <span>Привязка мессенджера</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ═══ Фичи (features) ═══
+           Многоэкранные пользовательские сценарии — то, чего одним экраном не
+           описать. Каждая фича — мини-модуль в _features/<feature>/:
+           index.html (описание + техтреб + flow-диаграмма) + её эксклюзивные
+           экраны рядом. Переиспользуемый экран — ссылкой в _wireframes; экран,
+           ставший нужным 2+ фичам, переносим в «Макеты» (принцип близости).
+           Шаблон фичи — _features/_template/. Конвенции: README → "Features".
+
+           Структура группы фичи: lead-ссылка на дом фичи + её ЭКСКЛЮЗИВНЫЕ
+           экраны под ней (если есть). Переиспользуемые экраны в нав не дублируем
+           — они уже в «Макетах», фича ссылается на них во flow. Шаблон с
+           эксклюзивным экраном:
+           <div class="wz-nav__group">Название фичи</div>
+           <a class="wz-link wz-link--lead" href="_features/<feature>/index.html">
+             <span>Название фичи</span>
+           </a>
+           <a class="wz-link" href="_features/<feature>/<screen>.html">
+             <span>Эксклюзивный экран</span>
+             <span class="wz-tag wz-tag--screen">макет</span>
+           </a>
+      -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Фичи</span>
+          <span class="workzone-title">Features</span>
+        </div>
+        <p class="workzone-hint">
+          Многоэкранные сценарии — описание, технические требования, переходы.
+        </p>
+
+        <div class="wz-nav">
+          <div class="wz-nav__group">Восстановление пароля</div>
+          <a class="wz-link wz-link--lead" href="_features/password-recovery/index.html">
+            <span>Восстановление пароля</span>
+          </a>
+          <a class="wz-link" href="_features/password-recovery/forgot-password.html">
+            <span>Forgot Password</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <a class="wz-link" href="_features/password-recovery/reset-password.html">
+            <span>Reset Password</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <div class="wz-nav__group">Двухфакторная аутентификация</div>
+          <a class="wz-link wz-link--lead" href="_features/mfa/index.html">
+            <span>Двухфакторная аутентификация</span>
+          </a>
+          <a class="wz-link" href="_features/mfa/mfa-setup.html">
+            <span>MFA Setup</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <a class="wz-link" href="_features/mfa/mfa-manage.html">
+            <span>MFA Management</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <div class="wz-nav__group">Принудительная смена пароля</div>
+          <a class="wz-link wz-link--lead" href="_features/forced-password-change/index.html">
+            <span>Принудительная смена пароля</span>
+          </a>
+          <a class="wz-link" href="_features/forced-password-change/change-temp-password.html">
+            <span>Change Temp Password</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <div class="wz-nav__group">API-ключи</div>
+          <a class="wz-link wz-link--lead" href="_features/api-keys/index.html">
+            <span>API-ключи</span>
+          </a>
+          <a class="wz-link" href="_features/api-keys/api-key-create-modal.html">
+            <span>API Key Create</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <div class="wz-nav__group">Онбординг пользователей</div>
+          <a class="wz-link wz-link--lead" href="_features/user-onboarding/index.html">
+            <span>Онбординг пользователей</span>
+          </a>
+          <a class="wz-link" href="_features/user-onboarding/bulk-invite-upload.html">
+            <span>Bulk Invite · Upload</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <a class="wz-link" href="_features/user-onboarding/bulk-invite-preview.html">
+            <span>Bulk Invite · Preview</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

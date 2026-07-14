@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Infrastructure</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../shared.css" />
+    <link rel="stylesheet" href="modules/module.css" />
+    <link rel="stylesheet" href="deployment.css" />
+    <script src="doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="architecture-scheme.html">← К схеме</a>
+        <h1 class="header__title">Инфраструктура</h1>
+        <div class="header__sub">физический вид развёртывания</div>
+      </div>
+
+      <!-- ═══ Топология ═══ Трёхзонная сегментация: единственный вход (nginx)
+           в публичной зоне, хранилища — в закрытой data-зоне, ops-присмотр — в
+           отдельной docker-зоне. Зоны = границы доверия, не просто сети. -->
+      <div class="section" id="topology">
+        <div class="section__title">Топология</div>
+
+        <p class="note">
+          Контейнеры разнесены по трём сетям-зонам. Наружу смотрит
+          <strong>только</strong> публичная зона; <code>data</code> и
+          <code>docker</code> закрыты (<code>internal</code>) — к базам нет
+          пути снаружи, лишь через приложение.
+        </p>
+
+        <div class="dep-topo">
+          <div class="dep-net">Internet</div>
+          <div class="dep-flow">HTTPS · 443 / 80 ▼</div>
+
+          <div class="dep-zone dep-zone--public">
+            <div class="dep-zone__label">
+              zone: public <span class="dep-zone__hint">наружу открыт только nginx</span>
+            </div>
+            <div class="dep-nodes">
+              <div class="dep-node dep-node--edge">
+                nginx<span>единственный вход · TLS · security-headers</span>
+              </div>
+              <div class="dep-node">
+                frontend<span>статика React · :8080</span>
+              </div>
+              <div class="dep-node">
+                backend<span>FastAPI · API :8000</span>
+              </div>
+              <div class="dep-node dep-node--ops">
+                certbot<span>авто-renew TLS · Let's Encrypt</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="dep-flow">▲ внутренний трафик ▼</div>
+
+          <div class="dep-zone dep-zone--data">
+            <div class="dep-zone__label">
+              zone: data <span class="dep-lock">internal — наружу закрыта</span>
+            </div>
+            <div class="dep-nodes">
+              <div class="dep-node dep-node--store">
+                postgres + pgvector<span>реляционка · вектора · граф</span>
+              </div>
+              <div class="dep-node dep-node--store">
+                redis-durable<span>очереди · счётчики · AOF-персист</span>
+              </div>
+              <div class="dep-node">
+                redis-cache<span>кэш · вытеснение по памяти</span>
+              </div>
+              <div class="dep-node">
+                worker (SAQ)<span>фоновое исполнение вне запроса</span>
+              </div>
+              <div class="dep-node dep-node--once">
+                migrate<span>alembic upgrade · one-shot</span>
+              </div>
+              <div class="dep-node dep-node--v2">
+                graph engine<span><span class="iter v2">v2</span> выделенный движок графа</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="dep-zone dep-zone--docker">
+            <div class="dep-zone__label">
+              zone: docker <span class="dep-lock">internal</span>
+            </div>
+            <div class="dep-nodes">
+              <div class="dep-node dep-node--ops">
+                socket-proxy ◄ autoheal<span>перезапуск unhealthy без прямого доступа к сокету</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

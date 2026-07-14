@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Cache &amp; Workers</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="cache-workers.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← К схеме</a>
+        <h1 class="header__title">Cache &amp; Workers</h1>
+        <div class="header__sub">кэш · очереди · планировщик · воркеры · rate-limit</div>
+      </div>
+
+      <!-- ═══ Описание ═══ Инфраструктурный слой, не доменный модуль: своих
+           знаний не хранит. Два лица — синхронное эфемерное состояние на пути
+           запроса и фоновая исполнительная среда вне запроса. -->
+      <p class="desc">
+        Эфемерная инфраструктура платформы поверх <strong>Redis</strong>: ускоряет
+        (кэш частых чтений) и связывает (асинхронная передача задач между модулями).
+        Своих доменных знаний не хранит — это общий слой, который остальные модули
+        потребляют через тонкий клиент. Два лица:
+        <strong>синхронное эфемерное состояние</strong> на пути запроса (кэш,
+        rate-limit, blacklist) и <strong>фоновая исполнительная среда</strong> вне
+        запроса (очередь, планировщик, воркеры, жизненный цикл задачи).
+      </p>
+
+      <!-- ═══ Архитектура ═══ Постер потоков: два лица модуля (синхронное на
+           пути запроса · фоновое вне его). Статика «что где живёт» — водораздел. -->
+      <div class="section" id="architecture">
+        <h2 class="section__title">Архитектура</h2>
+        <p class="note">
+          Два лица модуля бок о бок: синхронное на пути запроса и фоновое вне
+          его, каждое со своим потоком сверху вниз. Оба держатся на общем
+          фундаменте из трёх хранилищ; статический принцип «что где живёт» — на
+          <a href="_workzone/redis-keys.html#principle" class="xref-page">водоразделе Redis ⟂ Postgres</a>.
+        </p>
+        <div class="cw-dip">
+          <div class="cw-dip__faces">
+            <!-- лицо 1: синхронное эфемерное состояние на пути запроса -->
+            <div class="cw-dface cw-dface--sync">
+              <div class="cw-dface__cap">
+                <span class="cw-dface__t">На пути запроса</span>
+                <span class="cw-dface__s">синхронно · эфемерное состояние</span>
+              </div>
+              <div class="cw-step">API · входящий запрос</div>
+              <a class="cw-step" href="_workzone/rate-limit.html#primitive">
+                rate-limit<small>атомарный счётчик · durable</small>
+              </a>
+              <a class="cw-step" href="_workzone/caching.html#policy">
+                кэш кандидатов<small>single-flight · TTL</small>
+              </a>
+              <div class="cw-step">ответ пользователю</div>
+            </div>
+
+            <!-- лицо 2: фоновая исполнительная среда вне запроса -->
+            <div class="cw-dface cw-dface--bg">
+              <div class="cw-dface__cap">
+                <span class="cw-dface__t">Вне запроса</span>
+                <span class="cw-dface__s">фоново · исполнительная среда</span>
+              </div>
+              <a class="cw-step" href="_workzone/scheduling.html#cron">
+                модули · события · планировщик <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2" /><line x1="12" x2="15" y1="14" y2="11" /><circle cx="12" cy="14" r="8" /></svg><small>enqueue по job_id · cron singleton</small>
+              </a>
+              <a class="cw-step" href="_workzone/redis-keys.html#instances">
+                очередь<small>redis-durable</small>
+              </a>
+              <a class="cw-step" href="_workzone/queues.html#lanes">
+                лейны → воркеры
+                <span class="cw-laneset">
+                  <span class="cw-lane cw-lane--i">interactive</span>
+                  <span class="cw-lane cw-lane--b">background</span>
+                  <span class="cw-lane cw-lane--a">agents</span>
+                </span>
+              </a>
+              <a class="cw-step" href="_workzone/lifecycle.html#contract">
+                жизненный цикл задачи<small>журнал · retry · DLQ</small>
+              </a>
+            </div>
+          </div>
+
+          <div class="cw-foundlabel">↓ обе грани держатся на едином фундаменте ↓</div>
+
+          <div class="cw-base">
+            <a class="cw-store cw-store--rd" href="_workzone/redis-keys.html#instances">
+              <div class="cw-store__t">redis-durable</div>
+              <div class="cw-store__d">очереди · счётчики · замки · дедуп · noeviction + AOF</div>
+            </a>
+            <a class="cw-store cw-store--rc" href="_workzone/redis-keys.html#instances">
+              <div class="cw-store__t">redis-cache</div>
+              <div class="cw-store__d">кэш кандидатов · pub/sub · allkeys-lru</div>
+            </a>
+            <a class="cw-store cw-store--pg" href="_workzone/lifecycle.html#contract">
+              <div class="cw-store__t">Postgres</div>
+              <div class="cw-store__d">система записи · единственность прогона · DLQ</div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Workzone ═══ Восемь страниц проработки: две грани модуля
+           (исполнительная среда + эфемерное состояние) плюс стек и тесты. -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Проектирование</span>
+        </div>
+        <p class="workzone-hint">
+          Детальные решения по проектированию модуля.
+        </p>
+
+        <div class="wz-nav">
+          <div class="wz-nav__group">Фоновая исполнительная среда</div>
+          <a class="wz-link" href="_workzone/queues.html">
+            <span>Очереди и воркеры</span>
+          </a>
+          <a class="wz-link" href="_workzone/scheduling.html">
+            <span>Планировщик</span>
+          </a>
+          <a class="wz-link" href="_workzone/lifecycle.html">
+            <span>Жизненный цикл задачи</span>
+          </a>
+
+          <div class="wz-nav__group">Эфемерное состояние</div>
+          <a class="wz-link" href="_workzone/rate-limit.html">
+            <span>Rate-limit</span>
+          </a>
+          <a class="wz-link" href="_workzone/caching.html">
+            <span>Кэш</span>
+          </a>
+          <a class="wz-link" href="_workzone/redis-keys.html">
+            <span>Redis: инстансы и ключи</span>
+          </a>
+
+          <div class="wz-nav__group">Реализация</div>
+          <a class="wz-link" href="_workzone/stack.html">
+            <span>Стек и структура</span>
+          </a>
+          <a class="wz-link" href="_workzone/tests.html">
+            <span>Тесты</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ═══ Макеты (surface'ы) ═══ Своего фронтенда у модуля нет — мониторинг
+           очередей и Redis рендерит дашборд Admin Panel. Здесь указатель. -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Макеты</span>
+          <span class="workzone-title">Surface'ы</span>
+        </div>
+        <p class="workzone-hint">
+          Своего фронтенда у модуля нет: состояние очередей, воркеров и Redis
+          администратор видит на дашборде —
+          <a href="../admin-panel/_wireframes/dashboard.html#system-health" class="xref-badge">→ Admin Panel</a>.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

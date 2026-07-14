@@ -1,0 +1,727 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Harvester: Test cases</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Harvester</a>
+        <h1 class="header__title">Test cases</h1>
+        <div class="header__sub">harvester · workzone</div>
+      </div>
+
+      <!-- ── Overview band: decisions + stack ── -->
+      <div class="test-overview">
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Decisions made</div>
+          <div class="decision-box">
+            <strong>What we test and with what</strong>
+            Transform → Load is identical for all sources — a deterministic unit
+            test takes it on synthetic <code>RawItem</code>s. Only Extract and
+            <code>normalize</code> are source-specific: we test them against
+            recorded responses and images, and live — only by hand.
+          </div>
+          <div class="decision-box">
+            <strong>Three levels by reproducibility</strong>
+            Reproducibility grows from the live source to the image to the HTTP
+            fixture: live free-tiers — manual debugging, outside CI; Docker images
+            — integration as a separate, rarer CI step; HTTP fixtures
+            (VCR.py / WireMock) — unit, contract, and end-to-end replay by source
+            on every PR. <code>make test</code> includes only the fixture level;
+            Docker integration runs as a separate step.
+          </div>
+          <div class="decision-box">
+            <strong>The API layer tests the edge, not a rerun of the domain</strong>
+            HTTP tests hold the boundary: request shape and schema validation,
+            response codes, secret masking, authorization on every route.
+            Behavioral depth — run locks, delete cascades, the three Test
+            Connection steps — is held by the domain tests above; the endpoint
+            need only reflect them outward correctly. End-to-end RBAC / JWT / CORS
+            mechanics are owned by Auth &amp; Security; here it's only that
+            Harvester's routes sit behind that guard.
+          </div>
+          <div class="decision-box">
+            <strong>Contract cases — and a kit for the connector author</strong>
+            The same set the platform uses to check its built-in connectors
+            (<code>test_connector_contract</code> +
+            <code>test_manifest_registry</code>) is run by an external connector's
+            author against their own class — a conformance check against the
+            contract before shipping. The contract isn't frozen before
+            <code>1.0</code>: the kit changes along with it.
+          </div>
+        </div>
+
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Stack and infrastructure</div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">On hand <span class="iter done">done</span></span>
+            <span>pytest, pytest-asyncio, pytest-cov, httpx</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Fixtures</span>
+            <span
+              >VCR.py (record / replay of HTTP) + WireMock (off-nominal codes,
+              timeouts, synthetic pagination seams)</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Images</span>
+            <span
+              >testcontainers — Gitea / GitLab CE for regular CI, Atlassian DC
+              under a numbered run; seeded by script at startup</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Other</span>
+            <span
+              >factory_boy (<code>RawItem</code> / <code>Entity</code>),
+              time-machine (watchdog, freshness budget), the SAQ handler called
+              directly — without spinning up a worker</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Markers</span>
+            <span
+              ><code>@pytest.mark.unit</code> / <code>@pytest.mark.integration</code> —
+              by type; <code>@pytest.mark.p0</code> / <code>p1</code> — by
+              priority, orthogonal to type</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Unit ═══ Pipeline without a source — synthetic RawItem. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--unit">Unit</span>
+        <span class="test-sec__title">Pipeline without a source — synthetic RawItem</span>
+        <span class="test-sec__meta">deterministic · every PR</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2" /><path d="M6.453 15h11.094" /><path d="M8.5 2h7" /></svg></span><span class="name">test_transform.py</span></div>
+            <div class="test-card__sub">Transformation steps on constructed RawItems</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="pipeline.html#transform">→ Transform</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">filter — built-in rules</span><span class="test-case__e">empty entities, system events, and bots are filtered out; the base rules aren't configurable</span></div>
+              <div class="test-case"><span class="test-case__k">filter — manifest</span><span class="test-case__e">overrides and extra inclusions are taken from the manifest's <code>content_filters</code></span></div>
+              <div class="test-case"><span class="test-case__k">classify → status</span><span class="test-case__e">the entity is assigned <code>draft</code> / <code>final</code> / <code>archived</code></span></div>
+              <div class="test-case"><span class="test-case__k">resolve — duplicates within a run</span><span class="test-case__e">collapsing duplicates within a single run + picking the winning version; cross-run idempotency — NOT here</span></div>
+              <div class="test-case"><span class="test-case__k">enrich — links and refs</span><span class="test-case__e">an edge is built at once when the target node is already loaded; otherwise (a foreign source or a forward ref) — as a <code>refs</code> claim, the edge isn't materialized</span></div>
+              <div class="test-case"><span class="test-case__k">clean — a copy for embedding</span><span class="test-case__e">cleaned after <code>enrich</code> and only the copy; the original in <code>Entity</code> is untouched</span></div>
+              <div class="test-case"><span class="test-case__k">chunk — fragments</span><span class="test-case__e">one <code>Entity</code> → many fragments; the <code>structural</code> / <code>recursive</code> / <code>overlap</code> mechanics</span></div>
+              <div class="test-case"><span class="test-case__k">embed — model and cache</span><span class="test-case__e">each fragment → a vector from the AI registry's model; cache by content hash, unchanged ones aren't re-embedded</span></div>
+              <div class="test-case"><span class="test-case__k">embed — assignment is required</span><span class="test-case__e">without an assigned embedding function ingestion won't start (there's no default); with the platform's built-in model assigned → ingestion proceeds, fragments are embedded with it</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 16h.01" /><path d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /><path d="M21.946 12.013H2.054" /><path d="M6 16h.01" /></svg></span><span class="name">test_load.py</span></div>
+            <div class="test-card__sub">Load idempotency and projections</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="pipeline.html#load">→ Load</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">upsert — one key</span><span class="test-case__e">by <code>source_id + source_type + source_entity_id</code> exactly one row; a repeat run updates, doesn't breed duplicates</span></div>
+              <div class="test-case"><span class="test-case__k">fragment sync</span><span class="test-case__e">the vector set is reconciled as a whole: stale ones removed, new ones added, no orphans</span></div>
+              <div class="test-case"><span class="test-case__k">unchanged fragment</span><span class="test-case__e">a vector by content hash — isn't re-embedded on a repeat</span></div>
+              <div class="test-case"><span class="test-case__k">three projections</span><span class="test-case__e">one <code>Entity</code> → relational + vector + graph (the field layout is owned by Knowledge Store)</span></div>
+              <div class="test-case"><span class="test-case__k">fragment ACL</span><span class="test-case__e">a fragment inherits the entity's ACL, has none of its own</span></div>
+              <div class="test-case"><span class="test-case__k">deletion — a separate axis</span><span class="test-case__e">a record gone from the source gets a deletion marker; the classification status (<code>draft</code> / <code>final</code> / <code>archived</code>) is kept as it was — hidden from results, physically retained</span></div>
+              <div class="test-case"><span class="test-case__k">restoration</span><span class="test-case__e">the marker is cleared (the record returned / the deletion was a mistake) → the prior status returns on its own, without reclassification</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Contract ═══ Source-specific Extract + normalize against HTTP fixtures. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--unit">Contract</span>
+        <span class="test-sec__title">Connectors — a unified interface on HTTP fixtures</span>
+        <span class="test-sec__meta">VCR.py + WireMock · every PR</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5" /><path d="M15 8V2" /><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" /><path d="M9 8V2" /></svg></span><span class="name">test_connector_contract.py</span></div>
+            <div class="test-card__sub">fetch + normalize against recorded responses</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Contract</span>
+              <a class="xref-badge xref-badge--page" href="connectors.html#contract">→ What a connector is</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">contract — 4 methods</span><span class="test-case__e">the connector implements <code>fetch</code> · <code>normalize</code> · <code>list_catalog</code> · <code>check_connection</code>; here — the pipeline core <code>fetch</code> + <code>normalize</code>, catalog and probe are under the api/scope tests</span></div>
+              <div class="test-case"><span class="test-case__k">output shape</span><span class="test-case__e"><code>fetch</code> yields a stream of <code>RawItem</code> with payload, identifiers, and collection metadata</span></div>
+              <div class="test-case"><span class="test-case__k">increment by since</span><span class="test-case__e">Full → <code>since = epoch</code>; Incremental → the moment of the previous run</span></div>
+              <div class="test-case"><span class="test-case__k">cursor pagination</span><span class="test-case__e"><code>listing → page → emit</code>; next cursor exists → back to listing</span></div>
+              <div class="test-case"><span class="test-case__k">empty / last response</span><span class="test-case__e">no cursor → the loop finishes cleanly, without an extra request</span></div>
+              <div class="test-case"><span class="test-case__k">request failure (WireMock)</span><span class="test-case__e">timeout / <code>429</code> on a page → retry with backoff, the loop doesn't break</span></div>
+              <div class="test-case"><span class="test-case__k">normalize → Entity</span><span class="test-case__e">the sole source-specific transformation step yields <code>source_id + source_type + source_entity_id</code>, type, status</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z" /></svg></span><span class="name">test_manifest_registry.py</span></div>
+            <div class="test-card__sub">The manifest declares, the registry self-registers</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Contract</span>
+              <a class="xref-badge xref-badge--page" href="connectors.html#manifest">→ Connector manifest</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">form from the manifest</span><span class="test-case__e">the UI builds the connection form from the declared config fields and credential kinds — the frontend knows nothing about the specific connector</span></div>
+              <div class="test-case"><span class="test-case__k">not in the form</span><span class="test-case__e"><code>rate_limit</code> (starting rate) and <code>webhook</code> (behavior) don't go into the form; from webhook, only the secret itself reaches the UI</span></div>
+              <div class="test-case"><span class="test-case__k">self-registration</span><span class="test-case__e">a connector registers via <code>@register</code> / discovery; the registry is the single source of truth about types</span></div>
+              <div class="test-case"><span class="test-case__k">external package</span><span class="test-case__e">a connector from an installed package with the <code>achilles.connectors</code> entry point takes its place in the registry as a built-in — discovery doesn't distinguish the class's home</span></div>
+              <div class="test-case"><span class="test-case__k">new type</span><span class="test-case__e">adding a type = adding a class, without touching the wizard / frontend / dispatcher</span></div>
+              <div class="test-case"><span class="test-case__k">dispatch by type</span><span class="test-case__e">the dispatcher raises the connector by <code>connector_type</code></span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Replay ═══ End-to-end E→T→L on cassettes, by source type. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p0">Replay · P0</span>
+        <span class="test-sec__title">End-to-end pipeline on cassettes — by source type</span>
+        <span class="test-sec__meta">VCR.py · offline · every PR</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M7 3v18" /><path d="M3 7.5h4" /><path d="M3 12h18" /><path d="M3 16.5h4" /><path d="M17 3v18" /><path d="M17 7.5h4" /><path d="M17 16.5h4" /></svg></span><span class="name">test_pipeline_replay.py</span></div>
+            <div class="test-card__sub">Full E→T→L over recorded responses, a golden reference per source</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Replay</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="pipeline.html#extract">→ Extract</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">parametrized by type</span><span class="test-case__e">one run per built-in type — Jira / GitLab / Slack — from its own committed cassette</span></div>
+              <div class="test-case"><span class="test-case__k">the whole pipeline offline</span><span class="test-case__e"><code>fetch</code> from a cassette → Transform → Load with no network and no image; end-to-end coverage where Docker gives only the Git family (Slack/Jira have no image for regular CI)</span></div>
+              <div class="test-case"><span class="test-case__k">entity golden reference</span><span class="test-case__e">the count, types, and keys of entities are checked against a golden snapshot; a mismatch is a failure, not a warning</span></div>
+              <div class="test-case"><span class="test-case__k">run determinism</span><span class="test-case__e">a fixed seed for chunking and embedding → a bit-for-bit repeat, a diff readable in review</span></div>
+              <div class="test-case"><span class="test-case__k">re-recording a cassette</span><span class="test-case__e">API drift is fixed by re-recording from <code>manual/</code>; a cassette is a committed file, touches no network in CI and doesn't "fall over"</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P0 ═══ End-to-end E→T→L against a Docker image. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p0">Integration · P0</span>
+        <span class="test-sec__title">End-to-end pipeline against an image</span>
+        <span class="test-sec__meta">Docker · separate CI step</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3" /><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" /><circle cx="18" cy="5" r="3" /></svg></span><span class="name">test_pipeline_e2e.py</span></div>
+            <div class="test-card__sub">Extract → Transform → Load against a seeded source</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="pipeline.html#extract">→ Extract</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">full path</span><span class="test-case__e">a run against the image with a fixed seed → entities in three projections</span></div>
+              <div class="test-case"><span class="test-case__k">match against the seed</span><span class="test-case__e">the count and types of entities match the seeded set</span></div>
+              <div class="test-case"><span class="test-case__k">repeat is idempotent</span><span class="test-case__e">a second full run doesn't breed duplicates (Load by key)</span></div>
+              <div class="test-case"><span class="test-case__k">increment takes the delta</span><span class="test-case__e">after an edit in the source, Incremental picks up only what changed by <code>since</code></span></div>
+              <div class="test-case"><span class="test-case__k">vectors preserved</span><span class="test-case__e">fragments and embeddings persist, the vector projection's key is the entity id</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P1 ═══ Reliability, modes, lifecycle, channel, ACL. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">Integration · P1</span>
+        <span class="test-sec__title">Reliability, modes, lifecycle, channel, ACL</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="m4.93 4.93 4.24 4.24" /><path d="m14.83 9.17 4.24-4.24" /><path d="m14.83 14.83 4.24 4.24" /><path d="m9.17 14.83-4.24 4.24" /><circle cx="12" cy="12" r="4" /></svg></span><span class="name">test_reliability.py</span></div>
+            <div class="test-card__sub">SyncRun, checkpoint, retries, DLQ</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="reliability.html#sync-run">→ SyncRun — run state</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">run states</span><span class="test-case__e"><code>queued</code> / <code>running</code> / <code>succeeded</code> / <code>failed</code> / <code>cancelled</code> + progress, heartbeat</span></div>
+              <div class="test-case"><span class="test-case__k">checkpoint resume</span><span class="test-case__e">commit after a batch → resume from the last checkpoint, an unfinished page without duplicates</span></div>
+              <div class="test-case"><span class="test-case__k">heartbeat (time-machine)</span><span class="test-case__e">30 s interval; a crash = silence after 3 missed beats (90 s)</span></div>
+              <div class="test-case"><span class="test-case__k">freshness budget</span><span class="test-case__e">a gap &gt; 6 h → the checkpoint is discarded, the run starts from scratch; <code>cancelled</code> isn't resumed</span></div>
+              <div class="test-case"><span class="test-case__k">retry → DLQ</span><span class="test-case__e">backoff on a drop / timeout / <code>429</code> / <code>5xx</code>; after exhaustion the item goes to <code>dead_letters</code>, isn't lost</span></div>
+              <div class="test-case"><span class="test-case__k">permanent → straight to DLQ</span><span class="test-case__e"><code>400</code> / <code>401</code> / <code>404</code> / <code>422</code> and normalization errors — a retry is pointless, the element goes to <code>dead_letters</code> without retries</span></div>
+              <div class="test-case"><span class="test-case__k">transient → retry</span><span class="test-case__e">a load spike / brief unavailability — retry with backoff; the error class decides, not the letter of the code</span></div>
+              <div class="test-case"><span class="test-case__k">connector overrides the class</span><span class="test-case__e"><code>403</code> at GitHub / GitLab — more often rate-limit: by <code>Retry-After</code> / <code>X-RateLimit-Remaining</code> the connector treats it as transient, not permanent</span></div>
+              <div class="test-case"><span class="test-case__k">two retry levels</span><span class="test-case__e">a short delay (≤ 60 s) — in-memory holding of the page in the task; a long pause (<code>Retry-After</code> in minutes-to-hours) → SAQ defer / re-enqueue, the worker slot freed, not a <code>sleep</code></span></div>
+              <div class="test-case"><span class="test-case__k">partial failure</span><span class="test-case__e">a <code>succeeded</code> run with <code>error_count &gt; 0</code> — distinct from <code>failed</code></span></div>
+              <div class="test-case"><span class="test-case__k">failure notification</span><span class="test-case__e">a <code>failed</code> run raises a notification; the channel choice is owned by the notifications module, Harvester only signals</span></div>
+              <div class="test-case"><span class="test-case__k">one active run</span><span class="test-case__e">partial unique index <code>UNIQUE (source_id) WHERE state IN ('queued','running')</code></span></div>
+              <div class="test-case"><span class="test-case__k">DLQ dedup</span><span class="test-case__e">the same item updates the row (<code>attempts</code>, <code>reason</code>), doesn't breed a duplicate; a processed one is removed</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg></span><span class="name">test_sync_modes.py</span></div>
+            <div class="test-card__sub">Full, incremental, reconciliation, restoration</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="sync-modes.html#full-sync">→ Full Sync</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">Full Sync</span><span class="test-case__e"><code>since = epoch</code>, passes every entity; a repeat doesn't breed duplicates</span></div>
+              <div class="test-case"><span class="test-case__k">Incremental</span><span class="test-case__e">webhooks + polling by <code>since</code> — the working mode after the initial load</span></div>
+              <div class="test-case"><span class="test-case__k">Reconciliation</span><span class="test-case__e">reconciles the whole, aggressive <code>resolve</code>, cleanup of what vanished</span></div>
+              <div class="test-case"><span class="test-case__k">deletion detection is mode-specific</span><span class="test-case__e">Incremental doesn't set a disappearance marker (deletion doesn't arrive in the delta); Reconciliation marks the missing via a full scan</span></div>
+              <div class="test-case"><span class="test-case__k">partial_resync (12 h)</span><span class="test-case__e">silence &gt; 12 h → cheap polling → delta present → window re-sync, auto, no human</span></div>
+              <div class="test-case"><span class="test-case__k">dlq_retry — manual</span><span class="test-case__e">a targeted retry by identity from the queue after a fix; processed ones leave the DLQ</span></div>
+              <div class="test-case"><span class="test-case__k">per-source</span><span class="test-case__e">each source holds its own <code>since</code> / schedule / mode; "sync everything" = launching them all at once</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></svg></span><span class="name">test_source_lifecycle.py</span></div>
+            <div class="test-card__sub">States, run lock, cancel, deletion</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="sources.html#lifecycle">→ Source lifecycle</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">two independent axes</span><span class="test-case__e"><code>state</code> (<code>active</code>/<code>paused</code>/<code>disconnected</code>) — intent; health (<code>idle</code>/<code>syncing</code>/<code>error</code>) — computed</span></div>
+              <div class="test-case"><span class="test-case__k">lock on syncing</span><span class="test-case__e">edit / pause / disconnect / delete are unavailable; the only lever is <code>Cancel</code></span></div>
+              <div class="test-case"><span class="test-case__k">Cancel is safe</span><span class="test-case__e">a stop at the nearest checkpoint, needs no rollback (Load is idempotent)</span></div>
+              <div class="test-case"><span class="test-case__k">Pause / Disconnect</span><span class="test-case__e">Pause silences the schedule, not a live run; Disconnect removes credentials, data and config intact</span></div>
+              <div class="test-case"><span class="test-case__k">deletion — two modes</span><span class="test-case__e">"configuration only" (data orphaned) or "configuration + data" (type-to-confirm, cascade, irreversible)</span></div>
+              <div class="test-case"><span class="test-case__k">Test Connection — 3 steps</span><span class="test-case__e">URL reachable → credentials valid → permissions sufficient; separate errors, a scheduled probe's failure → health <code>error</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 16.98h-5.99c-1.1 0-1.95.94-2.48 1.9A4 4 0 0 1 2 17c.01-.7.2-1.4.57-2" /><path d="m6 17 3.13-5.78c.53-.97.1-2.18-.5-3.1a4 4 0 1 1 6.89-4.06" /><path d="m12 6 3.13 5.73C15.66 12.7 16.9 13 18 13a4 4 0 0 1 0 8" /></svg></span><span class="name">test_webhook_security.py</span></div>
+            <div class="test-card__sub">Channel authenticity, freshness, anti-replay</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="security.html#webhooks">→ Webhooks</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">authenticity</span><span class="test-case__e">HMAC over the body (GitHub / Slack), a static token in the header (GitLab), fallback — a secret endpoint</span></div>
+              <div class="test-case"><span class="test-case__k">verifier by provider</span><span class="test-case__e">parametrization of the pluggable verifier across 4 providers, including Atlassian (JWT Connect apps); the core runs a single order of <code>freshness → signature → dedup</code></span></div>
+              <div class="test-case"><span class="test-case__k">unverified → reject</span><span class="test-case__e">a forged signature / token → the call is rejected</span></div>
+              <div class="test-case"><span class="test-case__k">timestamp freshness</span><span class="test-case__e">where there's a timestamp (Slack, GitLab) — a call older than the 5 min window is discarded before the signature; for a source with no timestamp (GitHub, Atlassian) the step is skipped, anti-replay is carried entirely by dedup (a larger window TTL — 24 h)</span></div>
+              <div class="test-case"><span class="test-case__k">anti-replay</span><span class="test-case__e">by timestamp (Slack) / delivery-id (GitHub) — a repeat is discarded (TTL memory in Redis)</span></div>
+              <div class="test-case"><span class="test-case__k">TLS only</span><span class="test-case__e">the channel is terminated by the reverse proxy over TLS</span></div>
+              <div class="test-case"><span class="test-case__k">spike → notification</span><span class="test-case__e">rejections to the log; a spike → a Security-type notification</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14" /><path d="M5 2h14" /><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" /><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" /></svg></span><span class="name">test_rate_limit.py</span></div>
+            <div class="test-card__sub">Adaptive per-scope rate, provider signals, cost-units</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="security.html#rate-limiting">→ Rate limiting</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">starting rate feels out the limit</span><span class="test-case__e">start from the manifest's rate; on calm responses AIMD ramp-up of +10% per window — the rate feels out the real limit upward, not only backing off on <code>429</code></span></div>
+              <div class="test-case"><span class="test-case__k">provider signal beats AIMD</span><span class="test-case__e"><code>Retry-After</code> — a hard pause over the whole scope, overrides the adaptive rate; respected by all workers</span></div>
+              <div class="test-case"><span class="test-case__k">pre-emption by Remaining</span><span class="test-case__e"><code>X-RateLimit-Remaining</code> low → slow down early: <code>safe_rps = Remaining / (Reset − now)</code>, take the <code>min</code> with the AIMD rate</span></div>
+              <div class="test-case"><span class="test-case__k">accounting by cost</span><span class="test-case__e">the limiter charges cost-units, not a request count; how many units a request costs is declared by the connector (1 by default)</span></div>
+              <div class="test-case"><span class="test-case__k">key by rate_limit_scope</span><span class="test-case__e">the limiter key is built from the manifest's <code>rate_limit_scope</code> (tenant / account_token / workspace_method / site); two sources on one token share a budget</span></div>
+              <div class="test-case"><span class="test-case__k">rate outlives runs</span><span class="test-case__e">the learned API capacity isn't reset between runs — it lives in Redis with a TTL in hours, outlives a worker restart</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10h2" /><path d="M16 14h2" /><path d="M6.17 15a3 3 0 0 1 5.66 0" /><circle cx="9" cy="11" r="2" /><rect x="2" y="5" width="20" height="14" rx="2" /></svg></span><span class="name">test_acl_identity.py</span></div>
+            <div class="test-card__sub">ACL in source terms, identity by email</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="acl-identity.html#acl">→ Access rights</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">ACL in source terms</span><span class="test-case__e">project / space / channel are kept without mapping onto platform levels</span></div>
+              <div class="test-case"><span class="test-case__k">two-sided capture</span><span class="test-case__e">the group tag on an entity + group membership</span></div>
+              <div class="test-case"><span class="test-case__k">full import of people</span><span class="test-case__e">on source connection people are imported in full; incremental picks up new ones</span></div>
+              <div class="test-case"><span class="test-case__k">identity by exact email</span><span class="test-case__e">merging people into an identity by an email match; non-matching ones → manual review in Admin, Harvester doesn't guess</span></div>
+              <div class="test-case"><span class="test-case__k">bridge to users on upsert</span><span class="test-case__e">an identity upsert with an existing users of the same <code>lower(email)</code> → <code>identity.user_id</code> is set; no users → <code>NULL</code></span></div>
+              <div class="test-case"><span class="test-case__k">fuzzy merge — not here</span><span class="test-case__e">different emails → different identities; "the same person under different emails" Harvester doesn't stitch — deep resolution is owned by Knowledge Store</span></div>
+              <div class="test-case"><span class="test-case__k">rights sync</span><span class="test-case__e">there's no separate mechanism: Incremental in a targeted way, Reconciliation via a full pass</span></div>
+              <div class="test-case"><span class="test-case__k">revocation is eventually consistent</span><span class="test-case__e">what's revoked is visible until the next incremental / resync / reconciliation — an accepted trade-off</span></div>
+              <div class="test-case"><span class="test-case__k">enforcement — owned by Query Engine</span><span class="test-case__e">the pre-filter on results isn't here; Harvester only stores the ACL</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P1 ═══ Secrets, DB control layer, scope, scheduling. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">Integration · P1</span>
+        <span class="test-sec__title">Secrets, DB control layer, scope, scheduling</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="16" r="1" /><rect x="3" y="10" width="18" height="12" rx="2" /><path d="M7 10V7a5 5 0 0 1 10 0v3" /></svg></span><span class="name">test_secrets.py</span></div>
+            <div class="test-card__sub">Credential at-rest: encryption, on-demand decryption, masking</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="sources.html#secrets">→ Secrets</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">encryption at-rest</span><span class="test-case__e"><code>credential_enc</code> / <code>webhook_secret_enc</code> are stored encrypted with AES-256-GCM — not a hash, reversibility is needed</span></div>
+              <div class="test-case"><span class="test-case__k">via the Auth crypto core</span><span class="test-case__e">Harvester keeps no secret store of its own; encryption / decryption — by calling the Auth &amp; Security crypto core</span></div>
+              <div class="test-case"><span class="test-case__k">on-demand decryption</span><span class="test-case__e">the plaintext secret is restored only at the moment of a request to the source, not held at rest</span></div>
+              <div class="test-case"><span class="test-case__k">outward — mask only</span><span class="test-case__e">a mask goes to the API / export / log; the plaintext value doesn't leak</span></div>
+              <div class="test-case"><span class="test-case__k">Disconnect clears the secret</span><span class="test-case__e"><code>credential_enc</code> is nulled, the source's data and config intact</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5V19A9 3 0 0 0 21 19V5" /><path d="M3 12A9 3 0 0 0 21 12" /></svg></span><span class="name">test_data_model.py</span></div>
+            <div class="test-card__sub">Control layer: cascades, constraints, derived fields</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#operational">→ Control layer</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">cascade from the source</span><span class="test-case__e">DELETE <code>sources</code> → <code>sync_runs</code> and <code>dead_letters</code> go via <code>ON DELETE CASCADE</code></span></div>
+              <div class="test-case"><span class="test-case__k"><code>run_id</code> → SET NULL</span><span class="test-case__e">clearing the run journal nulls <code>dead_letters.run_id</code>, the queue row lives on — a different <code>ondelete</code>, easy to mix up</span></div>
+              <div class="test-case"><span class="test-case__k">CHECK fields</span><span class="test-case__e">an invalid value for an enumerable column under CHECK (<code>state</code>, <code>mode</code>, <code>trigger</code>, <code>scope_mode</code>, <code>reason</code>, <code>auth_method</code>, <code>last_probe_status</code>, …) is rejected by the DB</span></div>
+              <div class="test-case"><span class="test-case__k">open set of types</span><span class="test-case__e">there's no CHECK on <code>connector_type</code> — the manifest validates it, not the DB</span></div>
+              <div class="test-case"><span class="test-case__k">health is derived</span><span class="test-case__e">in the DB only <code>state</code>; <code>idle</code> / <code>syncing</code> / <code>error</code> are derived from the run + probe, not stored as a column</span></div>
+              <div class="test-case"><span class="test-case__k">run type is derived</span><span class="test-case__e">partial_resync / dlq_retry — a triple (<code>mode</code> + <code>trigger</code> + scope), no separate column</span></div>
+              <div class="test-case"><span class="test-case__k">defaults and trigger</span><span class="test-case__e"><code>scope_list</code> <code>[]</code>, <code>content_filters</code> <code>{}</code>, <code>error_count</code> 0, <code>attempts</code> 1; <code>created_at</code> / <code>updated_at</code> server_default + trigger</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" /></svg></span><span class="name">test_scope.py</span></div>
+            <div class="test-card__sub">Fetch mode: allow / deny, a policy, not a snapshot</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="sources.html#allowlist">→ Source scope</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">two modes</span><span class="test-case__e">"Everything" (deny-list, new objects picked up automatically) / "Selected only" (allow-list, new ones stay outside)</span></div>
+              <div class="test-case"><span class="test-case__k">a policy, not a snapshot</span><span class="test-case__e">scope is reconciled against the source catalog on every sync, not fixed once</span></div>
+              <div class="test-case"><span class="test-case__k">catalog after Test Connection</span><span class="test-case__e">the object list is built after step 2 (credentials accepted)</span></div>
+              <div class="test-case"><span class="test-case__k">listing right</span><span class="test-case__e">the account needs to list the whole instance even under a narrowed fetch</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></svg></span><span class="name">test_scheduling.py</span></div>
+            <div class="test-card__sub">Scheduling, inheritance, fan-out, watchdog</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="sync-modes.html#scheduling">→ Scheduling</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">schedule resolution</span><span class="test-case__e">per-source <code>sync_interval</code> / <code>reconcile_interval</code> = NULL → inherits the global default; set → follows its own</span></div>
+              <div class="test-case"><span class="test-case__k">reconciliation on schedule</span><span class="test-case__e">a daily / weekly reconciliation run is launched by the scheduler, not by hand</span></div>
+              <div class="test-case"><span class="test-case__k">health check on schedule</span><span class="test-case__e">a lightweight probe (Test Connection steps 1–2) between syncs; failure → health <code>error</code> + notification</span></div>
+              <div class="test-case"><span class="test-case__k">watchdog on a timer</span><span class="test-case__e">silence &gt; 12 h → the watchdog raises a partial_resync itself, no human</span></div>
+              <div class="test-case"><span class="test-case__k">"sync everything" = fan-out</span><span class="test-case__e">launching all per-source at once; independent sources run in <code>running</code> in parallel — a partial index on <code>source_id</code>, not a global one</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ API ═══ HTTP contract of the source-management endpoints. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">API · P1</span>
+        <span class="test-sec__title">Source endpoints — HTTP contract</span>
+        <span class="test-sec__meta">httpx · ASGI app · DB · fake connector · <a href="../../api/index.html#surface-map" class="xref-badge">→ HTTP API</a> · <a href="../../api/_workzone/tests.html#conformance" class="xref-badge">→ Conformance</a></span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg></span><span class="name">test_api_sources.py</span></div>
+            <div class="test-card__sub">Create, read, edit a source over HTTP</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="sources.html#source-model">→ Source model</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">create</span><span class="test-case__e">a valid form → <code>201</code> + a body with the id; followed by an auto Full Sync (<code>trigger=connect</code>)</span></div>
+              <div class="test-case"><span class="test-case__k">form from the manifest</span><span class="test-case__e">fields and credential kinds are validated against the connector's manifest; an extra / foreign field → <code>422 VALIDATION_ERROR</code></span></div>
+              <div class="test-case"><span class="test-case__k">CHECK surfaces as 4xx</span><span class="test-case__e">an invalid <code>auth_method</code> / <code>scope_mode</code>, an empty <code>name</code> → <code>422</code>, not <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">type outside the registry</span><span class="test-case__e">an unknown <code>connector_type</code> → <code>422</code> (checked against the registry, not a DB enum)</span></div>
+              <div class="test-case"><span class="test-case__k">read</span><span class="test-case__e">list and detail → <code>state</code> + derived health + last run; entity count from Knowledge Store</span></div>
+              <div class="test-case"><span class="test-case__k">secret mask</span><span class="test-case__e">GET / list return the credential and webhook masked; the plaintext value — only in the create response</span></div>
+              <div class="test-case"><span class="test-case__k">edit config</span><span class="test-case__e">PATCH partial; a credential change → re-encryption, a new mask outward, not the value</span></div>
+              <div class="test-case"><span class="test-case__k">no resource</span><span class="test-case__e">a nonexistent id → <code>404 NOT_FOUND</code></span></div>
+              <div class="test-case"><span class="test-case__k">health — a light probe</span><span class="test-case__e">GET <code>/health</code> → <code>state</code> + computed health (<code>idle</code> / <code>syncing</code> / <code>error</code>) + <code>last_probe_status</code>, without the full source detail — a cheap endpoint for frequent polling</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg></span><span class="name">test_api_lifecycle.py</span></div>
+            <div class="test-card__sub">Lifecycle actions and the run lock</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="sources.html#lifecycle">→ Source lifecycle</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">Pause / Resume</span><span class="test-case__e">→ <code>state</code> <code>paused</code> / <code>active</code>; a repeat is idempotent, not an error</span></div>
+              <div class="test-case"><span class="test-case__k">Disconnect / Reconnect</span><span class="test-case__e">Disconnect → <code>disconnected</code>, the secret mask empties; Reconnect re-enters credentials without setting up again</span></div>
+              <div class="test-case"><span class="test-case__k">deletion — configuration only</span><span class="test-case__e">→ <code>204</code>, data orphaned in Knowledge Store</span></div>
+              <div class="test-case"><span class="test-case__k">deletion — configuration + data</span><span class="test-case__e">requires type-to-confirm in the body, otherwise <code>422</code>; the response marks the irreversible cascade</span></div>
+              <div class="test-case"><span class="test-case__k">Cancel</span><span class="test-case__e">→ <code>202</code>, the run goes to <code>cancelled</code> at the nearest checkpoint</span></div>
+              <div class="test-case"><span class="test-case__k">single-flight lock</span><span class="test-case__e">under <code>syncing</code>, edit / pause / disconnect / delete / re-run → <code>409 CONFLICT</code>; only Cancel passes</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5" /><path d="M15 8V2" /><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" /><path d="M9 8V2" /></svg></span><span class="name">test_api_test_connection.py</span></div>
+            <div class="test-card__sub">Connection probe and object catalog</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="sources.html#test-connection">→ Test Connection</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">draft and existing</span><span class="test-case__e">a probe on a config from the wizard and by source id → <code>200</code> with a step-by-step result</span></div>
+              <div class="test-case"><span class="test-case__k">3 steps separately</span><span class="test-case__e">URL unreachable / credentials invalid / too few permissions → distinct machine codes per step, not a generic <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">step 2 failed</span><span class="test-case__e">step 3 in the response is marked "not checked"</span></div>
+              <div class="test-case"><span class="test-case__k">catalog after step 2</span><span class="test-case__e">GET of the object catalog is available only after successful credentials; before — <code>409</code> / empty</span></div>
+              <div class="test-case"><span class="test-case__k">the scheduled probe shares the contract</span><span class="test-case__e">the background health check writes <code>last_probe_status</code> (<code>ok</code> / <code>unreachable</code> / <code>auth_failed</code>) and drops health to <code>error</code> — the same logic as the manual one</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" /></svg></span><span class="name">test_api_sync.py</span></div>
+            <div class="test-card__sub">Launching runs, fan-out, reading the journal and DLQ</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="sync-modes.html#per-source">→ Per-source independence</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">manual launch</span><span class="test-case__e"><code>mode</code> + <code>scope</code> in the body → <code>202</code> + run id; a <code>sync_run</code> created (<code>trigger=manual</code>, <code>queued</code>), a task in SAQ</span></div>
+              <div class="test-case"><span class="test-case__k">launch under the lock</span><span class="test-case__e">the source is already <code>syncing</code> → <code>409 CONFLICT</code> (single-flight)</span></div>
+              <div class="test-case"><span class="test-case__k">sync everything</span><span class="test-case__e">→ <code>202</code> as a fan-out: only Active start; Paused / Disconnected / already-syncing are marked skipped; nothing to launch → an empty fan-out</span></div>
+              <div class="test-case"><span class="test-case__k">dlq_retry</span><span class="test-case__e"><code>scope</code> = specific <code>dead_letters</code>, not a <code>since</code> window; processed ones leave the DLQ</span></div>
+              <div class="test-case"><span class="test-case__k">run history</span><span class="test-case__e">GET of the <code>sync_runs</code> journal with progress and outcome; <code>succeeded</code> with <code>error_count &gt; 0</code> is returned distinctly from <code>failed</code></span></div>
+              <div class="test-case"><span class="test-case__k">DLQ view</span><span class="test-case__e">GET → <code>COUNT</code> + grouping by <code>reason</code></span></div>
+              <div class="test-case"><span class="test-case__k">auto modes closed outward</span><span class="test-case__e">a manual <code>reconciliation</code> / <code>partial_resync</code> isn't exposed → <code>404</code> / <code>405</code></span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ API P1 ═══ Endpoint authorization and public intake. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">API · P1</span>
+        <span class="test-sec__title">Endpoint access control</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg></span><span class="name">test_api_access.py</span></div>
+            <div class="test-card__sub">Roles, authentication, masking — on every route</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge" href="../../auth-security/_workzone/authorization.html#roles-permissions">→ Auth &amp; Security</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">Owner / Admin</span><span class="test-case__e">source management → <code>2xx</code></span></div>
+              <div class="test-case"><span class="test-case__k">Member</span><span class="test-case__e">any source endpoint → <code>403 FORBIDDEN</code></span></div>
+              <div class="test-case"><span class="test-case__k">anonymous</span><span class="test-case__e">no token → <code>401 UNAUTHORIZED</code> (parametrized across all routes)</span></div>
+              <div class="test-case"><span class="test-case__k">expired token</span><span class="test-case__e">an access JWT older than 15 min → <code>401</code></span></div>
+              <div class="test-case"><span class="test-case__k">no "bare" routes</span><span class="test-case__e">every write endpoint actually sits behind <code>require(permission)</code> — a parametrized audit of guard coverage</span></div>
+              <div class="test-case"><span class="test-case__k">API key — read only</span><span class="test-case__e">a read-only key on a write operation → rejected; never wider than the owner's rights</span></div>
+              <div class="test-case"><span class="test-case__k">webhook outside the session</span><span class="test-case__e">public intake — a signed channel, not JWT; its contract is held by <code>test_webhook_security</code></span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Manual ═══ Live free-tier sources — outside CI, manual debugging. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Manual</span>
+        <span class="test-sec__title">Live free-tier sources — outside CI</span>
+        <span class="test-sec__meta">manual debugging · source of truth for fixtures</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          Free tiers of real SaaS with seeded sample data. The purpose — manual
+          debugging of a new connector live: the API's actual behavior, response
+          shapes, and the quirks of pagination and permissions that a mock can't
+          reproduce are all visible. They're unstable, require tokens and a
+          network — not part of the automated run; they serve as the source of
+          truth when recording HTTP fixtures (tokens are scrubbed on record).
+        </p>
+        <div class="test-stack-row">
+          <span class="test-stack-row__lbl">Atlassian</span>
+          <span
+            >Atlassian Cloud free — Jira + Confluence via
+            <code>atlassian-python-api</code>; the real permission model and
+            pagination</span
+          >
+        </div>
+        <div class="test-stack-row">
+          <span class="test-stack-row__lbl">Slack</span>
+          <span
+            >a free workspace via <code>slack-sdk</code> — channels, threads,
+            rate-limit live</span
+          >
+        </div>
+        <div class="test-stack-row">
+          <span class="test-stack-row__lbl">GitLab</span>
+          <span
+            ><code>gitlab.com</code> + a seeded project via
+            <code>python-gitlab</code> — issues, MRs, wiki</span
+          >
+        </div>
+      </div>
+
+      <!-- ═══ Structure ═══ Test catalog: the level is set by purpose,
+           priority by markers, not folders. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Structure</span>
+        <span class="test-sec__title">Test file structure</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          The split is set not by folders but by purpose. <code>unit/</code>,
+          <code>contract/</code>, and <code>replay/</code> are part of <code>make test</code>
+          and run on every PR (deterministically). <code>integration/</code> and
+          <code>api/</code> — as a separate, rarer step: the first on Docker
+          images, the second on a running app and DB. Live sources remain a
+          manual debugging tool and don't enter the automated run. Priority
+          (P0–P1) is orthogonal to the catalogs and is set by markers
+          (<code>pytest -m p0</code>).
+        </p>
+        <div class="test-tree">
+          <ul>
+            <li>
+              <span class="test-tree__row"><code>tests/harvester/</code><span class="d">module catalog</span></span>
+              <ul>
+                <li><span class="test-tree__row"><code>conftest.py</code><span class="d">HTTP fixtures VCR.py · WireMock · RawItem/Entity factories · SAQ directly</span></span></li>
+                <li>
+                  <span class="test-tree__row"><code>unit/</code><span class="d">pipeline on synthetic RawItems</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_transform.py · test_load.py</code><span class="d">transformation steps, idempotency</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>contract/</code><span class="d">HTTP fixtures — the unified connector interface</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_connector_contract.py · test_manifest_registry.py</code><span class="d">fetch/normalize, manifest/registry</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>replay/</code><span class="d">end-to-end E→T→L on cassettes, by source type</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_pipeline_replay.py</code><span class="d">full pipeline offline, entity golden reference</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>integration/</code><span class="d">Docker images + DB</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_pipeline_e2e.py</code><span class="d">end-to-end E→T→L</span></span></li>
+                    <li><span class="test-tree__row"><code>reliability · sync-modes · source-lifecycle · webhook-security · rate-limit · acl-identity</code><span class="d">reliability, modes, lifecycle, channel, rate, ACL</span></span></li>
+                    <li><span class="test-tree__row"><code>secrets · data-model · scope · scheduling</code><span class="d">secrets at-rest, cascades/constraints, fetch, scheduling</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>api/</code><span class="d">HTTP contract of the endpoints — httpx + ASGI + DB, fake connector</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_api_sources · _lifecycle · _test_connection · _sync</code><span class="d">CRUD, actions, probe, launch</span></span></li>
+                    <li><span class="test-tree__row"><code>test_api_access.py</code><span class="d">roles, authentication, masking on every route</span></span></li>
+                  </ul>
+                </li>
+                <li><span class="test-tree__row"><code>manual/</code><span class="d">outside CI — live free-tier sources</span></span></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

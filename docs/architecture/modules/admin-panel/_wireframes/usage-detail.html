@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: AI usage — employee</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">AI usage — employee</h1>
+        <div class="header__sub">
+          admin panel · wireframes · ai
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="The screen renders inside the shell's content area">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Screen loading — a skeleton">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">One employee's spend for the period: the two line items attributable to a person — <strong>agents</strong> (by agent) and <strong>chat</strong> (by model), each against its own weekly cap. Opened by clicking a row in the <a href="usage.html#by-user" class="xref-page">AI usage</a> list. Cost in dollars, a daily trend and export — <span class="iter v2">v2</span>.</p>
+
+      <!-- ═══ Employee detail ═══ -->
+      <div class="section" id="detail">
+        <div class="section__title">Employee detail</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">employee · this week</div>
+          <div class="wf-screen">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/usage/42
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/usage/:user · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-row wf-spread">
+                  <span class="wf-idcell"><span class="wf-title">Dmitry Sokolov</span><span class="wf-idcell__email">dmitry@company.com</span></span>
+                  <span class="wf-filter wf-filter--on">Period · this week <span class="wf-filter__caret">▾</span></span>
+                </div>
+
+                <div class="wf-row">
+                  <div class="wf-stat">
+                    <span class="wf-stat__num">1.20M <span class="wf-stat__cap">/ 2M</span></span>
+                    <span class="wf-stat__label">Agents · tokens this week <span class="wf-annot">1</span></span>
+                    <div class="wf-gauge"><div class="wf-gauge__fill" style="width: 60%"></div></div>
+                    <span class="wf-stat__sub">60% of cap · blocking · all agents</span>
+                  </div>
+                  <div class="wf-stat">
+                    <span class="wf-stat__num">340k <span class="wf-stat__cap">/ 500k</span></span>
+                    <span class="wf-stat__label">Chat · tokens this week <span class="wf-annot">2</span></span>
+                    <div class="wf-gauge wf-gauge--soft"><div class="wf-gauge__fill" style="width: 68%"></div></div>
+                    <span class="wf-stat__sub">68% of reference · non-blocking</span>
+                  </div>
+                  <div class="wf-stat wf-stat--muted">
+                    <span class="wf-stat__num">1.54M</span>
+                    <span class="wf-stat__label">Total</span>
+                    <span class="wf-stat__sub">agents + chat</span>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <div class="wf-stack wf-stack--tight">
+                  <span class="wf-label">Agents · by agent <span class="wf-annot">3</span></span>
+                  <table class="wf-table">
+                    <thead>
+                      <tr><th>Agent</th><th>Model</th><th>Runs</th><th>Tokens</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td><a href="agent-card.html" class="wf-userlink">Release digest</a></td>
+                        <td>Claude Sonnet</td>
+                        <td>28</td>
+                        <td>820k</td>
+                      </tr>
+                      <tr>
+                        <td><a href="agent-card.html" class="wf-userlink">Incident summary</a></td>
+                        <td>GPT-4o</td>
+                        <td>14</td>
+                        <td>380k</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="wf-stack wf-stack--tight">
+                  <span class="wf-label">Chat · by model <span class="wf-annot">4</span></span>
+                  <table class="wf-table">
+                    <thead>
+                      <tr><th>Model</th><th>Messages</th><th>Tokens</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>GPT-4o</td>
+                        <td>168</td>
+                        <td>250k</td>
+                      </tr>
+                      <tr>
+                        <td>Claude Sonnet</td>
+                        <td>42</td>
+                        <td>90k</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <div class="wf-row">
+                  <div class="wf-stat wf-stat--muted">
+                    <span class="wf-stat__num">—</span>
+                    <span class="wf-stat__label">Cost <span class="iter v2">v2</span></span>
+                    <span class="wf-stat__sub">input/output price by model</span>
+                  </div>
+                  <div class="wf-stat wf-stat--muted">
+                    <span class="wf-stat__num">—</span>
+                    <span class="wf-stat__label">Daily trend <span class="iter v2">v2</span></span>
+                    <span class="wf-stat__sub">spend chart for the period</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Agents against the weekly cap — a blocking one: past it, runs wait for the week to reset.
+              <a href="../../agent-engine/_workzone/governance.html#budget" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Chat against the <a href="usage.html#limits" class="xref-page">reference cap</a> — an "used against the limit" indicator that does not block requests (v1).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              The agent breakdown is <strong>by agent</strong>, not by model: the run journal
+              (<a href="../../agent-engine/_workzone/data-model.html#agent-runs" class="xref-module"><code>agent_runs.tokens_used</code></a>)
+              does not store the model per run, so the "Model" column shows the agent's current model; a precise by-model breakdown of agents — <span class="iter v2">v2</span>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              The chat breakdown is <strong>by model</strong>: each reply records the model
+              (<a href="../../query-engine/_workzone/data-model.html#messages" class="xref-module"><code>messages.model</code></a>) and tokens
+              (<code>messages.tokens_used</code>), so the breakdown is exact.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              Cost in dollars, a daily trend and export — <span class="iter v2">v2</span>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

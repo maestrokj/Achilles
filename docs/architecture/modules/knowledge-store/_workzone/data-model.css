@@ -1,0 +1,160 @@
+/* Knowledge Store — data-model workzone diagrams.
+   Page-bespoke pieces: the projection fan-out (ks-proj — one entity radiating
+   into relational body · vector chunks · graph edges on one Postgres base) and
+   the producer/keeper boundary with Harvester (dm-border). The DB-table matrix
+   (dm-tbl · dm-fields · dm-c · dm-badge) and the band accent (stk-layer--ks)
+   come from the module sheet ../knowledge-store.css; the bands themselves from
+   ../../layered-stack.css.
+   Static — no hover affordance (README §Hover).
+   Loaded by _workzone/data-model.html on top of ../../module.css
+   + ../knowledge-store.css + ../../layered-stack.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ════════════════ PROJECTION FAN-OUT ════════════════ one logical entity
+   radiating into three storage projections that share one Postgres base. */
+.ks-proj {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.1rem 0 0.4rem;
+}
+.ks-proj__src {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--accent);
+  padding: 0.4rem 1rem;
+  background: var(--tint-6);
+  border: 1.5px solid var(--accent-muted);
+  border-radius: var(--radius-md);
+}
+.ks-proj__src small {
+  font-family: var(--rubik, inherit);
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-left: 0.4rem;
+}
+.ks-proj__stem {
+  width: 1px;
+  height: 0.7rem;
+  background: var(--accent-muted);
+}
+.ks-proj__fan {
+  display: flex;
+  gap: 0.6rem;
+  width: 100%;
+}
+.ks-proj__col {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--dot);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.85rem;
+}
+.ks-proj__col--rel {
+  border-top-color: var(--s2);
+}
+.ks-proj__col--vec {
+  border-top-color: var(--accent);
+}
+.ks-proj__col--graph {
+  border-top-color: var(--s3);
+}
+.ks-proj__h {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  margin-bottom: 0.45rem;
+}
+.ks-proj__t {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.ks-proj__tbl {
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.ks-proj__d {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.ks-proj__base {
+  width: 100%;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-dim);
+  background: var(--paper);
+  border: 1px dashed var(--accent-muted);
+  border-radius: var(--tag-radius);
+  padding: 0.4rem 0.6rem;
+}
+
+/* ════════════════ PRODUCER / KEEPER BOUNDARY ════════════════ Harvester
+   produces the Entity contract · Knowledge Store realizes and keeps it. */
+.dm-border {
+  display: flex;
+  gap: 0.75rem;
+  margin: 0.9rem 0 0.3rem;
+}
+.dm-border__col {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1rem;
+}
+.dm-border__col--there {
+  border-left: 4px solid var(--s2);
+}
+.dm-border__col--here {
+  border-left: 4px solid var(--accent);
+  background: var(--tint-6);
+}
+.dm-border__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+.dm-border__who {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.dm-border__act {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.dm-border__col--here .dm-border__act {
+  color: var(--accent);
+}
+.dm-border__d {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+.dm-border__seam {
+  align-self: center;
+  font-size: 1rem;
+  color: var(--accent);
+}
+
+@media (max-width: 640px) {
+  .ks-proj__fan,
+  .dm-border {
+    flex-direction: column;
+  }
+}

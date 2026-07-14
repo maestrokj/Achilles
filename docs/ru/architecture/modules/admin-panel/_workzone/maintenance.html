@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Режим обслуживания</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Режим обслуживания</h1>
+        <div class="header__sub">admin panel · workzone</div>
+      </div>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ── Как режим включается и где живёт состояние ── -->
+          <div class="stk-layer stk-layer--config" id="maintenance">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Режим обслуживания</span>
+              <span class="stk-layer__role">плановые работы при живой платформе</span>
+            </div>
+            <div class="stk-layer__body">
+              <!-- Триггер и хранение: ручной тумблер, не автодеплой. -->
+              <div class="stk-dec" id="trigger">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Триггер — ручной, осознанный</span>
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_wireframes/platform-settings.html#integrations-maintenance"
+                    >→ Platform Settings</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Режим включает <b>только Owner</b> — тумблером в настройках
+                  платформы, с подтверждением. Состояние —
+                  <a class="xref-page" href="data-model.html#data-model"
+                    ><code>platform_settings.maintenance_mode</code></a
+                  >
+                  (<code>boolean</code>, singleton). Не часть деплоя:
+                  rolling-обновление бэкенда идёт без простоя. Тумблер — для
+                  редких работ с осознанным простоем (тяжёлая миграция БД,
+                  несовместимое изменение схемы); при включении <code>sync</code>
+                  и агенты ставятся на паузу.
+                </div>
+              </div>
+
+              <!-- Что видит пользователь: 503 + полный экран. -->
+              <div class="stk-dec" id="user-facing">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Для пользователей — полная заглушка</span>
+                  <a
+                    class="xref-badge"
+                    href="../../shared-ui/_wireframes/system-screens.html#maintenance"
+                    >→ System Screens</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  При включённом флаге бэкенд отвечает <code>HTTP 503</code> с
+                  <code>Retry-After</code> (недоступность временная, не «страница
+                  удалена»), фронтенд рендерит полноэкранную заглушку
+                  <a
+                    class="xref-module"
+                    href="../../shared-ui/_wireframes/system-screens.html#maintenance"
+                    >maintenance</a
+                  >. Выбран <b>полный экран</b>, а не read-only.
+                </div>
+              </div>
+
+              <!-- Админ не должен запереть сам себя. -->
+              <div class="stk-dec" id="admin-allowlist">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Доступ администратора в обход режима</span>
+                </div>
+                <div class="stk-dec__d">
+                  Owner и Admin при включённом режиме сохраняют доступ — иначе
+                  оператор запер бы сам себя и не смог проверить платформу перед
+                  снятием режима. Им <code>503</code> не отдаётся; обычные
+                  пользователи видят заглушку.
+                </div>
+              </div>
+
+              <!-- За рамками первой итерации: жёсткий режим на уровне прокси. -->
+              <div class="stk-dec stk-dec--wide" id="hard-mode">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Жёсткий режим — на уровне прокси</span
+                  ><span class="iter v2">v2</span>
+                </div>
+                <div class="stk-dec__d">
+                  Тумблер выше работает, пока живо приложение. Если простаивает
+                  сам бэкенд (перезапуск, обновление контейнера), флаг недоступен
+                  вместе с ним — статичную заглушку тогда отдаёт reverse proxy
+                  (Nginx). Это отдельный «жёсткий» режим на уровне
+                  инфраструктуры; в первой итерации не реализуется.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

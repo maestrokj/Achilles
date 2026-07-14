@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Email</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="email.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← Back to architecture</a>
+        <h1 class="header__title">Email</h1>
+        <div class="header__sub">cross-cutting backend service · mail delivery</div>
+      </div>
+
+      <!-- ═══ Description ═══ Transport, not a notification system: what the
+           module IS (delivering transactional email) and what it is NOT
+           (multi-channel notifications — a separate v2 system on top). -->
+      <div class="desc">
+        <p>
+          The platform's post office: the single place that knows how to
+          <b>compose an email and send it over SMTP</b>. Modules don't know
+          about the mail server — they hand it “send an invite to so-and-so”,
+          and the transport takes the settings, renders the template, and
+          delivers.
+        </p>
+      </div>
+
+      <!-- ═══ Architecture ═══ A “production line”: consumers gather into the
+           Email service (compose|send), it forks into two delivery modes
+           (inline / queue) and merges back into SMTP → inbox. Below — a service
+           bus: singleton smtp_settings + three satellite modules (Auth, Admin,
+           Broker). Home of cross-links to config and the crypto core — here and
+           in delivery.html. -->
+      <div class="section">
+        <h2 class="section__title">Architecture</h2>
+        <div class="eml-flow">
+          <span class="eml-flow__cap">Production line — left to right</span>
+          <div class="eml-flow__line">
+            <!-- input: stack of consumers -->
+            <div class="eml-in">
+              <div class="eml-in__lbl">consumers</div>
+              <div class="eml-req"><b>Invitation</b><code>invite</code></div>
+              <div class="eml-req"><b>Password reset</b><code>reset</code></div>
+              <div class="eml-req"><b>Test</b><code>test</code></div>
+              <div class="eml-req eml-req--v2">
+                <b>Security alerts<span class="eml-v2">v2</span></b><code>alerts</code>
+              </div>
+            </div>
+
+            <!-- gather onto the bus → core -->
+            <div class="eml-join"><i></i></div>
+
+            <!-- core + fork -->
+            <div class="eml-rail">
+              <div class="eml-core">
+                <div class="eml-core__name"><span class="eml-core__glyph"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" /></svg></span>Email</div>
+                <div class="eml-core__role">The platform's post office</div>
+                <div class="eml-cams">
+                  <div class="eml-cam"><b>compose</b><span>template + language → MIME</span></div>
+                  <div class="eml-cam"><b>send</b><span>delivery over SMTP</span></div>
+                </div>
+                <div class="eml-core__helpers">send_invite · send_password_reset · send_test</div>
+              </div>
+
+              <div class="eml-fork">
+                <div class="eml-branch">
+                  <span class="eml-branch__stub"></span><i class="t"></i><i class="b"></i>
+                </div>
+
+                <div class="eml-tracks">
+                  <div class="eml-track eml-track--inline">
+                    <div class="eml-track__top">
+                      <span class="eml-track__name">Inline</span>
+                      <span class="eml-track__sync">synchronous · in-request</span>
+                    </div>
+                    <div class="eml-track__for"><b>test</b> only</div>
+                    <div class="eml-chips">
+                      <span class="eml-chip">timeout</span>
+                      <span class="eml-chip">verdict right away</span>
+                    </div>
+                    <div class="eml-track__note">
+                      writes <code>last_test_ok</code> / <code>last_test_at</code>
+                    </div>
+                  </div>
+                  <div class="eml-track eml-track--queue">
+                    <div class="eml-track__top">
+                      <span class="eml-track__name">Queue · SAQ</span>
+                      <span class="eml-track__sync">asynchronous · background</span>
+                    </div>
+                    <div class="eml-track__for"><b>invite · reset · bulk</b></div>
+                    <div class="eml-chips">
+                      <span class="eml-chip">retries · backoff</span>
+                      <span class="eml-chip">throttling</span>
+                      <span class="eml-chip">idempotency · job_id</span>
+                    </div>
+                    <div class="eml-track__note">the consumer responds instantly</div>
+                  </div>
+                </div>
+
+                <div class="eml-merge">
+                  <i class="t"></i><i class="b"></i><i class="out"></i>
+                </div>
+
+                <div class="eml-sink">
+                  <div class="eml-smtp"><b>SMTP</b><span>aiosmtplib</span></div>
+                  <span class="eml-sink__to">→</span>
+                  <div class="eml-mbox"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" /></svg><small>inbox</small></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- service bus -->
+          <div class="eml-bus">
+            <div class="eml-sat eml-sat--cfg">
+              <div class="eml-sat__name"><code>smtp_settings</code></div>
+              <div class="eml-sat__role">
+                singleton in core, secret as ciphertext. Password —
+                <a class="xref-module" href="../auth-security/_workzone/protection.html#crypto-core">AES-256-GCM</a>;
+                transport readiness — the
+                <a class="xref-page" href="_workzone/data-model.html#availability">is_available()</a> predicate.
+                <a class="xref-page" href="_workzone/data-model.html#data-model">Data model</a>.
+              </div>
+            </div>
+            <div class="eml-sat">
+              <div class="eml-sat__name">
+                <a class="xref-module" href="../auth-security/_workzone/protection.html#crypto-core">Auth&nbsp;/&nbsp;Security</a>
+              </div>
+              <div class="eml-sat__role">
+                the crypto core decrypts the password at <code>send</code> time; it also owns the flow mechanics.
+              </div>
+            </div>
+            <div class="eml-sat">
+              <div class="eml-sat__name">
+                <a class="xref-module" href="../admin-panel/_wireframes/platform-settings.html#smtp">Admin&nbsp;Panel</a>
+              </div>
+              <div class="eml-sat__role">
+                the SMTP settings screen and the “Test connection” button — triggers inline.
+              </div>
+            </div>
+            <div class="eml-sat">
+              <div class="eml-sat__name">
+                <a class="xref-module" href="../cache-workers/_workzone/queues.html#worker">Cache &amp; Workers</a>
+              </div>
+              <div class="eml-sat__role">
+                the platform's shared worker (<code>SAQ</code> over Redis) runs the queue.
+              </div>
+            </div>
+          </div>
+
+          <!-- stack -->
+          <div class="eml-foot">
+            <span class="eml-foot__lbl">stack</span>
+            <span class="eml-stk">aiosmtplib</span>
+            <span class="eml-stk">SAQ</span>
+            <span class="eml-stk">Jinja2</span>
+            <span class="eml-stk">email / MIME</span>
+            <span class="eml-stk">Pydantic Settings</span>
+            <span class="eml-stk">Mailpit · dev</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Workzone ═══ -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Design</span>
+        </div>
+        <p class="workzone-hint">
+          Detailed module design decisions.
+        </p>
+
+        <div class="wz-nav">
+          <a class="wz-link" href="_workzone/delivery.html">
+            <span>Delivery and service</span>
+          </a>
+          <a class="wz-link" href="_workzone/data-model.html">
+            <span>Data model</span>
+          </a>
+          <a class="wz-link" href="_workzone/templates.html">
+            <span>Email templates</span>
+          </a>
+          <a class="wz-link" href="_workzone/stack.html">
+            <span>Stack and structure</span>
+          </a>
+          <a class="wz-link" href="_workzone/tests.html">
+            <span>Test cases</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

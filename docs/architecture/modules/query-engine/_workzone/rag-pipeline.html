@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Query Engine: RAG route</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="rag-pipeline.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Query Engine</a>
+        <h1 class="header__title">RAG route</h1>
+        <div class="header__sub">query-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        The core of <strong>grounding mode</strong>: how a question turns into a
+        grounded answer once the model decides to search. RAG here is a
+        <strong>route</strong>: having called <code>search_knowledge</code>, the
+        model sends the query down through five steps —
+        <a href="#route" class="xref-anchor">Embed → Retrieve → Rerank → Augment →
+        Generate</a>. The decision to call the tool and the self-contained query
+        itself belong to the model
+        (<a href="conversation.html#route" class="xref-page">decision to
+        search</a>); the route's area of responsibility is reranking, context
+        packing, and grounding generation; embedding the query and the search
+        itself belong to
+        <a href="../../knowledge-store/_workzone/hybrid-search.html#boundary" class="xref-module"
+          >Knowledge Store</a
+        >. Which model does which work is on the
+        <a href="#models" class="xref-anchor">model map</a>; where a single round
+        of tools ends and the agent loop begins is at the
+        <a href="#agent-boundary" class="xref-anchor">boundary</a>.
+      </p>
+
+      <!-- ════════════════ ROUTE ════════════════ embed → retrieve → rerank
+           → augment → generate. The route is the body of the search_knowledge
+           tool: the model has already decided to search and formulated a
+           self-contained query. -->
+      <div class="section" id="route">
+        <div class="section__title">Search route: the query descends through five layers</div>
+        <p class="desc">
+          The route is the <strong>body of the <code>search_knowledge</code>
+          tool</strong>: it runs when the model has decided to search and passed a
+          <a href="conversation.html#multi-turn" class="xref-page">self-contained
+          query</a>. One pass top to bottom: steps 1–2 (embed · retrieve) are
+          executed by Knowledge Store, steps 3–5 (rerank · augment · generate) by
+          Query Engine. At the entrance is a cache gate: a repeat identical search
+          by the same identity returns candidates from cache, bypassing the
+          expensive embed/retrieve. The boundary between the two sides runs along a
+          layer, not between sections: the same stack shows where storage returns
+          candidates and where RAG refines them.
+        </p>
+
+        <div class="stk-stage stk-stage--solo">
+          <div class="stk-stack">
+            <!-- ════════ CACHE GATE ════════ at the tool entrance: a hit returns
+                 cached candidates, a miss falls into the expensive embed/retrieve. -->
+            <div class="rp-cache" id="cache">
+              <div class="rp-cache__gate">
+                <span class="rp-cache__d">◇</span>
+                <span class="rp-cache__q">Exact cache?</span>
+                <span class="rp-cache__key"
+                  >key = self-contained query + identity</span
+                >
+              </div>
+              <div class="rp-cache__branches">
+                <div class="rp-cache__branch rp-cache__branch--hit">
+                  <span class="rp-cache__cond">hit</span>
+                  <span class="rp-cache__arr">──▶</span>
+                  <span class="rp-cache__res">candidates from cache · bypassing
+                    embed + retrieve</span>
+                </div>
+                <div class="rp-cache__branch rp-cache__branch--miss">
+                  <span class="rp-cache__cond">miss</span>
+                  <span class="rp-cache__arr">▼</span>
+                  <span class="rp-cache__res">the route continues</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mod-conn">
+              <div class="mod-conn__line"></div>
+              <div class="mod-conn__arrow"></div>
+            </div>
+
+            <!-- ════════ 1 · EMBED ════════ -->
+            <div class="stk-layer stk-layer--ks" id="embed">
+              <div class="stk-layer__bar">
+                <span class="stk-layer__n">1</span>
+                <span class="stk-layer__name">Embed</span>
+                <span class="rp-side">Knowledge Store</span>
+                <span class="stk-layer__role">Query → vector.</span>
+              </div>
+              <div class="stk-layer__body">
+                <div class="stk-dec stk-dec--full">
+                  <div class="stk-dec__h">
+                    <span class="stk-dec__t">Query embedding</span>
+                  </div>
+                  <div class="stk-dec__d">
+                    The self-contained query is turned into a vector by the same
+                    embedding model that built the index —
+                    the
+                    <a
+                      href="../../knowledge-store/_workzone/embedding-runtime.html#contention"
+                      class="xref-module"
+                      >shared platform embedder</a
+                    >
+                    (Harvester / KS), not a Query Engine setting. The step is
+                    executed by Knowledge Store; Query Engine only passes the text
+                    and the user's identity. The search mechanics are held by
+                    <a href="retrieval.html#boundary" class="xref-page"
+                      >retrieval · boundary</a
+                    >.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mod-conn">
+              <div class="mod-conn__line"></div>
+              <div class="mod-conn__arrow"></div>
+            </div>
+
+            <!-- ════════ 2 · RETRIEVE ════════ -->
+            <div class="stk-layer stk-layer--ks" id="retrieve">
+              <div class="stk-layer__bar">
+                <span class="stk-layer__n">2</span>
+                <span class="stk-layer__name">Retrieve</span>
+                <span class="rp-side">Knowledge Store</span>
+                <span class="stk-layer__role"
+                  >An assembled hybrid result under access rights.</span
+                >
+              </div>
+              <div class="stk-layer__body">
+                <div class="stk-dec stk-dec--full">
+                  <div class="stk-dec__h">
+                    <span class="stk-dec__t">One call — fused candidates</span>
+                  </div>
+                  <div class="stk-dec__d">
+                    Query Engine takes a ready
+                    <a href="../../knowledge-store/_workzone/hybrid-search.html#boundary" class="xref-module"
+                      >hybrid result</a
+                    >
+                    from Knowledge Store in a single query: four search
+                    primitives, their fusion (RRF), and the ACL pre-filter — all
+                    inside KS, under the user's identity. Query Engine neither
+                    builds nor sees the rights scheme — identity is the input,
+                    candidates under rights are the output. Mapping the identity to
+                    source accounts is held by
+                    <a href="retrieval.html#identity" class="xref-page"
+                      >retrieval · identity</a
+                    >.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mod-conn">
+              <div class="mod-conn__line"></div>
+              <div class="mod-conn__arrow"></div>
+            </div>
+
+            <!-- ════════ 3 · RERANK ════════ -->
+            <div class="stk-layer stk-layer--qe" id="rerank-step">
+              <div class="stk-layer__bar">
+                <span class="stk-layer__n">3</span>
+                <span class="stk-layer__name">Rerank</span>
+                <span class="rp-side rp-side--qe">Query Engine</span>
+                <span class="stk-layer__role"
+                  >Reorder candidates against the question.</span
+                >
+              </div>
+              <div class="stk-layer__body">
+                <div class="stk-dec stk-dec--full">
+                  <div class="stk-dec__h">
+                    <span class="stk-dec__t">Order from KS, no model</span>
+                  </div>
+                  <div class="stk-dec__d">
+                    In v1, reranking relies on the RRF order already assembled by
+                    Knowledge Store — there is no separate model. A cross-encoder
+                    reranker, re-scoring the top-N as “query × candidate” pairs, is
+                    a separate <span class="iter v2">v2</span> step; covered on the
+                    <a href="#rerank" class="xref-anchor">rerank map</a>.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mod-conn">
+              <div class="mod-conn__line"></div>
+              <div class="mod-conn__arrow"></div>
+            </div>
+
+            <!-- ════════ 4 · AUGMENT ════════ -->
+            <div class="stk-layer stk-layer--qe" id="augment">
+              <div class="stk-layer__bar">
+                <span class="stk-layer__n">4</span>
+                <span class="stk-layer__name">Augment</span>
+                <span class="rp-side rp-side--qe">Query Engine</span>
+                <span class="stk-layer__role">Packing context for the model.</span>
+              </div>
+              <div class="stk-layer__body">
+                <div class="stk-dec stk-dec--full">
+                  <div class="stk-dec__h">
+                    <span class="stk-dec__t">Prompt assembly</span>
+                  </div>
+                  <div class="stk-dec__d">
+                    The selected candidates are packed into the model's context:
+                    <ul class="stk-dec__list">
+                      <li>
+                        <strong>The best fragment as evidence</strong> — one most
+                        telling fragment per entity, not all of its material: a
+                        trade of completeness for source diversity.
+                      </li>
+                      <li>
+                        <strong>Cut-off under the shared window budget</strong> —
+                        fragments are laid out from more to less important and
+                        trimmed not against the whole window but against the
+                        remainder left by history: the room is shared by the
+                        <a href="conversation.html#context-budget" class="xref-page"
+                          >context-window budget</a>, keeping the reserve for the
+                        answer.
+                      </li>
+                      <li>
+                        <strong>Source markup for citation</strong> — each fragment
+                        gets an origin marker so the answer can cite it.
+                      </li>
+                      <li>
+                        <strong>Augment does not duplicate history</strong> — the
+                        model already holds it in the window as the driving turn,
+                        so only the found fragments go into the packing, not a
+                        second copy of history. Follow-up coherence (“expand the
+                        previous point”) comes from that same history in the
+                        window; the answer's evidentiary base is only what was
+                        found.
+                      </li>
+                    </ul>
+                    Above it all sits the
+                    <a href="../../admin-panel/_wireframes/ai-behavior.html#composition" class="xref-module">platform prompt</a> —
+                    the shared layer of security and organization rules that Admin
+                    sets once per instance; then come the found fragments. Here too
+                    the grounding rule is fixed — answer only from the embedded
+                    context; the wording of the honest “not found” is held by
+                    <a href="grounding.html#grounding" class="xref-page"
+                      >grounding</a
+                    >. The found content is untrusted input: fragments are supplied
+                    as data, not as instructions to the model; hardened protection
+                    against prompt injection is <span class="iter v2">v2</span>.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mod-conn">
+              <div class="mod-conn__line"></div>
+              <div class="mod-conn__arrow"></div>
+            </div>
+
+            <!-- ════════ 5 · GENERATE ════════ -->
+            <div class="stk-layer stk-layer--qe" id="generate">
+              <div class="stk-layer__bar">
+                <span class="stk-layer__n">5</span>
+                <span class="stk-layer__name">Generate</span>
+                <span class="ai-tag" title="This stage uses a neural network — model inference"
+                  ><span class="ai-tag__icon"></span>AI</span
+                >
+                <span class="rp-side rp-side--qe">Query Engine</span>
+                <span class="stk-layer__role">Builds the answer on what was found — the same chat model.</span>
+              </div>
+              <div class="stk-layer__body">
+                <div class="stk-dec stk-dec--full">
+                  <div class="stk-dec__h">
+                    <span class="stk-dec__t">Grounding generation</span>
+                  </div>
+                  <div class="stk-dec__d">
+                    The packed context is returned to <em>the same chat model that
+                    called the tool</em> — the one the user picked in the chat and
+                    that drives the conversation, not a separate platform model. It
+                    builds the answer strictly on what was found and streams it
+                    synchronously, citing the sources. The per-step model layout is
+                    held by the
+                    <a href="#models" class="xref-anchor">model map</a>.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rp-seam">
+          <div class="rp-seam__col rp-seam__col--ks">
+            <span class="rp-seam__who">Knowledge Store</span>
+            <span class="rp-seam__act">steps 1–2 · embed + retrieve</span>
+          </div>
+          <div class="rp-seam__arrow">▸</div>
+          <div class="rp-seam__col rp-seam__col--qe">
+            <span class="rp-seam__who">Query Engine</span>
+            <span class="rp-seam__act">steps 3–5 · rerank + augment + generate</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ════════════════ MODELS ════════════════ who uses which model: chat
+           (drives the turn + generate) · embedding · reranker. -->
+      <div class="section" id="models">
+        <div class="section__title">Model map: who works with what</div>
+
+        <div class="rp-models">
+          <div class="rp-model rp-model--chat" id="admin-row">
+            <div class="rp-model__h">
+              <span class="rp-model__step">drives the turn + generate</span>
+              <span class="ai-tag" title="This stage uses a neural network — model inference"
+                ><span class="ai-tag__icon"></span>AI</span
+              >
+            </div>
+            <div class="rp-model__name">The selected chat model</div>
+            <p class="rp-model__d">
+              <strong>The model the user picked in the chat</strong> drives the
+              whole turn: it decides whether to call <code>search_knowledge</code>,
+              formulates the self-contained query, and builds the answer on what
+              was found. Not a separate platform “RAG model” and not a service
+              router. Assigned in
+              <a href="../../admin-panel/_wireframes/ai-models.html#model-assignment" class="xref-module"
+                >admin · AI models</a
+              >.
+            </p>
+          </div>
+          <div class="rp-model rp-model--embed">
+            <div class="rp-model__h">
+              <span class="rp-model__step">embed</span>
+              <span class="ai-tag" title="This stage uses a neural network — model inference"
+                ><span class="ai-tag__icon"></span>AI</span
+              >
+            </div>
+            <div class="rp-model__name">The shared embedder</div>
+            <p class="rp-model__d">
+              Query embedding — by the same platform embedder that built the index
+              (Harvester / KS). Otherwise the query vector and the chunk vectors
+              are incomparable.
+            </p>
+          </div>
+          <div class="rp-model rp-model--rerank">
+            <div class="rp-model__h">
+              <span class="rp-model__step">rerank</span>
+              <span class="iter v2">v2</span>
+            </div>
+            <div class="rp-model__name">v1 — no model</div>
+            <p class="rp-model__d">
+              In v1, reranking is the RRF order from Knowledge Store, without
+              inference. A cross-encoder reranker as a model is
+              <span class="iter v2">v2</span>.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ RERANK ════════════════ v1 RRF · v2 cross-encoder. -->
+      <div class="section" id="rerank">
+        <div class="section__title">Rerank: RRF now, cross-encoder later</div>
+        <p class="desc">
+          Reranking decides which of the candidates make it into the context and in
+          what order. A fork by iterations, not by alternatives — v2 builds on top
+          of v1 rather than replacing it.
+        </p>
+        <div class="rp-rerank">
+          <div class="rp-rerank__col rp-rerank__col--v1">
+            <div class="rp-rerank__h">
+              <span class="rp-rerank__t">RRF from KS</span>
+            </div>
+            <p class="rp-rerank__d">
+              The order is taken straight from the assembled hybrid result:
+              Knowledge Store has already fused the primitive lists by reciprocal
+              rank fusion. Query Engine packs the candidates in the order they
+              arrived.
+            </p>
+          </div>
+          <div class="rp-rerank__col rp-rerank__col--v2">
+            <div class="rp-rerank__h">
+              <span class="rp-rerank__t">Cross-encoder reranker</span>
+              <span class="iter v2">v2</span>
+            </div>
+            <p class="rp-rerank__d">
+              A separate model re-scores the top-N candidates as “query × candidate”
+              pairs — more precise than RRF, because it sees the query and the text
+              together rather than summing positions.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ BOUNDARY WITH AGENT ENGINE ════════════════ one
+           optional search call without a loop vs an agent loop with planning. -->
+      <div class="section" id="agent-boundary">
+        <div class="section__title">Boundary: one round of tools, agents go further</div>
+        <p class="desc">
+          The boundary is not whether the model has tools, but whether there is
+          <strong>a loop</strong>. Query Engine's chat model gets <strong>one
+          round of tools per turn</strong>: it may call several in parallel (say
+          <code>search_knowledge</code> + <code>web_search</code>), receive the
+          results, and must answer. There is no loop — a round is not followed by a
+          second round based on the results of the first. This keeps the answer
+          predictable and separates a conversational turn from a full agent. The
+          tool-calling under both is the shared
+          <a href="../../agent-engine/_workzone/harness.html" class="xref-module"
+            >harness</a>: the boundary below is its parameterization — one round
+          versus a loop.
+        </p>
+
+        <div class="rp-bound">
+          <div class="rp-bound__col rp-bound__col--here">
+            <div class="rp-bound__head">
+              <span class="rp-bound__who">Query Engine</span>
+              <span class="rp-bound__act">one round of tools</span>
+            </div>
+            <p class="rp-bound__d">
+              Per turn the model does one round: it calls zero, one, or several
+              tools at once (KB + web search), receives the results, and builds the
+              answer. Without planning and without a second round based on the
+              results of the first.
+            </p>
+          </div>
+          <div class="rp-bound__seam">▸</div>
+          <div class="rp-bound__col rp-bound__col--there">
+            <div class="rp-bound__head">
+              <span class="rp-bound__who">Agent Engine</span>
+              <span class="rp-bound__act">the agent loop</span>
+            </div>
+            <p class="rp-bound__d">
+              Multi-step, tool-using reasoning — search loops, choosing a tool from
+              a set, planning — belongs to
+              <a class="xref-badge" href="../../agent-engine/_workzone/runtime.html#loop"
+                >→ Agent Engine</a
+              >, which calls the Knowledge Store primitives
+              <strong>directly</strong>, bypassing Query Engine.
+            </p>
+          </div>
+        </div>
+
+        <p class="note">
+          <span class="iter v2">v2</span> — <strong>multi-round agent
+          chat</strong>: the model plans and takes several rounds within the
+          conversation itself, reading further based on the results of the previous
+          one. A layer on top of the single round, not an access boundary.
+        </p>
+
+        <p class="note">
+          <span class="iter v2">v2</span> exception to the single call: on low
+          confidence in the candidates, Query Engine makes a bounded
+          (<strong>N=1</strong>) repeat search before answering “not found” — one
+          attempt to rephrase and re-ask, not a full agent loop. The “not found”
+          answer itself and its honesty are held by
+          <a href="grounding.html#grounding" class="xref-page">grounding</a>.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

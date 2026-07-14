@@ -1,0 +1,458 @@
+/* Test pages kit (test-*) — the per-module "tests" workzone page.
+   Two reading surfaces: the legacy .test-table and the scannable .test-*
+   card grid (one card per test file, grouped by layer Unit / Integration
+   P0–P2 / Frontend). Reuses module.css .decision-box / .iter and the
+   shared --s1..--s4 scale.
+   Loaded by each module's tests.html on top of module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ═══════════════════════════════════════════
+   Legacy table
+   ═══════════════════════════════════════════ */
+.test-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin-top: 0.5rem;
+}
+
+.test-table th {
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 0.5rem 0.7rem;
+  border-bottom: 2px solid var(--border);
+}
+
+.test-table td {
+  padding: 0.55rem 0.7rem;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  line-height: 1.45;
+  vertical-align: top;
+}
+
+.test-table tr:last-child td {
+  border-bottom: none;
+}
+
+.test-table td:first-child {
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.test-table code {
+  font-size: 0.75rem;
+  background: var(--surface);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.priority-badge {
+  display: inline-flex;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.45rem;
+  border-radius: var(--pill-radius);
+  color: #fff;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+.priority-badge--p0 {
+  background: var(--s1);
+}
+
+.priority-badge--p1 {
+  background: var(--s2);
+}
+
+.priority-badge--p2 {
+  background: var(--accent-muted);
+}
+
+.test-group {
+  margin-bottom: 2rem;
+}
+
+.test-group:last-child {
+  margin-bottom: 0;
+}
+
+.test-group__label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.03em;
+  margin-bottom: 0.5rem;
+}
+
+.test-group .section {
+  padding: 1rem 1.2rem;
+  background: var(--tint-4);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  margin-bottom: 0.6rem;
+}
+
+.test-group .section:last-child {
+  margin-bottom: 0;
+}
+
+.test-divider {
+  border: none;
+  border-top: 2px dashed var(--accent-muted);
+  margin: 2.5rem 0 1.5rem;
+}
+
+.test-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ═══════════════════════════════════════════
+   Card grid
+   The scannable alternative to .test-table — one card per test file,
+   grouped by layer. No new tokens: the --s1..--s4 scale carries
+   layer/priority color.
+   ═══════════════════════════════════════════ */
+
+/* Inline code — the card-grid areas re-tune the module-wide chip
+   (module.css .page code): em-based size, --s1 accent */
+.test-overview code,
+.test-grid code,
+.test-struct code {
+  font-size: 0.82em;
+  background: var(--tint-8);
+  padding: 0.08em 0.34em;
+  border-radius: 4px;
+  color: var(--s1);
+}
+
+/* ── Overview band — decisions + stack side by side ── */
+.test-overview {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.test-panel {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.2rem;
+  box-shadow: var(--card-shadow);
+}
+
+.test-panel__title {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.85rem;
+}
+
+/* Tighten reused .decision-box when nested in a panel */
+.test-panel .decision-box {
+  font-size: 0.84rem;
+  margin-bottom: 0.6rem;
+}
+.test-panel .decision-box:last-child {
+  margin-bottom: 0;
+}
+.test-panel .decision-box strong {
+  display: block;
+  margin-bottom: 0.12rem;
+}
+
+.test-stack-row {
+  display: flex;
+  gap: 0.55rem;
+  align-items: baseline;
+  font-size: 0.84rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px dashed var(--border);
+  color: var(--text-dim);
+}
+.test-stack-row:last-child {
+  border-bottom: none;
+}
+.test-stack-row__lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 92px;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* ── Section head — layer/priority band over each card grid ── */
+.test-sec {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 2rem 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border);
+}
+.test-sec__badge {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.28rem 0.6rem;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  white-space: nowrap;
+}
+.test-sec__badge--unit {
+  background: var(--s3);
+}
+.test-sec__badge--p0 {
+  background: var(--s1);
+}
+.test-sec__badge--p1 {
+  background: var(--s2);
+}
+.test-sec__badge--p2 {
+  background: var(--accent-muted);
+}
+.test-sec__badge--fe {
+  background: var(--s4);
+}
+.test-sec__badge--struct {
+  background: var(--text-dim);
+}
+.test-sec__badge--v2 {
+  background: var(--text-muted);
+}
+.test-sec__title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.test-sec__meta {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* ── Cards ── */
+.test-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.test-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-left: var(--border-w) solid var(--test-prio, var(--accent));
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+.test-card--unit {
+  --test-prio: var(--s3);
+}
+.test-card--p0 {
+  --test-prio: var(--s1);
+}
+.test-card--p1 {
+  --test-prio: var(--s2);
+}
+.test-card--p2 {
+  --test-prio: var(--accent-muted);
+}
+.test-card--fe {
+  --test-prio: var(--s4);
+}
+
+.test-card__head {
+  padding: 0.8rem 0.95rem 0.7rem;
+}
+.test-card__file {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.93rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.test-card__file .ico {
+  font-size: 1rem;
+}
+.test-card__file .name {
+  word-break: break-all;
+}
+.test-card__sub {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin: 0.3rem 0 0.55rem;
+}
+.test-card__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+/* ── In-card chips — type / priority / count ── */
+.test-tag {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.45rem;
+  border-radius: var(--pill-radius);
+  border: 1px solid var(--border);
+  background: var(--tint-8);
+  color: var(--text-dim);
+}
+.test-tag--p0 {
+  color: var(--s1);
+  border-color: var(--s1);
+}
+.test-tag--p1 {
+  color: var(--s2);
+  border-color: var(--s2);
+}
+.test-tag--p2 {
+  color: var(--accent-muted);
+  border-color: var(--accent-muted);
+}
+
+/* ── Collapsible case list — the second reading level ── */
+.test-cases {
+  border-top: 1px dashed var(--border);
+}
+.test-cases > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.95rem;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  user-select: none;
+}
+.test-cases > summary::before {
+  content: "▸";
+  color: var(--test-prio, var(--accent));
+  transition: transform 0.15s;
+}
+.test-cases[open] > summary::before {
+  transform: rotate(90deg);
+}
+.test-cases > summary:hover {
+  color: var(--text-dim);
+}
+.test-case-list {
+  padding: 0 0.95rem 0.85rem;
+}
+.test-case {
+  display: grid;
+  grid-template-columns: minmax(0, auto) 1fr;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px dashed var(--border);
+  font-size: 0.8rem;
+}
+.test-case:last-child {
+  border-bottom: none;
+}
+.test-case__k {
+  font-weight: 600;
+  color: var(--text);
+}
+.test-case__e {
+  color: var(--text-dim);
+}
+
+/* ── Structure footer — 3-column file map ── */
+.test-struct {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-left: var(--border-w) solid var(--text-dim);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.2rem;
+  box-shadow: var(--card-shadow);
+}
+.test-struct__lead {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text-dim);
+  margin-bottom: 1.1rem;
+}
+.test-tree {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+}
+.test-tree ul {
+  list-style: none;
+}
+.test-tree > ul + ul {
+  margin-top: 0.7rem;
+}
+.test-tree ul ul {
+  margin-left: 0.55rem;
+  padding-left: 0.95rem;
+  border-left: 1px solid var(--border);
+}
+.test-tree__row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.2rem 0;
+}
+.test-tree__row code {
+  white-space: nowrap;
+  color: var(--text);
+}
+.test-tree__row .d {
+  color: var(--text-muted);
+  font-size: 0.92em;
+}
+
+@media (max-width: 880px) {
+  .test-overview {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Deep-link flash — a linked test section (e.g. #conformance) highlights on
+   navigation, same cue as .section:target. Keyframes live in module.css. */
+.test-sec:target {
+  border-radius: var(--radius-md);
+  animation: target-highlight 2.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .test-sec:target {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+}

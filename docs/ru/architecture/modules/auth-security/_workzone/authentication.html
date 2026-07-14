@@ -1,0 +1,1145 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Аутентификация</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="authentication.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Аутентификация</h1>
+        <div class="header__sub">auth / security · workzone</div>
+      </div>
+
+      <div class="stk-stage">
+        <div class="stk-stack">
+          <!-- ════════ L1 · КАНАЛЫ ВХОДА ════════ -->
+          <div class="stk-layer stk-layer--chan" id="entry-channels">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Каналы входа</span>
+              <span class="stk-layer__role">Через какой канал выполняется вход.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2" /><line x1="8" x2="16" y1="21" y2="21" /><line x1="12" x2="12" y1="17" y2="21" /></svg> Web UI</span>
+                </div>
+                <div class="stk-dec__d">
+                  <a href="../../admin-panel/index.html" class="xref-module">Admin Panel</a>
+                  и <a href="../../web-app/index.html" class="xref-module">Web App</a> · email + пароль →
+                  <a href="routing.html#entry-gate" class="xref-page"><code>/login</code></a>
+                  → JWT. <b>Единственный парольный вход.</b>
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><svg class="doc-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.165 0a2.528 2.528 0 0 1 2.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.165 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.165a2.528 2.528 0 0 1-2.522 2.523h-6.313z"/></svg> Slack</span>
+                  <a class="xref-badge" href="../../slack/index.html#identity">→ Slack</a>
+                </div>
+                <div class="stk-dec__d">
+                  Slack ID → <code>identity_mapping</code> (<code>source='slack'</code>) → user:
+                  авто-матч по email воркспейса или
+                  <a href="#messenger-link" class="xref-anchor">код-привязка</a>.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><svg class="doc-ico" viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg> Telegram</span>
+                  <a class="xref-badge" href="../../telegram/index.html#identity">→ Telegram</a>
+                </div>
+                <div class="stk-dec__d">
+                  Telegram ID → <code>identity_mapping</code> (<code>source='telegram'</code>) → user:
+                  только <a href="#messenger-link" class="xref-anchor">код-привязка</a> —
+                  email Telegram не отдаёт.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></svg> Mattermost</span>
+                  <a class="xref-badge" href="../../mattermost/index.html#identity">→ Mattermost</a>
+                </div>
+                <div class="stk-dec__d">
+                  Mattermost ID → <code>identity_mapping</code> (<code>source='mattermost'</code>) → user:
+                  только <a href="#messenger-link" class="xref-anchor">код-привязка</a> —
+                  email в событиях нет.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5" /><path d="M15 8V2" /><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" /><path d="M9 8V2" /></svg> MCP</span>
+                  <a class="xref-badge" href="../../mcp/index.html#auth">→ MCP</a>
+                </div>
+                <div class="stk-dec__d">
+                  <a class="xref-anchor" href="#api-keys">API-ключ</a> (headless) или
+                  OAuth (интерактивно, <span class="iter v2">v2</span>) →
+                  <code>user_id</code>.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z" /></svg> Browser Extension</span
+                  ><span class="iter v2">v2</span>
+                  <a class="xref-badge" href="../../extension/index.html"
+                    >→ Browser Extension</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  OAuth или токен, хранится в расширении.
+                </div>
+              </div>
+              <div class="stk-converge">
+                <b>Принцип:</b> каждый канал
+                аутентифицирует по-своему, но все сходятся
+                <span class="stk-arrow">→</span> один <code>user_id</code>
+                <span class="stk-arrow">→</span> роль
+                <span class="stk-arrow">→</span> ACL.
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ L2 · ИДЕНТИФИКАЦИЯ И РЕГИСТРАЦИЯ ════════ -->
+          <div class="stk-layer stk-layer--reg">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Идентификация и регистрация</span>
+              <span class="stk-layer__role"
+                >Откуда берётся user_id.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec" id="admission-model">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Модель admission — кто ручается</span>
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_features/user-onboarding/index.html"
+                    >→ Онбординг пользователей</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Как пользователь попадает в систему, определяет якорь доверия —
+                  кто за него ручается. Три якоря, по возрастанию масштаба:<br />
+                  · <b>админ</b> → приглашение
+                  (<a href="#invite-flow" class="xref-anchor">invite flow</a>),
+                  точечно или пачкой CSV — безопасный дефолт;<br />
+                  · <b>корпоративный IdP</b> →
+                  <a href="#sso-oidc" class="xref-anchor">SSO</a>,
+                  автопровижининг при входе — потолок масштаба,
+                  <span class="iter v2">v2</span>;<br />
+                  · <b>почта компании</b> → доменное самоприсоединение (любой с
+                  адресом домена), <span class="iter v2">v2</span>.<br />
+                  Решение: <b>пол — контроль</b> (invite, закрытый дефолт),
+                  <b>потолок — делегирование IdP</b> (SSO). Чтение базы знаний
+                  само по себе чувствительно, поэтому публичной саморегистрации
+                  нет; доменное самоприсоединение — не ступень между ними, а
+                  опция за явным тумблером (никогда не default-on, с
+                  предохранителями: подтверждённое владение доменом, очередь на
+                  одобрение, роль Member по умолчанию).
+                </div>
+              </div>
+              <div class="stk-dec" id="setup-wizard">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Setup Wizard — первый запуск</span>
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_wireframes/setup-wizard.html"
+                    >→ Мастер настройки</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  При 0 пользователей →
+                  <a href="routing.html#entry-gate" class="xref-page"><code>/setup</code></a>.
+                  Owner задаёт email + пароль. После создания <code>/setup</code>
+                  отдаёт 404.
+                  <details>
+                    <summary>защита от состояния гонки</summary>
+                    <div>
+                      Advisory lock на bootstrap — создание первого Owner. Один
+                      ключ закрывает оба входа (Setup Wizard и
+                      <code>init-owner</code>).
+                    </div>
+                  </details>
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">CLI init-owner</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>achilles init-owner --email … --password …</code>. Только
+                  при 0 пользователей. Для CI/CD.
+                  <details>
+                    <summary>защита от состояния гонки</summary>
+                    <div>
+                      Тот же путь bootstrap, что и Setup Wizard, — защищён тем же
+                      advisory lock.
+                    </div>
+                  </details>
+                </div>
+              </div>
+              <div class="stk-dec" id="invite-flow">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Invite flow</span>
+                  <a
+                    class="xref-badge"
+                    href="../../admin-panel/_wireframes/users.html#users-tabs"
+                    >→ Admin Panel</a
+                  >
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_wireframes/invite-accept.html"
+                    >→ Принятие приглашения</a
+                  >
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_features/user-onboarding/index.html"
+                    >→ Онбординг пользователей</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Owner / Admin создаёт приглашение (email + роль) → одноразовый
+                  invite-токен (<b>48 ч</b>) → ссылка уходит письмом через
+                  <a
+                    href="../../admin-panel/_wireframes/platform-settings.html#smtp"
+                    class="xref-module"
+                    >SMTP</a
+                  >
+                  → регистрация (имя + пароль). Письмо — единственный канал
+                  доставки, вручную ссылка не выдаётся — доставка и служит
+                  <a class="xref-anchor" href="#email-verification"
+                    >верификацией email</a
+                  >.<br />Роль Owner в приглашении назначает только Owner —
+                  Admin приглашает лишь Member (сервер отвечает
+                  <code>403 FORBIDDEN</code>).<br />Пока SMTP не настроен,
+                  приглашение не создать: UI блокирует кнопку, сервер дублирует
+                  guard — <code>409 SMTP_NOT_CONFIGURED</code>.<br />Массовая
+                  выдача (CSV) — пачка одноразовых токенов той же механики;
+                  доставку ведёт транспорт
+                  <a href="../../email/_workzone/delivery.html#throttling" class="xref-module">Email</a>
+                  (фоновая очередь, безопасный темп), импорт идемпотентен —
+                  повторная заливка того же списка не плодит приглашений. UI —
+                  <a href="../_features/user-onboarding/bulk-invite-preview.html" class="xref-page">массовый импорт</a>.
+                </div>
+              </div>
+              <div class="stk-dec" id="admin-reset">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Сброс администратором</span>
+                </div>
+                <div class="stk-dec__d">
+                  Owner сбрасывает Admin / Member, Admin — только Member, через
+                  <a
+                    href="../../admin-panel/_wireframes/user-card.html#user-card"
+                    class="xref-module"
+                    >Admin Panel</a
+                  >.<br/>Пароль самого Owner сбрасывает второй Owner, а если
+                  его нет — CLI на сервере
+                  (<code>achilles reset-password --email …</code>).
+                  <details>
+                    <summary>механизм</summary>
+                    <div>
+                      Основной путь — одноразовая reset-ссылка письмом
+                      (TTL <b>1 ч</b>, в БД — только хэш), общая машинерия с flow
+                      <a href="#forgot-password" class="xref-anchor">«забыл пароль»</a>;
+                      refresh-токены гасятся при установке нового пароля.<br />
+                      Фолбэк без настроенного SMTP — временный пароль (CSPRNG,
+                      показывается админу один раз), все refresh-токены гасятся
+                      сразу; сменить пароль пользователь может сам в профиле.<br />
+                      Принудительная смена временного пароля при первом входе
+                      — вход с временным паролём ведёт на
+                      <a href="../_features/forced-password-change/index.html" class="xref-page">экран принудительной смены</a>;
+                      доступ в приложение закрыт серверным гейтом до установки
+                      постоянного пароля. Флаг <code>must_change_password</code> и
+                      механика гейта —
+                      <a href="data-model.html#temp-password-gate" class="xref-page">модель данных</a>.
+                    </div>
+                  </details>
+                </div>
+              </div>
+              <div class="stk-dec" id="admin-email-change">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Смена email администратором</span>
+                </div>
+                <div class="stk-dec__d">
+                  Администратор меняет email сотрудника из
+                  <a
+                    href="../../admin-panel/_wireframes/user-card.html#user-card"
+                    class="xref-module"
+                    >карточки пользователя</a
+                  > — на доверии к роли, без письма-подтверждения. Новый адрес
+                  проходит <code>lower()</code>-нормализацию и проверку
+                  уникальности (адрес занят → <code>409 CONFLICT</code>). Все
+                  refresh-токены пользователя гасятся — он войдёт заново уже по
+                  новому адресу, а уже выданный access-токен доживает своё
+                  ≤15-минутное окно. Действие пишется в <code>audit_log</code>
+                  (action <code>user.email_change</code>, прежний → новый адрес
+                  в <code>meta</code>). Гейт — модалка-подтверждение
+                  (re-auth — <span class="iter v2">v2</span>). Смена email
+                  пересматривает identity mapping
+                  (<span class="iter v2">v2</span>).
+                </div>
+              </div>
+              <div class="stk-dec" id="forgot-password">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Сброс «забыл пароль»</span>
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_features/password-recovery/index.html"
+                    >→ Восстановление пароля</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Процедура через email. Одноразовый токен (<b>1 ч</b>);
+                  повторный запрос гасит прежний — активен только последний,
+                  а истёкший и использованный для клиента неотличимы.
+                  Refresh-токены гасятся при установке нового пароля. Требует
+                  настроенного SMTP — без него ссылки «забыли пароль?» на
+                  экране входа нет.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Защита последнего Owner</span>
+                </div>
+                <div class="stk-dec__d">
+                  Запрет удаления / деактивации / понижения единственного активного
+                  Owner. Guard на уровне бизнес-логики.
+                </div>
+              </div>
+              <div class="stk-dec" id="email-verification">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Верификация email</span
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Email Owner принимается на
+                  доверии; приглашённые верифицируются доставкой —
+                  invite-ссылка уходит только письмом на приглашённый адрес.
+                  Сам пользователь email не меняет — это логин-идентификатор.
+                  Смену email сотрудника
+                  выполняет администратор из карточки пользователя, на доверии
+                  к роли (без письма-подтверждения); refresh-токены гасятся,
+                  действие пишется в audit log.
+                </div>
+              </div>
+              <div class="stk-dec" id="messenger-link">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Привязка аккаунта мессенджера</span>
+                  <a class="xref-badge" href="../../slack/index.html#identity">→ Slack</a>
+                  <a class="xref-badge" href="../../telegram/index.html#identity">→ Telegram</a>
+                  <a class="xref-badge" href="../../mattermost/index.html#identity">→ Mattermost</a>
+                </div>
+                <div class="stk-dec__d">
+                  Бот-ассистент сводит пишущего к учётке через
+                  <a href="data-model.html#identity-mapping" class="xref-page"
+                    ><code>identity_mapping</code></a
+                  >
+                  (<code>source='slack'</code> · <code>'telegram'</code> · <code>'mattermost'</code>) — это личность
+                  <b>входа</b>, отдельная от контент-личности источника
+                  (<a href="../../knowledge-store/_workzone/acl-identity.html#identity" class="xref-module">Knowledge Store</a>).
+                  Общий путь — <b>код-привязка</b>: код рождается во вошедшей сессии веба,
+                  сотрудник возвращает его боту в DM, и привязывается <b>вернувший</b>
+                  аккаунт к <b>выдавшей</b> учётке (<a href="data-model.html#link-tokens" class="xref-page"><code>link_tokens</code></a>,
+                  одноразовый, 15 мин). У Slack возможен и авто-матч по provisioned-email
+                  воркспейса; Telegram и Mattermost email не отдают — там только код. Учётку заводит
+                  только админ — бот лишь связывается с существующей, само-регистрации нет.
+                </div>
+                <details>
+                  <summary>почему код возвращают боту, а не наоборот</summary>
+                  <div>
+                    Обе стороны должен доказать один человек: учётку — вход в веб, мессенджер —
+                    возврат кода в свой DM. Код виден только во вошедшем браузере, поэтому
+                    переслать чужую ссылку жертве (relay) бесполезно — направление
+                    браузер&nbsp;→&nbsp;бот закрывает угон. Авто-матч (только Slack) опирается на
+                    provisioned-почту воркспейса; где воркспейс разрешает самоправку email,
+                    админ выключает авто-матч — остаётся только код-привязка
+                    (<a href="../../admin-panel/_wireframes/platform-settings.html#slack" class="xref-module">настройки</a>).
+                  </div>
+                </details>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ L3 · ПРОВЕРКА ПАРОЛЯ ════════ -->
+          <div class="stk-layer stk-layer--pwd" id="login">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Проверка пароля</span>
+              <a
+                class="xref-badge xref-badge--page"
+                href="../_wireframes/login.html"
+                >→ Экран входа</a
+              >
+              <span class="stk-layer__role">Подтверждаем личность.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Email + пароль</span>
+                </div>
+                <div class="stk-dec__d">
+                  Хэширование —
+                  <a href="protection.html#crypto-core" class="xref-page"
+                    ><b>argon2id</b></a
+                  >, параметры стойкости заданы в крипто-ядре.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Модель User — готовность к SSO</span>
+                </div>
+                <div class="stk-dec__d">
+                  Схема готова к SSO с самого начала: пароль
+                  необязателен, провайдер входа в
+                  учётной записи — подключение Okta / Azure AD без миграции. Вход —
+                  сменная стратегия (local → IdP). Поля —
+                  <a href="data-model.html#data-model" class="xref-page"
+                    >модель данных</a
+                  >.
+                </div>
+              </div>
+              <div class="stk-dec" id="sso-oidc">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">SSO / OIDC</span
+                  ><span class="iter v2">v2</span>
+                </div>
+                <div class="stk-dec__d">
+                  SAML / OIDC (Okta, Azure AD, Google Workspace). Автопровижининг
+                  пользователей из IdP. Обмен редиректами с провайдером защищён от
+                  подделки входа
+                  <a href="protection.html#csrf" class="xref-page">CSRF</a>.
+                  <details>
+                    <summary>защита редиректа</summary>
+                    <div>
+                      <b>state</b> — случайная метка запроса, сверяется при
+                      возврате от IdP; не совпала — вход отклоняется.<br />
+                      <b>PKCE</b> — привязывает код авторизации к инициатору входа,
+                      чтобы перехваченный код нельзя было обменять (важно для
+                      браузерного расширения).<br />
+                      <b>nonce</b> — связывает выданный ID-токен с конкретным
+                      запросом входа.
+                    </div>
+                  </details>
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">MFA</span
+                  ><span class="iter v2">v2</span>
+                  <a
+                    class="xref-badge"
+                    href="../../admin-panel/_wireframes/platform-settings.html#session-auth"
+                    >→ Admin Panel</a
+                  >
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_features/mfa/index.html"
+                    >→ Двухфакторная аутентификация</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  TOTP, допуск ±1 шаг (±30 c) на дрейф часов. Принятый код
+                  одноразов: сервер хранит последний использованный шаг времени и
+                  отклоняет повтор кода в окне допуска (RFC 6238 §5.2).
+                  Обязательность — настройка организации: по умолчанию
+                  обязательно для Owner / Admin, опционально для Member. Recovery
+                  codes (одноразовые).
+                  <details>
+                    <summary>хранение секрета</summary>
+                    <div>
+                      <code>mfa_secret</code> хранится зашифрованным — шифр и
+                      работа с ключом в крипто-ядре.
+                    </div>
+                  </details>
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full" id="password-policy">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"
+                    ><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg> Парольная политика — NIST 800-63B</span
+                  >
+                  <a
+                    class="xref-badge"
+                    href="../../admin-panel/_wireframes/platform-settings.html#session-auth"
+                    >→ Admin Panel</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <b>Единый свод проверок</b> — источник правды для регистрации,
+                  invite, смены и сброса пароля. Все условия должны пройти:
+                  <div class="stk-rules">
+                    <div class="stk-rule">
+                      <code>8 ≤ len ≤ 128</code>
+                      <span
+                        ><b>Длина</b> — единственное ограничение размера</span
+                      >
+                    </div>
+                    <div class="stk-rule">
+                      <code>zxcvbn ≥ 3</code>
+                      <span
+                        ><b>Сложность</b> — оценка стойкости 0–4; ниже 3 —
+                        отклонить</span
+                      >
+                    </div>
+                    <div class="stk-rule">
+                      <code>не в HIBP</code>
+                      <span
+                        ><b>Утечки</b> — сверка по базе скомпрометированных
+                        паролей, k-anonymity (передаём только хэш-префикс).
+                        HIBP недоступен → проверка пропускается (<b>fail open</b>),
+                        длина и zxcvbn действуют, в журнал пишется
+                        <code>warning</code></span
+                      >
+                    </div>
+                  </div>
+                  <div class="stk-anti-row">
+                    <span class="stk-anti"
+                      ><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M4.929 4.929 19.07 19.071" /></svg> composition rules (обязат. цифра / символ)</span
+                    >
+                    <span class="stk-anti"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M4.929 4.929 19.07 19.071" /></svg> принудительная ротация</span>
+                  </div>
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full" id="change-password">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg> Смена пароля</span>
+                  <code>POST /api/v1/auth/password/change</code>
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_wireframes/profile-account.html"
+                    >→ Экран профиля</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Требует валидный access token.
+                  <div class="stk-flow">
+                    <code>current</code> + <code>new</code>
+                    <span class="stk-arrow">→</span> argon2 verify текущего
+                    <span class="stk-arrow">→</span> валидация нового по
+                    <a href="#password-policy" class="xref-anchor">своду проверок</a>
+                    <span class="stk-arrow">→</span> хэш
+                    <span class="stk-arrow">→</span> UPDATE user
+                    <span class="stk-arrow">→</span> инвалидация всех refresh
+                    tokens кроме текущей сессии.
+                  </div>
+                  <div class="stk-flow-note">
+                    <b>Новый ≠ текущий</b> — отклонение. <b>Аудит</b>: запись в audit
+                    log при успехе <b>и</b> неудаче. <b>Перебор:</b> неверный
+                    <code>current</code> учитывается per-account счётчиком
+                    <a href="protection.html#brute-force" class="xref-page"
+                      >рубежа перебора</a
+                    >
+                    (задержка + alert) — украденный access-токен не превращает
+                    endpoint в инструмент подбора пароля.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ L4 · ТОКЕН ════════ -->
+          <div class="stk-layer stk-layer--tok" id="tokens-sessions">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">4</span>
+              <span class="stk-layer__name">Токен</span>
+              <a
+                class="xref-badge"
+                href="../../admin-panel/_wireframes/platform-settings.html#session-auth"
+                >→ Admin Panel</a
+              >
+              <a class="xref-badge" href="../../cache-workers/_workzone/redis-keys.html#blacklist">→ Cache &amp; Workers</a>
+              <span class="stk-layer__role"
+                >Чем подтверждаем уже выполненный вход.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Access + Refresh tokens</span>
+                </div>
+                <div class="stk-dec__d">
+                  Access — stateless JWT, <b>15 мин</b>.<br/>Refresh — <b>30 дней</b>
+                  sliding, абсолютный потолок <b>90 дней</b>.
+                </div>
+              </div>
+              <div class="stk-dec" id="jwt-signing">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">JWT signing</span>
+                  <a class="xref-badge xref-badge--page" href="protection.html#crypto-core"
+                    >→ Крипто-ядро</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <b>HS256</b>, один <code>SECRET_KEY</code>; верификация с жёстко
+                  заданным <code>algorithms=["HS256"]</code> (защита от alg
+                  substitution).<br/>В header — <code>kid</code> на активный ключ:
+                  ключ сейчас один, но заложен сразу, чтобы будущая ротация не
+                  инвалидировала уже выданные токены.
+                </div>
+              </div>
+              <div class="stk-dec" id="jwt-claims">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">JWT claims</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>sub</code> (user_id) · <code>role</code> ·
+                  <code>exp</code> · <code>iat</code> · <code>jti</code>
+                  (логирование и отзыв) · <code>iss</code> ("achilles") ·
+                  <code>aud</code> ("achilles-api").
+                </div>
+                <details>
+                  <summary>свежесть claim'ов</summary>
+                  <div>
+                    <code>role</code> в токене — снимок на момент выпуска;
+                    понижение роли и деактивация действуют после обновления
+                    access-токена (общее 15-минутное окно stateless-модели).
+                    Критичные проверки (управление пользователями, настройки
+                    безопасности) читают роль и статус из БД, а не из claim.
+                  </div>
+                </details>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ L5 · СЕССИЯ ════════ -->
+          <div class="stk-layer stk-layer--sess">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">5</span>
+              <span class="stk-layer__name">Сессия</span>
+              <span class="stk-layer__role"
+                >Срок действия, обновление и хранение токена.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec" id="refresh-cookie">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Refresh — httpOnly cookie</span>
+                  <a class="xref-badge xref-badge--page" href="protection.html#csrf"
+                    >→ CSRF</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <div class="stk-pills">
+                    <span class="stk-pill">httpOnly</span>
+                    <span class="stk-pill">Secure</span>
+                    <span class="stk-pill">SameSite=Strict</span>
+                    <span class="stk-pill">Path=/api/v1/auth</span>
+                  </div>
+                  При реализации — префикс имени <code>__Secure-</code>
+                  (defense-in-depth: браузер примет cookie только при флаге
+                  Secure).<br />Path — <code>/api/v1/auth</code>, не точечный
+                  <code>/refresh</code>: cookie нужна и logout — по ней
+                  <a class="xref-anchor" href="#session-end">завершение сессии</a>
+                  опознаёт refresh-токен.
+                </div>
+              </div>
+              <div class="stk-dec" id="remember-me">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">«Запомнить меня»</span>
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_wireframes/login.html"
+                    >→ Вход</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Чекбокс управляет <b>временем жизни cookie, не токена</b>:
+                </div>
+                <ul class="stk-dec__d stk-dec__list">
+                  <li>
+                    <b>Снят</b> → session cookie (без Max-Age), удаляется при
+                    закрытии браузера (общие машины).
+                  </li>
+                  <li>
+                    <b>Установлен</b> → persistent cookie с Max-Age = TTL
+                    refresh-токена (30 д).
+                  </li>
+                </ul>
+                <div class="stk-dec__d">
+                  Refresh-токен в БД в обоих случаях действует по своему TTL.
+                </div>
+              </div>
+              <div class="stk-dec" id="refresh-rotation">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Refresh token rotation</span>
+                </div>
+                <div class="stk-dec__d">
+                  При каждом refresh — новый токен, старый инвалидируется.
+                  <b>Grace-период ~10 с</b>: только что ротированный токен в этом
+                  окне принимается повторно и возвращает тот же новый —
+                  доброкачественная гонка вкладок безвредна. Предъявление старого
+                  токена за пределами окна — reuse detection → аннулировать всю
+                  <b>цепочку (family)</b>, не все сессии пользователя.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Access token в SPA</span>
+                </div>
+                <div class="stk-dec__d">
+                  Хранится в памяти JS (<b>не</b> localStorage) — защита от XSS.
+                  Передача — <code>Authorization: Bearer</code>. При перезагрузке
+                  восстанавливается через <code>/refresh</code>.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--wide">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Refresh queue — concurrent 401</span>
+                </div>
+                <div class="stk-dec__d">
+                  Один общий <code>/refresh</code> на все запросы, упёршиеся в
+                  истёкший токен. Interceptor держит Promise текущего refresh
+                  (или null):
+                </div>
+                <ul class="stk-dec__d stk-dec__list">
+                  <li>401, а refresh уже идёт → ждём тот же Promise.</li>
+                  <li>401, refresh не идёт → запускаем его, сохраняем Promise.</li>
+                  <li>Успех → все ждавшие повторяют запрос с новым токеном.</li>
+                  <li>Провал → всех отклоняем, logout.</li>
+                </ul>
+                <div class="stk-dec__d"><b>Защиты:</b></div>
+                <ul class="stk-dec__d stk-dec__list">
+                  <li>
+                    Повтор ровно один раз — флаг <code>_retry</code> на запросе.
+                    401 на уже повторённом → сразу logout, без нового круга
+                    refresh (защита от зацикливания).
+                  </li>
+                  <li>
+                    Refresh запускает только 401 по истёкшему access token. 401 от
+                    самого <code>/refresh</code> → refresh-токен мёртв → logout без
+                    рекурсии; 401 по правам пропускается без refresh.
+                  </li>
+                  <li>
+                    Таймаут на Promise refresh — провисший запрос отклоняет всех
+                    ждущих и ведёт в logout, а не держит их бесконечно.
+                  </li>
+                  <li>
+                    Между вкладками одноразовый refresh-токен может уйти дважды.
+                    Гонку гасит grace-период ротации
+                    <a class="xref-anchor" href="#refresh-rotation"
+                      >↑ Refresh token rotation</a
+                    >: опоздавшая вкладка получает тот же новый токен и
+                    продолжает работу.
+                  </li>
+                </ul>
+              </div>
+              <div class="stk-dec stk-dec--wide" id="parallel-sessions">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Параллельные сессии</span>
+                </div>
+                <div class="stk-dec__d">
+                  <b>Сессия = одна
+                  <a href="data-model.html#session-identity" class="xref-page">token family</a></b>
+                  — один вход с устройства или браузера; активная сессия —
+                  family с живым refresh-токеном. Число параллельных сессий
+                  <b>не ограничено</b>; видимость и управление зависят от роли:
+                </div>
+                <ul class="stk-dec__d stk-dec__list">
+                  <li>
+                    <b>Пользователь — свои сессии, самозащита.</b> Видит все
+                    свои сессии и завершает любую, кроме текущей, — по одной или
+                    «все остальные» (защита при компрометации). Карточка несёт
+                    устройство, IP и последнюю активность (из
+                    <a href="data-model.html#session-identity" class="xref-page">refresh-токена</a>).
+                    Экран —
+                    <a href="../_wireframes/session-management.html" class="xref-page">управление сессиями</a>.
+                  </li>
+                  <li>
+                    <b>Админ — чужие сессии, без приватных деталей.</b>
+                    Устройство, IP и гео владельца админу не показываются (это
+                    приватные данные, для реагирования не нужны): в
+                    <a href="../../admin-panel/_wireframes/user-card.html#user-sessions" class="xref-module">карточке пользователя</a>
+                    только счётчик активных сессий и грубое «завершить все».
+                    Оно удаляет все refresh-токены — новые access не выдаются,
+                    уже выданный stateless access-JWT доживает своё 15-минутное
+                    окно (<a href="#jwt-claims" class="xref-anchor">↑ JWT claims</a>).
+                    Когда подозрительная сессия известна, а владелец нет, —
+                    пользователя называет
+                    <a href="../../admin-panel/_wireframes/audit-log.html#audit-log" class="xref-module">audit log</a>
+                    (auth-события несут session id), дальше — та же карточка.
+                  </li>
+                </ul>
+                <details class="stk-dec__d">
+                  <summary>что добавит <span class="iter v2">v2</span></summary>
+                  <div>
+                    <b>Лимит сессий</b> per-user (default 5, настраивается в
+                    <a href="../../admin-panel/_wireframes/platform-settings.html#session-auth" class="xref-module">Admin Panel</a>;
+                    при превышении самая старая завершается автоматически).<br />
+                    <b>Оповещение о входе</b> с нового устройства / гео — баннер
+                    в UI плюс письмо.<br />
+                    <b>Мгновенный отзыв</b> access-токена через jti-blacklist в
+                    Redis — без ожидания 15-минутного окна.
+                  </div>
+                </details>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Инвалидация при деактивации</span
+                  ><span class="iter v2">v2</span>
+                </div>
+                <div class="stk-dec__d">
+                  Отзыв refresh tokens + <code>jti</code> access token в Redis
+                  blacklist (TTL = lifetime access token).
+                </div>
+              </div>
+              <div class="stk-dec" id="re-auth">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Повторная аутентификация — sudo</span
+                  ><span class="iter v2">v2</span>
+                  <a class="xref-badge xref-badge--page" href="../_wireframes/re-auth-modal.html"
+                    >→ Re-auth modal</a
+                  >
+                </div>
+                <ul class="stk-dec__d stk-dec__list">
+                  <li>
+                    Критичные действия (смена пароля, управление пользователями,
+                    настройки безопасности, завершение сессий) требуют повторного
+                    ввода пароля — даже в рамках открытой сессии.
+                  </li>
+                  <li>
+                    С включённым MFA проверка принимает TOTP-код.
+                  </li>
+                  <li>
+                    После успеха — grace-period (несколько минут, привязан к
+                    текущей сессии): соседние критичные действия проходят без
+                    повторного запроса, затем проверка снова закрывается.
+                  </li>
+                  <li>
+                    Неверный ввод считается под тем же rate-limit, что и вход.
+                  </li>
+                </ul>
+              </div>
+              <div class="stk-dec stk-dec--full" id="session-end">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">⎋ Завершение сессии</span>
+                  <a
+                    class="xref-badge xref-badge--page"
+                    href="../_wireframes/session-management.html"
+                    >→ Session management</a
+                  >
+                </div>
+                <div class="stk-dec__d stk-dec__cols">
+                  <span
+                    ><b>Стандартный:</b> удалить refresh token из БД (опознан по
+                    refresh-cookie) + очистить httpOnly cookie. Access token
+                    истекает сам (15 мин). Кнопка «Выйти» —
+                    <a href="../../admin-panel/_wireframes/layout.html#header" class="xref-module">хедер админки</a>.</span
+                  >
+                  <span
+                    ><b>Все устройства:</b> удалить все refresh tokens
+                    пользователя — сам пользователь, из UI управления сессиями.</span
+                  >
+                  <span
+                    ><b>Принудительный:</b> то же «все устройства», но админом —
+                    из
+                    <a href="../../admin-panel/_wireframes/user-card.html#user-sessions" class="xref-module">карточки пользователя</a>.
+                    Удаляются все refresh-токены пользователя; новые access не
+                    выдаются, уже выданный stateless access-JWT доживает своё
+                    ≤15-минутное окно.</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ L6 · ЖИЗНЕННЫЙ ЦИКЛ И ACL ════════ -->
+          <div class="stk-layer stk-layer--life" id="user-lifecycle">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">6</span>
+              <span class="stk-layer__name">Жизненный цикл и ACL</span>
+              <a
+                class="xref-badge"
+                href="../../admin-panel/_wireframes/users.html#users-tabs"
+                >→ Admin Panel</a
+              >
+              <span class="stk-layer__role"
+                >user_id → роль → права и состояние учётной записи.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Статусы</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>active</code> (по умолчанию после регистрации)<br/>
+                  <code>deactivated</code> (отключён администратором).<br/>
+                  Поле — в <a href="data-model.html#user-status" class="xref-page">модель данных</a>.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Деактивация — кто может</span>
+                </div>
+                <div class="stk-dec__d">
+                  Owner → любого (кроме единственного Owner). Admin → только Member.
+                  Self-деактивация запрещена.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Деактивация — что происходит</span>
+                </div>
+                <div class="stk-dec__d">
+                  Все refresh tokens удаляются, все API-ключи пользователя
+                  отзываются (машинный доступ гаснет мгновенно). Access-токен
+                  stateless и доживает до expiry — это
+                  <a class="xref-anchor" href="#jwt-claims">общее 15-минутное окно</a>
+                  stateless-модели. Personal-агенты владельца гасятся
+                  (<code>enabled=false</code>), чтобы фоновые прогоны не жгли
+                  бюджет под учёткой ушедшего —
+                  <a class="xref-badge" href="../../agent-engine/_workzone/governance.html#lifecycle"
+                    >Agent Engine</a>.
+                  <details>
+                    <summary>v2</summary>
+                    <div>
+                      <code>jti</code> в Redis blacklist для мгновенной
+                      инвалидации access-токена.
+                    </div>
+                  </details>
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Реактивация</span>
+                </div>
+                <div class="stk-dec__d">
+                  Те же права, что и на деактивацию. Пользователь может снова
+                  войти. Токены, API-ключи и <b>агенты не восстанавливаются</b>
+                  — нужны новые, агентов владелец включает сам.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Удаление</span>
+                </div>
+                <div class="stk-dec__d">
+                  Удаление — это <b>hard delete</b>: физическое стирание строки,
+                  только Owner, необратимо. Soft delete (пометка-флаг с
+                  сохранением строки) сознательно <b>не вводим</b> — его роль
+                  уже играет деактивация, отдельный механизм состояния учётки.
+                  Каскад сносит только auth-данные пользователя (токены, ключи);
+                  контент источников и <code>audit_log</code> не затрагиваются.
+                </div>
+              </div>
+              <div class="stk-sink">
+                <code>user_id</code> <span class="stk-arrow">→</span> роль
+                <span class="stk-arrow">→</span> ACL · доступ выдан
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- ═══════════ БОКОВОЙ ВХОД ═══════════ -->
+        <div class="stk-side">
+          <div class="stk-side__chan" id="api-keys">
+            <div class="stk-side__head">
+              <span class="stk-side__name"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" /><path d="m21 2-9.6 9.6" /><circle cx="7.5" cy="15.5" r="5.5" /></svg> API-ключи</span>
+            </div>
+            <span class="stk-side__tag">боковой вход</span>
+            <span class="stk-side__xrefs">
+              <a class="xref-badge" href="../../mcp/index.html#auth">→ MCP</a>
+              <a class="xref-badge" href="../../public-api/index.html#auth">→ Public API</a>
+              <a
+                class="xref-badge"
+                href="../../admin-panel/_wireframes/api-keys.html#api-keys"
+                >→ Admin Panel</a
+              >
+              <a class="xref-badge" href="../../api/index.html#conventions">→ HTTP API</a>
+            </span>
+            <div class="stk-side__flow"><b>key</b> → user_id → роль / ACL</div>
+
+            <div class="stk-side__decs">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Хранение</span>
+                </div>
+                <div class="stk-dec__d">
+                  Ключ показывается один раз — при создании. В базе остаётся
+                  только его <code>SHA-256</code>-хэш и префикс
+                  <code>ach_xxxx</code>.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Привязка и ограничение области</span>
+                </div>
+                <div class="stk-dec__d">
+                  Ключ → user_id → роль и ACL пользователя; <b>шире прав
+                  владельца ключ не бывает</b> — даже выданный администратором.
+                </div>
+                <details>
+                  <summary>детали</summary>
+                  <div>
+                    Скоуп сужается по двум осям: <b>доступ</b> — только чтение
+                    (запись — территория Agent Engine, не ключа); <b>источники</b>
+                    — по умолчанию все доступные владельцу, при желании уже.
+                    У пользователя может быть несколько ключей.
+                  </div>
+                </details>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Срок и ротация</span>
+                </div>
+                <div class="stk-dec__d">
+                  Срок жизни — 30 / 90 / 365 дней или бессрочно; по истечении
+                  ключ перестаёт действовать сам, отзывать не нужно. Напоминание
+                  об истечении за 7 дней.
+                </div>
+                <details>
+                  <summary>ротация</summary>
+                  <div>Создать новый → проверить → отозвать старый.</div>
+                </details>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Создание и отзыв</span>
+                </div>
+                <div class="stk-dec__d">
+                  Пользователь создаёт и отзывает свои ключи сам — в профиле или
+                  через CLI-вход. Owner и Admin видят ключи всех и могут отозвать
+                  любой; отзыв применяется мгновенно через Admin Panel. При
+                  деактивации пользователя все его ключи отзываются
+                  автоматически.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Выдача администратором · поиск</span>
+                </div>
+                <div class="stk-dec__d">
+                  При выдаче ключа на сотрудника Owner / Admin выбирает
+                  пользователя поиском-подсказками. Запрос уходит на бэкенд
+                  <b>от 2-го введённого символа</b> и с дебаунсом; сервер
+                  возвращает топ 10 совпадений по имени и email.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Rate limiting</span>
+                </div>
+                <div class="stk-dec__d">
+                  Ограничение на один ключ — <code>60 req/min</code>.
+                </div>
+              </div>
+            </div>
+
+            <div class="stk-side__into">сводится к user_id</div>
+            <div class="stk-side__merge">
+              ключ сводится к user_id → дальше обычный путь: роль → ACL
+            </div>
+          </div>
+
+          <div class="stk-side__chan" id="oauth">
+            <div class="stk-side__head">
+              <span class="stk-side__name"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="16" r="1" /><rect x="3" y="10" width="18" height="12" rx="2" /><path d="M7 10V7a5 5 0 0 1 10 0v3" /></svg> OAuth</span
+              ><span class="iter v2">v2</span>
+            </div>
+            <span class="stk-side__tag">боковой вход</span>
+            <span class="stk-side__xrefs">
+              <a class="xref-badge" href="../../mcp/index.html#auth">→ MCP</a>
+            </span>
+            <div class="stk-side__flow">
+              <b>вход</b> → токен → user_id → роль / ACL
+            </div>
+
+            <div class="stk-side__decs">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Назначение</span>
+                </div>
+                <div class="stk-dec__d">
+                  Интерактивный вход для клиентов рядом с пользователем:
+                  ИИ-ассистент, IDE, CLI. Подключение без ручного переноса
+                  ключа.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Поток входа</span>
+                </div>
+                <div class="stk-dec__d">
+                  Клиент открывает страницу входа, пользователь подтверждает
+                  доступ — клиент получает токен и хранит его сам.
+                </div>
+                <details>
+                  <summary>детали</summary>
+                  <div>
+                    <code>achilles login</code> открывает браузер; после
+                    согласия токен сохраняется локально, дальше клиент работает
+                    без участия пользователя. Протокол — OAuth 2.1, как
+                    описывает спецификация MCP.
+                  </div>
+                </details>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Токены</span>
+                  <a class="xref-anchor" href="#tokens-sessions"
+                    >→ Токены</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Короткоживущий access-токен и продление по refresh — общий
+                  механизм сессий.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">OAuth или ключ</span>
+                </div>
+                <div class="stk-dec__d">
+                  OAuth — для интерактивных клиентов; API-ключ — для headless
+                  (CI, сервер, фоновые задачи), где подтвердить вход некому.
+                </div>
+              </div>
+            </div>
+
+            <div class="stk-side__into">сводится к user_id</div>
+            <div class="stk-side__merge">
+              токен сводится к user_id → дальше обычный путь: роль → ACL
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

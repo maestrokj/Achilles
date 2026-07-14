@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Harvester: ACL and identities</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="acl-identity.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Harvester</a>
+        <h1 class="header__title">ACL and identities</h1>
+        <div class="header__sub">harvester · workzone</div>
+      </div>
+
+      <p class="desc">
+        Alongside the content, Harvester pulls two accompanying datasets from the
+        source — <a href="#acl" class="xref-anchor">access rights</a> and
+        <a href="#identity" class="xref-anchor">people's identities</a> — and
+        keeps them
+        <a href="#permission-sync" class="xref-anchor">up to date</a>
+        on a par with the entities themselves. Harvester <strong>produces</strong>
+        them; the table model, storage, and resolution are held by
+        <a href="../../knowledge-store/_workzone/acl-identity.html#resolution" class="xref-module">Knowledge Store</a>.
+        Rights are saved in the source's original terms, without
+        interpretation; people are merged by <code>email</code>; permission
+        sync is part of the general sync modes, with no dedicated mechanism of
+        its own. Collecting both goes through the connector — the fetch
+        mechanics are held by
+        <a href="sources.html#fetch" class="xref-page">sources</a>.
+      </p>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ════════ ACL ════════ -->
+          <div class="stk-layer acl-band--acl" id="acl">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Access rights</span>
+              <span class="stk-layer__role"
+                >The source's ACL travels along with the content.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">ACL in original terms</span>
+                </div>
+                <div class="stk-dec__d">
+                  Harvester saves the source's rights exactly as the source
+                  itself expresses them: a project in Jira, a space in
+                  Confluence, a channel in Slack. There's no mapping onto
+                  platform access levels here — rights are pulled and stored
+                  alongside the entity one to one. The capture is two-sided:
+                  both the group tag on the entity (which project, space, or
+                  channel it lives in) and group membership — who belongs to it;
+                  without both facets you can't answer who has access to the
+                  entity. This is a deliberate boundary: Harvester records who
+                  had access to what <em>in the source</em>, and doesn't try to
+                  decide what that means on the platform.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Interpretation — not here</span>
+                </div>
+                <div class="stk-dec__d">
+                  Translating the original ACL into platform access levels is
+                  the job of other layers; Harvester doesn't decide who
+                  <em>should</em> see what on the platform. The contract is
+                  simple: rights travel with the content and are stored
+                  undistorted.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Applied at retrieval — pre-filter</span>
+                </div>
+                <div class="stk-dec__d">
+                  Rights are applied at query time as a pre-filter: candidates
+                  are narrowed by access <em>before</em> ranking by proximity —
+                  not “rank, then discard what's forbidden” (that skews the
+                  counters and empties pages). Access is resolved by a join of
+                  <code>user → their identities → memberships in source groups
+                  → the entity's group ACL</code>; a chunk inherits the
+                  entity's ACL and has none of its own. ACL and membership sit in
+                  the relational database next to the vectors — so filtering by
+                  rights runs in the same query as semantic search. The
+                  application itself is behind the retrieval layer.
+                </div>
+                <div class="stk-dec__xref">
+                  <a class="xref-badge"
+                    href="../../query-engine/_workzone/retrieval.html#identity"
+                    >→ Query Engine</a
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ IDENTITY ════════ -->
+          <div class="stk-layer acl-band--identity" id="identity">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Identities</span>
+              <span class="stk-layer__role"
+                >The same connector returns people too; merged by email.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">One API — both content and people</span>
+                </div>
+                <div class="stk-dec__d">
+                  Users are returned by the same connector API as the content,
+                  so no separate channel for people is needed. When a source is
+                  connected, a full import of its users runs; from then on
+                  incremental picks up new ones as they appear — by the same
+                  mechanisms as entities.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Merge by email · resolving the unmatched</span>
+                </div>
+                <div class="stk-dec__d">
+                  People from different sources are merged into one identity by
+                  <code>email</code> — an explicit, reliable key. Anyone who
+                  couldn't be matched by <code>email</code> Harvester doesn't
+                  guess at: such records go for manual review in Admin Panel,
+                  where they're linked to an existing identity or created as a
+                  new one. On identity upsert, Harvester also sets a bridge to
+                  the platform account with the same <code>email</code>, if one
+                  already exists (<code>identity.user_id</code>) — the same
+                  auto-link by exact email; the rule is held by
+                  <a href="../../knowledge-store/_workzone/acl-identity.html#identity" class="xref-module"
+                    >Knowledge Store</a
+                  >.
+                </div>
+                <div class="stk-dec__xref">
+                  <a
+                    href="../../admin-panel/_wireframes/users.html#identity-mapping"
+                    class="xref-badge"
+                    >→ Admin Panel · Account linking</a
+                  >
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Fuzzy merge — not here</span>
+                </div>
+                <div class="stk-dec__d">
+                  A merge of the “different <code>email</code>s, same person”
+                  kind — fuzzy matching of identities across sources — Harvester
+                  doesn't do. That's the job of deep entity resolution in
+                  Knowledge Store, beyond our boundary; here we merge only on an
+                  exact <code>email</code> match.
+                </div>
+                <div class="stk-dec__xref">
+                  <a
+                    class="xref-badge"
+                    href="../../knowledge-store/_workzone/lifecycle.html#entity-resolution"
+                    >→ Knowledge Store</a
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ PERMISSION SYNC ════════ -->
+          <div class="stk-layer acl-band--sync" id="permission-sync">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Permission sync</span>
+              <span class="stk-layer__role"
+                >Part of the general sync modes, not a separate mechanism.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Rights — on the general sync modes</span>
+                </div>
+                <div class="stk-dec__d">
+                  Rights change — someone added to a project, someone removed
+                  from a channel — and those changes need tracking. Harvester
+                  introduces no dedicated mechanism for this: ACL sync runs in
+                  the same modes as content sync.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Incremental · reconciliation</span>
+                </div>
+                <div class="stk-dec__d">
+                  <a href="sync-modes.html#incremental" class="xref-page"
+                    >Incremental</a
+                  >
+                  updates the ACL pointwise — by webhook or polling, just like
+                  entities.
+                  <a href="sync-modes.html#reconciliation" class="xref-page"
+                    >Reconciliation</a
+                  >
+                  does a full rights reconciliation: it catches what incremental
+                  missed (dropped events, access revocations) and brings the
+                  stored ACL back in line with the source.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Revocation takes effect with a delay</span>
+                </div>
+                <div class="stk-dec__d">
+                  The stored ACL is eventually consistent: there's a window
+                  between a change in the source and its sync. For
+                  <em>granting</em> access this is safe — until the new right is
+                  synced, a person sees less than they're already allowed, not
+                  more. For <em>revocation</em> the window means the reverse:
+                  what was revoked stays visible until the next incremental,
+                  <a href="sync-modes.html#partial-resync" class="xref-page"
+                    >partial re-sync</a
+                  >,
+                  or reconciliation — this is an accepted trade-off, not an
+                  oversight. The hard guarantee that “revoked won't leak into an
+                  answer” comes not from Harvester but from the final rights
+                  check at retrieval itself — which sits behind the query layer.
+                </div>
+                <div class="stk-dec__xref">
+                  <a class="xref-badge"
+                    href="../../query-engine/_workzone/retrieval.html#live-check"
+                    >→ Query Engine</a
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

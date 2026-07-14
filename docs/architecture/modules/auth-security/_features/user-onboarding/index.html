@@ -1,0 +1,194 @@
+<!doctype html>
+<!--
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  FEATURE: user-onboarding — how employees get into the system.        │
+  │                                                                       │
+  │  Map of the admission model: three paths with different trust anchors. │
+  │    · single invite  — an admin vouches (v1)                           │
+  │    · bulk CSV        — an admin vouches, in batch (v1) — this feature's UI │
+  │    · SSO / IdP       — the corporate IdP vouches, auto-provisioning (v2)│
+  │                                                                       │
+  │  OWNS bulk-invite-upload.html + bulk-invite-preview.html — nodes only  │
+  │  for this feature (orphan test: delete the feature and the bulk-import │
+  │  screens have nowhere to live). Entry points — users.html (admin),     │
+  │  login — are just doors, they stay --shared. invite-accept — the       │
+  │  shared tail of both invite lines.                                     │
+  │                                                                       │
+  │  Altitude rule: the admission model and token mechanics live in        │
+  │  _workzone (#admission-model / #invite-flow / #sso-oidc); per-row       │
+  │  import rules live on the screen legends. The map only links/branches.  │
+  │  Conventions: docs/architecture/README.md → "Features".               │
+  └─────────────────────────────────────────────────────────────────────┘
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: User onboarding</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · feature-flow kit (no wireframe
+         kit — screens link out) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../feature-flow.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../index.html">← Auth / Security</a>
+        <h1 class="header__title">User onboarding</h1>
+        <div class="header__sub">auth / security · features</div>
+      </div>
+
+      <!-- ═══ Description ═══ Product only: the three admission paths and who
+           enters from where. The "who vouches" frame, the policy, and the
+           mechanics are NOT here — links in workzone (#admission-model /
+           #invite-flow / #sso-oidc). -->
+      <div class="desc">
+        <p>
+          How employees get into the system. The trust anchor — who vouches for
+          a person — determines the path, and there are three paths:
+        </p>
+        <ul class="desc-list">
+          <li>
+            <b>Single invite</b> — the admin invites an
+            employee one at a time, and an invitation link is sent by email.
+          </li>
+          <li>
+            <b>Bulk import</b> — for a company's first
+            rollout with hundreds or thousands of employees, the admin uploads a
+            CSV list and invitations go out in batch; both lines converge on one
+            <a href="../../_wireframes/invite-accept.html" class="xref-page">invitation-acceptance</a> screen.
+          </li>
+          <li>
+            <b>SSO</b> <span class="iter v2">v2</span> — at scale, the corporate
+            IdP vouches: an employee signs in with their own account, the account
+            is created by auto-provisioning on first sign-in, and there are no
+            invitations at all.
+          </li>
+        </ul>
+        <p>
+          The full frame of the model and the "floor — control, ceiling —
+          delegation" choice are in the
+          <a href="../../_workzone/authentication.html#admission-model" class="xref-page">admission model</a>.
+        </p>
+      </div>
+
+      <!-- ═══ Dependencies ═══ SMTP — the home of a scenario without a screen.
+           Delivery (including bulk-send pacing) is run by the Email transport —
+           we link there rather than describe the mechanics here. We do NOT copy
+           the token mechanics. -->
+      <div class="section">
+        <div class="section__title">Dependencies</div>
+        <p class="desc">
+          Email is the only channel for delivering invitations, so both
+          invite lines require SMTP to be configured — the section is in
+          <a href="../../../admin-panel/_wireframes/platform-settings.html#smtp" class="xref-module">Admin Panel</a>.
+          Until SMTP is configured, "Invite" and "Import" are disabled. Delivery
+          itself — including safe bulk-send pacing — is run by the
+          <a href="../../../email/_workzone/delivery.html#throttling" class="xref-module">Email</a> transport.
+        </p>
+      </div>
+
+      <!-- ═══ Flow · single invite ═══ Start — the shared admin screen (user
+           list). The "Invite" modal (email + role) is a state of users.html,
+           not a separate screen (altitude rule): it's mid-leg. The tail — the
+           shared acceptance screen. -->
+      <div class="section">
+        <div class="section__title">Flow · single invite</div>
+        <div class="flow">
+          <div class="flow-stop flow-stop--shared">
+            <a
+              class="flow-stop__name"
+              href="../../../admin-panel/_wireframes/users.html#users-tabs"
+              >Users</a
+            >
+            <span class="flow-stop__role">shared · start · admin</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">"Invite" · email + role modal</span>
+          </div>
+          <div class="flow-stop flow-stop--shared">
+            <a class="flow-stop__name" href="../../_wireframes/invite-accept.html">Invite Accept</a>
+            <span class="flow-stop__role">shared · sign-up via link from email</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Flow · bulk CSV ═══ The same door (Users), but "Import" leads
+           into a two-screen local wizard: upload → preview with validation and
+           sending. The tail is shared with the single line — we don't keep a
+           copy of invite-accept. Per-row rules (statuses, idempotency, partial
+           success) live on the preview legend, not here. -->
+      <div class="section">
+        <div class="section__title">Flow · bulk CSV</div>
+        <div class="flow">
+          <div class="flow-stop flow-stop--shared">
+            <a
+              class="flow-stop__name"
+              href="../../../admin-panel/_wireframes/users.html#users-tabs"
+              >Users</a
+            >
+            <span class="flow-stop__role">shared · start · admin</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">"Import" · upload the list</span>
+          </div>
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="bulk-invite-upload.html">Bulk Invite · Upload</a>
+            <span class="flow-stop__role">step 1 · CSV file or a text list</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">file parsed</span>
+          </div>
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="bulk-invite-preview.html">Bulk Invite · Preview</a>
+            <span class="flow-stop__role">step 2 · validation · role · send</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">sent · delivery via background queue</span>
+          </div>
+          <div class="flow-stop flow-stop--shared">
+            <a class="flow-stop__name" href="../../_wireframes/invite-accept.html">Invite Accept</a>
+            <span class="flow-stop__role">shared · sign-up via link from email</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Flow · SSO ═══ A different door (sign-in, not admin) and a
+           different anchor: the IdP vouches, no invitations. No screens of its
+           own — it's a redirect to the IdP + auto-provisioning; the terminal
+           links to the mechanics in workzone. The whole line is v2. -->
+      <div class="section">
+        <div class="section__title">Flow · SSO <span class="iter v2">v2</span></div>
+        <p class="desc">
+          At company scale, invitations aren't needed: sign-in is delegated to
+          the corporate IdP (Okta, Azure AD, Google Workspace), and the account
+          is created by auto-provisioning on first sign-in. The path adds no
+          screens of its own — it's a redirect to the IdP; the mechanics and
+          redirect protection are in
+          <a href="../../_workzone/authentication.html#sso-oidc" class="xref-page">SSO / OIDC</a>.
+        </p>
+        <div class="flow">
+          <div class="flow-stop flow-stop--shared">
+            <a class="flow-stop__name" href="../../_wireframes/login.html">Login</a>
+            <span class="flow-stop__role">shared · "Sign in with IdP"</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">redirect to IdP · SAML / OIDC</span>
+          </div>
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="../../_workzone/authentication.html#sso-oidc">Auto-provisioning</a>
+            <span class="flow-stop__role">account from IdP · no invitation</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

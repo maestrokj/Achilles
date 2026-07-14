@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Harvester: Security</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="security.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Harvester</a>
+        <h1 class="header__title">Security</h1>
+        <div class="header__sub">harvester · workzone</div>
+      </div>
+
+      <p class="desc">
+        Harvester pulls data from external networks, and what needs protecting is
+        the ingestion channel itself — two vectors:
+        <a href="#webhooks" class="xref-anchor">verifying incoming webhooks</a>
+        and <a href="#rate-limiting" class="xref-anchor">throttling the rate</a>
+        of calls to third-party APIs. Narrowly about the channel: encryption of
+        credentials is held by
+        <a href="sources.html#fetch" class="xref-page">sources</a>, and carrying
+        access rights over from the source by
+        <a href="acl-identity.html#acl" class="xref-page">acl-identity</a>.
+      </p>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ════════ WEBHOOKS ════════ -->
+          <div class="stk-layer stk-layer--webhooks" id="webhooks">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Webhooks</span>
+              <span class="stk-layer__role"
+                >Accept only what genuinely comes from the source.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"
+                    >The core applies — the connector declares</span
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  No hardcoded <code>if</code> per provider: the core holds a
+                  single verification mechanism, and the
+                  <a href="connectors.html#manifest" class="xref-page"
+                    >connector</a
+                  >
+                  brings its own <em>pluggable verifier</em> — it declares the
+                  signature scheme, how to extract the dedup key, and whether the
+                  delivery carries a timestamp. The core runs three steps in a
+                  strict order — <strong>freshness → signature → dedup</strong>
+                  (cheap → expensive): first filter by timestamp and headers, and
+                  only what passes the signature is let into dedup — otherwise an
+                  inauthentic stream would itself become a DoS on the dedup store.
+                  A new source = a new verifier; the core stays untouched.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Call authenticity</span>
+                </div>
+                <div class="stk-dec__d">
+                  Every incoming call must be proven to come from the source —
+                  otherwise foreign content gets into the pipeline. The signature
+                  scheme is declared by the connector: HMAC over the body (Slack,
+                  GitHub), a static token in a header (GitLab), or a Connect-app
+                  JWT (Atlassian); where the source does not sign at all — fall
+                  back to a secret, unguessable endpoint. Authenticity not
+                  confirmed — the call is rejected.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Timestamp freshness</span>
+                </div>
+                <div class="stk-dec__d">
+                  Where the provider sends a timestamp (Slack, GitLab), a call
+                  older than the freshness window (uniformly
+                  <strong>5 minutes</strong>) is discarded at once, before the
+                  signature — this is both the first barrier against replay and
+                  the cheapest way to reject junk. For sources without a timestamp
+                  (GitHub, Atlassian) the step is skipped, and dedup alone carries
+                  replay protection.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">One call — once</span>
+                </div>
+                <div class="stk-dec__d">
+                  A signature does not guard against replaying an intercepted
+                  call. The dedup key of each delivery (extracted by the
+                  connector's verifier) is placed in Redis with an atomic
+                  <code>SET key NX EX</code> — the first time sets it, a repeat
+                  sees the key and is discarded.
+                  <strong>The TTL depends on the timestamp:</strong> 15 minutes
+                  where there is a timestamp (freshness has already cut off the
+                  old), and 24 hours where there is none — to catch manual
+                  redeliveries too. The channel itself is TLS-only (terminated at
+                  the reverse proxy).
+                  <details>
+                    <summary>Declarations of today's connectors</summary>
+                    <div>
+                      <ul class="stk-dec__list">
+                        <li>
+                          <strong>Slack</strong> — HMAC over
+                          <code>v0:ts:body</code>, timestamp present (5-min
+                          window), dedup by <code>event_id</code>.
+                        </li>
+                        <li>
+                          <strong>GitHub</strong> —
+                          <code>X-Hub-Signature-256</code>, no timestamp, dedup by
+                          <code>X-GitHub-Delivery</code>.
+                        </li>
+                        <li>
+                          <strong>GitLab</strong> — static token (a plan to
+                          migrate to an HMAC signing token), dedup by
+                          <code>Idempotency-Key</code> / Event-UUID.
+                        </li>
+                        <li>
+                          <strong>Atlassian</strong> —
+                          <code>X-Hub-Signature</code> (admin) or JWT (Connect),
+                          no timestamp, dedup by
+                          <code>X-Atlassian-Webhook-Identifier</code>.
+                        </li>
+                      </ul>
+                    </div>
+                  </details>
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t"
+                    >Fend off junk<span class="iter v2">v2</span></span
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Knowing the endpoint address, one can flood it with junk — each
+                  call costs a signature check. That is why the checks run from
+                  cheap to expensive (freshness and headers — before HMAC, and
+                  inauthentic traffic never reaches dedup), a rate limit sits on
+                  the endpoint at the reverse proxy, and the path itself is
+                  unguessable (a secret in the address).
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">A rejection — to the log and an alert</span>
+                </div>
+                <div class="stk-dec__d">
+                  Every rejected call goes to the log: a lone one is noise, a spike
+                  is a signal that a secret has drifted or the endpoint is being
+                  probed. On a spike a Security-type
+                  <a
+                    href="../../admin-panel/_wireframes/notifications.html#routing"
+                    class="xref-module"
+                    >notification</a
+                  >
+                  is raised — through the same channel as password brute-forcing.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Where webhooks are configured</span>
+                </div>
+                <div class="stk-dec__d">
+                  A webhook is tied to a specific source — the secret and the
+                  address are set up in the same place as the connection; which
+                  events to send is chosen on the source's side, not ours. That
+                  mechanic is held by
+                  <a href="sources.html#fetch" class="xref-page">sources</a>;
+                  here — only the verification of what arrived over the channel.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ RATE LIMITING ════════ -->
+          <div class="stk-layer stk-layer--ratelimit" id="rate-limiting">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Rate limiting per scope</span>
+              <a class="xref-badge" href="../../cache-workers/_workzone/rate-limit.html#consumers">→ Cache &amp; Workers</a>
+              <span class="stk-layer__role"
+                >Don't get us banned — and don't take the source down.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">A limit by scope, not “per source”</span>
+                </div>
+                <div class="stk-dec__d">
+                  Providers limit not a “source” in general, but an account,
+                  token, workspace, or site — and the thresholds all differ, with
+                  their own tier (<code>tier</code>) caps. So the limiter key is
+                  built from <code>rate_limit_scope</code> in the
+                  <a href="connectors.html#manifest" class="xref-page"
+                    >connector manifest</a
+                  >
+                  (tenant / account_token / workspace_method / site), not from an
+                  abstract “source” — there is no single figure across them all.
+                  The manifest also declares the starting and maximum rate: a safe
+                  starting point for a typical tier, while the runtime feels out
+                  the real boundary from the source's own responses.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Count cost, not requests</span>
+                </div>
+                <div class="stk-dec__d">
+                  “One request” is not the unit of load: on Atlassian a search
+                  costs 51 points, on Slack the limit differs per method. So the
+                  limiter charges not requests but <em>cost units</em> (cost per
+                  request, default 1) — and how many units a given request costs
+                  is declared by the connector. This way the providers'
+                  heterogeneous billing maps onto a single counter without
+                  reworking the core.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--wide">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Adaptive rate (AIMD)</span>
+                </div>
+                <div class="stk-dec__d">
+                  The rate adapts to the source via an AIMD controller: on calm
+                  responses it ramps up +10% of the lower bound per evaluation
+                  window (≈10 s / 20 requests), on a <code>429</code> it drops
+                  sharply ×0.5 (additive-increase / multiplicative-decrease). The
+                  floor and start are the rate from the manifest, the cap is its
+                  maximum. The current rate is <strong>not reset</strong> between
+                  runs — it is the API's learned capacity; in Redis it lives with
+                  a TTL of hours. The executor is a distributed token bucket in
+                  Redis, with atomic (Lua) charging, a per-scope key, surviving a
+                  worker restart.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Provider signals outweigh AIMD</span>
+                </div>
+                <div class="stk-dec__d">
+                  When the source speaks directly — we listen to it, not to our own
+                  guess. <code>Retry-After</code> is a hard pause on the entire
+                  scope, respected by all workers, and it overrides AIMD. And if
+                  <code>X-RateLimit-Remaining</code> is low — we slow down ahead of
+                  time: <code>safe_rps = Remaining / (Reset − now)</code>, taking
+                  the <code>min</code> with the AIMD rate.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">The seam with retries</span>
+                </div>
+                <div class="stk-dec__d">
+                  Throttling and retries are one line: bounced by the limit — the
+                  retry goes out already with a delay. The retries themselves and
+                  their backoff are held by
+                  <a href="reliability.html#retry" class="xref-page"
+                    >reliability</a
+                  >.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

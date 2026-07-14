@@ -1,0 +1,610 @@
+/* Auth & Security — protection workzone diagrams (pipe-* · crp-*).
+   Loaded by _workzone/protection.html on top of ../../module.css.
+   Tooltips ([data-tip]) come from module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ═══════════════════════════════════════════
+   Defense pipeline (pipe-*)
+   The page reframed as the path of ONE inbound request descending
+   through seven defense stations: TLS → security-headers → CORS →
+   CSRF → brute-force → crypto-core → audit. A numbered rail threads
+   the stations top→down; each station is a card carrying its decisions
+   as chips, with forks (.pipe-branch, dashed = off the happy path)
+   hanging off for conditional behaviour and <details>.pipe-more holding
+   deferred/why detail. All blocks are static — only xref-badge links
+   and details toggles are interactive (hover/pointer); cards & chips
+   carry title-tooltips but no hover affordance.
+   ═══════════════════════════════════════════ */
+
+/* ── Entry / exit gates ── */
+.pipe-io-wrap {
+  text-align: center;
+}
+
+/* Terminal pills — echo the rt-root node: dark capsule, bold main line,
+   muted micro-caption beneath (see .rt-root / .rt-root__s) */
+.pipe-io {
+  display: inline-block;
+  background: var(--text);
+  color: var(--paper);
+  border-radius: 12px;
+  padding: 0.6rem 1.4rem;
+  text-align: center;
+  box-shadow: var(--card-shadow);
+}
+
+/* Main line — bold, kept in Rubik (prose reads better than mono here) */
+.pipe-io__main {
+  font-weight: 700;
+  font-size: 0.98rem;
+  letter-spacing: 0.01em;
+}
+
+/* Exit keeps its longer explanation — muted, sentence case */
+.pipe-io--out small {
+  display: block;
+  font-weight: 400;
+  color: var(--accent-muted);
+  font-size: 0.74rem;
+  line-height: 1.4;
+  margin-top: 0.2rem;
+}
+
+/* ── Inter-station arrow (optional transition label) ── */
+.pipe-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--accent);
+  margin: 0.25rem 0;
+}
+
+.pipe-arrow svg {
+  display: block;
+}
+
+/* ── Pipeline column ── */
+.pipe {
+  --pipe-gap: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--pipe-gap);
+}
+
+.pipe-station {
+  --pipe-ac: var(--accent);
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  column-gap: 1rem;
+  align-items: start;
+}
+
+/* Flatten the rail + content wrappers into the station grid: the card defines
+   row 1 (so the marker centres on it), forks/details stack in the rows below */
+.pipe-rail,
+.pipe-station > div:not(.pipe-rail) {
+  display: contents;
+}
+
+.pipe-card,
+.pipe-branch,
+.pipe-more {
+  grid-column: 2;
+}
+
+/* Continuous spine down the rail gutter, bridging the inter-station gap */
+.pipe-station::before {
+  content: "";
+  position: absolute;
+  left: 30px;
+  top: calc(-1 * var(--pipe-gap));
+  bottom: calc(-1 * var(--pipe-gap));
+  width: 3px;
+  margin-left: -1.5px;
+  background: var(--tint-15);
+}
+
+.pipe-station:first-child::before {
+  top: 50%;
+}
+
+.pipe-station:last-child::before {
+  bottom: 50%;
+}
+
+/* Per-station accent — warm at the perimeter, varied down the funnel */
+.pipe-station--tls {
+  --pipe-ac: var(--s3);
+}
+.pipe-station--hdr {
+  --pipe-ac: var(--s2);
+}
+.pipe-station--cors {
+  --pipe-ac: var(--s3);
+}
+.pipe-station--csrf {
+  --pipe-ac: var(--s4);
+}
+.pipe-station--brute {
+  --pipe-ac: var(--s1);
+}
+.pipe-station--crypto {
+  --pipe-ac: var(--s2);
+}
+.pipe-station--audit {
+  --pipe-ac: var(--s4);
+}
+
+/* Cross-link landing highlight for #brute-force / #audit-log */
+/* Lands in the upper third of the viewport — the eye's natural landing
+   zone — with context above still visible. */
+.pipe-station[id] {
+  scroll-margin-top: 28vh;
+}
+
+.pipe-station[id]:target .pipe-card {
+  animation: target-highlight 2.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pipe-station[id]:target .pipe-card {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+}
+
+/* Numbered marker — grid-placed into row 1, centred on the card */
+.pipe-num {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  justify-self: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #fff;
+  background: var(--pipe-ac);
+  box-shadow: 0 3px 10px var(--tint-25);
+  z-index: 1;
+}
+
+/* The old rail line is replaced by the .pipe-station::before spine */
+.pipe-railline {
+  display: none;
+}
+
+/* Station card */
+.pipe-card {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-left: var(--border-w) solid var(--pipe-ac);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  padding: var(--card-pad-y) var(--card-pad-x);
+}
+
+.pipe-card__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.2rem;
+}
+
+.pipe-card__icon {
+  font-size: 1.05rem;
+}
+
+.pipe-card__title {
+  font-size: 1.12rem;
+  font-weight: 700;
+  letter-spacing: var(--heading-spacing);
+}
+
+.pipe-card__sub {
+  flex-basis: 100%;
+  margin-top: -0.1rem;
+  color: var(--text-dim);
+  font-size: 0.82rem;
+}
+
+/* Chips — the decisions sitting on this defense line */
+.pipe-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
+}
+
+.pipe-chips + .pipe-chips {
+  margin-top: 0.45rem;
+}
+
+.pipe-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--tag-radius);
+  padding: 0.32rem 0.55rem;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  color: var(--text-dim);
+}
+
+.pipe-chip b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Layered look for the brute-force station (3 escalating lines) */
+.pipe-layers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.7rem;
+}
+
+.pipe-layer {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--tag-radius);
+  padding: 0.5rem 0.65rem;
+  font-size: 0.82rem;
+}
+
+.pipe-layer__tag {
+  flex: 0 0 auto;
+  margin-top: 0.05rem;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--s1);
+  border-radius: 3px;
+  padding: 0.15rem 0.4rem;
+  white-space: nowrap;
+}
+
+.pipe-layer__tag--2 {
+  background: var(--s1-glow);
+}
+
+.pipe-layer__tag--3 {
+  background: var(--s4);
+}
+
+.pipe-layer__body {
+  flex: 1;
+  color: var(--text-dim);
+}
+
+.pipe-layer__body b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.pipe-layer__body small {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
+
+/* Fork — dashed offshoot from the pipeline */
+.pipe-branch {
+  position: relative;
+  max-width: 920px;
+  margin: 0.6rem 0 0.2rem 1.6rem;
+  background: var(--s2-pale);
+  border: 1px dashed var(--s2-glow);
+  border-radius: var(--tag-radius);
+  padding: 0.45rem 0.7rem;
+  font-size: 0.79rem;
+  color: var(--text-dim);
+}
+
+.pipe-branch::before {
+  content: "↳ развилка";
+  position: absolute;
+  top: -0.62rem;
+  left: 0.65rem;
+  padding: 0 0.4rem;
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--s2-glow);
+}
+
+.pipe-branch b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.pipe-branch code {
+  background: rgba(255, 255, 255, 0.5); /* legible over the branch tint */
+}
+
+.pipe-branch + .pipe-branch {
+  margin-top: 0.7rem;
+}
+
+/* Expandable detail (deferred items, rationale) */
+.pipe-more {
+  margin-top: 0.65rem;
+  background: var(--tint-4);
+  border: 1px dashed var(--border);
+  border-radius: var(--tag-radius);
+  padding: 0.1rem 0.65rem;
+  font-size: 0.82rem;
+}
+
+.pipe-more > summary {
+  user-select: none;
+  padding: 0.4rem 0;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.pipe-more > summary::before {
+  content: "▸ ";
+  color: var(--accent);
+}
+
+.pipe-more[open] > summary::before {
+  content: "▾ ";
+}
+
+.pipe-more__inner {
+  padding: 0.2rem 0 0.55rem;
+  line-height: 1.55;
+  color: var(--text-dim);
+}
+
+.pipe-more__inner b {
+  color: var(--text);
+}
+
+@media (max-width: 720px) {
+  .pipe-station {
+    grid-template-columns: 40px 1fr;
+    column-gap: 0.6rem;
+  }
+  .pipe-station::before {
+    left: 20px;
+  }
+  .pipe-num {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
+  .pipe-branch {
+    margin-left: 0.4rem;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   Secret-protection map (crp-*)
+   A compact decision map inset in the crypto-core station (⑥). One pivot —
+   does the server need the secret back? — forks into hash (irreversible)
+   vs encryption (reversible); the hash side splits again into slow argon2id
+   (low-entropy, human-chosen) and fast SHA-256 (high-entropy CSPRNG tokens).
+   Static — no hover affordance (README §Hover).
+   ═══════════════════════════════════════════ */
+.crp {
+  margin-top: 0.8rem;
+  background: var(--tint-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem 1rem;
+}
+
+/* Pivot question — centred bar that forks below */
+.crp-pivot {
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto 0.2rem;
+  padding: 0.4rem 1rem;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.crp-stem {
+  width: 2px;
+  height: 16px;
+  margin: 0 auto 0.7rem;
+  background: var(--tint-15);
+}
+
+/* The fork: hash branch (wider, two methods) ∥ encryption branch */
+.crp-split {
+  display: grid;
+  grid-template-columns: 1.7fr 1fr;
+  gap: 0.7rem;
+  align-items: stretch;
+}
+
+.crp-branch {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--crp-ac, var(--accent));
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.crp-branch--hash {
+  --crp-ac: var(--s3);
+}
+
+.crp-branch--enc {
+  --crp-ac: var(--s2);
+}
+
+.crp-branch__head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.7rem;
+  background: var(--tint-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.crp-branch__ans {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: var(--crp-ac);
+  border-radius: var(--pill-radius);
+  padding: 0.12rem 0.45rem;
+}
+
+.crp-branch__op {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.crp-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+  padding: 0.6rem 0.7rem 0.7rem;
+}
+
+.crp-method {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.crp-method + .crp-method {
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--border);
+}
+
+.crp-method__top {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.crp-method__top code {
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.08rem 0.4rem;
+  border-radius: 4px;
+}
+
+.crp-tag {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--pill-radius);
+}
+
+.crp-tag--slow {
+  color: var(--s1);
+  background: var(--s4-pale);
+}
+
+.crp-tag--fast {
+  color: var(--s3);
+  background: rgba(106, 128, 72, 0.12);
+}
+
+.crp-tag--enc {
+  color: var(--s2);
+  background: var(--s2-pale);
+}
+
+.crp-list {
+  list-style: none;
+  margin: 0.1rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.crp-list li {
+  position: relative;
+  padding-left: 0.85rem;
+  font-size: 0.77rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.crp-list li::before {
+  content: "";
+  position: absolute;
+  left: 0.1rem;
+  top: 0.5rem;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--crp-ac, var(--accent));
+}
+
+/* Usage lists read as prose — no chip */
+.crp-list code {
+  font-size: 0.74rem;
+  color: var(--text);
+  background: none;
+  padding: 0;
+}
+
+/* Argon2id cost params — strength tuning under the usage list */
+.crp-params {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.3rem;
+}
+
+.crp-params code {
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--s1);
+  background: var(--s4-pale);
+  border-radius: 5px;
+  padding: 0.12rem 0.42rem;
+}
+
+@media (max-width: 720px) {
+  .crp-split {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Cache &amp; Workers: жизненный цикл задачи</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="lifecycle.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Cache &amp; Workers</a>
+        <h1 class="header__title">Жизненный цикл задачи</h1>
+        <div class="header__sub">cache-workers · workzone</div>
+      </div>
+
+      <p class="desc">
+        Каноническая конвенция: что происходит с фоновой задачей от постановки
+        до терминала — общая для всех лейнов и потребителей. Топология очередей и
+        воркеров — на <a href="queues.html#lanes" class="xref-page">очередях и воркерах</a>;
+        откуда у замка корректность — на водоразделе
+        <a href="redis-keys.html#principle" class="xref-page">Redis ⟂ Postgres</a>.
+      </p>
+
+      <!-- ═══ Путь задачи ═══ Конечный автомат состояний; постановка идемпотентна
+           по job_id, ретрай — та же задача с тем же id. -->
+      <div class="section" id="path">
+        <h2 class="section__title">Путь задачи</h2>
+        <p class="note">
+          Постановка <strong>идемпотентна по <code>job_id</code></strong>: повтор
+          с тем же id не плодит вторую задачу. Ретрай — та же задача, тот же id,
+          новая попытка; не вторая строка в журнале.
+        </p>
+
+        <div class="sm">
+          <div class="sm__state sm__state--queued">
+            <span class="sm__name">queued</span>
+            <span class="sm__d">в очереди, ждёт воркера</span>
+          </div>
+          <div class="sm__edge"><span class="sm__lbl">enqueue</span></div>
+          <div class="sm__state sm__state--running">
+            <span class="sm__name">running</span>
+            <span class="sm__d">воркер взял · штампует heartbeat</span>
+          </div>
+          <div class="sm__edge"><span class="sm__lbl">pick</span></div>
+          <div class="sm__fork">
+            <div class="sm__state sm__state--ok">
+              <span class="sm__name">succeeded</span>
+              <span class="sm__d">итог в строке потребителя</span>
+            </div>
+            <div class="sm__state sm__state--fail">
+              <span class="sm__name">failed</span>
+              <span class="sm__d">ошибка · в DLQ-политику</span>
+            </div>
+          </div>
+          <div class="sm__edge"><span class="sm__lbl">terminal</span></div>
+          <div class="sm__step">
+            <span class="sm__name">reaping</span>
+            <span class="sm__d">пост-терминал · замок отпущен, окно идемпотентности</span>
+          </div>
+        </div>
+        <p class="note sm-note">
+          <strong>enqueue → queued → running → succeeded / failed → reaping.</strong>
+          Терминал и снятие замка — отдельный шаг (см.
+          <a href="#dlq" class="xref-anchor">терминал и DLQ</a>,
+          <a href="#uniqueness" class="xref-anchor">единственность</a>); упавший
+          без очистки воркер задачу не освобождает — её снимает сторож (см.
+          <a href="#heartbeat" class="xref-anchor">heartbeat</a>).
+        </p>
+      </div>
+
+      <!-- ═══ Heartbeat ═══ Пульс живой задачи в свою Postgres-строку; сторож
+           видит протухание → очищает прогон и отпускает замок. -->
+      <div class="section" id="heartbeat">
+        <h2 class="section__title">Heartbeat и очистка</h2>
+        <p class="note">
+          Heartbeat — <strong>пульс живой задачи</strong>: долгий прогон каждые
+          ~30с штампует <code>heartbeat_at</code> в свою строку в Postgres. По
+          этому пульсу сторож отличает работающую задачу от мёртвой.
+        </p>
+        <div class="duo">
+          <div class="duo__col duo__col--live">
+            <div class="duo__h">пульс есть</div>
+            <div class="duo__t">задача жива</div>
+            <div class="duo__d">
+              <code>heartbeat_at</code> свежий — воркер работает; замок
+              единственности держится, следующая такая задача ждёт.
+            </div>
+          </div>
+          <div class="duo__col duo__col--dead">
+            <div class="duo__h">пульс протух</div>
+            <div class="duo__t">воркер мёртв</div>
+            <div class="duo__d">
+              Нет пульса дольше порога → сторож очищает прогон в
+              <code>failed / stale</code>, замок единственности отпускается,
+              слот свободен.
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          Без пульса упавшая задача вечно числилась бы <code>running</code> и
+          блокировала следующую — очистка закрывает этот тупик.
+        </p>
+        <div class="decision-box">
+          <strong>Сторож живёт на singleton-планировщике.</strong>
+          Скан протухших heartbeat — периодический проход, а не работа каждого
+          воркера: иначе <code>N</code> реплик гоняли бы очистку наперегонки. Дом —
+          тот же выделенный <a href="scheduling.html#cron" class="xref-page">singleton</a>,
+          что тикает cron. Цена связки: пока singleton лежит, реапинг тоже стоит —
+          замок упавшей задачи не снимается, и этот тип задачи ждёт возврата
+          реплики. Простой ограничен: на возврате сторож сразу разгребает
+          протухшее, а каденсы грубые — приемлемо для v1.
+        </div>
+        <div class="decision-box">
+          <strong>Плановая остановка — мягкий слив, не реапинг.</strong>
+          Сторож ловит <em>крах</em>; при штатном рестарте (деплой, SIGTERM) воркер
+          сливается аккуратно: перестаёт брать новые задачи, доводит начатые, затем
+          выходит. Не успел в срок — задача возвращается в очередь и подхватывается
+          заново: доставка at-least-once плюс идемпотентность по
+          <a href="#uniqueness" class="xref-anchor">job_id</a> делают повтор
+          безопасным.
+        </div>
+      </div>
+
+      <!-- ═══ Ретраи ═══ Два уровня: короткие in-memory в задаче, долгие через
+           defer/re-enqueue с освобождением слота. -->
+      <div class="section" id="retry">
+        <h2 class="section__title">Ретраи</h2>
+        <p class="note">
+          Два уровня по длине паузы — короткую пережидаем в задаче, длинную
+          возвращаем в очередь, чтобы не держать воркер спящим.
+        </p>
+        <div class="duo">
+          <div class="duo__col duo__col--short">
+            <div class="duo__h">короткий · ≤60с</div>
+            <div class="duo__t">in-memory, очередь не трогаем</div>
+            <div class="duo__d">
+              Пауза мелкая — задача сама ждёт и повторяет; брокер и слот не
+              меняются. Дешевле, чем гонять задачу через очередь туда-обратно.
+            </div>
+          </div>
+          <div class="duo__col duo__col--long">
+            <div class="duo__h">долгий · минуты–часы</div>
+            <div class="duo__t">defer / re-enqueue с задержкой</div>
+            <div class="duo__d">
+              Большой <code>Retry-After</code> — задача возвращается в очередь с
+              отложенным стартом, слот воркера освобождается. Не спим в задаче.
+            </div>
+          </div>
+        </div>
+        <div class="decision-box">
+          <strong>Дефолты надёжности — платформенные, override конфигом.</strong>
+          Классификация ошибки решает, повторять ли вообще: transient (таймаут,
+          429, временный сбой) → ретрай; permanent (валидация, 4xx-логика) →
+          сразу терминал, без попыток впустую. Бэкофф — экспоненциальный с full
+          jitter (случайный разброс гасит thundering herd — синхронный навал
+          ретраев после общего сбоя), потолок паузы ~300с, не более ~5 попыток.
+          Конкретные числа — тюнинг под нагрузку, не догма.
+        </div>
+        <div class="spec">
+          <span class="spec__k">classify</span>
+          <span class="spec__v">transient → ретрай · permanent → терминал сразу</span>
+          <span class="spec__k">backoff</span>
+          <span class="spec__v">exp + full jitter · cap ~300с</span>
+          <span class="spec__k">attempts</span>
+          <span class="spec__v">≤ 5, затем терминал → DLQ-политика</span>
+        </div>
+      </div>
+
+      <!-- ═══ Единственность ═══ Замок в Postgres (партиал-UNIQUE + heartbeat),
+           НЕ в брокере; критичный якорь — на него ведут многие ссылки. -->
+      <div class="section" id="uniqueness">
+        <h2 class="section__title">Единственность</h2>
+        <p class="note">
+          Взаимное исключение держит <strong>Postgres, не брокер</strong>:
+          частичный уникальный индекс рядом с журналом плюс
+          <a href="#heartbeat" class="xref-anchor">heartbeat</a>. Замок
+          корректностно-критичный — потому он там, где система записи.
+        </p>
+        <div class="decision-box">
+          <strong>Замок = партиал-UNIQUE на активных состояниях.</strong>
+          <code>UNIQUE … WHERE state IN ('queued','running')</code> — пока задача
+          активна, вторую с тем же ключом индекс не пустит. Повторный запуск
+          (двойной клик, гонка планировщика, ретрай) упирается в индекс и
+          получает <code>skipped</code>, а не дубль. После терминала строка
+          выходит из-под условия — индекс снова свободен.
+        </div>
+        <div class="duo">
+          <div class="duo__col duo__col--live">
+            <div class="duo__h">succeeded · ~24ч</div>
+            <div class="duo__t">окно идемпотентности</div>
+            <div class="duo__d">
+              Успешный <code>job_id</code> держится в окне, чтобы повторный
+              enqueue при at-least-once-доставке не запустил задачу заново.
+            </div>
+          </div>
+          <div class="duo__col duo__col--dead">
+            <div class="duo__h">failed · коротко</div>
+            <div class="duo__t">пересабмит разрешён</div>
+            <div class="duo__d">
+              Сбойный <code>job_id</code> отпускается быстро — оператор или
+              ретрай-политика вправе пересабмитить ту же работу.
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          Источник истины окна — журнал в Postgres; ключ в Redis (см.
+          <a href="redis-keys.html#blacklist" class="xref-page">эфемерные ключи</a>)
+          лишь быстрый путь, дублирующий, не заменяющий журнал.
+        </p>
+        <div class="decision-box decision-box--warn">
+          <strong>Отвергнуто: распределённый лок-сервис (Redlock / SETNX).</strong>
+          Взаимное исключение уже держит партиал-уникальный индекс плюс
+          heartbeat — Redis-лок не нужен и без fencing-токенов опасен для
+          корректности (зависший держатель не теряет лок). Та же ось, что и на
+          водоразделе <a href="redis-keys.html#principle" class="xref-page">Redis ⟂ Postgres</a>.
+        </div>
+      </div>
+
+      <!-- ═══ Терминал и DLQ ═══ Итог читаем потребителем из Postgres-строки;
+           DLQ — таблица/статус у потребителя, Redis лишь бэкстоп. -->
+      <div class="section" id="dlq">
+        <h2 class="section__title">Терминал и DLQ</h2>
+        <p class="note">
+          Терминал <strong>читает потребитель</strong>: итог прогона или доставки
+          — статус в его собственной Postgres-строке, он не теряется в брокере.
+          Сбойные задачи у каждого потребителя оседают в его доме, откуда
+          доводочный проход их перезабирает.
+        </p>
+        <div class="dlq">
+          <div class="dlq__row">
+            <span class="dlq__home">таблица DLQ</span>
+            <span class="dlq__d">
+              <a href="../../harvester/_workzone/reliability.html#dlq" class="xref-module">Harvester</a>
+              — сбойные элементы в таблицу dead-letter; <code>reconcile</code>
+              / dlq-retry перезабирает.
+            </span>
+          </div>
+          <div class="dlq__row">
+            <span class="dlq__home">статус «не доставлено»</span>
+            <span class="dlq__d">
+              <a href="../../email/_workzone/delivery.html#errors" class="xref-module">Email</a>
+              и Notifications — провал помечается на строке доставки, повтор по
+              ретрай-политике.
+            </span>
+          </div>
+          <div class="dlq__row">
+            <span class="dlq__home">строка прогона</span>
+            <span class="dlq__d">
+              <a href="../../knowledge-store/_workzone/lifecycle.html#curation-runs" class="xref-module">Knowledge Store</a>
+              — терминал прогона (<code>failed</code> с причиной и статистикой
+              шагов) в <code>curation_runs</code>; следующий проход доводки
+              перебирает граф заново.
+            </span>
+          </div>
+          <div class="dlq__row">
+            <span class="dlq__home">строка прогона</span>
+            <span class="dlq__d">
+              <a href="../../agent-engine/_workzone/data-model.html#agent-runs" class="xref-module">Agent Engine</a>
+              — терминал прогона (<code>failed</code> с причиной) в строке прогона
+              <code>agent_runs</code>.
+            </span>
+          </div>
+        </div>
+        <div class="decision-box decision-box--warn">
+          <strong>Отвергнуто: durable DLQ-очередь в Redis.</strong>
+          Долговечный дом сбоя — Postgres у потребителя, не отдельная очередь в
+          эфемерном слое. Redis-DLQ остаётся лишь транспортным бэкстопом на пути
+          к этому дому, не местом, где разбирают разбор.
+        </div>
+      </div>
+
+      <!-- ═══ Контракт прогона ═══ Унификация скелета: общий словарь полей +
+           сторож + монитор; дом данных и перезабор остаются доменными. -->
+      <div class="section" id="contract">
+        <h2 class="section__title">Платформенный контракт прогона</h2>
+        <p class="note">
+          Унифицируем <strong>контракт</strong>. Скелет жизненного
+          цикла один на всех потребителей; дом данных и смысл перезабора —
+          доменные. Так монитор и сторож работают по любому прогону, не схлопывая
+          разные домены в один стор.
+        </p>
+        <div class="spec">
+          <span class="spec__k">state</span>
+          <span class="spec__v"><code>queued · running · succeeded · failed</code> (+ <code>stale</code> как под-итог сторожа)</span>
+          <span class="spec__k">attempts</span>
+          <span class="spec__v">счётчик попыток против потолка ретраев</span>
+          <span class="spec__k">heartbeat_at</span>
+          <span class="spec__v">пульс живого прогона; по нему сторож отличает мёртвого</span>
+          <span class="spec__k">last_error</span>
+          <span class="spec__v">причина терминала + статистика шагов</span>
+          <span class="spec__k">next_retry_at</span>
+          <span class="spec__v">отложенный старт ретрая; <code>NULL</code>, если не запланирован</span>
+        </div>
+        <div class="duo">
+          <div class="duo__col duo__col--short">
+            <div class="duo__h">общее · платформа</div>
+            <div class="duo__t">скелет — один на всех</div>
+            <div class="duo__d">
+              Поля выше — общий словарь (mixin), имена выровнены где применимо. Не
+              каждый потребитель несёт все: счётчик попыток и отложенный старт — лишь
+              у тех, кто ретраит счётчиком; KS перезабирает новым прогоном, не
+              ретраем. Сторож
+              <a href="#heartbeat" class="xref-anchor">heartbeat → stale</a> и замок
+              <a href="#uniqueness" class="xref-anchor">единственности</a> — общие
+              для любой таблицы с контрактом.
+            </div>
+          </div>
+          <div class="duo__col duo__col--long">
+            <div class="duo__h">домашнее · потребитель</div>
+            <div class="duo__t">смысл — у каждого свой</div>
+            <div class="duo__d">
+              Payload строки и смысл «переделать работу» доменные:
+              <a href="#dlq" class="xref-anchor">reconcile / next pass / resend</a>
+              у каждого свой. Дом данных остаётся у потребителя — принцип
+              близости.
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          Монитор читает каждую таблицу прогонов в её доменном доме и сводит их в
+          админ-сводке <code>(module, job_id, state, attempts, age, error)</code>:
+          один вид «что и где упало» без центральной таблицы. Единая проекция
+          <code>UNION ALL</code> поверх таблиц прогонов — удобство
+          <span class="iter v2">v2</span>, когда таблиц прогонов станет много.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

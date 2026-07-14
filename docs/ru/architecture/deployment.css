@@ -1,0 +1,196 @@
+/* Infrastructure view — bespoke diagrams for deployment.html.
+   The runtime/physical picture the logical hub omits: trust-zone topology,
+   ownership map, deploy-only concern blocks.
+   Loaded by deployment.html on top of shared.css + modules/module.css.
+   Placement convention: a single page's bespoke diagram → a per-page sheet
+   next to the page (see docs/architecture/README.md §Styling). */
+
+/* ════════════════════════ Trust-zone topology ════════════════════════ */
+
+.dep-topo {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+/* ── Internet / ingress ── */
+.dep-net {
+  align-self: center;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  padding: 0.3rem 0.9rem;
+  border: 1.5px dashed var(--accent-muted);
+  border-radius: var(--badge-radius);
+  background: var(--tint-4);
+}
+
+.dep-flow {
+  align-self: center;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+/* ── Zone band — a trust boundary holding its containers ── */
+.dep-zone {
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.85rem 0.85rem;
+  background: var(--surface);
+}
+.dep-zone--public {
+  border-color: var(--accent-muted);
+  background: var(--tint-6);
+}
+.dep-zone--data {
+  border-style: dashed;
+}
+.dep-zone--docker {
+  border-style: dashed;
+  background: var(--tint-4);
+}
+
+.dep-zone__label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: lowercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  margin-bottom: 0.55rem;
+}
+.dep-zone--data .dep-zone__label,
+.dep-zone--docker .dep-zone__label {
+  color: var(--text-dim);
+}
+.dep-zone__hint {
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-muted);
+}
+
+/* internal-only lock chip on a closed zone */
+.dep-lock {
+  font-family: var(--font);
+  font-size: 0.66rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-dim);
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: var(--pill-radius);
+  background: var(--paper);
+}
+.dep-lock::before {
+  content: "🔒 ";
+}
+
+/* ── Container nodes inside a zone ── */
+.dep-nodes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.dep-node {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 8.5rem;
+  flex: 1 1 8.5rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--paper);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.dep-node span {
+  font-family: var(--font);
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+/* the single ingress — the only node facing the internet */
+.dep-node--edge {
+  border-color: var(--accent);
+  border-width: 1.5px;
+  background: var(--tint-8);
+}
+/* a persistent datastore */
+.dep-node--store {
+  border-left: 3px solid var(--accent-muted);
+}
+/* a one-shot / ops container — runs and exits, or tends others */
+.dep-node--once,
+.dep-node--ops {
+  border-style: dashed;
+  color: var(--text-dim);
+}
+/* a deferred node — drawn greyed so the v1 picture reads without it */
+.dep-node--v2 {
+  border-style: dashed;
+  border-color: var(--accent-muted);
+  background: transparent;
+  color: var(--text-muted);
+}
+/* the v2 pill lives inside a node's muted span; the broader `.dep-node span`
+   rule would repaint its ink muted-on-muted (the V2 vanishes) and drop the
+   mono face — restore the pill's own type and white ink */
+.dep-node .iter {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* ════════════════════════ Ownership map ════════════════════════ */
+/* container/resource → the module that owns its design; the residual rows
+   (proxy, TLS, self-heal) have no module home — that's what this view adds. */
+
+.dep-own {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+.dep-own th {
+  text-align: left;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 0 0.6rem 0.4rem;
+  border-bottom: 1.5px solid var(--border);
+}
+.dep-own td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.dep-own tr:last-child td {
+  border-bottom: none;
+}
+.dep-own code {
+  white-space: nowrap;
+}
+/* a row whose home is this view itself (deploy-only, no module) */
+.dep-own__self {
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.dep-own__self::before {
+  content: "▸ ";
+  color: var(--accent-muted);
+}

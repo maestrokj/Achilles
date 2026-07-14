@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Routes and redirects</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="routing.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page rt-page">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Routes and redirects</h1>
+        <div class="header__sub">auth / security · workzone</div>
+      </div>
+
+      <p class="desc">
+        Routes and redirects: where the base URL leads and how roles are routed.
+        The login mechanics (tokens, hashing, password change) live in
+        <a href="authentication.html#login" class="xref-page">authentication</a> —
+        this page is only the map.
+      </p>
+
+      <!-- ═══ Entry gate ═══
+           One login for everyone. Role is a property of the account, not a
+           choice at sign-in: there is no "admin/user picker screen" — the
+           redirect sorts it out. Presented as a decision tree: the root GET /
+           drops through three forks, each splitting a terminal route off to
+           the side. -->
+      <div class="section" id="entry-gate">
+        <div class="section__title">Entry gate</div>
+
+        <div class="rt-tree">
+          <!-- root -->
+          <div class="rt-root">
+            <span class="rt-root__r">GET /</span>
+            <span class="rt-root__s">single entry point · base URL</span>
+          </div>
+          <div class="rt-stem"></div>
+
+          <!-- Q1: Is the database empty? -->
+          <div class="rt-q"><span class="rt-q__num">1</span>Database empty?</div>
+          <div class="rt-stem"></div>
+
+          <div class="rt-branches">
+            <!-- yes → /setup -->
+            <div class="rt-branch rt-branch--narrow">
+              <div class="rt-limb">
+                <div class="rt-edge rt-edge--leaf"></div>
+                <span class="rt-blabel rt-blabel--yes">yes · no users</span>
+                <div class="rt-edge rt-edge--leaf"></div>
+              </div>
+              <a class="rt-leaf-link" href="../_wireframes/setup-wizard.html">
+                <div class="rt-leaf">
+                  <span class="rt-leaf__route">/setup</span>
+                  <span class="rt-leaf__what">create the first Owner</span>
+                </div>
+              </a>
+            </div>
+
+            <!-- no → keep descending -->
+            <div class="rt-branch">
+              <div class="rt-limb">
+                <div class="rt-edge rt-edge--cont"></div>
+                <span class="rt-blabel rt-blabel--no">no · users exist</span>
+                <div class="rt-edge rt-edge--cont"></div>
+              </div>
+
+              <!-- Q2: Is there a session? -->
+              <div class="rt-q"><span class="rt-q__num">2</span>Session present?</div>
+              <div class="rt-stem"></div>
+
+              <div class="rt-branches">
+                <!-- guest → /login -->
+                <div class="rt-branch rt-branch--narrow">
+                  <div class="rt-limb">
+                    <div class="rt-edge rt-edge--leaf"></div>
+                    <span class="rt-blabel rt-blabel--no">no · guest</span>
+                    <div class="rt-edge rt-edge--leaf"></div>
+                  </div>
+                  <a class="rt-leaf-link" href="../_wireframes/login.html">
+                    <div class="rt-leaf">
+                      <span class="rt-leaf__route">/login</span>
+                      <span class="rt-leaf__what">login form</span>
+                    </div>
+                  </a>
+                </div>
+
+                <!-- signed in → Q3 -->
+                <div class="rt-branch">
+                  <div class="rt-limb">
+                    <div class="rt-edge rt-edge--cont"></div>
+                    <span class="rt-blabel rt-blabel--yes">yes · signed in</span>
+                    <div class="rt-edge rt-edge--cont"></div>
+                  </div>
+
+                  <!-- Q3: Account role? -->
+                  <div class="rt-q">
+                    <span class="rt-q__num">3</span>Account role?
+                  </div>
+                  <div class="rt-stem"></div>
+
+                  <div class="rt-branches">
+                    <!-- Owner/Admin → /admin -->
+                    <div class="rt-branch rt-branch--narrow">
+                      <div class="rt-limb">
+                        <div class="rt-edge rt-edge--admin"></div>
+                        <span class="rt-blabel rt-blabel--role">
+                          <span class="mod-role mod-role--owner">Owner</span>
+                          <span class="mod-role mod-role--admin">Admin</span>
+                        </span>
+                        <div class="rt-edge rt-edge--admin"></div>
+                      </div>
+<a class="rt-leaf-link" href="../../admin-panel/_wireframes/dashboard.html">
+                        <div class="rt-leaf rt-leaf--admin">
+                          <span class="rt-leaf__route">/admin</span>
+                          <span class="rt-leaf__what"
+                            >dashboard · admin home
+                            <span class="rt-shell">lazy chunk</span></span
+                          >
+                        </div>
+                      </a>
+                    </div>
+
+                    <!-- Member → /chat -->
+                    <div class="rt-branch rt-branch--narrow">
+                      <div class="rt-limb">
+                        <div class="rt-edge rt-edge--member"></div>
+                        <span class="rt-blabel rt-blabel--role">
+                          <span class="mod-role mod-role--member">Member</span>
+                        </span>
+                        <div class="rt-edge rt-edge--member"></div>
+                      </div>
+                      <a class="rt-leaf-link" href="../../web-app/_wireframes/layout.html">
+                        <div class="rt-leaf rt-leaf--member">
+                          <span class="rt-leaf__route">/chat</span>
+                          <span class="rt-leaf__what">user shell · chat</span>
+                        </div>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="decision-box">
+          <strong>Single SPA, routed by role:</strong> both shells —
+          <code>/admin</code> and <code>/chat</code> — are one React app.
+          The admin zone is a separate lazy chunk. Shared layer: auth / tokens,
+          design system, i18n. The gate is a client-side redirect in the router.
+        </div>
+      </div>
+
+      <!-- ═══ Guarded transitions ═══
+           The diagram above is the happy path off `/`. Here are the rules it
+           doesn't show: protected routes, sign-out, how a Member finds its
+           home. Each guard is a conditional transition with an explicit
+           rejection node. -->
+      <div class="section" id="routes">
+        <div class="section__title">Guarded transitions</div>
+
+        <div class="rt-guards">
+          <!-- Guard: deep-link as guest -->
+          <div class="rt-guard">
+            <div class="rt-guard__head">
+              <span class="rt-guard__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg> GUARD</span>
+              <span class="rt-guard__title">Deep-link as guest</span>
+            </div>
+            <div class="rt-guard__flow">
+              <span class="rt-chip">protected route</span>
+              <span class="rt-arrow">→</span>
+              <span class="rt-chip rt-chip--bad"
+                ><code>/login?returnTo=&lt;route&gt;</code></span
+              >
+              <span class="rt-arrow">→</span>
+              <span class="rt-chip rt-chip--ok">return to origin</span>
+            </div>
+            <div class="rt-guard__note">
+              A request for a protected route <strong>without a session</strong> →
+              redirect to the login form, preserving the target → after login,
+              return to the original route. <strong><code>?returnTo</code> takes
+              priority</strong>, if the role is allowed there.
+              <code>?returnTo</code> is accepted only as a
+              <strong>local path</strong> (starts with a single <code>/</code>,
+              but not <code>//</code> or <code>/\</code>, no scheme or host) —
+              otherwise it is ignored and the redirect goes to the role's home.
+              Open-redirect protection: an external <code>?returnTo</code> would
+              send the user to a phishing clone after
+              login.
+            </div>
+          </div>
+
+          <!-- Guard: temporary password -->
+          <div class="rt-guard">
+            <div class="rt-guard__head">
+              <span class="rt-guard__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg> GUARD</span>
+              <span class="rt-guard__title">Temporary password</span>
+            </div>
+            <div class="rt-guard__flow">
+              <span class="rt-chip"><code>must_change_password</code></span>
+              <span class="rt-arrow">→</span>
+              <span class="rt-chip rt-chip--bad"><code>/change-password</code></span>
+              <span class="rt-arrow">→</span>
+              <span class="rt-chip rt-chip--ok">on by role</span>
+            </div>
+            <div class="rt-guard__note">
+              Right after login: if the account has
+              <code>must_change_password</code> set (a temporary password was
+              issued) → forced redirect to <code>/change-password</code>, with
+              sign-out blocked until a permanent password is set. The redirect is
+              client-side; the real boundary is held by the server — a direct API
+              call bypassing the screen is rejected — the mechanics are in the
+              <a href="data-model.html#temp-password-gate" class="xref-page">data model</a>.
+              Once the flag is cleared →
+              routing by role (Q3 above). The feature —
+              <a href="../_features/forced-password-change/index.html" class="xref-page">Forced password change</a>.
+            </div>
+          </div>
+
+          <!-- Guard: /admin/* -->
+          <div class="rt-guard">
+            <div class="rt-guard__head">
+              <span class="rt-guard__icon"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg> GUARD</span>
+              <span class="rt-guard__title">Guard <code>/admin/*</code></span>
+            </div>
+            <div class="rt-guard__flow">
+              <span class="rt-chip"
+                ><span class="mod-role mod-role--member">Member</span> on
+                <code>/admin/*</code></span
+              >
+              <span class="rt-arrow">→</span>
+              <span class="rt-chip rt-chip--bad">403 Forbidden</span>
+              <span class="rt-arrow">→</span>
+              <span class="rt-chip rt-chip--ok"><code>/chat</code></span>
+            </div>
+            <div class="rt-guard__note">
+              <code>/admin/*</code> — <strong>Owner / Admin</strong> only.
+              A Member on an admin route → redirect to their own <code>/chat</code>:
+              when the role's home is known, we avoid a dead end. The shared
+              <a href="../../shared-ui/_wireframes/system-screens.html#forbidden" class="xref-module">403 “Access denied”</a>
+              screen is for other forbidden deep-links where there is no obvious
+              redirect.
+            </div>
+            <div class="rt-err">
+              <span class="rt-err__label">rejection terminal</span>
+              <span class="rt-err__name">403 Forbidden</span>
+              <span class="rt-err__sub"
+                >signed in, but without rights → redirect to /chat</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

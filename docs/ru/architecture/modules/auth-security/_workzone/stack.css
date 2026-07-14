@@ -1,0 +1,41 @@
+/* Auth & Security — stack & structure page deltas, on top of the swl-* kit.
+   Two lanes (Backend, Frontend) come from the kit; this sheet adds the
+   blacklist (.swl-black) — a cross-cutting "do not use" callout above the
+   lanes. Everything else (lanes, columns, groups, pills, notes) comes from
+   modules/swimlane.css.
+   Loaded by _workzone/stack.html on top of ../../swimlane.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Blacklist — cross-cutting "do not use" callout ── */
+.swl-black {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  background: var(--text);
+  color: var(--s4-pale);
+  border-radius: var(--radius);
+  padding: 0.8rem 1.1rem;
+  margin-bottom: 1rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.swl-black__ico {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.swl-black b {
+  color: #fff;
+  font-weight: 700;
+}
+
+.swl-black .pkg {
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--s1-glow);
+}
+
+.swl-black .why {
+  color: var(--accent-muted);
+}

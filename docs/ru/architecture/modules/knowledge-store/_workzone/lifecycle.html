@@ -1,0 +1,943 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Knowledge Store: Lifecycle</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../knowledge-store.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="lifecycle.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Knowledge Store</a>
+        <h1 class="header__title">Lifecycle</h1>
+        <div class="header__sub">knowledge-store · workzone</div>
+      </div>
+
+      <p class="desc">
+        Жизненный цикл данных Knowledge Store вращается вокруг
+        <a href="#curation-pass" class="xref-anchor">Curation Pass</a> —
+        периодического фонового прогона <strong>по уже собранному графу</strong>,
+        не по источнику. Это оркестратор поверх набора lifecycle-операций:
+        <a href="#edge-materialization" class="xref-anchor">материализация
+          рёбер</a>,
+        <a href="#entity-resolution" class="xref-anchor">нечёткое сведение</a>,
+        <a href="#staleness" class="xref-anchor">занижение устаревшего</a> идут
+        одной цепочкой по расписанию, а
+        <a href="#retention" class="xref-anchor">retention</a>
+        <span class="iter v2">v2</span> примыкает к ней следующим шагом;
+        <a href="#embedding-refresh" class="xref-anchor">переэмбеддинг</a> стоит
+        отдельно — по событию смены модели. Видимость прогонов держит
+        control-plane таблица <a href="#curation-runs" class="xref-anchor"
+          >curation_runs</a
+        >; взаимное исключение конкурентных прогонов с доставкой Harvester держит
+        <a href="#coordination" class="xref-anchor">координация полос</a>, а
+        резервное копирование и согласованность одной базы —
+        <a href="#backup" class="xref-anchor">backup</a> и
+        <a href="#consistency" class="xref-anchor">consistency</a>.
+      </p>
+
+      <!-- ════════════════ CURATION PASS — ОРКЕСТРАТОР ════════════════ -->
+      <div class="section" id="curation-pass">
+        <div class="section__title">
+          Curation Pass — оркестратор доводки графа
+        </div>
+        <p class="desc">
+          Harvester доставляет данные и чинит каждый источник по отдельности;
+          Curation Pass доводит <em>граф</em> поверх всех источников разом. Это
+          зеркало
+          <a
+            href="../../harvester/_workzone/sync-modes.html#reconciliation"
+            class="xref-module"
+            >Harvester · Reconciliation</a
+          >: Reconciliation читает API источника и приводит снимок per-source в
+          соответствие с ним; Curation Pass читает саму базу Knowledge Store и
+          сводит то, что видно только при взгляде на все источники сразу. Граница
+          ровно та же, что на
+          <a href="data-model.html#boundary" class="xref-page">границе с
+            производителем</a
+          >: «точно внутри источника → Harvester, догадка между источниками →
+          Knowledge Store».
+        </p>
+
+        <p class="desc">
+          Расписание — <strong>одно платформенное</strong>, не per-source: прогон
+          идёт по всему графу целиком, дробить его по источникам незачем. Частоту
+          задаёт
+          <a
+            class="xref-badge"
+            href="../../admin-panel/_wireframes/knowledge-store.html#knowledge-store"
+            >→ Admin · Knowledge Store</a
+          >. Под одним оркестратором — три шага по расписанию в v1 (retention
+          <span class="iter v2">v2</span> — четвёртым) плюс один по событию:
+        </p>
+
+        <div class="lc-steps">
+          <div class="lc-steps__chain">
+            <a class="lc-step lc-step--materialize" href="#edge-materialization">
+              <span class="lc-step__n">1</span>
+              <span class="lc-step__t">Материализация рёбер</span>
+              <span class="lc-step__d">явные заявки <code>entity_ref</code> →
+                рёбра, когда оба узла в базе</span
+              >
+            </a>
+            <span class="lc-step__seam">→</span>
+            <a class="lc-step lc-step--resolve" href="#entity-resolution">
+              <span class="lc-step__n">2</span>
+              <span class="lc-step__t">Entity resolution</span>
+              <span class="lc-step__d">нечёткое cross-source сведение дублей и
+                личностей</span
+              >
+            </a>
+            <span class="lc-step__seam">→</span>
+            <a class="lc-step lc-step--stale" href="#staleness">
+              <span class="lc-step__n">3</span>
+              <span class="lc-step__t">Staleness decay</span>
+              <span class="lc-step__d">давность и обращения занижают
+                <code>trust_score</code> поверх веса источника</span
+              >
+            </a>
+            <span class="lc-step__seam">→</span>
+            <a class="lc-step lc-step--retain" href="#retention">
+              <span class="lc-step__n">4</span>
+              <span class="lc-step__t"
+                >Retention<span class="iter v2">v2</span></span
+              >
+              <span class="lc-step__d">архивация и удаление по типу и
+                политике</span
+              >
+            </a>
+          </div>
+          <div class="lc-steps__cap">по расписанию · одна цепочка прогона</div>
+
+          <div class="lc-steps__aside">
+            <a class="lc-step lc-step--embed" href="#embedding-refresh">
+              <span class="lc-step__badge">по событию</span>
+              <span class="lc-step__t">Embedding refresh</span>
+              <span class="lc-step__d">переэмбеддинг при смене модели — вне
+                цепочки расписания</span
+              >
+            </a>
+          </div>
+        </div>
+
+        <div class="decision-box">
+          <strong>Оркестратор, не отдельный модуль.</strong> Curation Pass не
+          новый сервис, а фоновый прогон Knowledge Store, который запускает
+          набор lifecycle-операций над уже персистнутыми
+          <a href="data-model.html#projections" class="xref-page">тремя
+            проекциями</a
+          >. Каждый шаг самостоятелен и идемпотентен: повторный прогон не вредит,
+          частичный сбой не рушит остальное.
+        </div>
+      </div>
+
+      <!-- ════════════════ EDGE MATERIALIZATION ════════════════ -->
+      <div class="section" id="edge-materialization">
+        <div class="section__title">
+          Материализация рёбер: из заявок в граф
+        </div>
+        <p class="desc">
+          Детерминированный шаг, не догадка. Harvester при захвате оставляет
+          явные ссылки заявками в
+          <a href="data-model.html#entity-ref" class="xref-page">entity_ref</a>,
+          когда целевой узел ещё не в базе (другой источник или forward внутри
+          своего). Прогон проходит нерешённые заявки, ищет цель по натуральному
+          идентификатору и, найдя, пишет ребро в
+          <a href="data-model.html#graph" class="xref-page">entity_edge</a>
+          (<code>origin=curation</code>) и гасит заявку; цель не нашлась — заявка
+          ждёт следующего прогона. Так граф eventually complete: связь
+          появляется, как только оба её конца оказались в базе. Это отделяет
+          детерминированную сборку явных связей от
+          <a href="#entity-resolution" class="xref-anchor">нечёткого сведения</a>
+          ниже.
+        </p>
+      </div>
+
+      <!-- ════════════════ ENTITY RESOLUTION ════════════════ -->
+      <div class="section" id="entity-resolution">
+        <div class="section__title">
+          Entity resolution: нечёткое cross-source сведение
+        </div>
+        <p class="desc">
+          Это deep entity resolution — то, что не поймал
+          <a href="data-model.html#boundary" class="xref-page"
+            >exact-match Harvester</a
+          >
+          на загрузке. Внутри одного источника дубли схлопывает полный скан
+          Reconciliation; между источниками точного ключа нет, и сведение
+          становится <em>догадкой</em> — задача Curation Pass. Jira «Иван
+          Петров» и Slack «ipetrov» — один человек; две страницы об одном релизе
+          в разных пространствах — одна тема.
+        </p>
+
+        <div class="lc-cases">
+          <div class="lc-case">
+            <div class="lc-case__h">Сведение личностей</div>
+            <div class="lc-case__d">
+              Несведённые <code>source_principal</code> и личности под
+              <em>разными</em> email прогон сопоставляет нечётко и проставляет
+              <code>identity_id</code> — <span class="iter v2">v2</span>, шаг
+              Curation Pass. В v1 мост <code>identity ↔ users</code> досвязывает
+              только по совпавшему email; разошлись адреса — личность уходит на
+              ручной разбор (ниже). Модель и точный exact-свод — на
+              <a href="acl-identity.html#identity" class="xref-page"
+                >ACL и личности</a
+              >.
+            </div>
+          </div>
+          <div class="lc-case">
+            <div class="lc-case__h">Мёрж нод в графе</div>
+            <div class="lc-case__d">
+              Две сущности, признанные одним объектом, схлопываются в один узел;
+              их рёбра переносятся, дубль помечается
+              <code>duplicate_of</code>. Узел графа — это
+              <a href="data-model.html#graph" class="xref-page"
+                >сама запись <code>entities</code></a
+              >, поэтому мёрж — операция над реляционным телом, а не над
+              отдельной node-таблицей.
+            </div>
+          </div>
+        </div>
+
+        <p class="note">
+          Несведённое прогон не выбрасывает: что нечётко связать не удалось,
+          остаётся на ручной разбор в
+          <a
+            class="xref-badge"
+            href="../../admin-panel/_wireframes/users.html#identity-mapping"
+            >→ Admin · Identity Mapping</a
+          >
+          — так автоматика и ручной разбор работают по одной очереди.
+        </p>
+      </div>
+
+      <!-- ════════════════ STALENESS ════════════════ -->
+      <div class="section" id="staleness">
+        <div class="section__title">Staleness &amp; trust decay</div>
+        <p class="desc">
+          Данные устаревают и не равны по достоверности: год назад закрытый тикет
+          и вчерашний релиз, официальный регламент и реплика в чате — разный вес.
+          Curation Pass ведёт ранжирующий
+          <a href="data-model.html#entities" class="xref-page"
+            ><code>entities.trust_score</code></a
+          >
+          — без удаления, только понижение приоритета в выдаче. Базу задаёт
+          <strong>авторитет источника</strong>, давность и спрос её
+          <strong>модулируют</strong>: trust = вес источника, сниженный
+          устареванием и невостребованностью.
+        </p>
+
+        <div class="lc-decay">
+          <div class="lc-decay__in">
+            <div class="lc-decay__h">Входы trust</div>
+            <ul class="lc-decay__list">
+              <li>
+                <strong>авторитет источника</strong> — базовый вес из уровня
+                (<code>low</code> · <code>normal</code> · <code>high</code>):
+                регламент-база и вики выше, тикеты средне, чат и боты ниже. Уровень
+                задаёт админ на карточке источника
+                (<a
+                  href="../../harvester/_workzone/data-model.html#sources-table"
+                  class="xref-module"
+                  ><code>Harvester.sources.authority_tier</code></a
+                >, читается JOIN по <code>source_id</code>); decay разворачивает
+                уровень в числовой множитель — соответствие
+                <code>уровень → вес</code> живёт в коде одним местом
+              </li>
+              <li>
+                <strong>давность</strong> — насколько давно
+                <code>source_updated_at</code> правился в источнике; старое
+                опускается decay-функцией
+              </li>
+              <li>
+                <strong>частота обращений</strong> — что не запрашивают,
+                опускается; востребованное держит вес. Сигнал ведёт
+                <a href="../../query-engine/_workzone/retrieval.html#access-signal" class="xref-module"
+                  >Query Engine</a
+                >
+                (<code>access_counter.hits</code> · <code>last_accessed_at</code>,
+                читается JOIN по id сущности при пересчёте — тем же приёмом, что
+                <code>authority_tier</code>); давно не запрашиваемое затухает к
+                нейтрали
+              </li>
+            </ul>
+          </div>
+          <div class="lc-decay__arrow">→</div>
+          <div class="lc-decay__out">
+            <div class="lc-decay__h">Выход</div>
+            <div class="lc-decay__field">
+              <code>trust_score</code> ↓
+            </div>
+            <div class="lc-decay__note">
+              ранжирующий вес, не фильтр доступа — устаревшее остаётся видимым,
+              просто ниже
+            </div>
+          </div>
+        </div>
+
+        <div class="decision-box">
+          <strong>Форма функции и два инварианта.</strong>
+          <code>trust_score</code> — произведение нормализованных множителей:
+          авторитет × свежесть × востребованность. Свежесть — экспоненциальный
+          спад с настраиваемым периодом полураспада; множители уровней авторитета
+          и веса осей живут в коде/конфигурации одним местом, не магическими
+          числами. Простая объяснимая функция намеренно: усложнять — после
+          замеров на реальной выдаче, не вперёд. Два инварианта держат прогон
+          предсказуемым:
+          <ul class="lc-decay__list">
+            <li>
+              <strong>абсолютный пересчёт, не инкремент</strong> — каждый прогон
+              считает <code>trust_score</code> заново из текущих входов, поэтому
+              повторный прогон идемпотентен: тот же результат, без накопления
+              дрейфа
+            </li>
+            <li>
+              <strong>деградация по недостающему сигналу</strong> — пока по
+              сущности нет строки в <code>access_counter</code>, множитель
+              востребованности нейтрален
+              (decay едет на авторитете и давности); сигнал подключается без
+              смены формулы и схемы
+            </li>
+          </ul>
+        </div>
+
+        <p class="note">
+          Decay — не статус и не soft-delete: оси
+          <code>status</code> и <code>is_deleted</code> ведёт загрузка, а
+          <code>trust_score</code> — это непрерывный вес, который пересчитывает
+          прогон. Пропажу записи из источника фиксирует
+          <a
+            href="../../harvester/_workzone/sync-modes.html#reconciliation"
+            class="xref-module"
+            >Reconciliation</a
+          >, а не staleness.
+        </p>
+      </div>
+
+      <!-- ════════════════ RETENTION ════════════════ -->
+      <div class="section" id="retention">
+        <div class="section__title">
+          Retention policy<span class="iter v2">v2</span>
+        </div>
+        <p class="desc">
+          Что хранить вечно, что архивировать, что удалять физически —
+          завершающий шаг цепочки, отложенный в <span class="iter v2">v2</span>:
+          в первой версии данные просто накапливаются (источник вычищает только
+          то, что сам пометил удалённым, — через
+          <a
+            href="../../harvester/_workzone/sync-modes.html#reconciliation"
+            class="xref-module"
+            >Reconciliation</a
+          >), а собственную политику хранения вводим позже. Политика зависит от
+          типа сущности и требований клиента (нормативные сроки, объём,
+          чувствительность), поэтому задаётся не в коде, а в
+          <a
+            class="xref-badge"
+            href="../../admin-panel/_wireframes/knowledge-store.html#retention"
+            >→ Admin · Knowledge Store</a
+          >
+          рядом с расписанием прогона.
+        </p>
+
+        <div class="lc-retain">
+          <div class="lc-retain__tier lc-retain__tier--keep">
+            <div class="lc-retain__t">Хранить</div>
+            <div class="lc-retain__d">
+              Активное и востребованное — остаётся в горячей выдаче без
+              ограничения срока.
+            </div>
+          </div>
+          <div class="lc-retain__tier lc-retain__tier--archive">
+            <div class="lc-retain__t">Архивировать</div>
+            <div class="lc-retain__d">
+              Старое, но ценное для аудита — уходит из горячей выдачи, физически
+              сохраняется. Сродни soft-delete, но по политике, не по пропаже из
+              источника.
+            </div>
+          </div>
+          <div class="lc-retain__tier lc-retain__tier--purge">
+            <div class="lc-retain__t">Удалять</div>
+            <div class="lc-retain__d">
+              Истёкшее по сроку или политике — вычищается физически вместе с
+              дочерними <a href="data-model.html#chunks" class="xref-page"
+                >chunks</a
+              >
+              по CASCADE.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ EMBEDDING REFRESH ════════════════ -->
+      <div class="section" id="embedding-refresh">
+        <div class="section__title">
+          Embedding refresh — переэмбеддинг при смене модели
+        </div>
+        <p class="desc">
+          Этот шаг стоит <strong>вне цепочки расписания</strong>: его триггерит
+          не таймер, а <em>событие</em> — смена модели эмбеддингов. Векторы,
+          посчитанные старой моделью, несовместимы с новой: их близость в общем
+          пространстве теряет смысл, и поиск ломается, пока база смешана. Поэтому
+          при смене модели Curation Pass перегенерирует
+          <a href="data-model.html#chunks" class="xref-page"
+            ><code>chunks.embedding</code></a
+          >
+          и обновляет <code>chunks.embedding_model</code> — массовый прогон,
+          который сам по себе — инференс
+          <span
+            class="ai-tag"
+            title="Этап использует нейросеть — инференс модели"
+            ><span class="ai-tag__icon"></span>AI</span
+          >.
+        </p>
+
+        <p class="note">
+          Тонкость размерности: при равной размерности старые и новые эмбеддинги
+          сосуществуют построчно, пока идёт прогон (различает
+          <code>embedding_model</code>). Смена самой размерности N — не
+          построчный refresh, а schema-операция: <code>chunks.embedding</code>
+          типизирована размерностью (<code>halfvec(N)</code>) и двух N разом не
+          держит, поэтому новый размер требует реиндекса колонки.
+        </p>
+
+        <div class="decision-box">
+          <strong>Refresh пересобирает индекс, не правит по месту.</strong>
+          Массовый <code>UPDATE</code> колонки <code>embedding</code> у живого
+          HNSW — тотальный churn графа (каждая строка переэмбеддинга = удаление и
+          вставка узла под локами), худший режим поддержания индекса. Поэтому
+          прогон идёт пересборкой без эксклюзивного лока на запись: новая колонка
+          → <code>CREATE INDEX CONCURRENTLY</code> → атомарный своп, либо
+          <code>REINDEX INDEX CONCURRENTLY</code> — ценой времени прогона и места
+          под два индекса разом. Тем же приёмом строится индекс на первичном
+          bulk-импорте источника: сперва заливка фрагментов, HNSW — одним
+          проходом после, а не инкрементом во время заливки.
+        </div>
+
+        <p class="note">
+          <strong>Отмена безопасна — своп единственная точка фиксации.</strong>
+          Раз новое поколение собирается в отдельной колонке, а старый индекс
+          авторитетен до свопа, прерывание прогона просто отбрасывает
+          недостроенную колонку: смешанного построчного состояния, видимого
+          поиску, не возникает, и платформа остаётся на прежней модели. Цена не в
+          целостности, а в потраченном инференсе — поэтому в
+          <a
+            href="../../admin-panel/_wireframes/knowledge-store.html#curation-run"
+            class="xref-module"
+            >Admin</a
+          >
+          отмена переэмбеддинга идёт через подтверждение, а перезапуск — повторной
+          сменой модели.
+        </p>
+      </div>
+
+      <!-- ════════════════ CURATION RUNS ════════════════ -->
+      <div class="section" id="curation-runs">
+        <div class="section__title">
+          Control-plane: <code>curation_runs</code>
+          <a class="xref-badge" href="../../cache-workers/_workzone/lifecycle.html#dlq">→ Cache &amp; Workers</a>
+        </div>
+        <p class="desc">
+          Зеркало журнала прогонов Harvester
+          (<a
+            href="../../harvester/_workzone/data-model.html#sync-runs-table"
+            class="xref-module"
+            >sync_runs</a
+          >) на стороне Knowledge Store: одна строка на прогон, видимость хода и
+          итога. UI ничего не вычисляет — читает <code>curation_runs</code> и
+          рисует прогресс, статус и статистику по шагам.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--ks">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">●</span>
+              <span class="stk-layer__name">Прогон доводки</span>
+              <span class="stk-layer__role">Журнал прогонов Curation Pass.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">curation_runs</span>
+                  <span class="dm-tbl__sub">журнал прогонов доводки</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--flag">платформенный · не per-source</span>
+                    <span class="dm-badge dm-badge--flag">один активный</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">trigger</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (schedule | model_change | manual)">CHECK</span>
+                      </td>
+                      <td class="dm-note">что подняло прогон · <code>schedule</code> (таймер) · <code>model_change</code> (смена модели эмбеддингов) · <code>manual</code> (ручной запуск из Admin)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">state</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 'queued'">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (queued | running | succeeded | failed | cancelled)">CHECK</span>
+                      </td>
+                      <td class="dm-note">queued · running · succeeded · failed · cancelled</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">started_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note"><code>NULL</code> пока queued · длительность = finished − started</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">finished_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note"><code>NULL</code> пока running · терминальное время</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">heartbeat_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">живость воркера прогона · протухание отпускает замок</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">steps</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">какие шаги прогнаны + статистика · рёбер материализовано · дублей сведено · сущностей занижено</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">error</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">краткая причина провала</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> · без <code>updated_at</code> — ход прогона несут <code>started_at</code> / <code>finished_at</code> / <code>heartbeat_at</code>, отдельная отметка правки избыточна</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Один активный платформенный прогон</span>
+                  <a class="xref-anchor" href="#coordination">↓ Координация полос</a>
+                </div>
+                <div class="stk-dec__d">
+                  Замок зеркалит
+                  <a
+                    href="../../harvester/_workzone/data-model.html#sync-runs-table"
+                    class="xref-module"
+                    >sync_runs</a
+                  >, но платформенный, не per-source: partial unique index на
+                  константном дискриминаторе
+                  <code>UNIQUE ((true)) WHERE state IN ('queued','running')</code>
+                  — на всю платформу максимум один незавершённый прогон доводки.
+                  Второй запрос (таймер совпал с running, ручной триггер поверх
+                  планового) встаёт в <code>queued</code> либо отклоняется, а не
+                  плодит параллельную доводку. Воркер бьёт
+                  <code>heartbeat_at</code> ~раз в 30с; молчание дольше
+                  <strong>~90с</strong> (три пропуска, как у
+                  <a href="../../harvester/_workzone/reliability.html#checkpoint" class="xref-module">sync_runs</a>
+                  и <a href="../../agent-engine/_workzone/data-model.html#agent-runs" class="xref-module">agent_runs</a>)
+                  — сторож отпускает замок зомби, не закрывшего прогон;
+                  <code>cancelled</code> терминализует — следующий стартует
+                  свежим. Координацию <em>с доставкой Harvester</em> (что идёт
+                  параллельно, что взаимоисключается) держит
+                  <a href="#coordination" class="xref-anchor">отдельная секция</a>.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Статистика по шагам — в <code>steps</code>, не в столбцах</span>
+                </div>
+                <div class="stk-dec__d">
+                  Шаги прогона разнородны (материализация рёбер, сведение,
+                  decay, retention, переэмбеддинг), и набор может меняться, поэтому их итоги живут
+                  гибким <code>JSONB</code>, а не фиксированными колонками: какой
+                  шаг отработал и с какой статистикой. <code>trigger</code> отвечает
+                  <em>почему подняли прогон</em>, <code>steps</code> — <em>что внутри
+                  сделали</em>: событийный переэмбеддинг — это строка с
+                  <code>trigger = model_change</code> и единственным шагом
+                  переэмбеддинга в <code>steps</code>. Само наполнение
+                  <code>steps</code> — ориентировочное, устаканивается при
+                  реализации.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ COORDINATION ════════════════ -->
+      <div class="section" id="coordination">
+        <div class="section__title">
+          Координация полос: доставка ∥ доводка
+          <a
+            class="xref-badge"
+            href="../../harvester/_workzone/sync-modes.html#per-source"
+            >→ Harvester · Sync</a
+          >
+        </div>
+        <p class="desc">
+          В один граф пишут две фоновые полосы: <strong>доставка</strong> —
+          Harvester тянет источники, и <strong>доводка</strong> — Curation Pass
+          наводит порядок в уже собранном графе. Правило одно: обычно они идут
+          <strong>рядом, не мешая друг другу</strong>, и лишь на короткое
+          <em>разрушительное</em> окно доводки синхронизация источника уступает
+          ей дорогу.
+        </p>
+
+        <div class="lc-lanes">
+          <div class="lc-lane lc-lane--deliver">
+            <span class="lc-lane__tag">Доставка
+              <span class="lc-lane__sub">Harvester · per-source</span></span>
+            <span class="lc-lane__track"
+              ><span class="lc-lane__flow"></span
+            ></span>
+          </div>
+          <div class="lc-lane lc-lane--doctor">
+            <span class="lc-lane__tag">Доводка
+              <span class="lc-lane__sub">Curation · платформенно</span></span>
+            <span class="lc-lane__track"
+              ><span class="lc-lane__flow"></span
+              ><span class="lc-lane__lock"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg> мёрж · retention</span></span>
+          </div>
+          <div class="lc-lanes__cap">
+            пересекаются только в замкé — пока он держится, sync источника ждёт
+            в очереди и стартует следом
+          </div>
+        </div>
+
+        <div class="lc-cases">
+          <div class="lc-case">
+            <div class="lc-case__h">Идёт параллельно — почти всё</div>
+            <div class="lc-case__d">
+              Материализация рёбер, decay и
+              <a href="#embedding-refresh" class="xref-anchor">переэмбеддинг</a>
+              только <em>добавляют</em> и пересчитывают, ничего не ломая. Они
+              спокойно переживают одновременную запись Harvester — замок им не
+              нужен: поиск работает, приём не встаёт.
+            </div>
+          </div>
+          <div class="lc-case">
+            <div class="lc-case__h">Уступает дорогу — только разрушительное</div>
+            <div class="lc-case__d">
+              <a href="#entity-resolution" class="xref-anchor">Мёрж дублей</a> и
+              <a href="#retention" class="xref-anchor">retention</a>
+              <span class="iter v2">v2</span> переносят рёбра и удаляют записи.
+              Перепиши Harvester ту же сущность в этот миг — выйдет каша. Поэтому
+              на них встаёт замок, а доставка затронутых источников ждёт и
+              продолжает сразу следом (мёрж по природе cross-source — окно
+              перекрывает не один источник).
+            </div>
+          </div>
+        </div>
+
+        <div class="decision-box">
+          <strong>Замок самоочищается, прогон один на платформу.</strong> Пока
+          разрушительный шаг держит замок, новый прогон источника встаёт в
+          <code>queued</code> и стартует следом — не падает. Упади воркер
+          доводки, не закрыв прогон, — замок отпускается сам, зависших
+          блокировок не остаётся. Прогонов доводки на платформе один
+          (<a href="#curation-runs" class="xref-anchor">curation_runs</a>),
+          второй — в очередь. Переэмбеддинг сюда не входит: он только
+          <em>добавляет</em> векторы и идёт без замка.
+        </div>
+
+        <p class="note">
+          <strong>UI.</strong> Кнопки просто показывают это состояние, ничего не
+          вычисляя. Источник под прогоном — «Синхронизировать» неактивна; идёт
+          разрушительное окно доводки — запуск помечен «в очереди · идёт доводка
+          графа». Общий индикатор активности — на
+          <a
+            class="xref-badge"
+            href="../../admin-panel/_wireframes/knowledge-store.html#curation-run"
+            >→ Admin · Knowledge Store</a
+          >, когда экран выйдет из заглушки.
+        </p>
+      </div>
+
+      <!-- ════════════════ BACKUP ════════════════ -->
+      <div class="section" id="backup">
+        <div class="section__title">Backup &amp; restore</div>
+        <p class="desc">
+          Резервное копирование идёт автоматически по расписанию, отдельно от
+          доводки графа. Назначение (внешнее хранилище / S3), периодичность и
+          retention самих бэкапов задаются в
+          <a
+            class="xref-badge"
+            href="../../admin-panel/_wireframes/knowledge-store.html#backups"
+            >→ Admin · Backups</a
+          >; оттуда же запускается восстановление. Одна база Postgres под всем
+          модулем означает, что снимок целостен по построению: тело, векторы,
+          граф и права попадают в бэкап одной согласованной точкой, без сборки из
+          нескольких СУБД.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--ks">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">●</span>
+              <span class="stk-layer__name">Конфигурация и журнал бэкапов</span>
+              <span class="stk-layer__role">Что куда копировать и что уже снято.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">backup_settings</span>
+                  <span class="dm-tbl__sub">настройки резервного копирования</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--flag">singleton · CHECK (id = 1)</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--pk">PK</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (id = 1)">CHECK</span>
+                      </td>
+                      <td class="dm-note">всегда <code>1</code> · одна строка на инстанс</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">destination_url</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">S3-совместимое назначение (<code>s3://…</code>) · <code>NULL</code> = не настроено</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">destination_creds_enc</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">
+                        ключ доступа к хранилищу · write-only, шифруется крипто-ядром
+                        (как <code>api_key_enc</code>), в UI и data export не возвращается ·
+                        <code>NULL</code> = ambient IAM-роль инстанса (внутри AWS)
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">frequency</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 'daily'">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (daily | weekly)">CHECK</span>
+                      </td>
+                      <td class="dm-note">каденс снятия дампа · DEFAULT <code>'daily'</code> · daily · weekly</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">weekday</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (weekday BETWEEN 0 AND 6)">CHECK</span>
+                      </td>
+                      <td class="dm-note">0–6 · только для weekly · <code>NULL</code> для daily</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">time</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT '02:00'">DEFAULT</span>
+                      </td>
+                      <td class="dm-note"><code>'HH:MM'</code> локального времени · DEFAULT <code>'02:00'</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">retention_count</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 14">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (retention_count > 0)">CHECK</span>
+                      </td>
+                      <td class="dm-note">сколько снимков хранить · DEFAULT <code>14</code> · старые ротируются</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · правится по месту</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">backup_snapshots</span>
+                  <span class="dm-tbl__sub">журнал снимков</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--flag">append-only · зеркало sync_runs</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">state</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 'running'">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (running | succeeded | failed)">CHECK</span>
+                      </td>
+                      <td class="dm-note">running · succeeded · failed · UI-чип «готов» = succeeded</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">started_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">когда снят · сортировка журнала</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">finished_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note"><code>NULL</code> пока running</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">heartbeat_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">живость воркера снятия дампа · протухание отпускает замок</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">size_bytes</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">размер дампа · показывается в журнале (12.4 GB)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">location</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">путь снимка в хранилище · для restore</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">error</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">краткая причина провала</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> · без <code>updated_at</code> — ход несёт <code>started_at</code> / <code>finished_at</code> / <code>heartbeat_at</code></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Один активный снимок · протухший <code>heartbeat_at</code> отпускает замок</span>
+                </div>
+                <div class="stk-dec__d">
+                  Снятие дампа (Postgres + вектора) — длинная I/O-операция, и под
+                  может умереть на середине, оставив снимок в <code>running</code>
+                  навсегда. Тот же паттерн, что у
+                  <a href="#curation-runs" class="xref-anchor">curation_runs</a>:
+                  замок single-flight — partial unique index
+                  <code>UNIQUE ((true)) WHERE state = 'running'</code>, один
+                  активный бэкап на платформу; следующий по расписанию, совпав с
+                  незакрытым, отклоняется, а не плодит параллельный дамп. Воркер
+                  бьёт <code>heartbeat_at</code> ~раз в 30с; молчание дольше
+                  <strong>~90с</strong> (три пропуска) — сторож жнёт зомби в
+                  <code>failed</code> и отпускает замок, расписание идёт дальше.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Restore — обслуживание, ротация — по счётчику</span>
+                </div>
+                <div class="stk-dec__d">
+                  Восстановление перезаписывает базу снимком целиком, поэтому идёт
+                  под
+                  <a href="../../admin-panel/_wireframes/platform-settings.html" class="xref-module">maintenance</a>:
+                  приём и поиск приостановлены, на платформе — режим обслуживания.
+                  Снимки ротируются по <code>retention_count</code>: при наборе
+                  сверх порога самый старый удаляется и из журнала, и из хранилища.
+                  Креды хранилища write-only — задаются на
+                  <a href="../../admin-panel/_wireframes/knowledge-store.html#backups" class="xref-module">экране бэкапов</a>,
+                  обратно не показываются.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ CONSISTENCY ════════════════ -->
+      <div class="section" id="consistency">
+        <div class="section__title">Согласованность одной базы</div>
+        <p class="desc">
+          Реляционное тело, pgvector и граф живут в одном Postgres, поэтому
+          проекции и ACL меняются транзакционно — без кросс-базовой
+          синхронизации, без окна, где права и контент разошлись между СУБД.
+          Source of truth — реляционное тело; векторы и рёбра суть его проекции.
+        </p>
+        <p class="desc">
+          Синхронную загрузку (одна транзакция, фиксированный порядок проекций)
+          держит
+          <a href="data-model.html#projections" class="xref-page">модель
+            данных</a
+          >. Доводка же <strong>асинхронна</strong>:
+          Curation Pass досводит cross-source рёбра и нечёткие связи отдельным
+          прогоном, поверх уже консистентного тела. Поэтому граф eventually
+          complete — ребро видно сразу, когда оба узла уже в базе; ссылка на
+          ещё не пришедший узел (как и cross-source) досводится прогоном, — а
+          реляционное тело верно всегда.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

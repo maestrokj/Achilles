@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Web App: Редактор агента</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Web App</a>
+        <h1 class="header__title">Редактор агента</h1>
+        <div class="header__sub">
+          web app · макеты · агенты
+          <a class="in-shell" href="layout.html"><span class="in-shell__frame"></span>shell</a>
+          <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Конфигурация агента известной формы — каркас (skeleton)">
+            <span class="in-load__icon"></span>загрузка
+          </a>
+        </div>
+      </div>
+
+      <p class="desc">Создание и правка одного агента: промт, инструменты, расписание — и тут же ручной запуск с журналом прогонов. Один экран на создание (<code>/agents/new</code>) и правку существующего.</p>
+
+      <!-- ═══ Макет ═══ -->
+      <div class="section" id="editor">
+        <div class="section__title">
+          Конфигурация и прогоны
+          <a href="../../agent-engine/_workzone/runtime.html#prompt-composition" class="xref-badge">→ Agent Engine</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/agents/12
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/agents/:id · владелец агента</span>
+                  <span class="wf-urltip__body">Создание — /agents/new.</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="wf-appbar">
+              <span class="wf-brand"><span class="wf-brand__mark">A</span>Achilles</span>
+              <span class="wf-appbar__spacer"></span>
+              <span class="wf-avatar">ДС</span>
+            </div>
+
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <!-- ── Шапка агента: идентичность + мастер-контроли ── -->
+                <div class="wf-row wf-spread">
+                  <span class="wf-row">
+                    <span class="wf-title">Дайджест релизов</span>
+                    <span class="wf-chip wf-chip--ok">активен</span>
+                  </span>
+                  <span class="wf-row">
+                    <span class="wf-row">
+                      <span class="wf-toggle wf-toggle--on"></span>
+                      <span class="wf-text">Включён</span>
+                      <span class="wf-annot">1</span>
+                    </span>
+                    <button class="wf-btn wf-btn--primary">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                      Запустить сейчас <span class="wf-annot wf-annot--on-accent">2</span></button>
+                  </span>
+                </div>
+
+                <!-- ── Основное: имя · описание · промт ── -->
+                <div class="wf-stack">
+                  <span class="wf-label wf-grouphead">Основное</span>
+                  <div class="wf-field">
+                    <span class="wf-label">Имя</span>
+                    <div class="wf-input">Дайджест релизов</div>
+                  </div>
+                  <div class="wf-field">
+                    <span class="wf-label">Описание</span>
+                    <div class="wf-input">Сводка по статусам задач проекта Аякс и открытым блокерам.</div>
+                    <span class="wf-hint">опционально</span>
+                  </div>
+                  <div class="wf-field">
+                    <span class="wf-label">Промт <span class="wf-annot">3</span></span>
+                    <div class="wf-input wf-input--area">Каждый прогон собирай короткий дайджест проекта Аякс: что закрыто за период, какие задачи в работе и какие блокеры открыты. Отвечай списком, по каждому пункту — ссылку на источник.</div>
+                  </div>
+                </div>
+
+                <!-- ── Параметры запуска: модель · инструменты · расписание ── -->
+                <div class="wf-stack">
+                  <span class="wf-label wf-grouphead">Параметры запуска</span>
+                  <div class="wf-field">
+                    <span class="wf-label">Модель</span>
+                    <div class="wf-input wf-input--sm">
+                      Claude Sonnet
+                      <span class="wf-input__action">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                      </span>
+                    </div>
+                    <span class="wf-hint">из списка, разрешённого администратором</span>
+                  </div>
+
+                  <!-- ── Внутренние инструменты: фиксированное ядро KS ── -->
+                  <div class="wf-field">
+                    <span class="wf-label">Внутренние инструменты <span class="wf-annot">4</span></span>
+                    <div class="wf-route">
+                      <span class="wf-pill wf-pill--locked"><span class="wf-lock"></span>search</span>
+                      <span class="wf-pill wf-pill--locked"><span class="wf-lock"></span>graph</span>
+                      <span class="wf-pill wf-pill--locked"><span class="wf-lock"></span>sql</span>
+                    </div>
+                    <span class="wf-hint">ядро · под вашими правами · только чтение</span>
+                  </div>
+
+                  <!-- ── Внешние инструменты: пилюли-переключатели из разрешённых админом ── -->
+                  <div class="wf-field">
+                    <span class="wf-label">Внешние инструменты <span class="wf-annot">10</span></span>
+                    <div class="wf-route">
+                      <span class="wf-pill wf-pill--on">web_search</span>
+                      <span class="wf-pill wf-pill--off">fetch_url</span>
+                    </div>
+                    <span class="wf-hint">из разрешённых администратором · только чтение · клик переключает; снятие не блокирует прогон</span>
+                  </div>
+
+                  <!-- ── MCP — серая неактивная v2-заглушка ── -->
+                  <div class="wf-card wf-row wf-spread" style="opacity: 0.5">
+                    <span class="wf-row">
+                      <span class="wf-checkbox"></span>
+                      <span class="wf-text">Подключить MCP-сервер</span>
+                    </span>
+                    <span class="iter v2">v2</span>
+                  </div>
+
+                  <div class="wf-field">
+                    <span class="wf-label">Расписание <span class="wf-annot">5</span></span>
+                    <div class="wf-row">
+                      <div class="wf-input wf-input--sm">
+                        Интервал
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                      <div class="wf-input wf-input--sm">
+                        каждые 6 часов
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                    </div>
+                    <span class="wf-hint">режим + параметр; параметр меняется под режим — превью ниже. Вручную · интервал · календарно.</span>
+                  </div>
+
+                  <div class="wf-alert">
+                    Сужение data scope — <span class="iter v2">v2</span>; пока агент видит весь ваш доступ.
+                  </div>
+                </div>
+
+                <div class="wf-row">
+                  <button class="wf-btn wf-btn--primary">Сохранить</button>
+                  <button class="wf-btn wf-btn--ghost">Отмена</button>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <!-- ── Журнал прогонов ── -->
+                <div class="wf-stack">
+                  <span class="wf-label wf-grouphead">Журнал прогонов <span class="wf-annot">6</span></span>
+
+                  <div class="wf-fold" id="run-output">
+                    <button class="wf-fold__head">
+                      <span class="wf-runcell">
+                        <span>Сегодня 14:00</span>
+                        <span class="wf-runcell__meta">по расписанию · succeeded · 14 с · 38k токенов</span>
+                      </span>
+                      <span class="wf-fold__caret">Вывод
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                      </span>
+                    </button>
+                    <div class="wf-fold__body">
+                      <span class="wf-text">За период закрыто 7 задач; в работе — 3 (AJX-218, AJX-224, AJX-231). Открыт блокер: ревью архитектуры по AJX-218 ждёт релиз-менеджера. Дедлайн сдвинут на 30 июня.</span>
+                    </div>
+                  </div>
+
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-runcell">
+                      <span>Вчера 14:00</span>
+                      <span class="wf-runcell__meta">по расписанию · succeeded · 11 с · 31k токенов</span>
+                    </span>
+                    <span class="wf-fold__caret">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                    </span>
+                  </div>
+
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-runcell">
+                      <span>2 дня назад</span>
+                      <span class="wf-runcell__meta wf-runcell__meta--err">failed · потолок итераций <span class="wf-annot">7</span></span>
+                    </span>
+                    <span class="wf-fold__caret">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                    </span>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <div class="wf-center">
+                  <span class="wf-guarded"
+                    ><a class="wf-a wf-a--danger">Удалить агента</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#irreversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                  ></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Режимы расписания: как меняется поле под выбранный режим ── -->
+          <div class="wf-gallery">
+            <!-- вручную -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">расписание · вручную</div>
+              <div class="wf-screen">
+                <div class="wf-body">
+                  <div class="wf-field">
+                    <span class="wf-label">Расписание</span>
+                    <div class="wf-row">
+                      <div class="wf-input wf-input--sm">
+                        Вручную
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                    </div>
+                    <span class="wf-hint">параметров нет — агент запускается только кнопкой «Запустить сейчас»</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- интервал · список открыт -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">расписание · интервал · список открыт</div>
+              <div class="wf-screen">
+                <div class="wf-body">
+                  <div class="wf-field">
+                    <span class="wf-label">Расписание</span>
+                    <div class="wf-row">
+                      <div class="wf-input wf-input--sm">
+                        Интервал
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                      <div class="wf-input wf-input--sm">
+                        каждые 6 часов
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                    </div>
+                    <!-- открытый выпадающий список режима -->
+                    <div class="wf-menu" style="margin-top: 0.5rem">
+                      <span class="wf-menu__item">Вручную</span>
+                      <span class="wf-menu__item wf-menu__item--on">
+                        Интервал
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                      </span>
+                      <span class="wf-menu__item">Календарно</span>
+                    </div>
+                    <span class="wf-hint">пресеты: каждые 1 / 2 / 3 / 6 / 12 / 24 ч <span class="wf-annot">5</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- календарно -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">расписание · календарно</div>
+              <div class="wf-screen">
+                <div class="wf-body">
+                  <div class="wf-field">
+                    <span class="wf-label">Расписание</span>
+                    <div class="wf-row">
+                      <div class="wf-input wf-input--sm">
+                        Календарно
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                      <div class="wf-input wf-input--sm">
+                        еженедельно
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                      <div class="wf-input wf-input--sm">
+                        пн
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                      <div class="wf-input wf-input--sm">09:00</div>
+                    </div>
+                    <span class="wf-hint">«ежедневно» убирает выбор дня; время — в поясе владельца</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Состояния: пауза администратора · снятая модель ── -->
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">состояние · пауза администратора</div>
+              <div class="wf-screen">
+                <div class="wf-body">
+                  <div class="wf-stack wf-stack--loose">
+                    <div class="wf-alert wf-alert--error">
+                      Агент приостановлен администратором. Прогоны не запускаются — ни по расписанию, ни вручную. Снять паузу может только администратор. <span class="wf-annot">8</span>
+                    </div>
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-title">Пробелы в документации</span>
+                        <span class="wf-chip wf-chip--warn">на паузе · админ</span>
+                      </span>
+                      <span class="wf-row">
+                        <span class="wf-toggle wf-toggle--locked"></span>
+                        <button class="wf-btn wf-btn--disabled">Запустить сейчас</button>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wf-frame">
+              <div class="wf-stage__caption">состояние · модель снята</div>
+              <div class="wf-screen">
+                <div class="wf-body">
+                  <div class="wf-stack wf-stack--loose">
+                    <div class="wf-alert wf-alert--error">
+                      Модель агента больше не поддерживается — администратор убрал её из списка. Прогоны не запускаются, пока не выбрана другая модель. <span class="wf-annot">9</span>
+                    </div>
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-title">Дайджест релизов</span>
+                        <span class="wf-chip wf-chip--warn">модель снята</span>
+                      </span>
+                      <span class="wf-row">
+                        <span class="wf-toggle wf-toggle--locked"></span>
+                        <button class="wf-btn wf-btn--disabled">Запустить сейчас</button>
+                      </span>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Модель</span>
+                      <div class="wf-input wf-input--sm wf-input--empty">
+                        Выбрать модель
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Выключатель владельца — «включён» оставляет агента на расписании и ручном запуске, «выключен» останавливает целиком. Сводный статус — в заголовке.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              «Запустить сейчас» — внеочередной прогон с текущими настройками; чтит выключатель, замок админа и бюджет. Один активный прогон на агента: поверх идущего — пропуск.
+              <a href="../../agent-engine/_workzone/execution.html#schedule" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Промт владельца — задача, формат вывода, ограничения. Ложится поверх платформенного слоя (safety + правила организации), перебить его нельзя.
+              <a href="../../agent-engine/_workzone/runtime.html#prompt-composition" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Ядро из трёх внутренних инструментов — поиск, граф, SQL — фиксировано и всегда под личностью владельца: что закрыто сотруднику, закрыто и агенту, запись в граф недоступна.
+              <a href="../../agent-engine/_workzone/identity.html#ks-boundary" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Расписание — режим плюс параметр под него (превью режимов выше): «вручную» — без параметра, интервал — пресет «каждые N часов», календарно — слот «ежедневно / еженедельно в HH:MM», резолвится против пояса владельца. Сырой cron и событийные триггеры — <span class="iter v2">v2</span>.
+              <a href="../../agent-engine/_workzone/execution.html#schedule" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              Журнал прогонов — время, повод, исход, длительность и расход токенов; строка раскрывается в полный вывод агента.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              Исход прогона: succeeded · failed (ошибка / потолок итераций) · skipped (лимит недели / уже идёт). Машина состояний —
+              <a href="../../agent-engine/_workzone/data-model.html#agent-runs" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              Замок администратора липкий: пока он стоит, выключатель и запуск недоступны владельцу.
+              <a href="../../agent-engine/_workzone/governance.html#admin-pause" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">9</span>
+              Модель снята администратором из списка — агент остановлен, пока владелец не выберет другую из актуального списка. Прежний выбор на дефолт не откатывается.
+              <a href="../../agent-engine/_workzone/governance.html#model" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">10</span>
+              Внешние инструменты — выбор из разрешённых администратором read-only пресетов (web_search, fetch_url); снятие галочки не блокирует прогон, агент продолжает на ядре KS. Подключение MCP-серверов — <span class="iter v2">v2</span>.
+              <a href="../../admin-panel/_wireframes/tools.html" class="xref-module">Admin Panel</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,121 @@
+<!doctype html>
+<!--
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  FEATURE TEMPLATE — copy the whole _template/ dir to                │
+  │  _features/<feature>/ per feature. A feature is a mini-module: this │
+  │  index.html is its home; its EXCLUSIVE screens live beside it as    │
+  │  <screen>.html (copy screen.html). Underscore-prefixed (_template)  │
+  │  so it isn't mistaken for a real feature.                           │
+  │                                                                     │
+  │  The feature home is a MAP. Up to three parts: (1) description —    │
+  │  what the feature is and the user journey, product prose only; (2)  │
+  │  OPTIONAL deps block — feature-level dependencies with no screen    │
+  │  home (SMTP, external service) and their consequence; (3) a flow    │
+  │  diagram (flow-* kit in module.css) — the screen storyboard with    │
+  │  transitions. NO edge-case / tech-req lists: each fact lives at its │
+  │  altitude, never copied up — screen-local on the screen legend, a   │
+  │  cross-screen branch in the flow, a mechanic in workzone (link). The│
+  │  map links/forks to them; a copy in two places drifts.              │
+  │                                                                     │
+  │  Screens: feature-local → flow-stop links to the sibling file;      │
+  │  reused → flow-stop--shared links into ../../_wireframes/ (and, if a│
+  │  whole topic is mirrored, an .xref to the screen). When a local     │
+  │  screen is needed by a 2nd feature, MOVE it to _wireframes          │
+  │  (proximity principle) and fix links — make docs-map catches the    │
+  │  breakage.                                                          │
+  │                                                                     │
+  │  Conventions: docs/architecture/README.md → "Features".             │
+  └─────────────────────────────────────────────────────────────────────┘
+-->
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Фича (шаблон)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · feature-flow kit (no wireframe
+         kit — screens link out) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../feature-flow.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../index.html">← Auth / Security</a>
+        <!-- TODO: название фичи + статус .iter (v1 / v2) -->
+        <h1 class="header__title">Название фичи</h1>
+        <div class="header__sub">auth / security · фичи</div>
+      </div>
+
+      <!-- ═══ Описание ═══ Только продукт: что за фича и путь пользователя,
+           прозой. Зависимости, фолбэки, ссылки на механику — НЕ здесь, для
+           них опциональный блок «Зависимости» ниже. -->
+      <p class="desc">Краткое назначение фичи и путь пользователя.</p>
+
+      <!-- ═══ Зависимости ═══ (ОПЦИОНАЛЬНО) только feature-level deps, у
+           которых НЕТ дома-экрана (SMTP, внешний сервис) + их следствие
+           (фолбэк, статус фичи). Это не дублирование — единственный дом такой
+           зависимости. Механику (токены, политику) НЕ копируем — ссылкой в
+           _workzone. Нет таких зависимостей → удали блок целиком.
+      <div class="section">
+        <div class="section__title">Зависимости</div>
+        <p class="desc">
+          Зависимость и её следствие — напр.: требует SMTP, поэтому пункт
+          уходит в бэклог; до подключения — фолбэк. Механика —
+          в <a href="../../_workzone/authentication.html" class="xref-page">workzone</a>.
+        </p>
+      </div>
+      -->
+
+      <!-- ═══ Поток ═══ Метро-раскадровка: станции-экраны (.flow-stop) на
+           линии, на перегонах (.flow-seg) — триггер/условие перехода. Имя
+           станции — ссылка на экран: локальный sibling или общий из
+           _wireframes (.flow-stop--shared, двойное кольцо). Крайний случай —
+           ответвление .flow-branch вниз от перегона, где случается развилка
+           (тогда у .flow добавь .flow--branch — резервирует место); образец
+           ниже закомментирован. -->
+      <div class="section">
+        <div class="section__title">Поток</div>
+        <div class="flow">
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="screen.html">Экран A</a>
+            <span class="flow-stop__role">локальный · старт</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">действие</span>
+            <!-- Ветвление крайнего случая (раскомментируй + .flow--branch выше):
+            <div class="flow-branch">
+              <span class="flow-branch__label">условие</span>
+              <span class="flow-branch__elbow"></span>
+              <span class="flow-branch__stop"></span>
+              <a class="flow-branch__name" href="../../_wireframes/status-screen.html">Status Screen</a>
+              <span class="flow-branch__role">состояние · что дальше</span>
+            </div>
+            -->
+          </div>
+          <div class="flow-stop flow-stop--shared">
+            <a class="flow-stop__name" href="../../_wireframes/login.html">Login</a>
+            <span class="flow-stop__role">общий · возврат</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- БОЛЬШЕ НИЧЕГО. Дом фичи = карта: описание + (опц.) зависимости + поток.
+           Крайние случаи и тех-требования списком здесь НЕ перечисляем —
+           каждый факт живёт на своей высоте и дублировать его нельзя:
+             · крайний случай одного экрана → в легенду этого экрана;
+             · развилка между экранами → ветка .flow-branch в потоке выше;
+             · feature-level зависимость без экрана (SMTP) → блок «Зависимости»;
+             · механика (токены, политика) → в _workzone, ссылкой.
+           Карта только связывает/ветвится к ним. Копия в двух местах
+           неизбежно разъедется и потребует двойной поддержки. -->
+    </div>
+  </body>
+</html>

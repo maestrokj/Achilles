@@ -1,0 +1,812 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Тест-кейсы</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Тест-кейсы</h1>
+        <div class="header__sub">auth / security · workzone</div>
+      </div>
+
+      <!-- ── Overview band: решения + стек ── -->
+      <div class="test-overview">
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Принятые решения</div>
+          <div class="decision-box">
+            <strong>Schemathesis → <code>make fuzz-api</code></strong>
+            Отдельная команда, не входит в <code>make test</code>. Вручную или
+            отдельным шагом CI.
+          </div>
+        </div>
+
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Стек и инфраструктура</div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Имеется <span class="iter done">done</span></span>
+            <span>pytest, pytest-asyncio, pytest-cov, httpx</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Добавить</span>
+            <span
+              >testcontainers (PostgreSQL + Redis), factory_boy + Faker,
+              time-machine, respx (мок httpx для HIBP)</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Fuzz</span>
+            <span
+              >Schemathesis — fuzz по OpenAPI-схеме, выявляет ответы 500 и
+              нарушения контракта</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Тест-БД</span>
+            <span
+              >testcontainers-python — реальный PostgreSQL + Redis,
+              session-scoped контейнеры + per-test rollback</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Маркеры</span>
+            <span
+              ><code>@pytest.mark.unit</code>, <code>@pytest.mark.integration</code> —
+              фильтрация по типу</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Unit ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--unit">Unit</span>
+        <span class="test-sec__title">Без БД — криптография и валидация</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" /><path d="m21 2-9.6 9.6" /><circle cx="7.5" cy="15.5" r="5.5" /></svg></span><span class="name">test_jwt.py</span></div>
+            <div class="test-card__sub">JWT-токены — create / validate / edge cases</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="authentication.html#jwt-signing">→ JWT signing</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">create — claims</span><span class="test-case__e">sub, role, exp, iat, jti, iss=<code>achilles</code>, aud=<code>achilles-api</code></span></div>
+              <div class="test-case"><span class="test-case__k">create → decode</span><span class="test-case__e">валидный token → корректный payload</span></div>
+              <div class="test-case"><span class="test-case__k">expired → reject</span><span class="test-case__e"><code>exp</code> в прошлом → <code>ExpiredSignatureError</code></span></div>
+              <div class="test-case"><span class="test-case__k">wrong key → reject</span><span class="test-case__e">подпись другим SECRET_KEY → ошибка</span></div>
+              <div class="test-case"><span class="test-case__k">alg substitution → reject</span><span class="test-case__e">RS256 при сервере только HS256 (hardcoded algorithms)</span></div>
+              <div class="test-case"><span class="test-case__k">alg=none → reject</span><span class="test-case__e">header <code>alg: none</code> без подписи → отвергается</span></div>
+              <div class="test-case"><span class="test-case__k">kid в header</span><span class="test-case__e">ключ выбирается по <code>kid</code> из реестра</span></div>
+              <div class="test-case"><span class="test-case__k">missing claim → reject</span><span class="test-case__e">без sub или role → ошибка</span></div>
+              <div class="test-case"><span class="test-case__k">iss/aud mismatch → reject</span><span class="test-case__e">чужой issuer/audience → reject</span></div>
+              <div class="test-case"><span class="test-case__k">jti uniqueness</span><span class="test-case__e">два create → разные jti</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span><span class="name">test_password.py</span></div>
+            <div class="test-card__sub">Пароли и политика — argon2id, zxcvbn, HIBP</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="authentication.html#password-policy">→ Парольная политика</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">hash + verify OK</span><span class="test-case__e"><code>hash(pw)</code> → <code>verify</code> = True</span></div>
+              <div class="test-case"><span class="test-case__k">wrong password → False</span><span class="test-case__e">другая строка не проходит</span></div>
+              <div class="test-case"><span class="test-case__k">argon2 params</span><span class="test-case__e">memory=19MB, iterations=2, parallelism=1 — в хэше</span></div>
+              <div class="test-case"><span class="test-case__k">too short (&lt;8)</span><span class="test-case__e">→ reject</span></div>
+              <div class="test-case"><span class="test-case__k">too long (&gt;128)</span><span class="test-case__e">→ reject</span></div>
+              <div class="test-case"><span class="test-case__k">weak (zxcvbn)</span><span class="test-case__e">"password123456" ниже порога → reject</span></div>
+              <div class="test-case"><span class="test-case__k">HIBP — compromised</span><span class="test-case__e">respx: найден в утечке → reject</span></div>
+              <div class="test-case"><span class="test-case__k">HIBP — clean</span><span class="test-case__e">respx: не найден → accept</span></div>
+              <div class="test-case"><span class="test-case__k">HIBP — unavailable</span><span class="test-case__e">timeout/500 → fail open, warning</span></div>
+              <div class="test-case"><span class="test-case__k">strong password</span><span class="test-case__e">проходит длину, zxcvbn, HIBP</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="12" height="12" x="2" y="10" rx="2" ry="2" /><path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" /><path d="M6 18h.01" /><path d="M10 14h.01" /><path d="M15 6h.01" /><path d="M18 9h.01" /></svg></span><span class="name">test_tokens.py</span></div>
+            <div class="test-card__sub">CSPRNG-токены — invite, refresh hash, код привязки мессенджера</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">invite token format</span><span class="test-case__e">≥32 байта, URL-safe (base64url)</span></div>
+              <div class="test-case"><span class="test-case__k">uniqueness</span><span class="test-case__e">100 генераций → все уникальны</span></div>
+              <div class="test-case"><span class="test-case__k">constant-time compare</span><span class="test-case__e"><code>hmac.compare_digest()</code>, не <code>==</code></span></div>
+              <div class="test-case"><span class="test-case__k">refresh token — hash</span><span class="test-case__e">SHA-256 ≠ raw token</span></div>
+              <div class="test-case"><span class="test-case__k">messenger link code — hash</span><span class="test-case__e">короткий CSPRNG, в БД <code>code_hash</code> SHA-256 ≠ raw</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P0 ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p0">Integration · P0</span>
+        <span class="test-sec__title">Security invariants &amp; core flows</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z" /><path d="M20 2v4" /><path d="M22 4h-4" /><circle cx="4" cy="20" r="2" /></svg></span><span class="name">test_setup.py</span></div>
+            <div class="test-card__sub">Setup Wizard — первый Owner</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">setup available</span><span class="test-case__e">0 users → GET /setup → 200</span></div>
+              <div class="test-case"><span class="test-case__k">create owner OK</span><span class="test-case__e">POST /setup → Owner в БД, access + refresh</span></div>
+              <div class="test-case"><span class="test-case__k">setup gone</span><span class="test-case__e">после Owner → 404 <code>SETUP_UNAVAILABLE</code></span></div>
+              <div class="test-case"><span class="test-case__k">race condition</span><span class="test-case__e">2 параллельных POST → один Owner, второй 409 <code>CONFLICT</code></span></div>
+              <div class="test-case"><span class="test-case__k">invalid email</span><span class="test-case__e">→ 422 <code>VALIDATION_ERROR</code> + errors[], Owner НЕ создан</span></div>
+              <div class="test-case"><span class="test-case__k">weak password</span><span class="test-case__e">→ 422 <code>VALIDATION_ERROR</code> + errors[], НЕ создан</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20H2" /><path d="M11 4.562v16.157a1 1 0 0 0 1.242.97L19 20V5.562a2 2 0 0 0-1.515-1.94l-4-1A2 2 0 0 0 11 4.561z" /><path d="M11 4H8a2 2 0 0 0-2 2v14" /><path d="M14 12h.01" /><path d="M22 20h-3" /></svg></span><span class="name">test_login.py</span></div>
+            <div class="test-card__sub">Логин — выдача токенов, generic-ошибки</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">success</span><span class="test-case__e">access (body) + refresh (httpOnly cookie)</span></div>
+              <div class="test-case"><span class="test-case__k">wrong password</span><span class="test-case__e">→ 401 <code>INVALID_CREDENTIALS</code> generic</span></div>
+              <div class="test-case"><span class="test-case__k">unknown email</span><span class="test-case__e">→ 401 тот же generic — не раскрываем существование</span></div>
+              <div class="test-case"><span class="test-case__k">deactivated user</span><span class="test-case__e">→ 401 — не раскрываем статус</span></div>
+              <div class="test-case"><span class="test-case__k">cookie flags</span><span class="test-case__e">httpOnly, Secure, SameSite=Strict, Path=/api/auth, имя с префиксом <code>__Secure-</code></span></div>
+              <div class="test-case"><span class="test-case__k">remember-me снят</span><span class="test-case__e">session cookie без <code>Max-Age</code> — гибнет при закрытии браузера</span></div>
+              <div class="test-case"><span class="test-case__k">remember-me установлен</span><span class="test-case__e">persistent cookie, <code>Max-Age</code> = TTL refresh (30 д)</span></div>
+              <div class="test-case"><span class="test-case__k">email case-insensitive</span><span class="test-case__e">вход <code>Alice@x</code> при учётке <code>alice@x</code> → успех</span></div>
+              <div class="test-case"><span class="test-case__k">token claims</span><span class="test-case__e">sub=user_id, role=фактическая</span></div>
+              <div class="test-case"><span class="test-case__k">timing-safe (spy)</span><span class="test-case__e">несуществующий email → dummy argon2 verify (mock/spy)</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></svg></span><span class="name">test_refresh.py</span></div>
+            <div class="test-card__sub">Token rotation — reuse detection</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="authentication.html#refresh-rotation">→ Refresh token rotation</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">valid refresh → new pair</span><span class="test-case__e">новый access + новый refresh (ротация)</span></div>
+              <div class="test-case"><span class="test-case__k">grace-окно (~10с)</span><span class="test-case__e">повторный refresh тем же токеном в окне → тот же новый pair, family жива (гонка вкладок)</span></div>
+              <div class="test-case"><span class="test-case__k">old token → reject</span><span class="test-case__e">ротированный, вне окна → 401 <code>TOKEN_INVALID</code></span></div>
+              <div class="test-case"><span class="test-case__k">reuse → kill family</span><span class="test-case__e">отозванный → 401 <code>TOKEN_INVALID</code>, вся family</span></div>
+              <div class="test-case"><span class="test-case__k">expired (30d)</span><span class="test-case__e">time-machine +31д → 401 <code>TOKEN_EXPIRED</code></span></div>
+              <div class="test-case"><span class="test-case__k">absolute ceiling (90d)</span><span class="test-case__e">90д от первого выпуска → 401 <code>TOKEN_EXPIRED</code></span></div>
+              <div class="test-case"><span class="test-case__k">invalid signature</span><span class="test-case__e">подделка → 401 <code>TOKEN_INVALID</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2" /><path d="M14 10V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v2" /><path d="M10 10.5V6a2 2 0 0 0-2-2a2 2 0 0 0-2 2v8" /><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" /></svg></span><span class="name">test_logout.py</span></div>
+            <div class="test-card__sub">Logout — завершение сессии</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">standard logout</span><span class="test-case__e">refresh удалён из БД, Set-Cookie очищает</span></div>
+              <div class="test-case"><span class="test-case__k">post-logout refresh</span><span class="test-case__e">→ 401</span></div>
+              <div class="test-case"><span class="test-case__k">logout all</span><span class="test-case__e">POST /api/v1/auth/logout-all → все refresh удалены</span></div>
+              <div class="test-case"><span class="test-case__k">access still valid</span><span class="test-case__e">после logout до expiry — stateless, 15 мин</span></div>
+              <div class="test-case"><span class="test-case__k">свою family не убить</span><span class="test-case__e">завершение текущей session-family через управление сессиями → сервер отклоняет (не только скрыто в UI) — серверный guard</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="16" r="1" /><rect x="3" y="10" width="18" height="12" rx="2" /><path d="M7 10V7a5 5 0 0 1 10 0v3" /></svg></span><span class="name">test_must_change_password.py</span></div>
+            <div class="test-card__sub">Принудительная смена временного пароля</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">вход с временным паролём</span><span class="test-case__e"><code>must_change_password=true</code> → токены выданы, но гейт: редирект на экран смены пароля</span></div>
+              <div class="test-case"><span class="test-case__k">серверный гейт</span><span class="test-case__e">флаг взведён → запрос к произвольному защищённому эндпоинту → <code>403 PASSWORD_CHANGE_REQUIRED</code>; смена пароля и logout — разрешены</span></div>
+              <div class="test-case"><span class="test-case__k">смена на гейте</span><span class="test-case__e">сильный новый пароль → флаг снят, прочие refresh пользователя погашены (кроме текущего)</span></div>
+              <div class="test-case"><span class="test-case__k">повторный вход без смены</span><span class="test-case__e">флаг всё ещё взведён → снова гейт смены пароля</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P1 ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">Integration · P1</span>
+        <span class="test-sec__title">Protection &amp; access control</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" /></svg></span><span class="name">test_invite.py</span></div>
+            <div class="test-card__sub">Invite flow + scope boundary</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">owner creates invite</span><span class="test-case__e">→ 201, ссылка уходит письмом (SMTP — мок)</span></div>
+              <div class="test-case"><span class="test-case__k">admin creates invite</span><span class="test-case__e">→ 201 (если permission)</span></div>
+              <div class="test-case"><span class="test-case__k">admin invite → owner role</span><span class="test-case__e">→ 403 <code>FORBIDDEN</code> (scope boundary)</span></div>
+              <div class="test-case"><span class="test-case__k">member → 403</span><span class="test-case__e">не может создавать invite</span></div>
+              <div class="test-case"><span class="test-case__k">SMTP unconfigured</span><span class="test-case__e">создание invite → 409 <code>SMTP_NOT_CONFIGURED</code></span></div>
+              <div class="test-case"><span class="test-case__k">accept invite</span><span class="test-case__e">токен + имя + пароль → User с ролью</span></div>
+              <div class="test-case"><span class="test-case__k">expired (48h)</span><span class="test-case__e">+49ч → 410 <code>INVITE_EXPIRED</code></span></div>
+              <div class="test-case"><span class="test-case__k">reuse invite</span><span class="test-case__e">→ 410 <code>INVITE_USED</code></span></div>
+              <div class="test-case"><span class="test-case__k">duplicate email</span><span class="test-case__e">→ 409 <code>CONFLICT</code></span></div>
+              <div class="test-case"><span class="test-case__k">duplicate (регистр)</span><span class="test-case__e"><code>Bob@x</code> при учётке <code>bob@x</code> → 409 (<code>lower(email)</code>)</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" /></svg></span><span class="name">test_bulk_invite.py</span></div>
+            <div class="test-card__sub">Массовый инвайт — частичный успех, дубли, лимит</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">частичный успех</span><span class="test-case__e">батч со смесью валидных и битых строк → <code>207</code>/<code>200</code> с построчным отчётом: принятые создают инвайт, отклонённые несут причину; валидные не откатываются из-за соседних ошибок</span></div>
+              <div class="test-case"><span class="test-case__k">дубли внутри батча</span><span class="test-case__e">повтор одного email в батче и email уже существующего пользователя/инвайта → строка помечена дублем, второй инвайт не создаётся</span></div>
+              <div class="test-case"><span class="test-case__k">невалидная строка</span><span class="test-case__e">битый email / нет обязательного поля → строка отклонена с <code>VALIDATION_ERROR</code> в отчёте, не общий <code>422</code> на весь батч</span></div>
+              <div class="test-case"><span class="test-case__k">лимит размера</span><span class="test-case__e">батч сверх потолка строк → <code>422</code>, батч не обрабатывается частично</span></div>
+              <div class="test-case"><span class="test-case__k">scope-граница массово</span><span class="test-case__e">приглашающий не может выдать роль выше своей ни одной строкой батча (тот же периметр, что у единичного); нарушение → строка отклонена</span></div>
+              <div class="test-case"><span class="test-case__k">идемпотентность повторной загрузки</span><span class="test-case__e">повтор того же файла не задваивает уже созданные инвайты (по email), уже принятые пропущены</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg></span><span class="name">test_messenger_link.py</span></div>
+            <div class="test-card__sub">Привязка мессенджера — резолв, код, relay-safety, перебор</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">known user → resolve</span><span class="test-case__e">DM от привязанного мессенджера → <code>identity_mapping</code> → <code>user_id</code>, кода нет</span></div>
+              <div class="test-case"><span class="test-case__k">auto-match by email</span><span class="test-case__e">provisioned-email воркспейса == учётка → связь авто, без кода</span></div>
+              <div class="test-case"><span class="test-case__k">auto-match off</span><span class="test-case__e">тумблер выключен → даже при совпадении email бот выдаёт код</span></div>
+              <div class="test-case"><span class="test-case__k">unknown user → code</span><span class="test-case__e">нет связи и авто-матча → ссылка/код, <code>identity_mapping</code> не тронут</span></div>
+              <div class="test-case"><span class="test-case__k">return code → bind</span><span class="test-case__e">код из DM <code>S</code> → <code>identity_mapping(slack, S)</code> ↔ выдавшая учётка, <code>used_at</code></span></div>
+              <div class="test-case"><span class="test-case__k">relay-safety</span><span class="test-case__e">код учётки A, возврат из Slack B → связь B↔A; чужой Slack к A не привязать без её кода</span></div>
+              <div class="test-case"><span class="test-case__k">expired (15m)</span><span class="test-case__e">+16м → 410 <code>LINK_EXPIRED</code></span></div>
+              <div class="test-case"><span class="test-case__k">reuse code</span><span class="test-case__e">использованный → 410 <code>LINK_EXPIRED</code> (одноразовый)</span></div>
+              <div class="test-case"><span class="test-case__k">already linked</span><span class="test-case__e">аккаунт уже в <code>identity_mapping</code> → 409 <code>ALREADY_LINKED</code></span></div>
+              <div class="test-case"><span class="test-case__k">telegram → code-only</span><span class="test-case__e">email Telegram не отдаёт → авто-матча нет, всегда код; возврат → <code>identity_mapping(telegram, …)</code></span></div>
+              <div class="test-case"><span class="test-case__k">mattermost → code-only</span><span class="test-case__e">в событиях email нет → авто-матча нет, всегда код; возврат → <code>identity_mapping(mattermost, …)</code></span></div>
+              <div class="test-case"><span class="test-case__k">code brute-force</span><span class="test-case__e">5 неверных кодов на <code>chat_id</code> → попытка сожжена, нужен новый код</span></div>
+              <div class="test-case"><span class="test-case__k">no self-registration</span><span class="test-case__e">код без учётки войти не даёт — привязка только к существующей</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg></span><span class="name">test_rbac.py</span></div>
+            <div class="test-card__sub">RBAC middleware — матрица ролей</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">no token → 401</span><span class="test-case__e">protected без Authorization → 401</span></div>
+              <div class="test-case"><span class="test-case__k">owner → owner-only</span><span class="test-case__e">→ 200</span></div>
+              <div class="test-case"><span class="test-case__k">admin → owner-only</span><span class="test-case__e">→ 403</span></div>
+              <div class="test-case"><span class="test-case__k">member → admin-only</span><span class="test-case__e">→ 403</span></div>
+              <div class="test-case"><span class="test-case__k">owner → all endpoints</span><span class="test-case__e">полный доступ (матрица)</span></div>
+              <div class="test-case"><span class="test-case__k">admin → user mgmt</span><span class="test-case__e">users, sources → 200</span></div>
+              <div class="test-case"><span class="test-case__k">member → own data</span><span class="test-case__e">/me 200, /users 403</span></div>
+              <div class="test-case"><span class="test-case__k">require(permission)</span><span class="test-case__e">через ROLE_PERMISSIONS маппинг, не роль</span></div>
+              <div class="test-case"><span class="test-case__k">unknown permission → 403</span><span class="test-case__e">нет в маппинге → 403 для любой роли</span></div>
+              <div class="test-case"><span class="test-case__k">admin scope boundary</span><span class="test-case__e">Members 200, не Owners/Admins 403</span></div>
+              <div class="test-case"><span class="test-case__k">role escalation → 403</span><span class="test-case__e">нельзя назначить выше своей</span></div>
+              <div class="test-case"><span class="test-case__k">invalid role in token</span><span class="test-case__e">role="superadmin" → 403</span></div>
+              <div class="test-case"><span class="test-case__k">deactivated + valid token</span><span class="test-case__e">v1 stateless → 200, 15-мин окно (trade-off, документируется)</span></div>
+              <div class="test-case"><span class="test-case__k">stale role — критичный эндпоинт</span><span class="test-case__e">токен role=admin, в БД member; управление пользователями читает роль из БД → 403</span></div>
+              <div class="test-case"><span class="test-case__k">stale status — критичный эндпоинт</span><span class="test-case__e">валидный токен, в БД status=deactivated; критичная операция читает статус из БД → 401</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10h2" /><path d="M16 14h2" /><path d="M6.17 15a3 3 0 0 1 5.66 0" /><circle cx="9" cy="11" r="2" /><rect x="2" y="5" width="20" height="14" rx="2" /></svg></span><span class="name">test_ownership.py</span></div>
+            <div class="test-card__sub">Владение ресурсом — защита от IDOR</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">own resource → 200</span><span class="test-case__e">владелец правит свой ресурс — <code>owner_id</code> = <code>user_id</code></span></div>
+              <div class="test-case"><span class="test-case__k">foreign resource → 403</span><span class="test-case__e">Member A правит ресурс Member B → 403 <code>FORBIDDEN</code> (IDOR)</span></div>
+              <div class="test-case"><span class="test-case__k">permission есть, владения нет</span><span class="test-case__e">проверка <code>owner_id</code> поверх permission → 403</span></div>
+              <div class="test-case"><span class="test-case__k">admin штатная зона</span><span class="test-case__e">управление пользователями — обход владения; данные источников — нет</span></div>
+              <div class="test-case"><span class="test-case__k"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg> зависит от ресурсов</span><span class="test-case__e">конкретные эндпоинты приходят с Agent Engine</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2" /><line x1="12" x2="15" y1="14" y2="11" /><circle cx="12" cy="14" r="8" /></svg></span><span class="name">test_brute_force.py</span></div>
+            <div class="test-card__sub">Защита от перебора — rate limit, delays</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="protection.html#brute-force">→ Рубеж защиты от перебора</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">IP rate limit</span><span class="test-case__e">21-я / 15 мин → 429 <code>RATE_LIMITED</code> + retry_after</span></div>
+              <div class="test-case"><span class="test-case__k">exponential delay</span><span class="test-case__e">после 3 неудач → 1с / 2с / 4с</span></div>
+              <div class="test-case"><span class="test-case__k">below threshold</span><span class="test-case__e">1–2 → нет задержки (порог с 3-й)</span></div>
+              <div class="test-case"><span class="test-case__k">success resets</span><span class="test-case__e">успешный логин сбрасывает счётчик</span></div>
+              <div class="test-case"><span class="test-case__k">alert (слой 3)</span><span class="test-case__e">10 неудач per-account → уведомление Owner/Admin</span></div>
+              <div class="test-case"><span class="test-case__k">регистр не сбрасывает</span><span class="test-case__e"><code>brute:account</code> по <code>lower(email)</code> — смена регистра не обнуляет счётчик</span></div>
+              <div class="test-case"><span class="test-case__k">IP isolation</span><span class="test-case__e">IP-A исчерпан → IP-B работает</span></div>
+              <div class="test-case"><span class="test-case__k">delay cap 30s</span><span class="test-case__e">задержка ≤ 30 секунд</span></div>
+              <div class="test-case"><span class="test-case__k">XFF-спуфинг</span><span class="test-case__e">поддельный <code>X-Forwarded-For</code> от недоверенного источника не подменяет IP — лимит не обойти</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11h.01" /><path d="M14 6h.01" /><path d="M18 6h.01" /><path d="M6.5 13.1h.01" /><path d="M22 5c0 9-4 12-6 12s-6-3-6-12c0-2 2-3 6-3s6 1 6 3" /><path d="M17.4 9.9c-.8.8-2 .8-2.8 0" /><path d="M10.1 7.1C9 7.2 7.7 7.7 6 8.6c-3.5 2-4.7 3.9-3.7 5.6 4.5 7.8 9.5 8.4 11.2 7.4.9-.5 1.9-2.1 1.9-4.7" /><path d="M9.1 16.5c.3-1.1 1.4-1.7 2.4-1.4" /></svg></span><span class="name">test_csrf.py</span></div>
+            <div class="test-card__sub">CSRF-защита — Origin whitelist</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="protection.html#csrf">→ CSRF-проверка</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">no cookie → 401</span><span class="test-case__e">/refresh без httpOnly cookie → 401</span></div>
+              <div class="test-case"><span class="test-case__k">origin mismatch</span><span class="test-case__e">чужой Origin → 403</span></div>
+              <div class="test-case"><span class="test-case__k">valid origin → OK</span><span class="test-case__e">Origin из whitelist → пропускаем</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg></span><span class="name">test_cors.py</span></div>
+            <div class="test-card__sub">CORS-конфигурация</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">allowed origin → OK</span><span class="test-case__e">whitelist → Access-Control-Allow-Origin</span></div>
+              <div class="test-case"><span class="test-case__k">disallowed origin</span><span class="test-case__e">не whitelist → нет CORS-заголовков</span></div>
+              <div class="test-case"><span class="test-case__k">preflight</span><span class="test-case__e">OPTIONS → Allow-Credentials true, Allow-Methods, Max-Age 3600</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg></span><span class="name">test_error_envelope.py</span></div>
+            <div class="test-card__sub">Конверт ошибок — Problem Details (RFC 9457)</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#api-errors">→ Формат ошибок API</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">problem+json shape</span><span class="test-case__e">любая ошибка → <code>Content-Type: application/problem+json</code> и тело с <code>type·title·status·detail·code·request_id</code></span></div>
+              <div class="test-case"><span class="test-case__k">request_id = заголовок</span><span class="test-case__e"><code>request_id</code> в теле совпадает с <code>X-Request-Id</code> ответа — сквозная трассировка</span></div>
+              <div class="test-case"><span class="test-case__k">422 в problem-формате</span><span class="test-case__e">валидация даёт тот же конверт (не дефолтный ValidationError-shape фреймворка), <code>code=VALIDATION_ERROR</code> + <code>errors[]</code> из <code>{ field, message }</code></span></div>
+              <div class="test-case"><span class="test-case__k">429 несёт retry_after</span><span class="test-case__e">тело содержит <code>retry_after</code> (сек) + заголовок <code>Retry-After</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" x2="14" y1="2" y2="2" /><line x1="12" x2="15" y1="14" y2="11" /><circle cx="12" cy="14" r="8" /></svg></span><span class="name">test_api_rate_limit.py</span></div>
+            <div class="test-card__sub">Per-user API rate limit — тир по ролям</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="protection.html#cors">→ CORS · граница доверия</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">бакет исчерпан → 429</span><span class="test-case__e">превышение per-user потолка → 429 <code>RATE_LIMITED</code> + <code>Retry-After</code></span></div>
+              <div class="test-case"><span class="test-case__k">тир по роли</span><span class="test-case__e">у Admin потолок выше, чем у Member — при одинаковой нагрузке Member упирается в лимит раньше</span></div>
+              <div class="test-case"><span class="test-case__k">X-RateLimit-Remaining</span><span class="test-case__e">ответ несёт остаток корзины в заголовке</span></div>
+              <div class="test-case"><span class="test-case__k">≠ рубеж перебора</span><span class="test-case__e">этот лимит per-user после аутентификации; перебор логина ⑤ — per-IP до входа (разные счётчики, не пересекаются)</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg></span><span class="name">test_security_headers.py</span></div>
+            <div class="test-card__sub">Security-заголовки — проверка на ответе</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">HSTS</span><span class="test-case__e"><code>Strict-Transport-Security</code> — max-age 1 год, includeSubDomains</span></div>
+              <div class="test-case"><span class="test-case__k">CSP</span><span class="test-case__e"><code>default-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'</code></span></div>
+              <div class="test-case"><span class="test-case__k">nosniff</span><span class="test-case__e"><code>X-Content-Type-Options: nosniff</code></span></div>
+              <div class="test-case"><span class="test-case__k">frame deny</span><span class="test-case__e"><code>X-Frame-Options: DENY</code></span></div>
+              <div class="test-case"><span class="test-case__k">COOP / CORP</span><span class="test-case__e">оба <code>same-origin</code></span></div>
+              <div class="test-case"><span class="test-case__k">Referrer-Policy</span><span class="test-case__e"><code>strict-origin-when-cross-origin</code></span></div>
+              <div class="test-case"><span class="test-case__k">Permissions-Policy</span><span class="test-case__e">camera / microphone / geolocation выключены</span></div>
+              <div class="test-case"><span class="test-case__k">no-store на чувствительном</span><span class="test-case__e"><code>Cache-Control: no-store</code> на ответах с токенами / профилем</span></div>
+              <div class="test-case"><span class="test-case__k">fingerprint скрыт</span><span class="test-case__e"><code>Server</code> и <code>X-Powered-By</code> не отдаются</span></div>
+              <div class="test-case"><span class="test-case__k">Clear-Site-Data на logout</span><span class="test-case__e">ответ <code>/api/v1/auth/logout</code> отдаёт <code>Clear-Site-Data</code> (cookies, storage, cache); на прочих ответах — нет</span></div>
+              <div class="test-case"><span class="test-case__k">no-referrer на токен-роутах</span><span class="test-case__e">invite-accept, reset-password и messenger-link отдают <code>Referrer-Policy: no-referrer</code> — ссылка-секрет не утечёт; обычные роуты сохраняют <code>strict-origin-when-cross-origin</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg></span><span class="name">test_password_change.py</span></div>
+            <div class="test-card__sub">Смена пароля + audit</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">change OK</span><span class="test-case__e">current + сильный new → 200, хэш обновлён</span></div>
+              <div class="test-case"><span class="test-case__k">wrong current</span><span class="test-case__e">→ 401 <code>INVALID_CREDENTIALS</code></span></div>
+              <div class="test-case"><span class="test-case__k">wrong current ×3+</span><span class="test-case__e">per-account задержка растёт — общий счётчик рубежа перебора с логином</span></div>
+              <div class="test-case"><span class="test-case__k">weak new</span><span class="test-case__e">→ 422 <code>VALIDATION_ERROR</code> + errors[]</span></div>
+              <div class="test-case"><span class="test-case__k">same as current</span><span class="test-case__e">→ 422 <code>VALIDATION_ERROR</code></span></div>
+              <div class="test-case"><span class="test-case__k">other sessions killed</span><span class="test-case__e">все refresh кроме текущего удалены</span></div>
+              <div class="test-case"><span class="test-case__k">audit entry</span><span class="test-case__e">action=password_change</span></div>
+              <div class="test-case"><span class="test-case__k">audit entry (failure)</span><span class="test-case__e">action=password_change, result=failure</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 8h.01" /><path d="M12 12h.01" /><path d="M14 8h.01" /><path d="M16 12h.01" /><path d="M18 8h.01" /><path d="M6 8h.01" /><path d="M7 16h10" /><path d="M8 12h.01" /><rect width="20" height="16" x="2" y="4" rx="2" /></svg></span><span class="name">test_cli.py</span></div>
+            <div class="test-card__sub">CLI-команды — init-owner, reset-password</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">init-owner OK</span><span class="test-case__e">0 users → Owner создан</span></div>
+              <div class="test-case"><span class="test-case__k">init-owner exists</span><span class="test-case__e">есть users → ошибка, никто не создан</span></div>
+              <div class="test-case"><span class="test-case__k">init-owner weak pw</span><span class="test-case__e">пароль не проходит → ошибка</span></div>
+              <div class="test-case"><span class="test-case__k">reset-password OK</span><span class="test-case__e">временный пароль (CSPRNG), хэш обновлён, все refresh удалены</span></div>
+              <div class="test-case"><span class="test-case__k">reset-password unknown</span><span class="test-case__e">несуществующий email → ошибка</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg></span><span class="name">test_user_lifecycle.py</span></div>
+            <div class="test-card__sub">Деактивация, сброс пароля, scope</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">Owner deactivates Member</span><span class="test-case__e">→ 200, refresh и API-ключи пользователя отозваны</span></div>
+              <div class="test-case"><span class="test-case__k">Admin deactivates Member</span><span class="test-case__e">→ 200</span></div>
+              <div class="test-case"><span class="test-case__k">Admin deactivates Admin</span><span class="test-case__e">→ 403 <code>FORBIDDEN</code> (только Owner)</span></div>
+              <div class="test-case"><span class="test-case__k">self-deactivation</span><span class="test-case__e">→ 403 <code>FORBIDDEN</code></span></div>
+              <div class="test-case"><span class="test-case__k">reactivate → login OK</span><span class="test-case__e">старые токены не восстановлены</span></div>
+              <div class="test-case"><span class="test-case__k">Owner resets Member pw</span><span class="test-case__e">→ 200, reset-ссылка на email (без SMTP — временный пароль, refresh удалены); audit</span></div>
+              <div class="test-case"><span class="test-case__k">Admin resets Owner pw</span><span class="test-case__e">→ 403 (scope boundary)</span></div>
+              <div class="test-case"><span class="test-case__k">deactivation + reset → audit</span><span class="test-case__e">user_deactivated, password_reset</span></div>
+              <div class="test-case"><span class="test-case__k">admin «завершить все»</span><span class="test-case__e">все refresh-токены пользователя отозваны → 200; access доживает ≤15-мин окно (stateless trade-off)</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4" /><path d="m21 2-9.6 9.6" /><circle cx="7.5" cy="15.5" r="5.5" /></svg></span><span class="name">test_api_keys.py</span></div>
+            <div class="test-card__sub">Выпуск, аутентификация, отзыв</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">создание · показ один раз</span><span class="test-case__e">ответ содержит полный ключ (<code>ach_</code> + CSPRNG) ровно раз; в БД — только <code>SHA-256</code>-хэш и <code>prefix</code></span></div>
+              <div class="test-case"><span class="test-case__k">аутентификация по ключу</span><span class="test-case__e">валидный ключ в заголовке → <code>user_id</code> → роль / ACL; неверный / несуществующий → 401</span></div>
+              <div class="test-case"><span class="test-case__k">scope ≤ прав владельца</span><span class="test-case__e">ключ не шире роли и ACL владельца; сужение по источникам применяется поверх</span></div>
+              <div class="test-case"><span class="test-case__k">read-only</span><span class="test-case__e">попытка записи через ключ → 403 (запись — территория Agent Engine)</span></div>
+              <div class="test-case"><span class="test-case__k">выдача админом</span><span class="test-case__e">Owner / Admin выпускает ключ на сотрудника; scope — права сотрудника, не админа</span></div>
+              <div class="test-case"><span class="test-case__k">истёкший ключ</span><span class="test-case__e"><code>expires_at</code> в прошлом → 401 без отдельного отзыва; бессрочный (<code>NULL</code>) не истекает</span></div>
+              <div class="test-case"><span class="test-case__k">отзыв мгновенный</span><span class="test-case__e"><code>is_revoked</code> → следующий запрос 401; отзыв владельцем и Owner / Admin</span></div>
+              <div class="test-case"><span class="test-case__k">каскад при деактивации</span><span class="test-case__e">деактивация владельца → все его ключи отозваны</span></div>
+              <div class="test-case"><span class="test-case__k">rate limit</span><span class="test-case__e"><code>60 req/min</code> на ключ → сверх лимита 429; <code>last_used_at</code> обновляется</span></div>
+              <div class="test-case"><span class="test-case__k">audit</span><span class="test-case__e">создание и отзыв ключа пишутся в <code>audit_log</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" /></svg></span><span class="name">test_email_change.py</span></div>
+            <div class="test-card__sub">Смена email админом</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">admin меняет email</span><span class="test-case__e">→ 200, email обновлён; refresh пользователя погашены</span></div>
+              <div class="test-case"><span class="test-case__k">email занят</span><span class="test-case__e">новый адрес уже есть (в т.ч. иной регистр, <code>lower(email)</code>) → 409 <code>CONFLICT</code></span></div>
+              <div class="test-case"><span class="test-case__k">audit entry</span><span class="test-case__e">action=email_changed, metadata old/new, actor=admin_id, target</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10h2" /><path d="M16 14h2" /><path d="M6.17 15a3 3 0 0 1 5.66 0" /><circle cx="9" cy="11" r="2" /><rect x="2" y="5" width="20" height="14" rx="2" /></svg></span><span class="name">test_identity_bridge.py</span></div>
+            <div class="test-card__sub">Авто-связь identity↔users по email (мост со стороны входа)</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="authorization.html#identity">→ Идентичность</a>
+              <a class="xref-badge" href="../../knowledge-store/_workzone/acl-identity.html#identity">→ Knowledge Store</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">accept invite → мост</span><span class="test-case__e">принятие инвайта на <code>alice@x</code> при существующей <code>identity</code> того же email → <code>identity.user_id</code> = новый user</span></div>
+              <div class="test-case"><span class="test-case__k">case-insensitive</span><span class="test-case__e">инвайт <code>Alice@x</code> при <code>identity</code> <code>alice@x</code> → связь по <code>lower(email)</code></span></div>
+              <div class="test-case"><span class="test-case__k">identity ещё нет</span><span class="test-case__e">нет совпадающей <code>identity</code> → no-op, без ошибки; свяжется позже при upsert Harvester'ом</span></div>
+              <div class="test-case"><span class="test-case__k">setup owner → мост</span><span class="test-case__e">первый Owner через <code>/setup</code> / <code>init-owner</code> связывается с <code>identity</code> того же email</span></div>
+              <div class="test-case"><span class="test-case__k">смена email → переезд моста</span><span class="test-case__e">admin меняет email → мост переустанавливается на <code>identity</code> нового адреса, прежняя связь снимается</span></div>
+              <div class="test-case"><span class="test-case__k">адрес не совпал → без моста</span><span class="test-case__e">email входа ≠ email источника → <code>identity.user_id</code> остаётся <code>NULL</code>, ждёт ручной привязки в Admin</span></div>
+              <div class="test-case"><span class="test-case__k">ручная связь не перетирается</span><span class="test-case__e">закреплённая админом связь (<svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5" /><path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z" /></svg>) авто-связью не переписывается</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg></span><span class="name">test_password_reset.py</span></div>
+            <div class="test-card__sub">Сброс по email-ссылке — «забыл пароль» и admin-reset (SMTP — мок)</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">forgot known email</span><span class="test-case__e">→ 200, письмо со ссылкой; в БД — только хэш токена</span></div>
+              <div class="test-case"><span class="test-case__k">forgot unknown email</span><span class="test-case__e">→ 200, ответ неотличим от известного (anti-enumeration)</span></div>
+              <div class="test-case"><span class="test-case__k">resend rate-limit</span><span class="test-case__e">частые запросы по одному адресу → 429</span></div>
+              <div class="test-case"><span class="test-case__k">set password OK</span><span class="test-case__e">хэш обновлён, все refresh удалены, audit</span></div>
+              <div class="test-case"><span class="test-case__k">token reuse</span><span class="test-case__e">повторное использование → 410 <code>RESET_EXPIRED</code> (неотличимо от истёкшего)</span></div>
+              <div class="test-case"><span class="test-case__k">token expired</span><span class="test-case__e">TTL 1 ч истёк → 410 <code>RESET_EXPIRED</code></span></div>
+              <div class="test-case"><span class="test-case__k">new link kills old</span><span class="test-case__e">повторная отправка гасит прежний токен</span></div>
+              <div class="test-case"><span class="test-case__k">no sessions killed on send</span><span class="test-case__e">отправка ссылки не трогает refresh — гасятся только при установке пароля</span></div>
+              <div class="test-case"><span class="test-case__k">SMTP unconfigured</span><span class="test-case__e">self-service недоступен; admin-reset уходит в фолбэк временного пароля</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P2 ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p2">Integration · P2</span>
+        <span class="test-sec__title">Business logic guards</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p2">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" /><path d="M5 21h14" /></svg></span><span class="name">test_last_owner.py</span></div>
+            <div class="test-card__sub">Защита последнего Owner + hard-delete</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p2">P2</span>
+              <a class="xref-badge xref-badge--page" href="authentication.html#user-lifecycle">→ Удаление</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">delete last owner</span><span class="test-case__e">единственный → 403 <code>LAST_OWNER_PROTECTED</code></span></div>
+              <div class="test-case"><span class="test-case__k">deactivate last owner</span><span class="test-case__e">→ 403 <code>LAST_OWNER_PROTECTED</code></span></div>
+              <div class="test-case"><span class="test-case__k">downgrade last owner</span><span class="test-case__e">Owner→Admin при 1 Owner → 403 <code>LAST_OWNER_PROTECTED</code></span></div>
+              <div class="test-case"><span class="test-case__k">delete non-last owner</span><span class="test-case__e">при 2+ → 200</span></div>
+              <div class="test-case"><span class="test-case__k">delete — только Owner</span><span class="test-case__e">Admin вызывает delete → 403 <code>FORBIDDEN</code>; удаление необратимо, право только у Owner</span></div>
+              <div class="test-case"><span class="test-case__k">hard-delete → каскад auth</span><span class="test-case__e">удаление не-последнего пользователя физически сносит строку + каскадом его refresh-токены и API-ключи</span></div>
+              <div class="test-case"><span class="test-case__k">контент источников цел</span><span class="test-case__e">после удаления данные источников и <code>audit_log</code> не затронуты (см. <code>test_audit_log.py</code> — <code>actor_id</code> без FK)</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p2">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12h-5" /><path d="M15 8h-5" /><path d="M19 17V5a2 2 0 0 0-2-2H4" /><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3" /></svg></span><span class="name">test_audit_log.py</span></div>
+            <div class="test-card__sub">Аудит-лог — append-only, owner-read</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p2">P2</span>
+              <a class="xref-badge xref-badge--page" href="protection.html#audit-log">→ Аудит-лог</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">login success → entry</span><span class="test-case__e">actor, action=login, success, ip, ua</span></div>
+              <div class="test-case"><span class="test-case__k">login failure → entry</span><span class="test-case__e">login_failed, failure, ip, ua, actor_id=NULL</span></div>
+              <div class="test-case"><span class="test-case__k">user created → entry</span><span class="test-case__e">user_created, target=new_user_id</span></div>
+              <div class="test-case"><span class="test-case__k">role changed → entry</span><span class="test-case__e">role_changed, metadata old/new</span></div>
+              <div class="test-case"><span class="test-case__k">logout → entry</span><span class="test-case__e">action=logout, actor=user_id</span></div>
+              <div class="test-case"><span class="test-case__k">user deactivated → entry</span><span class="test-case__e">user_deactivated, actor=admin_id, target</span></div>
+              <div class="test-case"><span class="test-case__k">read access — owner only</span><span class="test-case__e">Owner 200; Admin/Member 403 <code>FORBIDDEN</code></span></div>
+              <div class="test-case"><span class="test-case__k">append-only</span><span class="test-case__e">SQL UPDATE/DELETE → ошибка (DB policy)</span></div>
+              <div class="test-case"><span class="test-case__k">переживает удаление актора</span><span class="test-case__e">hard-delete user → строки <code>audit_log</code> целы (<code>actor_id</code> без FK)</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Frontend ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--fe">Frontend</span>
+        <span class="test-sec__title">React — auth flows</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--fe">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1" /><path d="M20.2 20.2c2.04-2.03.02-7.36-4.5-11.9-4.54-4.52-9.87-6.54-11.9-4.5-2.04 2.03-.02 7.36 4.5 11.9 4.54 4.52 9.87 6.54 11.9 4.5Z" /><path d="M15.7 15.7c4.52-4.54 6.54-9.87 4.5-11.9-2.03-2.04-7.36-.02-11.9 4.5-4.52 4.54-6.54 9.87-4.5 11.9 2.03 2.04 7.36.02 11.9-4.5Z" /></svg></span><span class="name">AuthProvider + ProtectedRoute + interceptor</span></div>
+            <div class="test-card__sub">state, redirect, deep-link, auto-refresh</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Frontend</span>            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">login → state</span><span class="test-case__e">AuthProvider отдаёт user + role</span></div>
+              <div class="test-case"><span class="test-case__k">logout → redirect</span><span class="test-case__e">state очищен, redirect /login</span></div>
+              <div class="test-case"><span class="test-case__k">unauthenticated → redirect</span><span class="test-case__e">ProtectedRoute без токена → /login</span></div>
+              <div class="test-case"><span class="test-case__k">deep-link → ?next возврат</span><span class="test-case__e">гость на защищённый маршрут → <code>/login?next=…</code> → после входа возврат на исходный</span></div>
+              <div class="test-case"><span class="test-case__k">?next только локальный</span><span class="test-case__e">внешний <code>?next=https://evil…</code> / <code>//evil</code> игнорируется → редирект на дом по роли (защита от open-redirect)</span></div>
+              <div class="test-case"><span class="test-case__k">entry-gate по роли</span><span class="test-case__e">с сессией: Owner/Admin → /admin, Member → /chat</span></div>
+              <div class="test-case"><span class="test-case__k">wrong role → 403 page</span><span class="test-case__e">Member на admin-only → 403</span></div>
+              <div class="test-case"><span class="test-case__k">auto-refresh</span><span class="test-case__e">401 → /refresh → retry</span></div>
+              <div class="test-case"><span class="test-case__k">refresh failed → logout</span><span class="test-case__e">/refresh 401 → полный logout + redirect</span></div>
+              <div class="test-case"><span class="test-case__k">concurrent 401s</span><span class="test-case__e">несколько 401 → один refresh → все retry</span></div>
+              <div class="test-case"><span class="test-case__k">403 без refresh</span><span class="test-case__e">403 по правам пропускается — не запускает refresh, не logout</span></div>
+              <div class="test-case"><span class="test-case__k">retry-once (анти-цикл)</span><span class="test-case__e">флаг <code>_retry</code>: 401 на уже повторённом → logout без рекурсии</span></div>
+              <div class="test-case"><span class="test-case__k">refresh timeout → logout</span><span class="test-case__e">таймаут Promise refresh → logout вместо зависания</span></div>
+              <div class="test-case"><span class="test-case__k">setup redirect</span><span class="test-case__e">0 users → любой route → /setup</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ v2 — отложенный охват ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--v2">v2</span>
+        <span class="test-sec__title">Отложенный охват</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          Тест-план выше покрывает scope первой версии. Зоны
+          ниже проектируются вместе с соответствующими v2-фичами — здесь
+          зафиксирован только охват, без детальных кейсов.
+        </p>
+        <div class="test-stack-row">
+          <span class="test-stack-row__lbl">MFA</span>
+          <span
+            >TOTP (окно ±1 шаг, защита от повтора кода), recovery-коды, отдельный
+            лимит MFA-шага, шифрование <code>mfa_secret</code></span
+          >
+        </div>
+        <div class="test-stack-row">
+          <span class="test-stack-row__lbl">SSO / OIDC</span>
+          <span
+            >state / PKCE / nonce, автопровижининг из IdP, авто-матч только по
+            verified email</span
+          >
+        </div>
+        <div class="test-stack-row">
+          <span class="test-stack-row__lbl">OAuth</span>
+          <span
+            >интерактивный поток выдачи токена, headless-вход через
+            API-ключ</span
+          >
+        </div>
+        <div class="test-stack-row">
+          <span class="test-stack-row__lbl">Мгновенный отзыв</span>
+          <span
+            ><code>jti</code> в Redis blacklist при деактивации — инвалидация без
+            15-минутного окна</span
+          >
+        </div>
+      </div>
+
+      <!-- ═══ Структура ═══ -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Structure</span>
+        <span class="test-sec__title">Файловая структура тестов</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          Приоритет (P0–P2) ортогонален каталогам и задаётся маркерами
+          (<code>pytest -m p0</code>), а не отдельными папками.
+        </p>
+        <div class="test-tree">
+          <ul>
+            <li>
+              <span class="test-tree__row"><code>tests/</code><span class="d">backend — общий каркас</span></span>
+              <ul>
+                <li><span class="test-tree__row"><code>conftest.py</code><span class="d">БД-движок, сессия, HTTP-клиент</span></span></li>
+                <li><span class="test-tree__row"><code>factories/</code><span class="d">фабрики данных, кросс-модульно</span></span></li>
+                <li>
+                  <span class="test-tree__row"><code>auth/</code><span class="d">каталог модуля</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>conftest.py</code><span class="d">фикстуры модуля</span></span></li>
+                    <li><span class="test-tree__row"><code>unit/</code><span class="d">без БД — крипто и валидация</span></span></li>
+                    <li>
+                      <span class="test-tree__row"><code>integration/</code><span class="d">с БД — по доменам</span></span>
+                      <ul>
+                        <li><span class="test-tree__row"><code>session/</code><span class="d">setup · login · logout · refresh</span></span></li>
+                        <li><span class="test-tree__row"><code>access/</code><span class="d">rbac · ownership · invite · brute-force · csrf · cors · security-headers</span></span></li>
+                        <li><span class="test-tree__row"><code>account/</code><span class="d">смена пароля · CLI · lifecycle · identity-bridge</span></span></li>
+                        <li><span class="test-tree__row"><code>audit/</code><span class="d">last-owner · audit-log</span></span></li>
+                      </ul>
+                    </li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+          <ul>
+            <li><span class="test-tree__row"><code>frontend/…/auth/__tests__/</code><span class="d">рядом с кодом, по модулю</span></span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

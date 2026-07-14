@@ -1,0 +1,469 @@
+# ===== Resource Limits (tune here) =====
+# Ceilings, not reservations — sized for the recommended host (8 vCPU / 16 GB,
+# docs/get-started). Steady-state usage is far below; limits only cap runaways.
+x-res-database: &res-database
+  resources:
+    limits: { cpus: "4", memory: "4G" }
+
+# backend + worker lanes: async Python, IO-bound; 2G absorbs harvester
+# parse/embed batches without letting one lane starve the host.
+x-res-app: &res-app
+  resources:
+    limits: { cpus: "2", memory: "2G" }
+
+# 2× headroom over --maxmemory (512mb default): the AOF-rewrite fork
+# copy-on-writes on top of the dataset — limit == maxmemory is an OOM trap.
+x-res-cache: &res-cache
+  resources:
+    limits: { cpus: "1", memory: "1G" }
+
+x-res-proxy: &res-proxy
+  resources:
+    limits: { cpus: "1", memory: "256M" }
+
+# Full Python processes with a small working set: alembic, SAQ cron
+# (+ the Mattermost WS listener lives in the scheduler).
+x-res-job: &res-job
+  resources:
+    limits: { cpus: "1", memory: "512M" }
+
+x-res-light: &res-light
+  resources:
+    limits: { cpus: "0.5", memory: "128M" }
+
+x-res-minimal: &res-minimal
+  resources:
+    limits: { cpus: "0.25", memory: "128M" }
+
+# ===== Logging =====
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "50m"
+    max-file: "5"
+
+# ===== Backend Environment =====
+x-backend-env: &backend-env
+  - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+  - REDIS_DURABLE_URL=redis://:${REDIS_PASSWORD}@redis-durable:6379/0
+  - REDIS_CACHE_URL=redis://:${REDIS_PASSWORD}@redis-cache:6379/0
+  - SECRET_KEY=${SECRET_KEY}
+  # Production sets an explicit data-encryption key (32B urlsafe base64);
+  # unset falls back to an HKDF derivation from SECRET_KEY.
+  - CRYPTO_KEY=${CRYPTO_KEY:-}
+  - LOG_LEVEL=${LOG_LEVEL:-info}
+  - CORS_ORIGINS=${CORS_ORIGINS}
+  # Absolute links in outgoing email (invite/reset) — defaults to localhost otherwise.
+  - PUBLIC_BASE_URL=${PUBLIC_BASE_URL}
+  # SAQ slots per lane process — tune to the host; defaults live in config.py.
+  - WORKER_CONCURRENCY_INTERACTIVE=${WORKER_CONCURRENCY_INTERACTIVE:-10}
+  - WORKER_CONCURRENCY_BACKGROUND=${WORKER_CONCURRENCY_BACKGROUND:-4}
+  - WORKER_CONCURRENCY_AGENTS=${WORKER_CONCURRENCY_AGENTS:-8}
+
+services:
+  postgres:
+    # pg16 → pg17 (matches postgresql-client 17 in the backend images).
+    # A volume initialized by pg16 will not boot: recreate it once with
+    # `docker compose down -v` (pre-production, no data to keep).
+    image: pgvector/pgvector:pg17
+    container_name: achilles_postgres_prod
+    logging: *default-logging
+    # Parallel workers and HNSW index builds go through shared memory;
+    # the 64mb Docker default (and even 256mb) throttles them.
+    shm_size: 1g
+    stop_grace_period: 30s
+    # Sized to the 4G limit — stock postgresql.conf assumes 128MB of RAM.
+    # maintenance_work_mem drives HNSW build speed (re-embed, curation).
+    command: >-
+      postgres
+      -c shared_buffers=1GB
+      -c effective_cache_size=3GB
+      -c maintenance_work_mem=512MB
+      -c work_mem=16MB
+      -c max_wal_size=2GB
+    ulimits:
+      nofile:
+        soft: 8192
+        hard: 8192
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    deploy: *res-database
+    networks:
+      - achilles-data
+
+  redis-durable:
+    image: redis:7-alpine
+    container_name: achilles_redis_durable_prod
+    logging: *default-logging
+    stop_grace_period: 10s
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    command: >-
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --appendonly yes
+      --maxmemory ${REDIS_MAXMEMORY:-512mb}
+      --maxmemory-policy noeviction
+    volumes:
+      - redis_durable_data:/data
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$$REDIS_PASSWORD redis-cli ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy: *res-cache
+    networks:
+      - achilles-data
+
+  redis-cache:
+    image: redis:7-alpine
+    container_name: achilles_redis_cache_prod
+    logging: *default-logging
+    stop_grace_period: 10s
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    command: >-
+      redis-server
+      --requirepass ${REDIS_PASSWORD}
+      --save ""
+      --appendonly no
+      --maxmemory ${REDIS_MAXMEMORY:-512mb}
+      --maxmemory-policy allkeys-lru
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "REDISCLI_AUTH=$$REDIS_PASSWORD redis-cli ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    deploy: *res-cache
+    networks:
+      - achilles-data
+
+  migrate:
+    image: achilles-backend:prod
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: achilles_migrate_prod
+    logging: *default-logging
+    environment: *backend-env
+    command: alembic upgrade head
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+    deploy: *res-job
+    networks:
+      - achilles-data
+
+  backend:
+    image: achilles-backend:prod
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    container_name: achilles_backend_prod
+    logging: *default-logging
+    init: true
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    ulimits:
+      nofile:
+        soft: 16384
+        hard: 16384
+    volumes:
+      - ./logs/backend:/app/logs
+      # Writable HF-tokenizer cache (~/.cache/achilles) under read_only rootfs;
+      # explicit mode — modern Docker inherits the created dir's 755 otherwise.
+      - { type: tmpfs, target: /home/appuser/.cache, tmpfs: { mode: 0o1777 } }
+    environment: *backend-env
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis-durable:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+    restart: always
+    deploy: *res-app
+    networks:
+      - achilles-public
+      - achilles-data
+
+  # Same image, different command per lane — cache-workers/_workzone/stack.html
+  # No container_name on the lanes: a heavy deployment scales one out with
+  # `docker compose up -d --scale worker-background=2` (locks live in
+  # Postgres/Redis, N replicas per lane are safe; the scheduler is not).
+  worker-interactive: &worker-service
+    image: achilles-backend:prod
+    logging: *default-logging
+    init: true
+    stop_grace_period: 60s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    volumes:
+      # Same tokenizer-cache mount as the backend — the chunker downloads the
+      # embedder's HF tokenizer on first sync and needs a writable ~/.cache.
+      - { type: tmpfs, target: /home/appuser/.cache, tmpfs: { mode: 0o1777 } }
+    command: saq achilles.infra.worker.interactive.settings --verbose
+    environment: *backend-env
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import redis,os; redis.from_url(os.environ['REDIS_DURABLE_URL']).ping()\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      redis-durable:
+        condition: service_healthy
+    restart: always
+    deploy: *res-app
+    # achilles-public is not about serving traffic (no ports published) — it is
+    # the egress route: agent LLM calls, web_search/fetch_url and SMTP all run
+    # in the worker lanes, and the internal-only data network has no way out.
+    networks:
+      - achilles-data
+      - achilles-public
+
+  worker-background:
+    <<: *worker-service
+    command: saq achilles.infra.worker.background.settings --verbose
+
+  worker-agents:
+    <<: *worker-service
+    command: saq achilles.infra.worker.agents.settings --verbose
+
+  scheduler:
+    # Exactly one replica: SAQ cron on N workers would fire N times.
+    # container_name kept on purpose — a second guard against --scale.
+    <<: *worker-service
+    container_name: achilles_scheduler_prod
+    command: saq achilles.infra.scheduler.settings.settings --verbose
+    deploy:
+      <<: *res-job
+      replicas: 1
+
+  embeddings:
+    # Built-in embeddings runtime (Platform provider): OpenAI-compatible,
+    # weights pull lazily into the cache volume on model assignment.
+    image: achilles-embeddings:prod
+    build:
+      context: ./embeddings
+    container_name: achilles_embeddings_prod
+    logging: *default-logging
+    init: true
+    stop_grace_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - embeddings_cache:/cache
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:80/healthz')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: always
+    deploy:
+      resources:
+        # fp32 weights transiently double while loading: a 0.6B model peaks
+        # ~5.2G (measured); 8G holds one warm model with headroom.
+        limits: { cpus: "4", memory: "8G" }
+    # egress for the lazy weight download (HuggingFace) — see the worker note.
+    networks:
+      - achilles-data
+      - achilles-public
+
+  frontend:
+    image: achilles-frontend:prod
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      additional_contexts:
+        nginx-conf: ./nginx
+      args:
+        - VITE_API_URL=${VITE_API_URL}
+    container_name: achilles_frontend_prod
+    logging: *default-logging
+    stop_grace_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    # The image runs as USER nginx; modern Docker mounts tmpfs with the
+    # underlying directory's mode (755 root) — world-writable modes are
+    # explicit so the unprivileged worker can create its temp/pid files.
+    volumes:
+      - { type: tmpfs, target: /tmp, tmpfs: { mode: 0o1777 } }
+      - { type: tmpfs, target: /var/cache/nginx, tmpfs: { mode: 0o1777 } }
+      - { type: tmpfs, target: /run, tmpfs: { mode: 0o1777 } }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO /dev/null http://localhost:8080/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: always
+    deploy: *res-light
+    networks:
+      - achilles-public
+
+  nginx:
+    image: nginx:alpine
+    container_name: achilles_nginx_prod
+    logging: *default-logging
+    stop_grace_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/cache/nginx
+      - /run
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+    sysctls:
+      - net.core.somaxconn=4096
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+    entrypoint: ["/docker-entrypoint.sh"]
+    command: []
+    volumes:
+      - ./nginx/nginx.conf.template:/etc/nginx/nginx.conf.template:ro
+      - ./nginx/docker-entrypoint.sh:/docker-entrypoint.sh:ro
+      - ./nginx/security-headers.conf:/etc/nginx/snippets/security-headers.conf:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    ports:
+      - "${NGINX_PORT:-80}:80"
+      - "${NGINX_SSL_PORT:-443}:443"
+    healthcheck:
+      # 127.0.0.1, not localhost: busybox wget prefers ::1 while nginx binds IPv4 only.
+      test: ["CMD-SHELL", "wget -qO /dev/null http://127.0.0.1:80/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    restart: always
+    deploy: *res-proxy
+    networks:
+      - achilles-public
+
+  certbot:
+    image: certbot/certbot:v2.11.0
+    container_name: achilles_certbot
+    logging: *default-logging
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    restart: unless-stopped
+    deploy: *res-minimal
+    networks:
+      - achilles-public
+
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:0.3
+    container_name: achilles_socket_proxy_prod
+    logging: *default-logging
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    # No read_only here: the image's entrypoint renders haproxy.cfg from a
+    # template inside /usr/local/etc/haproxy at every start.
+    environment:
+      - CONTAINERS=1
+      - POST=1
+      - LOG_LEVEL=warning
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    deploy: *res-minimal
+    networks:
+      - achilles-docker
+
+  autoheal:
+    image: alpine:3.21
+    container_name: achilles_autoheal_prod
+    logging: *default-logging
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        sleep 60
+        while true; do
+          wget -qO- "http://docker-socket-proxy:2375/containers/json?filters=%7B%22health%22%3A%5B%22unhealthy%22%5D%7D" 2>/dev/null \
+            | grep -o '"Id":"[^"]*"' | sed 's/"Id":"//;s/"//' \
+            | while read -r id; do
+                wget -qO- --post-data='' "http://docker-socket-proxy:2375/containers/$$id/restart?t=10" >/dev/null 2>&1
+              done
+          sleep 30
+        done
+    depends_on:
+      - docker-socket-proxy
+    deploy: *res-minimal
+    networks:
+      - achilles-docker
+
+volumes:
+  postgres_data:
+  redis_durable_data:
+  embeddings_cache:
+
+networks:
+  achilles-public:
+    driver: bridge
+  achilles-data:
+    driver: bridge
+    internal: true
+  achilles-docker:
+    driver: bridge
+    internal: true

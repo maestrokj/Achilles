@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Списки — поиск, фильтры, пагинация</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Списки — поиск, фильтры, пагинация</h1>
+        <div class="header__sub">admin panel · workzone</div>
+      </div>
+
+      <div class="desc">
+        Табличные экраны панели (<a
+          class="xref-page"
+          href="../_wireframes/users.html#users-tabs"
+          >пользователи</a
+        >, <a class="xref-page" href="../_wireframes/audit-log.html"
+          >аудит</a
+        >, <a class="xref-page" href="../_wireframes/api-keys.html"
+          >API-ключи</a
+        >, <a class="xref-page" href="../_wireframes/platform-acl.html"
+          >ACL</a
+        >) делят строку поиска, фасетные фильтры и пагинацию. Поведение единое, экраны задают лишь своё (что ищется, какие фасеты) и ссылаются
+        сюда.
+      </div>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ════════ Слой 1: ввод и порог запуска ════════ -->
+          <div class="stk-layer stk-layer--config" id="search">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Ввод и порог запуска</span>
+              <span class="stk-layer__role">пользователь печатает в строке поиска</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec" id="server-side">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Поиск — серверный</span>
+                </div>
+                <div class="stk-dec__d">
+                  Поиск исполняет бэкенд, не клиент: списки длинные и постраничные,
+                  клиент видит лишь свою страницу. Цена — сетевой вызов на ввод,
+                  его ограничивают правила ниже.
+                </div>
+              </div>
+
+              <div class="stk-dec" id="threshold">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Порог — debounce + минимум символов</span>
+                </div>
+                <div class="stk-dec__d">
+                  Запрос уходит при <b>обоих</b> условиях: пауза в наборе
+                  <b>≈ 300&nbsp;мс</b> (debounce) и <b>≥ 2 значимых символов</b>.
+                  Один символ — вызова нет; пустая строка сбрасывает поиск.
+                  Значения единые для всех списков; на коротких словарях экран
+                  вправе снизить минимум.
+                </div>
+              </div>
+
+              <div class="stk-dec" id="normalize">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Нормализация запроса</span>
+                </div>
+                <div class="stk-dec__d">
+                  Перед отправкой — trim и сравнение без учёта регистра.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ Слой 2: сборка запроса ════════ -->
+          <div class="stk-layer stk-layer--config" id="facets">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Сборка запроса</span>
+              <span class="stk-layer__role">поиск, фильтры, страница → один вызов</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec" id="facet-logic">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Фасеты: ИЛИ внутри · И между</span>
+                </div>
+                <div class="stk-dec__d">
+                  Значения <b>внутри</b> одного фасета — по <b>ИЛИ</b>,
+                  <b>разные</b> фасеты — по <b>И</b> (строки на пересечении).
+                  Число активных фасетов — счётчиком у контрола.
+                </div>
+              </div>
+
+              <div class="stk-dec" id="compose">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Поиск ∩ фильтры — один запрос</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>q</code> и активные фасеты идут в <b>одном</b> вызове по
+                  <b>И</b>, не двумя запросами. В полёте только последний: новый
+                  ввод отменяет устаревший (защита от гонки).
+                </div>
+              </div>
+
+              <div class="stk-dec" id="page-params">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Страница и сортировка — в том же запросе</span>
+                </div>
+                <div class="stk-dec__d">
+                  Номер страницы, её размер и сортировка едут в <b>том же</b>
+                  вызове, что <code>q</code> и фасеты. Любое изменение запроса —
+                  новый текст, фасет, сортировка — <b>сбрасывает на 1-ю
+                  страницу</b>: иначе можно остаться на странице, которой в новом
+                  наборе нет.
+                </div>
+              </div>
+
+              <div class="stk-dec" id="url-state">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Состояние — в адресе страницы</span>
+                </div>
+                <div class="stk-dec__d">
+                  Поиск, фасеты, страница и сортировка — в query-параметрах
+                  URL: refresh и ссылка сохраняют выборку. Адрес — единственный
+                  носитель этого состояния.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ Слой 3: результат и состояния ════════ -->
+          <div class="stk-layer stk-layer--config" id="result-set">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Результат и состояния</span>
+              <span class="stk-layer__role">что видит пользователь в ответ</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec" id="single-set">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Единый набор для всего экрана</span>
+                </div>
+                <div class="stk-dec__d">
+                  Результат (поиск&nbsp;∩&nbsp;фильтры) — <b>один</b> набор: от
+                  него таблица, счётчик, пагинация и
+                  <a class="xref-page" href="../_wireframes/users.html">экспорт</a>
+                  <span class="iter v2">v2</span>. Экспорт выгружает <b>то же</b>,
+                  что видно; выгрузки в обход контролов нет.
+                </div>
+              </div>
+
+              <div class="stk-dec" id="pagination">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Пагинация — нумерованная, серверная</span>
+                </div>
+                <div class="stk-dec__d">
+                  Модель — <b>offset/limit</b>: бэкенд отдаёт срез страницы и
+                  общий <b>total</b>. Контрол — нумерованный, с переходом на
+                  страницу и счётчиком <b>«X–Y из N»</b>, не «загрузить ещё».
+                  Размер по умолчанию <b>50</b> (опции 25 · 50 · 100), значение
+                  единое. Запрос за пределы диапазона — кламп к крайней странице.
+                  Растущие append-only ленты (аудит) при нужде уйдут на keyset
+                  <span class="iter v2">v2</span>.
+                </div>
+              </div>
+
+              <div class="stk-dec" id="loading">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Загрузка — каркас, затем прежние строки</span>
+                </div>
+                <div class="stk-dec__d">
+                  Холодный старт списка — <b>skeleton-строки</b> в форме таблицы;
+                  смена страницы, фасета или сортировки — <b>прежние строки
+                  остаются</b> (keep-previous), не мигают в пустоту. Общий
+                  словарь состояний загрузки и правило выбора —
+                  <a class="xref-module"
+                    href="../../shared-ui/_wireframes/loading-states.html#mechanisms"
+                    >Shared UI</a
+                  >.
+                </div>
+              </div>
+
+              <div class="stk-dec" id="states">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Пусто · очистка · ошибка</span>
+                </div>
+                <div class="stk-dec__d">
+                  Совпадений нет — «ничего не найдено» с подсказкой сбросить.
+                  Очистка — крестиком или <code>Esc</code>, сброс возвращает
+                  полный список. Запрос упал — инлайн-ошибка с повтором в области
+                  данных, при полном обвале — системная заглушка.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

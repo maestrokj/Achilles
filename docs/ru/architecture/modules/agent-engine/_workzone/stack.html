@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Agent Engine: Стек и структура</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../swimlane.css" />
+    <link rel="stylesheet" href="stack.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Agent Engine</a>
+        <h1 class="header__title">Стек и структура</h1>
+        <div class="header__sub">agent-engine · workzone</div>
+      </div>
+
+      <!-- ════════════ ДОРОЖКА: BACKEND ════════════ -->
+      <div class="swl-lane swl-lane--be">
+        <div class="swl-lane__rail">
+          <span class="swl-lane__tag">Backend</span>
+        </div>
+        <div class="swl-lane__body">
+          <!-- col: stack -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg> стек — библиотеки</div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Фоновый запуск</span>
+                <a class="xref-badge xref-badge--page" href="execution.html#lane"
+                  >→ Полосы исполнения</a
+                >
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="очередь прогонов поверх Redis — отдельный пул воркеров в фоновой полосе, не на пути живого чата">SAQ · очередь прогонов</span>
+                <span class="swl-pill" data-tip="планировщик расписаний — будит агента по next_run_at">SAQ cron</span>
+                <a class="xref-badge" href="../../cache-workers/_workzone/queues.html#lanes">→ Cache &amp; Workers</a>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Агентный цикл / Модели</span>
+                <a class="xref-badge xref-badge--page" href="runtime.html#loop"
+                  >→ Агентный цикл</a
+                >
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="клиент chat-моделей — модель ведёт агентный цикл, держит инструменты search/graph/sql, комбинирует по ходу">chat-client · tool-calling</span>
+                <span class="ai-tag" title="Этап использует нейросеть — инференс модели"><span class="ai-tag__icon"></span>AI</span>
+                <span class="swl-pill" data-tip="search/graph/sql — примитивы Knowledge Store, агент их вызывает, не реализует">KS-примитивы как инструменты</span>
+                <a
+                  class="xref-badge"
+                  href="../../knowledge-store/_workzone/hybrid-search.html#fusion"
+                  >→ Knowledge Store</a
+                >
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Хранилище</span>
+                <a class="xref-badge xref-badge--page" href="data-model.html"
+                  >→ Модель данных</a
+                >
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill swl-pill--std" data-tip="ORM, async-режим — agents · agent_runs">SQLAlchemy 2.0 · async</span>
+                <span class="swl-pill swl-pill--std" data-tip="async-драйвер PostgreSQL">asyncpg</span>
+                <span class="swl-pill swl-pill--std" data-tip="миграции схемы">Alembic</span>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Фреймворк</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill swl-pill--std" data-tip="ASGI — эндпоинты управления агентами">FastAPI</span>
+                <span class="swl-pill swl-pill--std" data-tip="схемы запроса / ответа, валидация">Pydantic v2</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- col: structure -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head">
+              <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.55l-.42-.85a1 1 0 0 0-.92-.6H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M3 5a2 2 0 0 0 2 2h3" /><path d="M3 3v13a2 2 0 0 0 2 2h3" /></svg> структура — файлы · <code>achilles/agent_engine/</code>
+            </div>
+<pre class="file-tree">
+agent_engine/      <span class="dim">модуль = отдельный пакет</span>
+├── *.py           <span class="dim">router · service · schemas · constants</span>
+├── runtime/       <span class="dim">агентный цикл: композиция промта → tools → выход</span>
+└── scheduler/     <span class="dim">расписание + постановка прогонов в фоновую очередь</span>
+</pre>
+
+            <details class="swl-note">
+              <summary>Почему <code>runtime/</code> отдельной папкой</summary>
+              <div class="swl-note__body">
+                Агентный цикл — самостоятельный слой поверх сервиса: композиция
+                слоёв промта, вызов
+                <a href="runtime.html#tools" class="xref-page">инструментов KS</a>,
+                многошаговый reasoning и запись выхода в журнал прогона. Сами
+                примитивы поиска, графа и sql — в Knowledge Store, не здесь.
+              </div>
+            </details>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════ ДОРОЖКА: FRONTEND ════════════ -->
+      <div class="swl-lane swl-lane--fe">
+        <div class="swl-lane__rail">
+          <span class="swl-lane__tag">Frontend</span>
+        </div>
+        <div class="swl-lane__body swl-lane__body--note">
+          <div class="swl-col">
+            <div class="swl-fe-note">
+              <span class="swl-fe-note__ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.67 19a2 2 0 0 0 1.416-.588l6.154-6.172a6 6 0 0 0-8.49-8.49L5.586 9.914A2 2 0 0 0 5 11.328V18a1 1 0 0 0 1 1z" /><path d="M16 8 2 22" /><path d="M17.5 15H9" /></svg></span>
+              <div>
+                <b>Своего фронтенда у Agent Engine нет.</b>
+                Экраны сотрудника (мои агенты, редактор с журналом прогонов и
+                «Запустить сейчас») и админские (список всех агентов, профиль
+                read-only, замок админа) рендерят surface'ы как тонкие клиенты единого
+                API. У сотрудника это
+                <a href="../../web-app/_wireframes/my-agents.html#my-agents" class="xref-badge">→ Web App</a>,
+                у администратора —
+                <a href="../../admin-panel/_wireframes/agents.html" class="xref-badge">→ Admin Panel</a>.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── cross-cutting: shared tool-calling harness (pointer) ──
+           Общий механизм вынесен отдельной страницей-домом (harness), на L1 —
+           сквозной полосой. Здесь только указатель, чтобы стек модуля не держал
+           вторую копию описания. -->
+      <div class="swl-defer">
+        <span class="swl-defer__ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg></span>
+        <div>
+          <b>Tool-calling харнесс — общий слой, не наш.</b>
+          Chat-client с инструментами под движком — <span class="pkg">один на
+          платформу</span>, общий с Query Engine; дом вынесен отдельной страницей
+          <a href="harness.html" class="xref-page">Tool-calling харнесс</a>.
+          Agent Engine лишь параметризует его — три инструмента
+          (<a href="runtime.html#tools" class="xref-page">search / graph / sql</a>)
+          и петля до <a href="runtime.html#loop" class="xref-page">потолка
+          итераций</a>.
+        </div>
+      </div>
+
+      <!-- ── cross-cutting: deferred orchestration (decision, not blacklist) ── -->
+      <div class="swl-defer">
+        <span class="swl-defer__ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 14 4 4-4 4" /><path d="m18 2 4 4-4 4" /><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22" /><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2" /><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45" /></svg></span>
+        <div>
+          <b>Внешняя оркестрация — не в v1.</b>
+          Ядро агентов с внешними API напрямую не работает. Для сложной
+          кросс-системной оркестрации Achilles выступает нодой в workflow
+          <span class="pkg">n8n</span> (отдельный контейнер) —
+          <a href="horizon-orchestration.html#conveyor" class="xref-page"
+            >Внешняя оркестрация</a
+          >.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

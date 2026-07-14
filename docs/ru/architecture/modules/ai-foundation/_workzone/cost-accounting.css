@@ -1,0 +1,281 @@
+/* AI Foundation — cost-accounting workzone visuals.
+   The business logic of how AI spend is counted, top-down:
+   · ca-hero — the mental model: AI calls → accounting (aggregate + journals)
+     → the Расходы AI screen. Nodes/edges mirror tc-hero so the two read alike.
+   · ca-map — the connective table: each screen срез × its source × unit × scope.
+   · ca-vs — two-up cards for the one decision: why two sources (model_usage
+     aggregate vs per-person journals), mirroring tc-vs.
+   · ca-scope — the v1/v2 boundary as two stacked rails.
+   Reuses module.css + layered-stack.css primitives (the stk-dec__list
+   decision-list in #periods); adds only the page-bespoke pieces above.
+   Loaded by _workzone/cost-accounting.html on top of those two sheets.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ════════ MENTAL MODEL ════════ */
+
+/* Concept poster: where counting sits — every AI call is metered into the
+   registry (full platform spend) and, for chat/agents, into the journals
+   (per-person attribution); the screen reads both. Same visual language as
+   tool-catalog's tc-hero. */
+.ca-hero {
+  background: var(--tint-6);
+  border: 1.5px solid var(--accent-muted);
+  border-radius: var(--radius-md);
+  padding: 1rem 1rem 0.85rem;
+  margin: 0 0 2rem;
+}
+
+.ca-flow {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.ca-node {
+  flex: 0 1 14rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  text-align: center;
+  padding: 0.7rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+}
+.ca-node--calls {
+  border-color: var(--accent);
+}
+.ca-node--store {
+  border-color: var(--s2);
+}
+.ca-node--screen {
+  border-color: var(--s3);
+}
+.ca-node__g {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+.ca-node__t {
+  font-weight: 700;
+  font-size: 0.84rem;
+  color: var(--text);
+}
+.ca-node__s {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+.ca-edge {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 5.5rem;
+  gap: 0.1rem;
+}
+.ca-edge__arr {
+  color: var(--accent);
+  font-weight: 700;
+  font-family: var(--mono);
+}
+.ca-edge__lbl {
+  font-size: 0.66rem;
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.25;
+}
+
+/* Footer line: the two roles of the two write-paths. */
+.ca-hero__foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem 1.1rem;
+  margin-top: 0.85rem;
+  padding-top: 0.7rem;
+  border-top: 1px dashed var(--border);
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+.ca-hero__foot b {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* ════════ CONNECTIVE MAP ════════ */
+
+/* The four screen срезы as a table: where each reads from, in what unit, over
+   what scope. This is the page's spine — the screen renders it, here it's the
+   data lineage. */
+.ca-map {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.3rem 0 0;
+  font-size: 0.82rem;
+}
+.ca-map th,
+.ca-map td {
+  text-align: left;
+  padding: 0.5rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.ca-map thead th {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  font-weight: 700;
+  border-bottom: 1.5px solid var(--border);
+}
+.ca-map tbody td:first-child {
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+.ca-map td code {
+  font-size: 0.92em;
+}
+.ca-map__src {
+  color: var(--text-dim);
+}
+
+/* ════════ TWO SOURCES ════════ */
+
+/* Side-by-side cards for the one fork the feature turns on: a full-spend
+   aggregate vs per-person journals. Coloured top edge per column, same idiom
+   as tc-vs. */
+.ca-vs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+  margin: 0.3rem 0 0;
+}
+.ca-vs__col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--text-muted);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.85rem;
+}
+.ca-vs__col--agg {
+  border-top-color: var(--s2);
+}
+.ca-vs__col--journal {
+  border-top-color: var(--accent);
+}
+.ca-vs__head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+}
+.ca-vs__name {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text);
+  font-family: var(--mono);
+}
+.ca-vs__kind {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.ca-vs__lines {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+}
+.ca-vs__line {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+  padding-left: 0.85rem;
+  position: relative;
+}
+.ca-vs__line::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.5em;
+  width: 0.32rem;
+  height: 0.32rem;
+  border-radius: 50%;
+  background: var(--accent-muted);
+}
+.ca-vs__take {
+  margin-top: 0.7rem;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.ca-vs__take b {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* ════════ V1 / V2 SCOPE ════════ */
+
+/* Two stacked rails — what counts in v1, what defers to v2. Green rail in,
+   muted dashed rail later; same palette idiom as the iter labels. */
+.ca-scope {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.3rem 0 0;
+}
+.ca-rail {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--s3);
+}
+.ca-rail--v2 {
+  border-left-color: var(--text-muted);
+  border-style: dashed;
+}
+.ca-rail__tag {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.ca-rail__tag--v1 {
+  color: var(--s3);
+}
+.ca-rail__tag--v2 {
+  color: var(--text-muted);
+}
+.ca-rail__body {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.ca-rail__body b {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* ════════ RESPONSIVE ════════ */
+
+@media (max-width: 640px) {
+  .ca-vs {
+    grid-template-columns: 1fr;
+  }
+}

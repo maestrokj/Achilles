@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Cache &amp; Workers: очереди и воркеры</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="queues.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Cache &amp; Workers</a>
+        <h1 class="header__title">Очереди и воркеры</h1>
+        <div class="header__sub">cache-workers · workzone</div>
+      </div>
+
+      <p class="desc">
+        Субстрат исполнения фоновых задач: как трафик разведён по нагрузке и какие
+        процессы его разгребают. Полезная нагрузка очереди живёт в
+        <a href="redis-keys.html#instances" class="xref-page">redis-durable</a>;
+        путь задачи внутри очереди (heartbeat, ретраи, очистка) — на
+        <a href="lifecycle.html#path" class="xref-page">жизненном цикле</a>.
+      </p>
+
+      <!-- ═══ Лейны ═══ Группировка по характеру нагрузки, не по модулю: разводим
+           то, что мешает друг другу. -->
+      <div class="section" id="lanes">
+        <h2 class="section__title">Три лейна по нагрузке</h2>
+        <p class="note">
+          Группируем по <strong>характеру задачи</strong>: разводим
+          то, что мешает друг другу — быстрое от тяжёлого, массовую рассылку от
+          транзакционной почты (чтобы кампания не задержала приглашение или
+          сброс пароля), агентов (упираются в лимит LLM-провайдера) отдельно от
+          живого трафика.
+        </p>
+        <div class="lanes">
+          <div class="lane lane--interactive">
+            <div class="lane__h">interactive</div>
+            <div class="lane__t">быстрые · низкая задержка</div>
+            <ul class="lane__list">
+              <li>Email — invite · reset</li>
+              <li>Notifications — письма · вебхуки</li>
+            </ul>
+          </div>
+          <div class="lane lane--background">
+            <div class="lane__h">background</div>
+            <div class="lane__t">тяжёлые и объёмные · высокий параллелизм</div>
+            <ul class="lane__list">
+              <li>Harvester — sync</li>
+              <li>KS — эмбеддинг · доводка · бэкап</li>
+              <li>Email — массовая рассылка</li>
+            </ul>
+          </div>
+          <div class="lane lane--agents">
+            <div class="lane__h">agents</div>
+            <div class="lane__t">свой потолок LLM-вызовов</div>
+            <ul class="lane__list">
+              <li>Agent Engine — прогоны</li>
+              <li><code>agent_max_concurrency</code> отдельно от чата</li>
+            </ul>
+          </div>
+        </div>
+        <p class="note">
+          Лейн <code>agents</code> держит собственный потолок одновременных
+          LLM-вызовов, чтобы фон не выедал лимит провайдера у живого чата.
+        </p>
+      </div>
+
+      <!-- ═══ Воркер-топология ═══ Один образ — несколько сервисов; API масштабируется
+           отдельно. -->
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--worker" id="worker">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__name">Воркер-топология</span>
+              <span class="stk-layer__role">один образ · несколько сервисов · API масштабируется отдельно</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Тот же образ, другая команда</span>
+                </div>
+                <div class="stk-dec__d">
+                  Воркер — тот же образ, что backend, с другой <code>command</code>
+                  (<code>saq</code> с настройками своего лейна). Три worker-сервиса
+                  с разным параллелизмом; API — отдельный сервис.
+                  <ul class="stk-dec__list cw-rules">
+                    <li><b>Изоляция нагрузки:</b> тяжёлый прогон не тормозит запросы, падение одного сервиса не роняет другой.</li>
+                    <li><b>Старт с 3, не с 1 и не с 5:</b> собирать слипшиеся лейны обратно дороже, чем дробить дальше.</li>
+                    <li><b>Дробление — по факту:</b> SAQ умеет именованные очереди, развести лейн на под-очереди тривиально.</li>
+                  </ul>
+                </div>
+              </div>
+              <div class="wk-grid">
+                <div class="wk-svc wk-svc--api">
+                  <div class="wk-svc__name">api</div>
+                  <div class="wk-svc__d">FastAPI · обслуживает запросы · масштабируется сам по себе</div>
+                </div>
+                <div class="wk-svc">
+                  <div class="wk-svc__name">worker · interactive</div>
+                  <div class="wk-svc__d">низкая задержка · умеренный параллелизм</div>
+                </div>
+                <div class="wk-svc">
+                  <div class="wk-svc__name">worker · background</div>
+                  <div class="wk-svc__d">высокий параллелизм · тяжёлые задачи</div>
+                </div>
+                <div class="wk-svc">
+                  <div class="wk-svc__name">worker · agents</div>
+                  <div class="wk-svc__d">потолок <code>agent_max_concurrency</code></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Реестр очередей ═══ очередь → лейн → потребитель → характер. -->
+      <div class="section" id="registry">
+        <h2 class="section__title">Реестр очередей</h2>
+        <table class="reg">
+          <thead>
+            <tr>
+              <th>Очередь</th>
+              <th>Лейн</th>
+              <th>Потребитель</th>
+              <th>Характер задач</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="reg__q">Harvester sync</td>
+              <td><span class="lane-pill lane-pill--background">background</span></td>
+              <td class="reg__c"><a class="xref-module" href="../../harvester/_workzone/sync-modes.html">Harvester</a></td>
+              <td>full · incremental · partial-resync · dlq-retry · reconcile · health</td>
+            </tr>
+            <tr>
+              <td class="reg__q">Email · транзакционное</td>
+              <td><span class="lane-pill lane-pill--interactive">interactive</span></td>
+              <td class="reg__c"><a class="xref-module" href="../../email/_workzone/delivery.html#modes">Email</a></td>
+              <td>invite · reset <span class="reg__note">(тестовое письмо — inline, мимо очереди)</span></td>
+            </tr>
+            <tr>
+              <td class="reg__q">Email · массовая рассылка</td>
+              <td><span class="lane-pill lane-pill--background">background</span></td>
+              <td class="reg__c">Email</td>
+              <td>bulk-кампании — объёмом, не весом; отделены, чтобы не теснить транзакционные письма</td>
+            </tr>
+            <tr>
+              <td class="reg__q">KS фоновые прогоны</td>
+              <td><span class="lane-pill lane-pill--background">background</span></td>
+              <td class="reg__c"><a class="xref-module" href="../../knowledge-store/_workzone/embedding-runtime.html#contention">Knowledge Store</a></td>
+              <td>ингест · реэмбеддинг · доводка графа · бэкап — ограниченный параллелизм <span class="reg__note">(online-поиск зовёт рантайм напрямую, мимо очереди)</span></td>
+            </tr>
+            <tr>
+              <td class="reg__q">Agent runs</td>
+              <td><span class="lane-pill lane-pill--agents">agents</span></td>
+              <td class="reg__c"><a class="xref-module" href="../../agent-engine/_workzone/execution.html#lane">Agent Engine</a></td>
+              <td>прогоны под потолком одновременных LLM-вызовов</td>
+            </tr>
+            <tr>
+              <td class="reg__q">Notifications · внешняя доставка</td>
+              <td><span class="lane-pill lane-pill--interactive">interactive</span></td>
+              <td class="reg__c"><a class="xref-module" href="../../notifications/_workzone/dispatcher.html#fanout">Notifications</a></td>
+              <td>email + webhook-POST <span class="reg__note">(in-app пишется синхронно в Postgres, мимо брокера)</span></td>
+            </tr>
+            <tr>
+              <td class="reg__q">Slack-бот · входящее</td>
+              <td><span class="lane-pill lane-pill--interactive">interactive</span></td>
+              <td class="reg__c"><a class="xref-module" href="../../slack/index.html#delivery">Slack</a></td>
+              <td>событие DM → Query Engine → постбэк в тред <span class="reg__note">(приём ack&lt;3с, дедуп по <code>event_id</code>)</span></td>
+            </tr>
+            <tr>
+              <td class="reg__q">Telegram-бот · входящее</td>
+              <td><span class="lane-pill lane-pill--interactive">interactive</span></td>
+              <td class="reg__c"><a class="xref-module" href="../../telegram/index.html#delivery">Telegram</a></td>
+              <td>апдейт DM → Query Engine → ответ сообщением <span class="reg__note">(приём по webhook, дедуп по <code>update_id</code>)</span></td>
+            </tr>
+            <tr>
+              <td class="reg__q">Mattermost-бот · входящее</td>
+              <td><span class="lane-pill lane-pill--interactive">interactive</span></td>
+              <td class="reg__c"><a class="xref-module" href="../../mattermost/index.html#delivery">Mattermost</a></td>
+              <td>пост DM → Query Engine → ответ в тред <span class="reg__note">(без webhook — ставит WebSocket-слушатель планировщика, дедуп по id поста)</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <ul class="notes reg-notes">
+          <li class="note">
+            <strong>Постановка идемпотентна по <code>job_id</code></strong> —
+            повторный вызов не плодит дубль; механика на
+            <a href="lifecycle.html#uniqueness" class="xref-page">единственности задачи</a>.
+          </li>
+          <li class="note">
+            <strong><code>pub/sub</code> — сигнал push-уведомлений</strong>:
+            новая строка в ленте веером расходится по api-репликам, колокольчик
+            обновляется мгновенно. Канал эфемерный
+            (<a href="redis-keys.html#instances" class="xref-page">redis-cache</a>),
+            истина — в Postgres; опрос остаётся фоновым добором.
+          </li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

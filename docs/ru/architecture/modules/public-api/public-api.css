@@ -1,0 +1,639 @@
+/* Public API — bespoke visuals for the single-page contract doc.
+   The page's idea is CONVERGENCE: the platform is API-first, so every surface
+   (ours and the customer's) funnels onto one public contract, under which a
+   single engine answers. The hero is a top-down FUNNEL — a row of surface chips
+   narrows through the contract bar down to the core. Below sit four numbered
+   cards (contract · auth · identity · governance), a two-class table, the
+   reference-surface catalog, and a literal call sketch.
+   Loaded by modules/public-api/index.html on top of module.css.
+   Placement convention: a module's bespoke visuals live beside its index. §Styling */
+
+/* ══════════════════════════════════════════
+   HERO — display headline · lede
+   ══════════════════════════════════════════ */
+.pa-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.55rem;
+  padding: 1.6rem 0 1.8rem;
+  background:
+    radial-gradient(58% 70% at 50% 0%, var(--tint-15), transparent 68%),
+    radial-gradient(36% 50% at 84% 14%, var(--tint-8), transparent 70%);
+}
+.pa-title {
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-size: clamp(1.9rem, 4.6vw, 2.9rem);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: var(--text);
+  max-width: 20ch;
+  margin: 0.1rem 0 0;
+  text-wrap: balance;
+}
+.pa-lede {
+  font-size: 1.02rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+  max-width: 54ch;
+  margin: 0;
+}
+
+/* ══════════════════════════════════════════
+   FAN — surfaces → contract → core (top-down funnel)
+   A row of surface chips narrows through a labelled rail onto the accent
+   contract bar (the heart), then drops to the core nodes.
+   ══════════════════════════════════════════ */
+.pa-fan {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.4rem 0 1.5rem;
+}
+
+/* ── Surfaces row ── */
+.pa-clients {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+}
+.pa-client {
+  font-weight: 600;
+  font-size: 0.84rem;
+  color: var(--text);
+  padding: 0.4rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+}
+.pa-client--yours {
+  color: var(--accent);
+  border-style: dashed;
+  border-color: var(--accent-muted);
+  background: var(--tint-6);
+}
+
+/* ── Funnel rail — converging line + label ── */
+.pa-funnel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+}
+.pa-funnel__rail {
+  width: 2px;
+  height: 26px;
+  background-image: linear-gradient(
+    to bottom,
+    var(--accent) 0 6px,
+    transparent 6px 12px
+  );
+  background-size: 2px 12px;
+  background-repeat: repeat-y;
+  animation: pa-march-y 0.9s linear infinite;
+}
+.pa-funnel__lbl {
+  font-size: 0.7rem;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+.pa-funnel__lbl::before {
+  content: "▾";
+  margin-right: 0.35rem;
+  color: var(--accent);
+}
+
+/* ── Contract bar — the accent heart ── */
+.pa-contract {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  text-align: center;
+  width: min(100%, 30rem);
+  padding: 0.95rem 1.2rem 1.05rem;
+  background: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px -10px var(--accent);
+}
+.pa-contract__tag {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--pill-radius);
+  padding: 0.08rem 0.45rem;
+}
+.pa-contract__name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: #fff;
+}
+.pa-contract__name code {
+  font-size: 0.92rem;
+  color: #fff;
+}
+.pa-contract__desc {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.85);
+}
+.pa-contract__desc code {
+  font-size: 0.72rem;
+  color: #fff;
+}
+.pa-contract__only {
+  width: 100%;
+  margin-top: 0.45rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.28);
+  font-weight: 600;
+  font-size: 0.84rem;
+  color: #fff;
+}
+
+/* ── Drop to core ── */
+.pa-drop {
+  display: flex;
+  justify-content: center;
+}
+.pa-drop__rail {
+  width: 2px;
+  height: 22px;
+  background-image: linear-gradient(
+    to bottom,
+    var(--accent-muted) 0 6px,
+    transparent 6px 12px
+  );
+  background-size: 2px 12px;
+  background-repeat: repeat-y;
+}
+
+/* ── Core nodes ── */
+.pa-core {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  width: min(100%, 30rem);
+  padding: 0.85rem 1rem 0.95rem;
+  background: var(--tint-6);
+  border: 1px solid var(--tint-25);
+  border-radius: 14px;
+}
+.pa-core__lbl {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+}
+.pa-core__nodes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.pa-core__node {
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--text);
+  padding: 0.3rem 0.7rem;
+  background: var(--paper);
+  border: 1px solid var(--tint-25);
+  border-radius: 9px;
+}
+
+/* ══════════════════════════════════════════
+   THESIS — the concept's heart, one accented line
+   ══════════════════════════════════════════ */
+.pa-thesis {
+  margin: 0 0 1.8rem;
+  padding: 1rem 1.2rem;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--text-dim);
+  background: var(--surface);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+}
+.pa-thesis strong {
+  color: var(--text);
+}
+.pa-thesis .xref-module {
+  display: inline-block;
+  margin-top: 0.2rem;
+  font-size: 0.82rem;
+}
+
+/* ══════════════════════════════════════════
+   CARDS — contract · auth · identity · governance (numbered)
+   ══════════════════════════════════════════ */
+.pa-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+}
+.pa-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.25rem 1.2rem 1.3rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.pa-card__num {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+.pa-card__title {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+  font-size: 1.18rem;
+  line-height: 1.15;
+  color: var(--text);
+  margin: 0;
+}
+.pa-card__sub {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+  margin: 0;
+}
+.pa-card__foot {
+  margin: auto 0 0;
+  padding-top: 0.3rem;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.pa-card__foot strong {
+  color: var(--text-dim);
+}
+
+/* ── List — sequenced now / later items inside a card ── */
+.pa-list {
+  list-style: none;
+  margin: 0.1rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.pa-list__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  padding-left: 0.7rem;
+  border-left: 2px solid var(--border);
+}
+.pa-list__item--now {
+  border-left-color: var(--accent);
+}
+/* operation row — name + optional trailing version pill, hugging content */
+.pa-list__op {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.pa-list__op > code,
+.pa-list__op > strong {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.pa-list__op > code {
+  color: var(--accent);
+}
+.pa-list__link {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid var(--tint-25);
+}
+.pa-list__link:hover {
+  border-bottom-color: var(--accent);
+}
+.pa-list__link code {
+  font-size: 0.8rem;
+}
+.pa-list__note {
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+.pa-list__note code {
+  font-size: 0.72rem;
+}
+
+/* ── Governance — two controls ── */
+.pa-gov {
+  list-style: none;
+  margin: 0.1rem 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.pa-gov__item {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+.pa-gov__item strong {
+  color: var(--text);
+}
+.pa-gov__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 8px;
+  background: var(--tint-8);
+  border: 1px solid var(--tint-25);
+  color: var(--accent);
+}
+.pa-gov__icon svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+/* ══════════════════════════════════════════
+   CLASSES — two-surface comparison table
+   ══════════════════════════════════════════ */
+/* extra air above so the table doesn't merge with the cards block above */
+#surface-classes {
+  margin-top: 2.4rem;
+}
+.pa-classes {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+.pa-classes th,
+.pa-classes td {
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+.pa-classes thead th {
+  border-bottom: 2px solid var(--tint-25);
+}
+.pa-classes__col {
+  font-weight: 700;
+  color: var(--text);
+}
+.pa-classes__rk {
+  width: 7rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.pa-classes tbody tr:last-child td {
+  border-bottom: none;
+}
+.pa-classes code {
+  font-size: 0.76rem;
+}
+.pa-classes__foot {
+  margin: 0.9rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+.pa-classes__foot strong {
+  color: var(--text-dim);
+}
+.pa-classes__foot code {
+  font-size: 0.74rem;
+}
+
+/* ══════════════════════════════════════════
+   REFS — reference-surface catalog
+   ══════════════════════════════════════════ */
+.pa-refs__lead {
+  font-size: 0.86rem;
+  line-height: 1.55;
+  color: var(--text-dim);
+  margin: 0 0 0.9rem;
+}
+.pa-refs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.8rem;
+}
+.pa-ref {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1rem 1.05rem 1.1rem;
+  text-decoration: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  transition:
+    border-color 0.18s,
+    transform 0.18s;
+}
+.pa-ref:hover {
+  border-color: var(--accent-muted);
+  transform: translateY(-2px);
+}
+.pa-ref__icon {
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--text-muted);
+  transition: color 0.18s;
+}
+.pa-ref:hover .pa-ref__icon {
+  color: var(--accent);
+}
+.pa-ref__name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--accent);
+}
+.pa-ref__desc {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* ══════════════════════════════════════════
+   CALL — literal request / response sketch (illustrative)
+   ══════════════════════════════════════════ */
+.pa-call {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.8rem;
+}
+.pa-call__side {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.pa-call__tag {
+  align-self: flex-start;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--pill-radius);
+  padding: 0.08rem 0.5rem;
+}
+.pa-call__tag--ok {
+  color: var(--s2);
+  border-color: var(--s2);
+}
+.pa-call__body {
+  margin: 0;
+  padding: 0.8rem 0.9rem;
+  font-family: var(--mono);
+  font-size: 0.73rem;
+  line-height: 1.65;
+  color: var(--text-dim);
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.pa-call__verb {
+  color: var(--accent);
+  font-weight: 600;
+}
+.pa-call__ok {
+  color: var(--s2);
+  font-weight: 600;
+}
+.pa-call__hdr {
+  color: var(--text-muted);
+}
+.pa-call__key {
+  color: var(--text);
+}
+.pa-call__str {
+  color: var(--s2);
+}
+.pa-call__note {
+  margin: 0.9rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+.pa-call__note strong {
+  color: var(--text-dim);
+}
+
+/* ══════════════════════════════════════════
+   Responsive — funnel widths already fluid; collapse grids
+   ══════════════════════════════════════════ */
+@media (max-width: 680px) {
+  .pa-cards,
+  .pa-refs,
+  .pa-call {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ══════════════════════════════════════════
+   Entrance — staggered rise on load
+   ══════════════════════════════════════════ */
+.pa-hero > *,
+.pa-fan,
+.pa-thesis,
+.pa-card {
+  animation: pa-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.pa-title {
+  animation-delay: 0.12s;
+}
+.pa-lede {
+  animation-delay: 0.22s;
+}
+.pa-fan {
+  animation-delay: 0.38s;
+}
+.pa-thesis {
+  animation-delay: 0.5s;
+}
+.pa-cards .pa-card:nth-child(1) {
+  animation-delay: 0.56s;
+}
+.pa-cards .pa-card:nth-child(2) {
+  animation-delay: 0.62s;
+}
+.pa-cards .pa-card:nth-child(3) {
+  animation-delay: 0.68s;
+}
+.pa-cards .pa-card:nth-child(4) {
+  animation-delay: 0.74s;
+}
+
+@keyframes pa-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes pa-march-y {
+  to {
+    background-position: 0 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pa-hero > *,
+  .pa-fan,
+  .pa-thesis,
+  .pa-card,
+  .pa-funnel__rail {
+    animation: none;
+  }
+}
+
+/* ── Deep-link landing flash — cross-module links land on the thesis / a card ── */
+.pa-thesis:target,
+.pa-card:target {
+  animation: target-highlight 2.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pa-thesis:target,
+  .pa-card:target {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+}

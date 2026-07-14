@@ -1,0 +1,929 @@
+/* Module-page chrome — the shared skeleton of every module page (header,
+   sections, notes, workzone nav, cross-references) plus the mod-*
+   primitives and element defaults shared across modules.
+   Loaded by every module page on top of shared.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ═══════════════════════════════════════════
+   Page chrome
+   ═══════════════════════════════════════════ */
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 3rem 2rem 4rem;
+}
+
+/* Wider canvas for visualization-first workzone pages (e.g. the
+   authorization layered stack) that need room for a side channel. */
+.page--wide {
+  max-width: 1200px;
+}
+
+/* ── Back link ── */
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-decoration: none;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  transition: all 0.2s;
+  margin-bottom: 1.5rem;
+}
+.back:hover {
+  border-color: var(--accent-muted);
+  color: var(--text);
+  transform: translateY(-1px);
+}
+
+/* ── Header ── */
+.header {
+  margin-bottom: 2.5rem;
+}
+
+.header__title {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  margin-bottom: 0.3rem;
+}
+
+.header__sub {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin-bottom: 0.75rem;
+}
+
+.header__status {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.22rem 0.55rem;
+  border-radius: var(--pill-radius);
+  background: var(--accent-muted);
+  color: #fff;
+}
+
+/* ── Description ── */
+.desc {
+  font-size: 0.95rem;
+  color: var(--text-dim);
+  margin-bottom: 2rem;
+  line-height: 1.7;
+}
+
+/* A .desc may be a block wrapping prose + a compact list of points; the global
+   reset zeroes child margins, so restore the rhythm between them. */
+.desc :is(p, ul) + :is(p, ul) {
+  margin-top: 1rem;
+}
+
+.desc-list {
+  padding-left: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* ── Section ── */
+.section {
+  margin-bottom: 2rem;
+}
+
+/* A framing .note that leads into the sections (e.g. a shared-template intro
+   above a run of screen sections) — give the first section air so it doesn't
+   read as part of the note's bubble. */
+.note + .section {
+  margin-top: 2rem;
+}
+
+.section[id] {
+  scroll-margin-top: 1rem;
+}
+
+/* Landing flash: a crisp accent ring traces the block's edge, a soft halo
+   and faint wash add presence. Peak holds for the first half — smooth scroll
+   is still travelling when the animation starts, so the block must already
+   be lit when it enters the viewport. */
+@keyframes target-highlight {
+  0%,
+  50% {
+    background-color: var(--tint-8);
+    box-shadow:
+      0 0 0 2px var(--accent),
+      0 0 0 8px var(--tint-15);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow:
+      0 0 0 2px transparent,
+      0 0 0 8px transparent;
+  }
+}
+
+.section:target {
+  border-radius: var(--radius-md);
+  animation: target-highlight 2.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section:target {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+}
+
+.decision-box:target {
+  animation: target-highlight 2.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .decision-box:target {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+}
+
+.dm-tbl:target {
+  border-radius: var(--radius-md);
+  animation: target-highlight 2.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dm-tbl:target {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+}
+
+.section__title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin: 0 0 0.75rem;
+}
+
+/* Vertical rhythm between a section's blocks: the global reset zeroes margins,
+   and blocks like .notes / a stand-alone .note / a page's spec list carry none,
+   so consecutive ones touch. Restore a baseline gap matching .decision-box's
+   own rhythm; sibling margins collapse, so blocks with a larger bottom margin
+   (.desc, .section__title) keep theirs unchanged. */
+.section > * + * {
+  margin-top: 0.5rem;
+}
+
+/* ── Notes ── */
+.notes {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Обзорный список вне .section — один общий бабл вместо отдельных,
+   нижний отступ в ритме секций. */
+.notes--lead {
+  margin-bottom: 2rem;
+  gap: 0.4rem;
+  padding: 0.7rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.notes--lead .note {
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+}
+
+.note {
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  padding: 0.7rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  line-height: 1.5;
+}
+
+.note strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ── API list — a module's endpoint contract on its index page: full paths
+   under the version prefix, one row per operation (verb column + path). The
+   module designs its own URL scheme here, the way wireframes settle front-end
+   routes; concrete request/response lives in the tests workzone. ── */
+.api-list {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 0.9rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+.api-list > li {
+  display: contents;
+}
+.api-list__m {
+  color: var(--accent);
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+.api-list__p {
+  color: var(--text-muted);
+}
+
+/* The API block carries a faint card surface — a tinted, dashed frame that
+   sets the endpoint contract apart from the plain overview prose around it (the
+   same surface the workzone sections use, kept now that the block sits at page
+   altitude rather than inside the workzone wrapper). */
+.section#api {
+  padding: 1rem 1.2rem;
+  background: var(--tint-4);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+}
+
+/* ── Checklist (a normative "rule set" inside a note — one row per machine-
+   checkable rule: mono condition chip + name + plain-language meaning. Single
+   source of truth, e.g. the password policy referenced from many screens). */
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.7rem;
+}
+
+.check {
+  display: grid;
+  grid-template-columns: 9.5rem 1fr;
+  gap: 0.75rem;
+  align-items: baseline;
+  padding: 0.5rem 0.7rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.check__rule {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-align: center;
+  padding: 0.2rem 0.4rem;
+  background: var(--tint-8);
+  border: 1px solid var(--tint-15);
+  border-radius: 6px;
+}
+
+.check__name {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.check__desc {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.82rem;
+  color: var(--text-dim);
+}
+
+/* Anti-rules — what the policy deliberately does NOT enforce. */
+.checklist__anti {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.check-anti {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  padding: 0.2rem 0.55rem;
+  background: var(--surface);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+}
+
+/* ── Steps (ordered sequential actions in prose — e.g. a wizard's stages).
+   Sits under a lead .desc: the negative top margin tucks the list close to
+   its intro line, overriding .desc's 2rem bottom gap. */
+.steps {
+  list-style: none;
+  counter-reset: step;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: -1.25rem 0 2rem;
+  font-size: 0.95rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+.steps__item {
+  position: relative;
+  counter-increment: step;
+  padding-left: 2rem;
+}
+
+.steps__item::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0.05rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--tint-25);
+  border-radius: 50%;
+}
+
+/* ── Stack tags ── */
+.stack-tags {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.stack-tag {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--tag-radius);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  background: var(--surface);
+}
+
+/* ── Workzone (permanent design space, deepens as the module matures) ── */
+.workzone-divider {
+  border: none;
+  border-top: 2px dashed var(--accent-muted);
+  margin: 3rem 0 0;
+}
+
+.workzone-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.5rem 0 0.4rem;
+}
+
+.workzone-badge,
+.test-badge {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--pill-radius);
+  background: var(--accent);
+  color: #fff;
+  white-space: nowrap;
+}
+
+.workzone-title,
+.test-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.workzone-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+  /* roomy enough that wrapped pill badges (.xref-badge) don't touch backgrounds */
+  line-height: 1.9;
+}
+
+.workzone .section {
+  padding: 1rem 1.2rem;
+  background: var(--tint-4);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+}
+
+/* ── Cross-references ──
+   Three categories by destination, each a hue; two surfaces (inline word vs
+   heading pill). Hue = how far the link reaches:
+     · module → another module     = accent (.xref-module / .xref-badge)
+     · page   → another page here   = olive  (.xref-page  / .xref-badge--page)
+     · anchor → a block on this page = dark   (.xref-anchor)
+   Inline word and heading badge of a category share the hue, so they read as
+   the same kind of link. The categories mirror what `make docs-map` sees: only
+   the cross-module (accent) links owe a reciprocal. Conventions: docs/architecture/README.md. */
+
+/* Inline — a styled word in running text: the surrounding font size, semibold,
+   underlined, no fill; the hue carries the destination. Hover thickens the
+   underline (the affordance), same as every inline link here. */
+.xref-module,
+.xref-page,
+.xref-anchor {
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: text-decoration-thickness 0.2s;
+}
+.xref-module {
+  color: var(--link-module-fg);
+}
+.xref-page {
+  color: var(--link-page-fg);
+}
+.xref-anchor {
+  color: var(--link-anchor-fg);
+}
+a.xref-module:hover,
+a.xref-page:hover,
+a.xref-anchor:hover {
+  text-decoration-thickness: 2px;
+}
+/* A <code> inside an inline link drops its own accent-on-tint chip and takes
+   the link's hue, so the word reads as one link rather than a chip in a link. */
+a.xref-module code,
+a.xref-page code,
+a.xref-anchor code {
+  color: inherit;
+  background: none;
+  padding: 0;
+}
+
+/* Badge — the same references as a pill embedded in a heading. Default fill is
+   dark (module); --page recolors it green (another page in this module).
+   <a> when the target page+anchor exist; <span> + --pending when not. */
+.xref-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  margin-left: 0.4rem;
+  /* own tight line-height: pill height stays fixed and ignores the roomy
+     line-height of the host paragraph (which only spaces wrapped rows apart) */
+  line-height: 1.1;
+  vertical-align: middle;
+  color: #fff;
+  background: var(--link-module-bg);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: all 0.2s;
+}
+
+a.xref-badge:hover {
+  background: var(--link-module-bg-hover);
+  transform: translateY(-1px);
+}
+
+/* Page badge — green fill: a section that mirrors another page in this module */
+.xref-badge--page {
+  color: #fff;
+  background: var(--link-page-bg);
+}
+a.xref-badge--page:hover {
+  background: var(--link-page-bg-hover);
+}
+
+/* Pending — target module not linkable yet (stub / v2): muted, dashed, no href */
+.xref-badge--pending {
+  color: var(--text-muted);
+  background: none;
+  border-color: var(--accent-muted);
+  border-style: dashed;
+  text-decoration: none;
+}
+
+/* ── Draft notice ── */
+.draft-notice {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.55;
+  padding: 0.7rem 1rem;
+  background: var(--tint-6);
+  border: 1px dashed var(--accent-muted);
+  border-radius: 8px;
+  margin-bottom: 2rem;
+}
+
+.draft-notice strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ── Workzone groups ── */
+.workzone-group {
+  margin-bottom: 2rem;
+}
+
+.workzone-group:last-child {
+  margin-bottom: 0;
+}
+
+.workzone-group__label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: 0.03em;
+  margin-bottom: 0.75rem;
+}
+
+.workzone-group .section {
+  margin-bottom: 0.6rem;
+}
+
+.workzone-group .section:last-child {
+  margin-bottom: 0;
+}
+
+/* ── Workzone nav ── */
+.wz-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+.wz-nav__group {
+  grid-column: 1 / -1;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+}
+.wz-nav__group:first-child {
+  margin-top: 0;
+}
+.wz-link {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  text-decoration: none;
+  padding: 0.75rem 1rem;
+  background: var(--tint-8);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  transition: all 0.2s;
+}
+.wz-link:hover {
+  border-color: var(--accent-muted);
+  background: var(--tint-15);
+  transform: translateY(-1px);
+}
+.wz-link__icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+/* Lead link of a feature group — the feature's own page, set apart from the
+   screen links that sit under it (accent edge, solid border). */
+.wz-link--lead {
+  border-style: solid;
+  border-left: 3px solid var(--accent);
+}
+
+/* Kind chip on a subordinate feature-group link — declares what the card points
+   at, so the type reads at a glance. The lead needs none: its accent stripe
+   already marks it. Right-aligned, sits opposite the name.
+   Extensible: a new kind = a new modifier with its own color. The common kind
+   (screen mockup) stays quiet/neutral so rarer, colored kinds stand out. */
+.wz-tag {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.12rem 0.42rem;
+  border-radius: 5px;
+  color: var(--text-muted);
+  background: var(--tint-15);
+  border: 1px solid var(--border);
+}
+.wz-tag--screen {
+  /* The "макет" chip — neutral (inherits base). Future kinds override
+     color/background. */
+}
+/* Home marker — flags the wireframe that is a module's start screen. The accent
+   treatment and lowercase label set it apart from the neutral "макет" chips. */
+.wz-tag--home {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 35%, transparent);
+  text-transform: none;
+}
+
+/* ── File tree ── */
+.file-tree {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  line-height: 1.65;
+  color: var(--text-dim);
+  margin: 0;
+  overflow-x: auto;
+}
+
+.file-tree .dim {
+  opacity: 0.45;
+}
+
+/* ── Decision box ── */
+.decision-box {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  padding: 0.7rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+
+.decision-box strong {
+  color: var(--text);
+}
+
+/* ── Warning variant — a conditional or deferred decision to revisit, not a
+   settled one. Mirrors .stk-dec--warn (layered-stack.css): amber accent
+   (--s4) + ⚠ marker, owned by the variant rather than the markup. ── */
+.decision-box--warn {
+  background: var(--s4-pale);
+  border-color: var(--s4-glow);
+  border-left-color: var(--s4);
+}
+
+.decision-box--warn strong {
+  color: var(--s4);
+}
+
+.decision-box--warn strong::before {
+  content: "⚠ ";
+}
+
+/* ═══════════════════════════════════════════
+   Shared element defaults
+   Universal denominators so per-diagram rules carry only their deltas.
+   First among the shared sections: later equal-specificity rules (here and
+   in every sheet loaded on top) override them by source order.
+   ═══════════════════════════════════════════ */
+
+/* Every inline <code> on a module page renders as the standard code chip —
+   mono, accent on a faint tint. Contexts with their own code voice override
+   just the deltas; wireframe mockups reset it wholesale (.wf-stage code). */
+.page code {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--accent);
+  background: var(--tint-8);
+  padding: 0.05rem 0.3rem;
+  border-radius: 3px;
+}
+
+/* Disclosure widgets (<details>/<summary>) share these resets across every
+   sheet — module, kits, bespoke diagrams. Each widget keeps only its own
+   ▸/▾ arrow content and layout. */
+.page details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+.page details > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* ═══════════════════════════════════════════
+   Shared: Card base
+   The common card shell (surface fill, hairline border, compact radius).
+   Bespoke card classes add only their deltas: padding, accent edges,
+   shadows, layout. Composed in HTML: class="mod-card ap-card".
+   ═══════════════════════════════════════════ */
+.mod-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+/* ═══════════════════════════════════════════
+   Shared: Vertical connectors
+   ═══════════════════════════════════════════ */
+.mod-conn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 26px;
+}
+
+.mod-conn__line {
+  width: 2px;
+  flex: 1;
+  background: var(--dot);
+}
+
+.mod-conn__arrow {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid var(--dot);
+}
+
+/* ═══════════════════════════════════════════
+   Shared: Role badges
+   ═══════════════════════════════════════════ */
+.mod-role {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  padding: 0.22rem 0.5rem;
+  border-radius: var(--tag-radius);
+  color: #fff;
+}
+
+.mod-role--owner {
+  background: var(--s1);
+}
+
+.mod-role--admin {
+  background: var(--s2);
+}
+
+.mod-role--member {
+  background: var(--s3);
+}
+
+.mod-chevron {
+  font-size: 0.65rem;
+  color: var(--accent-muted);
+}
+
+/* ═══════════════════════════════════════════
+   Shared: Tech tags
+   ═══════════════════════════════════════════ */
+.mod-tag {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.18rem 0.42rem;
+  border-radius: var(--tag-radius);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  background: var(--tint-4);
+}
+
+.mod-tag--v2 {
+  border-style: dashed;
+  color: var(--text-muted);
+}
+
+/* Flex row wrapping a set of .mod-tag chips. */
+.mod-tags {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+/* ═══════════════════════════════════════════
+   Shared: Uppercase label
+   Mono caps heading for a column / panel inside a diagram. Pages override
+   only their deltas (size, tracking, margin). Composed in HTML:
+   class="mod-label swl-col__head".
+   ═══════════════════════════════════════════ */
+.mod-label {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin-bottom: 0.6rem;
+}
+
+/* Code inside a label is part of the label's voice — no chip. */
+.mod-label code {
+  font-size: inherit;
+  text-transform: none;
+  color: inherit;
+  background: none;
+  padding: 0;
+}
+
+/* ═══════════════════════════════════════════
+   Shared: Hover tooltip
+   Replaces native title=: instant, reliable, dark bubble. Opt in per
+   element with data-tip="…"; pointer or keyboard focus shows it. The
+   bubble centres above the element; an arrow tucks under it.
+   ═══════════════════════════════════════════ */
+[data-tip] {
+  position: relative;
+}
+
+[data-tip]::after,
+[data-tip]::before {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 60;
+  transition:
+    opacity 0.12s ease,
+    transform 0.12s ease;
+}
+
+/* Bubble */
+[data-tip]::after {
+  content: attr(data-tip);
+  margin-bottom: 10px;
+  width: max-content;
+  max-width: 300px;
+  padding: 0.5rem 0.65rem;
+  white-space: pre-line;
+  text-align: left;
+  font-family: var(--font);
+  font-size: 0.74rem;
+  font-weight: 400;
+  line-height: 1.45;
+  color: #f1e9dc;
+  background: #2a2018;
+  border-radius: 9px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+  transform: translate(-50%, 5px);
+}
+
+/* Arrow — rotated square, top half hidden behind the bubble */
+[data-tip]::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  margin-bottom: 5px;
+  background: #2a2018;
+  border-radius: 2px;
+  transform: translate(-50%, 5px) rotate(45deg);
+}
+
+[data-tip]:hover::after,
+[data-tip]:focus-visible::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+[data-tip]:hover::before,
+[data-tip]:focus-visible::before {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0) rotate(45deg);
+}
+
+/* ═══════════════════════════════════════════
+   Responsive
+   ═══════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .page {
+    padding: 2rem 1rem 3rem;
+  }
+  .header__title {
+    font-size: 1.6rem;
+  }
+  .wz-nav {
+    grid-template-columns: 1fr;
+  }
+}

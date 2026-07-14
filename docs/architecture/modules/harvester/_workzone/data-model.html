@@ -1,0 +1,1184 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Harvester: Data model</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="data-model.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Harvester</a>
+        <h1 class="header__title">Data model</h1>
+        <div class="header__sub">harvester · workzone</div>
+      </div>
+
+      <p class="desc">
+        A page about what data flows through the module and how it lives over
+        time. Two contracts carry the pipeline —
+        <a href="#raw-item" class="xref-anchor">RawItem</a>
+        <span class="dm-arrow">→</span>
+        <a href="#entity" class="xref-anchor">Entity</a> — then Entity fans out
+        across <a href="#storage" class="xref-anchor">stores</a>, and four
+        decisions set its fate after loading: what we remember from
+        <a href="#history" class="xref-anchor">history</a>, how we handle
+        <a href="#deletes" class="xref-anchor">deletes</a> and
+        <a href="#attachments" class="xref-anchor">attachments</a>, and where the
+        <a href="#cross-source" class="xref-anchor">boundary</a> with the
+        Knowledge Store runs. Beyond this content plan the module holds its own
+        <a href="#operational" class="xref-anchor">control layer</a> — the source
+        configuration and the run journal; the Admin Panel edits it through the
+        API.
+      </p>
+
+      <!-- ════════════════ CONTRACTS ════════════════ -->
+      <div class="dm-contracts">
+        <!-- ── RawItem ── -->
+        <div class="mod-card dm-contract" id="raw-item">
+          <div class="dm-contract__head">
+            <code class="dm-contract__name">RawItem</code>
+          </div>
+          <div class="dm-contract__role">Connector → Transform</div>
+          <p class="dm-contract__d">
+            Source material as is, together with its metadata. The connector's
+            output and the input to <a href="pipeline.html#transform" class="xref-page">transform</a>:
+            not yet normalized, each source in its own format.
+          </p>
+          <ul class="dm-fieldlist">
+            <li>
+              <span class="dm-fieldlist__k">payload</span>
+              <span class="dm-fieldlist__v"
+                >the source's raw response — the body of a ticket, page, or
+                message as the API returned it</span
+              >
+            </li>
+            <li>
+              <span class="dm-fieldlist__k">identifiers</span>
+              <span class="dm-fieldlist__v"
+                >the record's type and id at the source — the future idempotency
+                key</span
+              >
+            </li>
+            <li>
+              <span class="dm-fieldlist__k">collection metadata</span>
+              <span class="dm-fieldlist__v"
+                >when and by which run it was fetched, the increment cursor, the
+                source's own marker</span
+              >
+            </li>
+          </ul>
+        </div>
+
+        <div class="dm-contract-arrow"></div>
+
+        <!-- ── Entity ── -->
+        <div class="mod-card dm-contract dm-contract--entity" id="entity">
+          <div class="dm-contract__head">
+            <code class="dm-contract__name">Entity</code>
+          </div>
+          <div class="dm-contract__role">Transform → Loader</div>
+          <p class="dm-contract__d">
+            A normalized entity — a single shape for everything the module
+            collects. Different types within a source (ticket, page, message) are
+            subtypes of one <code>Entity</code> and pass through
+            <a href="pipeline.html#transform" class="xref-page">one pipeline</a>.
+          </p>
+          <ul class="dm-fieldlist">
+            <li>
+              <span class="dm-fieldlist__k">identity</span>
+              <span class="dm-fieldlist__v"
+                >the idempotency key <code>source_id + source_type + source_entity_id</code> — by
+                which the
+                <a href="pipeline.html#load" class="xref-page">Loader</a>
+                upserts: exactly one row per source record</span
+              >
+            </li>
+            <li>
+              <span class="dm-fieldlist__k">type</span>
+              <span class="dm-fieldlist__v"
+                >the entity subtype within the source (ticket · page · message)</span
+              >
+            </li>
+            <li>
+              <span class="dm-fieldlist__k">status</span>
+              <span class="dm-fieldlist__v"
+                ><code>draft</code> · <code>final</code> ·
+                <code>archived</code> — the content's lifecycle in the source,
+                set by the classify step. A record disappearing from the source is
+                a separate axis (<a href="#deletes" class="xref-anchor">deletes</a>),
+                not a status value</span
+              >
+            </li>
+            <li>
+              <span class="dm-fieldlist__k">content</span>
+              <span class="dm-fieldlist__v"
+                >the text served in results and its embeddings — by fragments
+                (chunks), not one vector per record</span
+              >
+            </li>
+            <li>
+              <span class="dm-fieldlist__k">metadata</span>
+              <span class="dm-fieldlist__v"
+                >author, timestamps, links within the source, and mentions of
+                other sources (<code>refs</code>)</span
+              >
+            </li>
+            <li>
+              <span class="dm-fieldlist__k">ACL</span>
+              <span class="dm-fieldlist__v"
+                >the source's access rights, carried over with the record —
+                <a href="acl-identity.html#acl" class="xref-page">Harvester captures them</a>,
+                while the model and storage are held by the
+                <a href="../../knowledge-store/_workzone/acl-identity.html#acl" class="xref-module">Knowledge Store</a></span
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ════════════════ STORES ════════════════ -->
+      <div class="section" id="storage">
+        <div class="section__title">Where Entity lands: three storage projections</div>
+        <p class="desc">
+          One logical contract,
+          <a href="#entity" class="xref-anchor">Entity</a>, fans out at load time
+          across three storage paradigms — this is not one record in one
+          database. The exact layout (which field goes to the relational, vector,
+          or graph store) is held by the
+          <a
+            class="xref-badge"
+            href="../../knowledge-store/_workzone/data-model.html#projections"
+            >→ Knowledge Store</a
+          >; here — a preliminary picture, refined as the storage is designed.
+        </p>
+        <div class="dm-store">
+          <div class="dm-store__src"><code>Entity</code></div>
+          <div class="dm-store__fan">
+            <div class="dm-store__col dm-store__col--rel">
+              <div class="dm-store__h">
+                <span class="dm-store__t">Relational</span>
+                <span class="dm-store__para">structure · exact filters</span>
+              </div>
+              <p class="dm-store__d">
+                The record body — identity, type, status, metadata, the text
+                served in results — and ACL as the source of truth for rights.
+                Everything filtered and joined exactly.
+              </p>
+            </div>
+            <div class="dm-store__col dm-store__col--vec">
+              <div class="dm-store__h">
+                <span class="dm-store__t">Vector</span>
+                <span class="dm-store__para">meaning · similarity search</span>
+              </div>
+              <p class="dm-store__d">
+                Fragment (chunk) embeddings — child rows of the entity (keyed by
+                its id) with a content hash: the backbone of semantic search by
+                meaning rather than exact word match.
+              </p>
+            </div>
+            <div class="dm-store__col dm-store__col--graph">
+              <div class="dm-store__h">
+                <span class="dm-store__t">Graph</span>
+                <span class="dm-store__para">relationships · traversal</span>
+              </div>
+              <p class="dm-store__d">
+                The entity as a node and the within-source relationships the
+                pipeline builds. Mentions of other sources (<code>refs</code>)
+                become edges later — already on the Knowledge Store side.
+              </p>
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          Rights at result time are applied as a filter: a fragment inherits the
+          ACL of its entity (keyed by its id), and the ACL sits in the relational
+          store next to the vectors — so filtering by rights runs in the same
+          query as the search by meaning. Capturing rights and membership is held
+          by <a href="acl-identity.html#acl" class="xref-page">acl-identity</a>,
+          and their model and storage by the
+          <a href="../../knowledge-store/_workzone/acl-identity.html#acl" class="xref-module">Knowledge Store</a>.
+        </p>
+      </div>
+
+      <!-- ════════════════ HISTORY ════════════════ -->
+      <div class="section" id="history">
+        <div class="section__title">History: what we remember over time</div>
+        <p class="desc">
+          Three different questions about changes, and each gets its own answer.
+          They are easy to conflate, so the decision is spelled out explicitly:
+          one we store now, another we defer, the third we deliberately do not
+          store.
+        </p>
+        <div class="dm-hist">
+          <!-- Entity -->
+          <div class="dm-hist__row dm-hist__row--keep">
+            <div class="dm-hist__verdict">
+              <span class="dm-hist__mark">snapshot</span>
+            </div>
+            <div class="dm-hist__body">
+              <div class="dm-hist__t">Entity — current snapshot</div>
+              <div class="dm-hist__d">
+                Ticket, page, message: we store the latest state. A repeat run
+                overwrites the row via upsert; we do not accumulate past revisions
+                of the entity itself.
+              </div>
+            </div>
+          </div>
+          <!-- Discussions -->
+          <div class="dm-hist__row dm-hist__row--later">
+            <div class="dm-hist__verdict">
+              <span class="dm-hist__mark">accumulate</span>
+              <span class="iter v2">v2</span>
+            </div>
+            <div class="dm-hist__body">
+              <div class="dm-hist__t">Discussions — accumulated</div>
+              <div class="dm-hist__d">
+                Comments and threads are separate accumulating units alongside the
+                entity, not an overwritten field. A thread grows over time, and
+                each reply is valuable in its own right. Deferred to v2.
+              </div>
+            </div>
+          </div>
+          <!-- Field changelog -->
+          <div class="dm-hist__row dm-hist__row--drop">
+            <div class="dm-hist__verdict">
+              <span class="dm-hist__mark dm-hist__mark--no">not stored</span>
+            </div>
+            <div class="dm-hist__body">
+              <div class="dm-hist__t">Field changelog — not stored</div>
+              <div class="dm-hist__d">
+                That a field was <code>Open</code> and became <code>Done</code>,
+                step by step — we do not track. Only <code>updated_at</code> marks
+                the fact of a change; we do not reconstruct a lifelong feed of
+                edits to each field.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ DELETES ════════════════ -->
+      <div class="section" id="deletes">
+        <div class="section__title">Deletes</div>
+        <div class="dm-decision dm-decision--soft">
+          <div class="dm-decision__head">
+            <span class="dm-decision__pick">soft-delete · a separate axis</span>
+          </div>
+          <p class="dm-decision__d">
+            A record that has disappeared from the source is marked deleted and
+            hidden from results, but physically retained — this gives an audit
+            trail (what existed and when it left) and recovery, if the record
+            returns or the deletion was a mistake. The delete marker is a separate
+            axis from <a href="#entity" class="xref-anchor">status</a>, not one of
+            its values: a disappearance from the source is seen by the full scan of
+            <a href="sync-modes.html#reconciliation" class="xref-page">reconciliation</a>
+            (a delete never arrives in the increment) — which then records the
+            moment of disappearance. The classification status (<code>draft</code> ·
+            <code>final</code> · <code>archived</code>) is preserved as it was, so
+            recovery is unambiguous: remove the marker — the prior status returns
+            on its own. <code>archived</code> belongs to content (the author
+            archived it — the record still exists in the source), a delete belongs
+            to presence; the two meanings cannot be held in one value.
+          </p>
+        </div>
+      </div>
+
+      <!-- ════════════════ ATTACHMENTS ════════════════ -->
+      <div class="section" id="attachments">
+        <div class="section__title">Attachments</div>
+        <div class="dm-split">
+          <div class="dm-split__col dm-split__col--keep">
+            <div class="dm-split__h">
+              <span class="dm-split__t">Text</span>
+            </div>
+            <p class="dm-split__d">
+              In v1 we take only what is already text: the body of an email, a
+              text file, a message with a text attachment. It is immediately fit
+              for indexing and embedding.
+            </p>
+          </div>
+          <div class="dm-split__col dm-split__col--later">
+            <div class="dm-split__h">
+              <span class="dm-split__t">File parsing</span>
+              <span class="iter v2">v2</span>
+            </div>
+            <p class="dm-split__d">
+              Extracting text from PDF and docx, recognizing scans (OCR) — a
+              separate processing layer. Deferred to v2: binary attachments are
+              for now stored as links, without parsing their content.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ CROSS-SOURCE ════════════════ -->
+      <div class="section" id="cross-source">
+        <div class="section__title">The cross-source boundary with the Knowledge Store</div>
+        <p class="desc">
+          Relationships and deduplication are split between two modules. The
+          boundary rule is simple: what can be established exactly and within a
+          single source — Harvester does; what requires a guess across sources — it
+          hands to the
+          <a
+            class="xref-badge"
+            href="../../knowledge-store/_workzone/lifecycle.html#curation-pass"
+            >→ Knowledge Store</a
+          >.
+        </p>
+        <div class="dm-border">
+          <!-- Harvester -->
+          <div class="dm-border__col dm-border__col--here">
+            <div class="dm-border__head">
+              <span class="dm-border__who">Harvester</span>
+              <span class="dm-border__tag">exact · within a source</span>
+            </div>
+            <ul class="dm-border__list">
+              <li>
+                <strong>Within-source relationships</strong> — parent-child, a
+                ticket's links to another ticket in the same tracker — built
+                directly, right in the pipeline.
+              </li>
+              <li>
+                <strong>Links to other sources</strong> — kept as a claim
+                (<code>refs</code>), not materialized into edges: the target node
+                may not be loaded yet. The format is
+                <a href="#refs-format" class="xref-anchor">below</a>.
+              </li>
+              <li>
+                <strong>Light deduplication</strong> — exact match on
+                <code>source_id + source_type + source_entity_id</code>: a repeat run recognizes
+                the same record and updates it.
+              </li>
+              <li>
+                <strong>Identity by email</strong> — merging accounts by an exact
+                address match; the explicit key is held by
+                <a href="acl-identity.html#identity" class="xref-page">acl-identity</a>.
+              </li>
+            </ul>
+          </div>
+          <!-- Knowledge Store -->
+          <div class="dm-border__col dm-border__col--there">
+            <div class="dm-border__head">
+              <span class="dm-border__who">Knowledge Store</span>
+              <span class="dm-border__tag">a guess · across sources</span>
+            </div>
+            <ul class="dm-border__list">
+              <li>
+                <strong>Cross-source edges</strong> — links nodes from different
+                sources by explicit mentions, once both are already in the graph.
+              </li>
+              <li>
+                <strong>Fuzzy entity resolution</strong> — merges entities by
+                similarity (fuzzy matching), not by an exact key.
+              </li>
+              <li>
+                <strong>Deep deduplication</strong> — what exact match missed: one
+                object under different guises across different systems.
+              </li>
+              <li>
+                <strong>“Different emails, same person”</strong> — fuzzy identity
+                merging; either entity resolution here, or manual triage in Admin.
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- ── refs format ── -->
+        <div class="dm-refs" id="refs-format">
+          <div class="dm-refs__h">
+            <span class="dm-refs__t"><code>refs</code> format</span>
+            <span class="dm-refs__loc"
+              >the <code>entity_ref</code> table · Knowledge Store · before materialization</span
+            >
+          </div>
+          <p class="dm-refs__d">
+            <code>refs</code> live as a separate row in the
+            <code>entity_ref</code> table (home — Knowledge Store) — a claim of a
+            relationship, not yet an edge. Filled in by
+            <a href="pipeline.html#transform" class="xref-page">normalization</a>;
+            each carries the minimum sufficient for the
+            <a
+              class="xref-badge"
+              href="../../knowledge-store/_workzone/lifecycle.html#curation-pass"
+              >→ Knowledge Store</a
+            >
+            to later resolve the target and materialize the edge in
+            <code>entity_edge</code>, even if the target node was not yet loaded at
+            capture time.
+          </p>
+          <ul class="dm-refs__fields">
+            <li>
+              <span class="dm-refs__k">relation</span>
+              <span class="dm-refs__v"
+                >relationship type · <code>mentions</code> · <code>blocks</code> ·
+                <code>parent</code> · <code>author</code> ·
+                <code>duplicate</code> · …</span
+              >
+            </li>
+            <li>
+              <span class="dm-refs__k">target_kind</span>
+              <span class="dm-refs__v"
+                >target kind · <code>issue</code> · <code>page</code> ·
+                <code>user</code> · <code>commit</code> · <code>mr</code> ·
+                <code>message</code></span
+              >
+            </li>
+            <li>
+              <span class="dm-refs__k">target_ref</span>
+              <span class="dm-refs__v"
+                >the natural identifier as it is in the source · the key
+                <code>"PROJ-123"</code> · a URL · <code>"@user"</code> ·
+                a sha</span
+              >
+            </li>
+            <li>
+              <span class="dm-refs__k">source_hint</span>
+              <span class="dm-refs__v"
+                >the presumed source / connector ·
+                <code>jira</code> · <code>gitlab</code> · … ·
+                <code>null</code> if unknown</span
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ════════════════ PLANE BOUNDARY ════════════════ -->
+      <div
+        class="dm-planes"
+        id="operational"
+        role="separator"
+        aria-label="Boundary: above — the data flow, below — the control layer"
+      >
+        <div class="dm-planes__zone">
+          <span class="dm-planes__name">Data flow</span>
+          <span class="dm-planes__sub"
+            >everything above — what <em>flows</em> through the module</span
+          >
+        </div>
+        <div class="dm-planes__seam" aria-hidden="true">
+          <span class="dm-planes__node"></span>
+        </div>
+        <div class="dm-planes__zone dm-planes__zone--ctrl">
+          <span class="dm-planes__name">Control layer</span>
+          <span class="dm-planes__sub"
+            >below — what the module <em>manages</em></span
+          >
+        </div>
+      </div>
+
+      <!-- ════════════════ CONTROL LAYER ════════════════ -->
+      <div class="section">
+        <div class="section__title">Source, runs, failed items</div>
+        <p class="desc">
+          Three concrete tables whose home is Harvester: the connected source, the
+          journal of its runs, and the queue of failed items for triage. The
+          <a href="../../admin-panel/_wireframes/harvester.html#sync-overview" class="xref-module">Admin Panel</a>
+          screens (the hub and the source card) read and edit them through the API —
+          the behaviour is owned by the module.
+        </p>
+
+        <div class="stk-stack">
+          <!-- ── Source ── -->
+          <div class="stk-layer stk-layer--ops" id="sources-table">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Source</span>
+              <span class="stk-layer__role">Connection configuration.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">sources</span>
+                  <span class="dm-tbl__sub">connected sources</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--flag">secrets at rest</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">name</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">display name · “Jira · Acme”</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">connector_type</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">connector key · open set, no CHECK · → manifest</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">base_url</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">instance address · not needed for some types</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">auth_account</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 'service'">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (service | personal)">CHECK</span>
+                      </td>
+                      <td class="dm-note">as whom · service · personal</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">auth_method</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 'static_token'">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (static_token | oauth)">CHECK</span>
+                      </td>
+                      <td class="dm-note">by what · static_token · oauth <span class="iter v2">v2</span></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">credential_enc</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">AES-256-GCM ciphertext · <code>NULL</code> when Disconnected · → secrets</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">state</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 'active'">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (active | paused | disconnected)">CHECK</span>
+                      </td>
+                      <td class="dm-note">admin intent · active · paused · disconnected</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">scope_mode</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 'all'">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (all | selected)">CHECK</span>
+                      </td>
+                      <td class="dm-note">everything / only selected</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">scope_list</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT '[]'">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">deny-list (all) or allow-list (selected): container ids</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">content_filters</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT '{}'">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">“beyond the rules” toggles · the set is defined by the manifest</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">sync_interval</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">sec · increment interval · overrides the global default · <code>NULL</code> = inherits</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">reconcile_interval</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">sec · reconciliation cadence · overrides the global default · <code>NULL</code> = inherits</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">reconcile_window</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">minute of the week reconciliation starts, org-tz · a daily cadence → minute of day (<code>mod 1440</code>) · overrides the global default · <code>NULL</code> = inherits</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">authority_tier</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span><span class="dm-c dm-c--chk" title="CHECK (low | normal | high)">CHECK</span></td>
+                      <td class="dm-note">trust level in the source · <code>low</code> · <code>normal</code> · <code>high</code> · input to <a href="../../knowledge-store/_workzone/lifecycle.html#staleness" class="xref-module">KS decay</a> · the numeric multiplier is derived by code · <code>NULL</code> = the manifest's <code>default_authority</code> for the type</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">webhook_enabled</td>
+                      <td class="dm-t">Boolean</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">real-time channel · DEFAULT <code>false</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">webhook_secret_enc</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">ciphertext of the HMAC secret · → secrets</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">incremental_cursor</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">the <code>since</code> position of the last run · <code>NULL</code> until the first</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">last_probe_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">time of the scheduled connection probe · <code>NULL</code> until the first</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">last_probe_status</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (ok | unreachable | auth_failed)">CHECK</span>
+                      </td>
+                      <td class="dm-note">probe outcome · ok · unreachable · auth_failed</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>server_default=now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec" id="health-derived">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">State is stored, health is computed</span>
+                  <a class="xref-badge xref-badge--page" href="sources.html#lifecycle"
+                    >→ Source lifecycle</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  The DB holds <code>state</code> — the admin's intent (active ·
+                  paused · disconnected). Health (idle · syncing · error) is not a
+                  separate column: it is derived from the last
+                  <a href="#sync-runs-table" class="xref-anchor">run</a> and the
+                  scheduled connection probe. The probe outcome itself is persisted
+                  (<code>last_probe_at</code> · <code>last_probe_status</code>) —
+                  the one facet of health that cannot be derived from a run (a
+                  light probe between runs fails on its own). The hub badges are a
+                  rendering of the two axes, not a third truth.
+                </div>
+              </div>
+
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Scope and filters — policy in JSONB</span>
+                  <a class="xref-badge xref-badge--page" href="connectors.html#manifest"
+                    >→ Connector manifest</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <code>scope_mode</code> + <code>scope_list</code> and
+                  <code>content_filters</code> are flexible policy, not a frozen
+                  snapshot: which objects scope offers and which “beyond the rules”
+                  toggles are available is declared by the connector manifest, so
+                  the shape of the columns is not fixed — hence JSONB.
+                </div>
+              </div>
+
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Secrets — the Auth crypto core</span>
+                  <a class="xref-badge" href="../../auth-security/_workzone/protection.html#crypto-core"
+                    >→ Crypto core</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <code>credential_enc</code> and <code>webhook_secret_enc</code>
+                  are AES-256-GCM ciphertext; the cipher and the key are held by
+                  the Auth crypto core, Harvester keeps no store of its own.
+                  Outward (API, export) the values never leave — the UI receives
+                  only a mask.
+                </div>
+              </div>
+
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Global schedule default</span>
+                </div>
+                <div class="stk-dec__d">
+                  The collection cadence settings —
+                  <code>sync_interval</code> (increment interval),
+                  <code>reconcile_interval</code> (reconciliation frequency), and
+                  <code>reconcile_window</code> (when in the week to launch it) —
+                  on a source override the global defaults
+                  (<code>NULL</code> = inherits). The home of the defaults
+                  themselves is <code>platform_settings</code> (core): one global
+                  set per platform, and the source field merely overrides it
+                  pointwise. The window belongs to the heavy, infrequent
+                  reconciliation (night / weekend); the interval-based increment
+                  has none. The minute is stored as an offset without a zone —
+                  the hour is set by the admin in the organization's timezone
+                  (<code>platform_settings.timezone</code>), and the scheduler
+                  unrolls it to the nearest UTC launch moment. The global window
+                  default is Sunday 03:00.
+                </div>
+              </div>
+
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Real-time without its own columns: dedup and watchdog</span>
+                  <a class="xref-badge xref-badge--page" href="security.html#webhooks"
+                    >→ Webhooks</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Protection against redelivery (one webhook — once) needs no
+                  column: seen delivery-ids live in ephemeral TTL memory in
+                  <a href="../../cache-workers/_workzone/redis-keys.html#blacklist" class="xref-module">Cache &amp; Workers</a>
+                  (Redis), the dedup window is ephemeral. The watchdog's reference
+                  point (a webhook source silent longer than the window) is also
+                  not stored separately — it is given by the time of the source's
+                  last <a href="#sync-runs-table" class="xref-anchor">run</a>.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ── Runs ── -->
+          <div class="stk-layer stk-layer--ops" id="sync-runs-table">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Sync runs</span>
+              <span class="stk-layer__role">Run journal.</span>
+              <a class="xref-badge xref-badge--page" href="reliability.html#sync-run"
+                >→ SyncRun</a
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">sync_runs</span>
+                  <span class="dm-tbl__sub">run journal</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → sources</span>
+                    <span class="dm-badge dm-badge--flag">one active per source</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">source_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → sources, ON DELETE CASCADE">FK→sources</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">CASCADE</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">mode</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (full | incremental | reconciliation)">CHECK</span>
+                      </td>
+                      <td class="dm-note">fetch strategy · full · incremental · reconciliation</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">trigger</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (connect | schedule | webhook | watchdog | manual)">CHECK</span>
+                      </td>
+                      <td class="dm-note">what initiated it · connect · schedule · webhook · watchdog · manual</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">state</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 'queued'">DEFAULT</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (queued | running | succeeded | failed | cancelled)">CHECK</span>
+                      </td>
+                      <td class="dm-note">queued · running · succeeded · failed · cancelled</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">scope</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">the run's subset · <code>NULL</code> = the whole source · window · item list (DLQ) · containers</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">entities_done</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">processed (N) · the total on succeeded</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">entities_total</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">volume estimate (M) for the “N of M” progress</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">checkpoint</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">resume position within the run</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">error_count</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 0">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">count in the DLQ · DEFAULT <code>0</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">error_detail</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">a brief cause of failure</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">started_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note"><code>NULL</code> while queued · duration = finished − started</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">finished_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">terminal time</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">heartbeat_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">worker liveness</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">One active run per source</span>
+                </div>
+                <div class="stk-dec__d">
+                  The lock is a partial unique index
+                  <code>UNIQUE (source_id) WHERE state IN ('queued','running')</code>:
+                  a source carries at most one unfinished run, and for its duration
+                  the card is locked. Cancel terminalizes the run
+                  (<code>cancelled</code>) — the next starts fresh.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Partial success is succeeded with errors</span>
+                </div>
+                <div class="stk-dec__d">
+                  Failed items do not fail the run: with them it terminates as
+                  <code>succeeded</code> with <code>error_count &gt; 0</code> —
+                  the data arrived, some was set aside in the
+                  <a href="#dead-letters-table" class="xref-anchor">DLQ</a> for
+                  triage. <code>failed</code> is a total failure of the run (the
+                  source unavailable, the run torn down entirely). So
+                  <code>state</code> and <code>error_count</code> are read
+                  together: green with an errors note is not red.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Three axes of a run: strategy · trigger · scope</span>
+                  <a class="xref-badge xref-badge--page" href="sync-modes.html#per-source"
+                    >→ Sync modes</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  A run is described by three independent fields, not one.
+                  <code>mode</code> is the fetch strategy (<code>full</code> ·
+                  <code>incremental</code> · <code>reconciliation</code>, exactly
+                  the three sync modes): the <code>since</code> window and the
+                  aggressiveness of resolve.
+                  <code>trigger</code> is what raised the run. <code>scope</code> is
+                  which subset we pull. All three live on the run, not on the
+                  source: the source holds only
+                  <code>incremental_cursor</code> and the schedule. So
+                  <strong>partial re-sync</strong> and <strong>dlq retry</strong>
+                  are not separate modes, but <code>incremental</code> with
+                  different trigger and scope: the first — <code>watchdog</code> +
+                  a recovery window, the second — <code>manual</code> + an item
+                  list from the
+                  <a href="#dead-letters-table" class="xref-anchor">DLQ</a>.
+                  The “type” of a row in the history is derived from this triple —
+                  it is not stored as a separate column. A run failure raises a
+                  notification through the same channel as the platform's other
+                  alerts.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">What launched it — here; who launched it — in the platform journal</span>
+                  <a class="xref-badge" href="../../auth-security/_workzone/protection.html#audit-log"
+                    >→ Audit Log</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <code>trigger</code> carries <em>what</em> raised the run
+                  (connect · schedule · webhook · watchdog · manual) — visible in
+                  the run history, complementing <code>mode</code>. But <em>who</em>
+                  among the admins launched a manual run or changed the source
+                  configuration, Harvester does not duplicate itself: the actor's
+                  identity, the action, and the result are written by the
+                  platform's append-only journal of admin actions — its home is
+                  Auth &amp; Security. The audit lives in one place, not smeared
+                  across module tables.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Run metrics vs source volume</span>
+                </div>
+                <div class="stk-dec__d">
+                  The run's numbers are its own: processed
+                  (<code>entities_done</code> out of the estimate
+                  <code>entities_total</code>), the “N of M” in progress. But the
+                  source's total volume (the “Entities” column in the hub) is not a
+                  Harvester counter — it is a <code>COUNT</code> of the source's
+                  nodes in the Knowledge Store; the module keeps no column of its
+                  own for it.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ── Failed items ── -->
+          <div class="stk-layer stk-layer--ops" id="dead-letters-table">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Failed items</span>
+              <span class="stk-layer__role">Triage queue.</span>
+              <a class="xref-badge xref-badge--page" href="reliability.html#dlq"
+                >→ DLQ</a
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">dead_letters</span>
+                  <span class="dm-tbl__sub">queue of failed items</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → sources</span>
+                    <span class="dm-badge dm-badge--fk">FK → sync_runs</span>
+                    <span class="dm-badge dm-badge--flag">one row per item</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">source_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → sources, ON DELETE CASCADE">FK→sources</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">CASCADE · the queue lives as long as the source does</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">run_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → sync_runs, ON DELETE SET NULL">FK→sync_runs</span
+                        ><span class="dm-c dm-c--null">NULL</span>
+                      </td>
+                      <td class="dm-note">the run of the last failure · SET NULL survives a journal cleanup</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_type</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">the record's type at the source (ticket · page · message)</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_entity_id</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">the record's id at the source · what a retry re-pulls</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">reason</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (permission | not_found | malformed | rate_limited | unknown)">CHECK</span>
+                      </td>
+                      <td class="dm-note">triage category · permission · not_found · malformed · rate_limited · unknown</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">error_detail</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">error text · for diagnostics</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">attempts</td>
+                      <td class="dm-t">Integer</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="DEFAULT 1">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">how many times it failed · grows on a repeat hit</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note">first set aside</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note">last failure · <code>now()</code> + trigger</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">One row per failed item</span>
+                </div>
+                <div class="stk-dec__d">
+                  The dedup key is <code>UNIQUE (source_id, source_type,
+                  source_entity_id)</code>: the same item, failing again in the
+                  next run, does not spawn a duplicate but updates the row
+                  (<code>attempts</code>, <code>updated_at</code>, a fresh
+                  <code>reason</code>) via upsert. The queue is a snapshot of what
+                  is currently unresolved, not a feed of every failure.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Transient or permanent — the connector decides</span>
+                  <a class="xref-badge xref-badge--page" href="reliability.html#retry"
+                    >→ Retries</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  The <code>reason</code> category encodes the triage, but whether
+                  an item lands in the queue depends on another axis — a transient
+                  error or a permanent one. That classification is declared by the
+                  connector: the default HTTP mapping (429 · 5xx → transient;
+                  403 · 404 → permanent) it may override to suit its own API. The
+                  attempt-and-backoff mechanics themselves are held by
+                  reliability — here arrives only what the retries exhausted.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Leaving the queue — deletion on success</span>
+                  <a class="xref-badge xref-badge--page" href="reliability.html#visibility"
+                    >→ Failure visibility</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  “Retry failed” launches an <code>incremental</code> run manually
+                  (<code>trigger=manual</code>) with a <code>scope</code> from the
+                  source's unresolved rows — that is the dlq retry. Item processed
+                  — the row is <strong>deleted</strong> (its current state now
+                  lives in <a href="#entity" class="xref-anchor">Entity</a> via
+                  upsert); failed again — it stays and is updated; gone from the
+                  source — deleted, nothing left to triage. This is a working
+                  queue, not a journal: the audit of “how much failed and when” is
+                  already carried by <code>sync_runs.error_count</code>, so we
+                  clean up the resolved without a duplicating history.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Run counter ≠ queue depth</span>
+                  <a class="xref-badge" href="../../admin-panel/_wireframes/harvester.html#sync-errors"
+                    >→ Failed-item triage</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <code>sync_runs.error_count</code> is an immutable snapshot: how
+                  much failed <em>in that</em> run. The “K in DLQ” counter in the
+                  hub and the triage by reason are the live
+                  <code>dead_letters</code> of the source
+                  (<code>COUNT</code> and <code>GROUP BY reason</code>); as things
+                  get fixed it shrinks, whereas the run's <code>error_count</code>
+                  stays as it was. The set of <code>reason</code> categories is the
+                  backend's source of truth, the UI merely renders it.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

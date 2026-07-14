@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Bulk Invite Preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit (feature-local screen,
+         one level deeper than _wireframes/ — see README → Styling) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../wireframe.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="index.html">← User onboarding</a>
+        <h1 class="header__title">Bulk Invite · Preview</h1>
+        <div class="header__sub">
+          auth / security · features · onboarding
+          <div class="header__markers">
+            <a class="in-shell" href="../../../admin-panel/_wireframes/layout.html" title="The screen renders in the content area of the Admin Panel shell">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--skeleton" href="../../../shared-ui/_wireframes/loading-states.html#skeleton" title="Screen loading — skeleton">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">Step 2 of bulk import: review the parsed list before sending invitations.</p>
+
+      <!-- Wireframe -->
+      <div class="section">
+        <div class="section__title">Wireframe</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">step 2 · review and send</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/users/import
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/users/import · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-steps">
+                  <span class="wf-step wf-step--done">1</span>
+                  <span class="wf-step__bar"></span>
+                  <span class="wf-step wf-step--current">2</span>
+                </div>
+
+                <div class="wf-row wf-spread">
+                  <span class="wf-title">Review the list</span>
+                  <div class="wf-field wf-field--inline">
+                    <span class="wf-label">Default role</span>
+                    <div class="wf-input wf-input--sm">
+                      Member
+                      <span class="wf-input__action">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                      </span>
+                    </div>
+                    <span class="wf-annot">1</span>
+                  </div>
+                </div>
+
+                <div class="wf-filters">
+                  <span class="wf-filter wf-filter--on">All <span class="wf-chip">260</span></span>
+                  <span class="wf-filter">new <span class="wf-chip wf-chip--ok">240</span></span>
+                  <span class="wf-filter">existing <span class="wf-chip">12</span></span>
+                  <span class="wf-filter">duplicates <span class="wf-chip wf-chip--warn">3</span></span>
+                  <span class="wf-filter">errors <span class="wf-chip wf-chip--err">5</span></span>
+                  <span class="wf-annot">2</span>
+                </div>
+
+                <table class="wf-table">
+                  <thead>
+                    <tr><th>Email</th><th>Name</th><th>Role</th><th>Status</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>anna@company.com</td>
+                      <td>Anna Orlova</td>
+                      <td><span class="wf-chip">Member</span></td>
+                      <td><span class="wf-chip wf-chip--ok">new</span></td>
+                    </tr>
+                    <tr>
+                      <td>dmitry@company.com</td>
+                      <td>Dmitry Sokolov</td>
+                      <td><span class="wf-chip">Admin</span></td>
+                      <td><span class="wf-chip wf-chip--ok">new</span></td>
+                    </tr>
+                    <tr class="wf-table__row--muted">
+                      <td>igor@company.com</td>
+                      <td>Igor Lebedev</td>
+                      <td><span class="wf-chip">Member</span></td>
+                      <td><span class="wf-chip">existing</span> <span class="wf-annot">3</span></td>
+                    </tr>
+                    <tr class="wf-table__row--muted">
+                      <td>anna@company.com</td>
+                      <td>—</td>
+                      <td><span class="wf-chip">Member</span></td>
+                      <td><span class="wf-chip wf-chip--warn">duplicate</span></td>
+                    </tr>
+                    <tr class="wf-table__row--muted">
+                      <td>maria@company</td>
+                      <td>Maria Kim</td>
+                      <td><span class="wf-chip">Member</span></td>
+                      <td><span class="wf-chip wf-chip--err">invalid email</span> <span class="wf-annot">4</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div class="wf-row wf-spread">
+                  <span class="wf-hint">Skipped rows don't block sending</span>
+                  <button class="wf-btn wf-btn--primary">Send 240 invitations</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Screen states: filter by status and send result -->
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">filter · errors</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-filters">
+                      <span class="wf-filter wf-filter--clear">← All</span>
+                      <span class="wf-filter wf-filter--on">errors <span class="wf-chip wf-chip--err">5</span></span>
+                    </div>
+                    <table class="wf-table">
+                      <thead>
+                        <tr><th>Email</th><th>Name</th><th>Status</th></tr>
+                      </thead>
+                      <tbody>
+                        <tr><td>maria@company</td><td>Maria Kim</td><td><span class="wf-chip wf-chip--err">invalid email</span></td></tr>
+                        <tr><td>p.orlov@</td><td>Pavel Orlov</td><td><span class="wf-chip wf-chip--err">invalid email</span></td></tr>
+                      </tbody>
+                    </table>
+                    </div>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">state · sent</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-body">
+                  <div class="wf-stack wf-center">
+                    <div class="wf-check">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                    </div>
+                    <h2 class="wf-title">Invitations are on their way</h2>
+                    <p class="wf-subtitle">
+                      240 queued · 15 skipped · 5 errors
+                      <span class="wf-annot">5</span>
+                    </p>
+                    <div class="wf-row">
+                      <a class="wf-btn">Download report</a>
+                      <a class="wf-btn wf-btn--primary" href="../../../admin-panel/_wireframes/users.html#invites">Go to invitations</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              The role for rows without one in the file; a role set in the row is kept. Same rules as a single
+              <a href="../../_workzone/authentication.html#invite-flow" class="xref-page">invitation</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Counters by status — a click filters the table to those rows, "All" restores the full list.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              "Existing" — the address is already in the system or awaiting acceptance; it isn't invited again.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Invalid rows and in-file duplicates are skipped and recorded in the report — they don't block sending.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              The send summary. Invitations land in the
+              <a href="../../../admin-panel/_wireframes/users.html#invites" class="xref-module">invitations</a>
+              tab with pending status.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

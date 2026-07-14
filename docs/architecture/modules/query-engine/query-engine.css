@@ -1,0 +1,339 @@
+/* Query Engine — module sheet.
+   The L2 signature is a poster of four pillars (qe-pillars), each one big idea
+   graspable at a glance, no reading:
+     01 Dialog — QE owns the conversation (stateful); surfaces are thin clients.
+     02 Model decides — the chat model leads the turn and holds one tool
+        (search_knowledge); the per-turn fork is conversational vs grounded.
+     03 RAG route — the five-step route Embed→Retrieve→Rerank→Augment→Generate,
+        with the ownership seam carried on the belt itself (Embed/Retrieve are
+        Knowledge Store territory, Rerank/Augment/Generate are Query Engine).
+     04 Grounding — the answer contract: only from retrieved · cite the record ·
+        honest "not found".
+   A footnote ribbon carries the secondary facts (one optional call without a
+   loop; Agent Engine bypasses QE; streamed answer + citations).
+   AI touchpoints carry the shared .ai-tag (README §AI marker). Static — no
+   hover affordance (README §Hover).
+   Loaded by index.html on top of module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ═══════════════════════════════════════════
+   L2 OVERVIEW — four pillars at a glance
+   ═══════════════════════════════════════════ */
+
+/* ── Wider canvas — the poster breaks out past the 720px prose column,
+   centered on the viewport, while the prose and workzone stay narrow.
+   The negative inline margins pull it symmetrically wider than its parent;
+   since the page is centered, the result is centered on the viewport too. ── */
+.qe-arch {
+  width: min(1080px, 92vw);
+  margin-inline: calc((100% - min(1080px, 92vw)) / 2);
+}
+
+/* ── sub-kicker under the section title ── */
+.qe-pillars__sub {
+  margin: -0.15rem 0 0.9rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+}
+
+/* ── pillar grid · ownership palette scoped here ── */
+.qe-pillars {
+  --qe-ks: var(--s3);
+  --qe-ks-pale: var(--s3-pale);
+  --qe-qe: var(--accent);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.9rem;
+}
+
+/* ── one pillar — a framed tile with an accent top edge ── */
+.qe-pillar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 1.1rem 1rem 1.05rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.qe-pillar::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--accent);
+  opacity: 0.85;
+}
+/* RAG pillar — the top edge splits KS | QE to telegraph the seam. */
+.qe-pillar--rag::before {
+  background: linear-gradient(90deg, var(--qe-ks) 0 40%, var(--qe-qe) 40% 100%);
+  opacity: 1;
+}
+
+.qe-pillar__num {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+.qe-pillar__glyph {
+  margin: 0.35rem 0 0.45rem;
+  font-size: 2.1rem;
+  line-height: 1;
+  color: var(--accent);
+}
+.qe-pillar__title {
+  margin: 0 0 0.15rem;
+  font-size: 1.18rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+}
+.qe-pillar__lead {
+  margin: 0 0 0.7rem;
+  font-size: 0.66rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+.qe-pillar__lead b {
+  font-weight: 700;
+  color: var(--text);
+}
+.qe-pillar__spacer {
+  flex: 1 1 auto;
+}
+
+/* ── pillar 1 — state chips ── */
+.qe-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: auto;
+}
+.qe-chip {
+  padding: 0.18rem 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.02em;
+  color: var(--text-dim);
+  background: var(--tint-6);
+  border: 1px solid var(--tint-15);
+  border-radius: var(--pill-radius);
+  white-space: nowrap;
+}
+
+/* ── pillar 2 — the one tool + the per-turn fork ── */
+.qe-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.34rem;
+  margin-bottom: 0.6rem;
+  padding: 0.2rem 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--tint-8);
+  border: 1px solid var(--tint-25);
+  border-radius: var(--pill-radius);
+}
+.qe-tool::before {
+  content: "⌘";
+  font-size: 0.78rem;
+}
+.qe-fork {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+  margin-top: auto;
+}
+.qe-branch {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  font-size: 0.63rem;
+  line-height: 1.3;
+  color: var(--text-dim);
+}
+.qe-branch__key {
+  flex: none;
+  width: 1.1rem;
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  line-height: 1;
+  text-align: center;
+}
+.qe-branch--talk .qe-branch__key {
+  color: var(--s2-glow);
+}
+.qe-branch--know .qe-branch__key {
+  color: var(--accent);
+}
+.qe-branch b {
+  font-weight: 700;
+  color: var(--text);
+}
+.qe-branch code {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--accent);
+}
+
+/* ── pillar 3 — the RAG belt with the ownership seam ── */
+.qe-rag {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: auto;
+}
+.qe-precheck {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-bottom: 0.1rem;
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
+.qe-precheck b {
+  font-weight: 700;
+  color: var(--text-dim);
+}
+.qe-belt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.22rem;
+}
+.qe-step {
+  padding: 0.22rem 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.57rem;
+  font-weight: 700;
+  border: 1px solid;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+.qe-step--ks {
+  color: var(--qe-ks);
+  background: var(--qe-ks-pale);
+  border-color: color-mix(in srgb, var(--qe-ks) 30%, transparent);
+}
+.qe-step--qe {
+  color: var(--qe-qe);
+  background: var(--tint-8);
+  border-color: var(--tint-25);
+}
+.qe-belt__arr {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+.qe-owners {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.54rem;
+  letter-spacing: 0.04em;
+}
+.qe-owner {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.qe-owner__dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+.qe-owner--ks .qe-owner__dot {
+  background: var(--qe-ks);
+}
+.qe-owner--qe .qe-owner__dot {
+  background: var(--qe-qe);
+}
+.qe-owner b {
+  font-weight: 700;
+  color: var(--text);
+}
+.qe-owner span {
+  color: var(--text-dim);
+}
+
+/* ── pillar 4 — the grounding promises ── */
+.qe-vows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+.qe-vow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.64rem;
+  line-height: 1.35;
+  color: var(--text-dim);
+}
+.qe-vow__mark {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-top: 0.05rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--tint-8);
+  border: 1px solid var(--tint-25);
+  border-radius: 50%;
+}
+.qe-vow b {
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* ═══════════════════════════════════════════
+   FOOTNOTE RIBBON — secondary facts
+   ═══════════════════════════════════════════ */
+
+.qe-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2rem;
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px dashed var(--border);
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+.qe-foot__item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.qe-foot__g {
+  font-size: 0.72rem;
+  color: var(--accent);
+}
+.qe-foot b {
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+@media (max-width: 680px) {
+  .qe-pillars {
+    grid-template-columns: 1fr;
+  }
+}

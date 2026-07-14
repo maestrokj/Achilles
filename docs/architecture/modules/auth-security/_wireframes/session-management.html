@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Session Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Session Management</h1>
+        <div class="header__sub">
+          auth / security · wireframes · user-facing
+          <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Screen loading — skeleton">
+            <span class="in-load__icon"></span>loading
+          </a>
+        </div>
+      </div>
+
+      <p class="desc">Devices where the account is signed in, and ending sessions you no longer need.</p>
+
+      <div class="section">
+        <div class="section__title">Wireframe</div>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <!-- ── State: active sessions ─────────────────────────── -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">active sessions</div>
+              <div class="wf-screen">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/account/security/sessions
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/account/security/sessions · after sign-in</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-appbar">
+                  <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                  <span class="wf-appbar__spacer"></span>
+                  <span class="wf-chip">Member</span>
+                  <span class="wf-avatar">DS</span>
+                </div>
+
+                <div class="wf-body">
+                  <div class="wf-stack wf-stack--loose">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <h2 class="wf-title">Active sessions</h2>
+                      <p class="wf-subtitle">
+                        Devices with an open session on your account.
+                        Spot one you don't recognise? End it.
+                      </p>
+                    </div>
+
+                    <!-- ── Session list ──────────────────────────────── -->
+                    <div class="wf-stack">
+                      <!-- Current session — cannot be ended; status chip -->
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-row">
+                          <span class="wf-ico">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M2 20h20" /></svg>
+                          </span>
+                          <span class="wf-text">
+                            Chrome · macOS
+                            <span class="wf-chip">This session</span>
+                            <span class="wf-annot">1</span>
+                            <br />
+                            <span class="wf-hint">
+
+                              Moscow, Russia · 192.0.2.14 · active now
+                              <span class="wf-annot">2</span></span>
+                          </span>
+                        </span>
+                      </div>
+
+                      <!-- Other device — revoke one at a time -->
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-row">
+                          <span class="wf-ico">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2" /><path d="M11 18h2" /></svg>
+                          </span>
+                          <span class="wf-text">
+                            Safari · iPhone<br />
+                            <span class="wf-hint">Moscow, Russia · 2 h ago</span>
+                          </span>
+                        </span>
+                        <span class="wf-row">
+                          <span class="wf-guarded"
+                            ><a class="wf-a wf-a--danger">Revoke</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a
+                          ></span>
+                          <span class="wf-annot">3</span>
+                        </span>
+                      </div>
+
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-row">
+                          <span class="wf-ico">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></svg>
+                          </span>
+                          <span class="wf-text">
+                            Firefox · Windows<br />
+                            <span class="wf-hint">Saint Petersburg · 3 d ago</span>
+                          </span>
+                        </span>
+                        <span class="wf-row">
+                          <span class="wf-guarded"
+                            ><a class="wf-a wf-a--danger">Revoke</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a
+                          ></span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- Bulk revoke: all sessions except the current one -->
+                    <div class="wf-row">
+                      <span class="wf-guarded"
+                        ><button class="wf-btn wf-btn--block">
+                         End all other sessions
+                      </button><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a
+                      ></span>
+                      <span class="wf-annot">4</span>
+                    </div>
+
+                    <hr class="wf-divider" />
+
+                    <div class="wf-row wf-center">
+                      <span class="wf-hint">
+                        Up to 5 sessions active at once
+                        <span class="iter v2">v2</span>.
+                      <span class="wf-annot">5</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── State: sign-in from a new device ─────────────────── -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">sign-in from a new device <span class="iter v2">v2</span></div>
+              <div class="wf-screen">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/account/security/sessions
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/account/security/sessions · after sign-in</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-appbar">
+                  <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                  <span class="wf-appbar__spacer"></span>
+                  <span class="wf-chip">Member</span>
+                  <span class="wf-avatar">DS</span>
+                </div>
+
+                <div class="wf-body">
+                  <div class="wf-stack wf-stack--loose">
+                    <!-- Alert about a new device/location (v2) -->
+                    <div class="wf-alert wf-row">
+                      <span class="wf-ico">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
+                      </span>
+                      <span>
+
+                        Sign-in from a new device: <strong>Firefox · Windows</strong>,
+                        Saint Petersburg — just now. Was this you?
+                      <span class="wf-annot">6</span>
+                      </span>
+                    </div>
+
+                    <!-- ── List with the new session on top ──────────────── -->
+                    <div class="wf-stack">
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-row">
+                          <span class="wf-ico">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /></svg>
+                          </span>
+                          <span class="wf-text">
+                            Firefox · Windows
+                            <span class="wf-chip">New</span><br />
+                            <span class="wf-hint">Saint Petersburg · 198.51.100.7 · just now</span>
+                          </span>
+                        </span>
+                        <span class="wf-row">
+                          <span class="wf-guarded"
+                            ><a class="wf-a wf-a--danger">Revoke</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a
+                          ></span>
+                        </span>
+                      </div>
+
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-row">
+                          <span class="wf-ico">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2" /><path d="M2 20h20" /></svg>
+                          </span>
+                          <span class="wf-text">
+                            Chrome · macOS
+                            <span class="wf-chip">This session</span><br />
+                            <span class="wf-hint">Moscow, Russia · active now</span>
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <!-- "This wasn't me" → end the other session and change the password -->
+                    <button class="wf-btn wf-btn--primary wf-btn--block">
+                      This wasn't me — change password
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              The current session can't be ended — instead of "Revoke" it carries a "This session" status chip.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Device and location are approximate (VPNs and proxies skew them) and are no proof of identity.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              "Revoke" ends the session on that device; behind a confirmation (<a href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" class="xref-module">confirm-dialog</a>), re-auth — <span class="iter v2">v2</span>. Mechanics — <a href="../_workzone/authentication.html#session-end" class="xref-page">ending a session</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              "End all other sessions" signs out on every device except the current one; also behind a confirmation.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              The concurrent-session limit <span class="iter v2">v2</span> — 5 by default, configurable in the <a href="../../admin-panel/_wireframes/platform-settings.html#session-auth" class="xref-module">Admin Panel</a>. When exceeded, the oldest session ends automatically. Policy — <a href="../_workzone/authentication.html#parallel-sessions" class="xref-page">Concurrent sessions</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              The new-device sign-in alert
+              <span class="iter v2">v2</span> — a banner plus an email. "This wasn't me" leads to a password change.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

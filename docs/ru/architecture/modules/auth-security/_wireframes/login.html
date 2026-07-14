@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Login</h1>
+        <div class="header__sub">
+          auth / security · макеты · публичные
+          <a class="in-load in-load--spinner" href="../../shared-ui/_wireframes/loading-states.html#spinner" title="Ожидание действия — спиннер">
+            <span class="in-load__icon"></span>загрузка
+          </a>
+        </div>
+      </div>
+
+      <p class="desc">
+        Вход в платформу по email и паролю.
+        <span class="iter v2">v2</span>: при включённом MFA после пароля добавляется шаг ввода кода — не путать с <a href="../_features/mfa/index.html" class="xref-page">подключением MFA</a>.
+      </p>
+
+      <div class="section">
+        <div class="section__title">Макет</div>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <!-- Состояние: по умолчанию -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">по умолчанию</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/login
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/login · публичный</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                      <h2 class="wf-title">Вход</h2>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Email</span>
+                      <div class="wf-input">you@company.com</div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Пароль</span>
+                      <div class="wf-input wf-input--focus">
+                        ••••••••••
+                        <span class="wf-input__action" title="Показать пароль">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="wf-row wf-spread">
+                      <div class="wf-row">
+                        <span class="wf-checkbox"></span>
+                        <span class="wf-text">Запомнить меня<span class="wf-annot">1</span>
+                        </span>
+                      </div>
+                      <a class="wf-a" href="../_features/password-recovery/forgot-password.html">Забыли пароль?</a>
+                    </div>
+
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Войти</button>
+
+                    <div class="wf-row">
+                      <hr class="wf-divider wf-divider--grow" />
+                      <span class="wf-hint">или</span>
+                      <hr class="wf-divider wf-divider--grow" />
+                    </div>
+
+                    <button class="wf-btn wf-btn--ghost wf-btn--block wf-btn--disabled">
+                      Войти через SSO <span class="wf-annot">2</span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Состояние: ошибка -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">ошибка</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/login
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/login · публичный</span>
+                      </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                      <h2 class="wf-title">Вход</h2>
+                    </div>
+
+                    <div class="wf-alert wf-alert--error wf-row">
+
+                      Неверные учётные данные. Попробуйте ещё раз.
+                      <span class="wf-annot">3</span></div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Email</span>
+                      <div class="wf-input">you@company.com</div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Пароль</span>
+                      <div class="wf-input wf-input--focus">
+                        ••••••••••
+                        <span class="wf-input__action" title="Скрыть пароль">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20C5 20 1 12 1 12a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></svg>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="wf-row wf-spread">
+                      <div class="wf-row">
+                        <span class="wf-checkbox"></span>
+                        <span class="wf-text">Запомнить меня</span>
+                      </div>
+                      <a class="wf-a" href="../_features/password-recovery/forgot-password.html">Забыли пароль?</a>
+                    </div>
+
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Войти</button>
+
+                    <div class="wf-row">
+                      <hr class="wf-divider wf-divider--grow" />
+                      <span class="wf-hint">или</span>
+                      <hr class="wf-divider wf-divider--grow" />
+                    </div>
+
+                    <button class="wf-btn wf-btn--ghost wf-btn--block wf-btn--disabled">
+                      Войти через SSO
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Состояние: сессия истекла -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">сессия истекла</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/login?reason=session-expired
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/login · публичный</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                      <h2 class="wf-title">Вход</h2>
+                    </div>
+
+                    <div class="wf-alert wf-row">
+
+                      Сессия истекла — войдите снова, чтобы продолжить.
+                      <span class="wf-annot">4</span></div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Email</span>
+                      <div class="wf-input">you@company.com</div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Пароль</span>
+                      <div class="wf-input wf-input--focus">
+                        ••••••••••
+                        <span class="wf-input__action" title="Показать пароль">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="wf-row wf-spread">
+                      <div class="wf-row">
+                        <span class="wf-checkbox"></span>
+                        <span class="wf-text">Запомнить меня</span>
+                      </div>
+                      <a class="wf-a" href="../_features/password-recovery/forgot-password.html">Забыли пароль?</a>
+                    </div>
+
+                    <button class="wf-btn wf-btn--primary wf-btn--block">Войти</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Состояние: слишком много попыток -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">слишком много попыток</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/login
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/login · публичный</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                      <h2 class="wf-title">Вход</h2>
+                    </div>
+
+                    <div class="wf-alert wf-alert--error wf-row">
+
+                      Слишком много попыток входа. Повторите через 15 минут.
+                      <span class="wf-annot">5</span></div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Email</span>
+                      <div class="wf-input">you@company.com</div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Пароль</span>
+                      <div class="wf-input">••••••••••</div>
+                    </div>
+
+                    <div class="wf-row wf-spread">
+                      <div class="wf-row">
+                        <span class="wf-checkbox"></span>
+                        <span class="wf-text">Запомнить меня</span>
+                      </div>
+                      <a class="wf-a" href="../_features/password-recovery/forgot-password.html">Забыли пароль?</a>
+                    </div>
+
+                    <button class="wf-btn wf-btn--primary wf-btn--block wf-btn--disabled">Войти</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              «Запомнить меня» — продлевает срок сессии. Механика —
+              <a href="../_workzone/authentication.html#remember-me" class="xref-page">Запомнить меня</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              SSO <span class="iter v2">v2</span> — кнопка всегда видна, неактивна без настроенного провайдера. Механика — <a href="../_workzone/authentication.html#sso-oidc" class="xref-page">SSO / OIDC</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Единый блок ошибки — один текст для всех сбоев входа, существование аккаунта не раскрывается. Защита от перебора —
+              <a href="../_workzone/protection.html#brute-force" class="xref-page">рубеж защиты</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Сессия истекла — нейтральное уведомление при принудительном логауте, висит до входа.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Слишком много попыток — кнопка входа блокируется до конца окна лимита. Отдельно от ошибки ввода. Защита от перебора —
+              <a href="../_workzone/protection.html#brute-force" class="xref-page">рубеж защиты</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

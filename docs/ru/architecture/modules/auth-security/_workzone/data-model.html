@@ -1,0 +1,1247 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Модель данных и контракты</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="data-model.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Модель данных и контракты</h1>
+        <div class="header__sub">auth / security · workzone</div>
+      </div>
+
+      <div class="stk-stack">
+        <!-- ── L1 · Контракт наружу ── -->
+        <div class="stk-layer stk-layer--contract" id="api-errors">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">1</span>
+            <span class="stk-layer__name">Контракт наружу</span>
+            <span class="stk-layer__role"
+              >Формат ошибок API. Что видит клиент.</span
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="dm-env">
+              <div class="mod-label dm-env__t"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg> Problem Details (RFC 9457) + расширения</div>
+<pre class="file-tree"><span class="dim">Content-Type: application/problem+json</span>
+{
+  "type":       "/errors/invalid-credentials"  <span class="dim">тип ошибки (URI)</span>
+  "title":      "Invalid credentials"          <span class="dim">заголовок типа</span>
+  "status":     401                            <span class="dim">дублирует HTTP-статус</span>
+  <span class="dm-ecode">"code"</span>:       "INVALID_CREDENTIALS"          <span class="dim">machine-readable</span>
+  "detail":     "Неверные данные"              <span class="dim">human, i18n-ready</span>
+  "request_id": "req_a1b"                   <span class="dim">трейсинг · = заголовок X-Request-Id</span>
+}
+<span class="dim">422 — + errors:</span>      [{ "field", "message" }]
+<span class="dim">429 — + retry_after:</span> 30 <span class="dim">сек · + заголовок Retry-After</span></pre>
+            </div>
+            <div class="dm-codes">
+              <div class="mod-label dm-codes__t"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="9" y2="9" /><line x1="4" x2="20" y1="15" y2="15" /><line x1="10" x2="8" y1="3" y2="21" /><line x1="16" x2="14" y1="3" y2="21" /></svg> Коды по HTTP-статусу</div>
+              <ul>
+                <li>
+                  <span class="dm-http dm-http--401">401</span
+                  ><span class="dm-ecode">INVALID_CREDENTIALS</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--401">401</span
+                  ><span class="dm-ecode">TOKEN_EXPIRED</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--401">401</span
+                  ><span class="dm-ecode">TOKEN_INVALID</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--403">403</span
+                  ><span class="dm-ecode">FORBIDDEN</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--403">403</span
+                  ><span class="dm-ecode">LAST_OWNER_PROTECTED</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--403">403</span
+                  ><span class="dm-ecode">PASSWORD_CHANGE_REQUIRED</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--404">404</span
+                  ><span class="dm-ecode">NOT_FOUND</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--404">404</span
+                  ><span class="dm-ecode">SETUP_UNAVAILABLE</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--409">409</span
+                  ><span class="dm-ecode">CONFLICT</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--409">409</span
+                  ><span class="dm-ecode">SMTP_NOT_CONFIGURED</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--409">409</span
+                  ><span class="dm-ecode">ALREADY_LINKED</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--410">410</span
+                  ><span class="dm-ecode">INVITE_EXPIRED</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--410">410</span
+                  ><span class="dm-ecode">INVITE_USED</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--410">410</span
+                  ><span class="dm-ecode">RESET_EXPIRED</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--410">410</span
+                  ><span class="dm-ecode">LINK_EXPIRED</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--422">422</span
+                  ><span class="dm-ecode">VALIDATION_ERROR</span
+                  ><span class="dm-extra">+ errors</span>
+                </li>
+                <li>
+                  <span class="dm-http dm-http--429">429</span
+                  ><span class="dm-ecode">RATE_LIMITED</span
+                  ><span class="dm-extra">+ retry_after</span>
+                </li>
+              </ul>
+            </div>
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Принцип</span>
+                <a class="xref-badge xref-badge--page" href="protection.html#brute-force"
+                  >→ Brute-force</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Не раскрывать внутренние детали. <strong>401 — всегда
+                generic</strong> (не «пользователь не найден» vs «неверный
+                пароль»). Ошибки валидации (422) возвращаются в том же формате
+                с массивом <code>errors</code>, не в дефолтном виде фреймворка.
+              </div>
+              <details>
+                <summary>почему так</summary>
+                <div>
+                  FastAPI по умолчанию отдаёт <code>ValidationError</code> своим
+                  форматом — перехватываем и оборачиваем в Problem Details.
+                </div>
+              </details>
+            </div>
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Формат · RFC 9457</span>
+              </div>
+              <div class="stk-dec__d">
+                Тело ошибки — <code>application/problem+json</code> по
+                <strong>RFC 9457</strong> (<code>type · title · status ·
+                detail</code>) + расширения <code>code</code> (короткий
+                стабильный токен, по которому матчит клиент) и
+                <code>request_id</code> в роли <code>instance</code>
+                (идентификатор конкретного случая).
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mod-conn">
+          <div class="mod-conn__line"></div>
+          <div class="mod-conn__arrow"></div>
+        </div>
+
+        <!-- ── L2 · Identity-ядро ── -->
+        <div class="stk-layer stk-layer--idcore" id="data-model">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">2</span>
+            <span class="stk-layer__name">Identity-ядро</span>
+            <span class="stk-layer__role"
+              >Личность. Корень всех связей.</span
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="dm-tbl">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">users</span>
+                <span class="dm-tbl__sub">учётные записи</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--flag">MFA v2</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">email</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--uq" title="UNIQUE (lower(email)) — регистронезависимо, функциональный индекс">UNIQUE</span
+                      ><span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">логин-идентификатор · <code>lower()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">password_hash</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK ((auth_provider = 'local') = (password_hash IS NOT NULL))">CHECK</span>
+                    </td>
+                    <td class="dm-note"><code>NULL</code> при SSO · CHECK ↔ auth_provider</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">full_name</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">role</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (owner | admin | member)">CHECK</span>
+                    </td>
+                    <td class="dm-note">owner · admin · member</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">status</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'active'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (active | deactivated)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      DEFAULT <code>'active'</code> · active · deactivated
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">auth_provider</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'local'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (local | okta | azure_ad)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      DEFAULT <code>'local'</code> · local · okta · azure_ad
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">must_change_password</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">
+                      <code>true</code> после выдачи временного пароля · гейт
+                      при входе
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>server_default=now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">last_login_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">денормализация → Last login</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">timezone</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      override · IANA tz · <code>NULL</code> = наследует org
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">locale</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (locale IS NULL OR locale IN ('ru','en'))">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      override · ru · en · <code>NULL</code> = наследует org
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">date_format</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (date_format IS NULL OR date_format IN ('DD.MM.YYYY','MM/DD/YYYY','YYYY-MM-DD'))">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      override · <code>NULL</code> = наследует org
+                    </td>
+                  </tr>
+                  <tr id="col-last_chat_model">
+                    <td class="dm-f">last_chat_model</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      личный липкий выбор чат-модели ·
+                      <a href="../../query-engine/_workzone/data-model.html#sticky-model" class="xref-module">заводит новые беседы</a>
+                      · <code>NULL</code> = дефолт админа
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">mfa_enabled</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">
+                      <code>true</code> после подтверждения 1-го кода
+                      <span class="iter v2">v2</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">mfa_secret</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      AES-256-GCM <span class="iter v2">v2</span>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">mfa_recovery</td>
+                    <td class="dm-t">JSONB</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      хэши одноразовых кодов (argon2id)
+                      <span class="iter v2">v2</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="stk-dec" id="user-status">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">User status</span>
+              </div>
+              <div class="stk-dec__d">
+                Сознательно два состояния, без промежуточных
+                (<code>suspended</code>, <code>pending</code>).
+                <strong>deactivated</strong> — блокировка администратором, не
+                самоудаление.
+              </div>
+            </div>
+            <div class="stk-dec" id="temp-password-gate">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Гейт временного пароля</span>
+                <a class="xref-badge xref-badge--page" href="../_features/forced-password-change/index.html"
+                  >→ Принудительная смена пароля</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                <code>must_change_password</code> ставится в <code>true</code>
+                при выдаче временного пароля и снимается при успешной смене на
+                гейте. Пока флаг <code>true</code>, сервер отклоняет любой
+                аутентифицированный запрос, кроме смены пароля и выхода
+                (<code>403 PASSWORD_CHANGE_REQUIRED</code>) — в приложение не
+                пускают ни UI, ни прямой вызов API. Ответ login / refresh несёт
+                флаг, чтобы клиент по нему сразу увёл на экран смены.
+              </div>
+            </div>
+            <div class="stk-dec" id="locale-override">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Локаль — личный override</span>
+                <a class="xref-badge" href="../../admin-panel/_workzone/locale.html#user-override"
+                  >→ Язык и регион</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                <code>timezone</code> / <code>locale</code> /
+                <code>date_format</code> — nullable: <code>NULL</code> означает
+                «наследовать дефолт организации», задаётся в профиле. Влияют
+                только на отображение во фронтенде; хранение и API — UTC. Полная
+                цепочка приоритета — в Admin Panel.
+              </div>
+            </div>
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Last login</span>
+                <a class="xref-badge" href="../../admin-panel/_wireframes/users.html#users-tabs"
+                  >→ Admin Panel</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Денормализация — обновляется при успешном входе.
+              </div>
+              <details>
+                <summary>почему так</summary>
+                <div>
+                  Полная история входов — в <code>audit_log</code>. Дубль на
+                  <code>users</code> нужен, чтобы список пользователей
+                  открывался без JOIN к журналу.
+                </div>
+              </details>
+            </div>
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Нормализация email</span>
+              </div>
+              <div class="stk-dec__d">
+                Email приводится к нижнему регистру на входе, уникальность —
+                <code>UNIQUE (lower(email))</code> (или <code>citext</code>).
+                Регистрозависимый <code>UNIQUE</code> пропустил бы
+                <code>Alice@x</code> и <code>alice@x</code> как две учётки.
+              </div>
+              <details>
+                <summary>почему так</summary>
+                <div>
+                  Та же нормализованная форма — в <code>invite_tokens.email</code>,
+                  <code>identity_mapping.source_email</code> и в ключе brute-force
+                  (<code>brute:account:{email_hash}</code>): иначе перебор
+                  обнуляет счётчик сменой регистра.
+                </div>
+              </details>
+            </div>
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">CHECK vs ENUM</span>
+              </div>
+              <div class="stk-dec__d">
+                Поля с фиксированным набором значений (<code>role</code>,
+                <code>status</code>, <code>auth_provider</code>,
+                <code>result</code>) — обычный Text с ограничением
+                <code>CHECK</code>, а не native ENUM PostgreSQL.
+              </div>
+              <details>
+                <summary>почему так</summary>
+                <div>
+                  Проще мигрировать через Alembic.
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <div class="mod-conn">
+          <div class="mod-conn__line"></div>
+          <div class="mod-conn__arrow"></div>
+        </div>
+
+        <!-- ── L3 · Сессии и доступ ── -->
+        <div class="stk-layer stk-layer--sessions" id="sessions">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">3</span>
+            <span class="stk-layer__name">Сессии и доступ</span>
+            <span class="stk-layer__role"
+              >Жизненный цикл входа.</span
+            >
+            <a class="xref-badge xref-badge--page" href="protection.html#crypto-core"
+              >→ Крипто-ядро</a
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="dm-tbl">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">refresh_tokens</span>
+                <span class="dm-tbl__sub">ротация JWT</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → users</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">user_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">CASCADE</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">token_hash</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq">UNIQUE</span>
+                    </td>
+                    <td class="dm-note">криптослучайный (в отличие от family_id)</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">family_id</td>
+                    <td class="dm-t">UUIDv7</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">reuse detection → Token family</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">is_revoked</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">DEFAULT <code>false</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">expires_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">sliding 30d</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">absolute_expires_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">ceiling 90d</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">remember_me</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                      <span class="dm-c">DEFAULT false</span>
+                    </td>
+                    <td class="dm-note">
+                      выбор при входе · ротация переиздаёт cookie того же вида
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">user_agent</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      устройство · захват при входе и refresh
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">ip</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      адрес · реальный IP от nginx · гео на отрисовке
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code> · «последняя активность» сессии</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="dm-tbl">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">invite_tokens</span>
+                <span class="dm-tbl__sub">приглашения 48h</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → users</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">email</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">кого приглашают</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">role</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (owner | admin | member)">CHECK</span>
+                    </td>
+                    <td class="dm-note">назначаемая роль</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">token_hash</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq">UNIQUE</span>
+                    </td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">invited_by</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">CASCADE</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">expires_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">48h</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">accepted_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">NULL = ещё не принято</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="dm-tbl">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">reset_tokens</span>
+                <span class="dm-tbl__sub">сброс пароля 1h</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → users</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">user_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">CASCADE</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">token_hash</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq">UNIQUE</span>
+                    </td>
+                    <td class="dm-note">SHA-256 · в БД только хэш</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">expires_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">1h</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">used_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">NULL = ещё не использован</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="dm-tbl" id="link-tokens">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">link_tokens</span>
+                <span class="dm-tbl__sub">код привязки мессенджера 15м</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → users</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">user_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">CASCADE · выдавшая учётка</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">code_hash</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq">UNIQUE</span>
+                    </td>
+                    <td class="dm-note">SHA-256 · в БД только хэш</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">expires_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">15м</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">used_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">NULL = ещё не использован</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Reset-токен — одноразовый</span>
+                <a class="xref-badge xref-badge--page" href="authentication.html#admin-reset"
+                  >→ Сброс пароля</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Использование ставит <code>used_at</code>; повторная отправка
+                письма гасит прежний токен пользователя. Истёкший и
+                использованный неотличимы для клиента — один ответ
+                <code>410 RESET_EXPIRED</code>. Машинерия flow — в
+                аутентификации.
+              </div>
+            </div>
+
+            <div class="dm-tbl" id="api-keys">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">api_keys</span>
+                <span class="dm-tbl__sub">машинный доступ</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → users</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">user_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">владелец · CASCADE · <code>key</code> → <code>user_id</code> → роль / ACL</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">key_hash</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq">UNIQUE</span>
+                    </td>
+                    <td class="dm-note"><code>SHA-256</code> · в БД только хэш</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">prefix</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note"><code>ach_xxxx</code> · опознание в списке, не секрет</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">scope</td>
+                    <td class="dm-t">JSONB</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">доступ (read-only) + источники (<code>null</code> = все доступные) · шире прав владельца не бывает</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">expires_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">30 / 90 / 365 дней · <code>NULL</code> = бессрочный</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">last_used_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">факт и время использования · «Использован» в списке</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">is_revoked</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">DEFAULT <code>false</code> · отзыв вручную или каскадом при деактивации</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">revoked_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">момент отзыва · проставляется однажды и не перезаписывается · «Отозванные ключи» в профиле</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code> · момент выпуска</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code> + trigger · ключ мутабелен in-place (<code>is_revoked</code>, <code>last_used_at</code>)</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Код привязки мессенджера — одноразовый</span>
+                <a class="xref-badge xref-badge--page" href="authentication.html#messenger-link"
+                  >→ Привязка мессенджера</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Рождается во вошедшей сессии (<code>user_id</code> известен сразу),
+                гасится возвратом боту в DM: привязывает <b>вернувший</b>
+                <code>source_user_id</code> к <b>выдавшей</b> учётке через
+                <a href="#identity-mapping" class="xref-anchor"><code>identity_mapping</code></a>.
+                Сам код канально-нейтрален — <code>source</code> (<code>slack</code> ·
+                <code>telegram</code> · <code>mattermost</code>) проставляет принявший бот;
+                <code>UNIQUE(source, source_user_id)</code> ловит повторную привязку
+                (<code>409 ALREADY_LINKED</code>). Истёкший и использованный для
+                клиента неотличимы — один <code>410 LINK_EXPIRED</code>.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Token family</span>
+              </div>
+              <div class="stk-dec__d">
+                <code>family_id</code> — UUIDv7, назначается при входе,
+                наследуется через ротацию. Reuse detection действует в пределах
+                цепочки, не затрагивая все сессии пользователя.
+              </div>
+              <details>
+                <summary>почему так</summary>
+                <div>
+                  Reuse detection удаляет по <code>family_id</code> — обрывает
+                  одну цепочку ротации, а не все сессии пользователя. UUIDv7, а
+                  не v4: метка времени в префиксе упорядочивает ключи, вставки
+                  ложатся в конец индекса (как автоинкремент). Хранится нативным
+                  типом <code>uuid</code> (16 байт), не текстом. Внутренний ключ
+                  группировки, не секрет — криптослучайность не нужна (в отличие
+                  от <code>token_hash</code>).
+                </div>
+              </details>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="session-identity">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Сессия = token family</span>
+                <a class="xref-badge xref-badge--page" href="authentication.html#parallel-sessions"
+                  >→ Параллельные сессии</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                В терминах UI <b>одна сессия = одна family</b> — один вход с
+                устройства или браузера. <b>Активная сессия</b> — family с живым
+                refresh-токеном (не <code>is_revoked</code>, не истёкшим); по
+                этому же признаку считается и счётчик в
+                <a href="../../admin-panel/_wireframes/user-card.html#user-sessions" class="xref-module">карточке пользователя</a>,
+                и список в
+                <a href="../_wireframes/session-management.html" class="xref-page">управлении сессиями</a>.
+                <b>Карточка сессии</b> в UI — последняя строка family: её
+                <code>created_at</code> даёт «последнюю активность»,
+                <code>user_agent</code> и <code>ip</code> — устройство и адрес.
+              </div>
+              <details>
+                <summary>кто и когда заполняет</summary>
+                <div>
+                  <code>user_agent</code> и <code>ip</code> пишет бэкенд при
+                  входе и при <b>каждом</b> refresh из текущего запроса
+                  (заголовок <code>User-Agent</code> и реальный IP от nginx —
+                  <code>X-Forwarded-For</code>), не со слов клиента. Отдельного
+                  поля «последняя активность» нет: ротация и так вставляет новую
+                  строку, её <code>created_at</code> и есть последняя
+                  активность. Гео не хранится — выводится из <code>ip</code> при
+                  отрисовке (приблизительно, VPN / прокси искажают). Текущую
+                  сессию опознаём, сопоставляя refresh-cookie запроса с
+                  <code>family_id</code>.
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+
+        <div class="mod-conn">
+          <div class="mod-conn__line"></div>
+          <div class="mod-conn__arrow"></div>
+        </div>
+
+        <!-- ── L4 · Федерация ── -->
+        <div class="stk-layer stk-layer--federation" id="federation">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">4</span>
+            <span class="stk-layer__name">Федерация</span>
+            <span class="stk-layer__role">Связь канала входа source ↔ user.</span>
+          </div>
+          <div class="stk-layer__body">
+            <div class="dm-tbl" id="identity-mapping">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">identity_mapping</span>
+                <span class="dm-tbl__sub">внешние личности</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → users</span>
+                  <span class="dm-badge dm-badge--uniq"
+                    >UNIQUE(source, source_user_id)</span
+                  >
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">user_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">CASCADE</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">source</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq" title="UNIQUE(source, source_user_id)">UNIQUE*</span>
+                    </td>
+                    <td class="dm-note">канал входа: SSO · <code>slack</code> · <code>telegram</code> · <code>mattermost</code> (часть составного UNIQUE)</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">source_user_id</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq" title="UNIQUE(source, source_user_id)">UNIQUE*</span>
+                    </td>
+                    <td class="dm-note">id у провайдера (часть составного UNIQUE)</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">source_email</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      авто-матч —
+                      <a class="xref-page" href="authorization.html#identity"
+                        >только verified</a
+                      >
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Это федерация входа, не контент-личности</span>
+                <a class="xref-badge" href="../../knowledge-store/_workzone/acl-identity.html#identity"
+                  >→ Knowledge Store</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                <code>source</code> здесь — канал входа: SSO-провайдер (Okta, Azure AD)
+                или бот мессенджера (<code>source='slack'</code>
+                <a class="xref-badge" href="../../slack/index.html#identity">→ Slack</a>,
+                <code>source='telegram'</code>
+                <a class="xref-badge" href="../../telegram/index.html#identity">→ Telegram</a>,
+                <code>source='mattermost'</code>
+                <a class="xref-badge" href="../../mattermost/index.html#identity">→ Mattermost</a>),
+                а не контент-источник. Кто <em>автор</em> контента в Jira / Slack /
+                Confluence и свод людей в личность — это
+                <code>source_principal</code> / <code>identity</code> в Knowledge
+                Store; мост — <code>identity.user_id → users</code>.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mod-conn">
+          <div class="mod-conn__line"></div>
+          <div class="mod-conn__arrow"></div>
+        </div>
+
+        <!-- ── L5 · Наблюдаемость ── -->
+        <div class="stk-layer stk-layer--observ" id="audit-log">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">5</span>
+            <span class="stk-layer__name">Наблюдаемость</span>
+            <span class="stk-layer__role"
+              >Append-only. Независим от lifecycle users.</span
+            >
+            <a class="xref-badge xref-badge--page" href="protection.html#audit-log"
+              >→ Аудит-лог</a
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="dm-tbl">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">audit_log</span>
+                <span class="dm-tbl__sub">журнал событий</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--flag">no UPDATE / DELETE</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">actor_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">
+                      <code>NULL</code> = system · <strong>без FK</strong>
+                      (независим от lifecycle users)
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">action</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span>
+                    </td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">target_type</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">target_id</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">result</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (success | failure)">CHECK</span>
+                    </td>
+                    <td class="dm-note">success · failure</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">ip</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">user_agent</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">meta</td>
+                    <td class="dm-t">JSONB</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">произвольный контекст</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code> · indexed</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Решение слоя · append-only</span>
+              </div>
+              <div class="stk-dec__d">
+                Без UPDATE / DELETE. <code>actor_id</code> = NULL означает
+                system; <strong>без FK</strong> на users — аудит сохраняется при
+                удалении учётной записи (независим от lifecycle users).
+                <code>result</code> CHECK <code>success | failure</code>.
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </body>
+</html>

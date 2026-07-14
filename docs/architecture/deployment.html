@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Infrastructure</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../shared.css" />
+    <link rel="stylesheet" href="modules/module.css" />
+    <link rel="stylesheet" href="deployment.css" />
+    <script src="doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="architecture-scheme.html">← To the scheme</a>
+        <h1 class="header__title">Infrastructure</h1>
+        <div class="header__sub">physical deployment view</div>
+      </div>
+
+      <!-- ═══ Topology ═══ Three-zone segmentation: a single entry (nginx)
+           in the public zone, storage in a closed data zone, ops oversight in
+           a separate docker zone. Zones = trust boundaries, not just networks. -->
+      <div class="section" id="topology">
+        <div class="section__title">Topology</div>
+
+        <p class="note">
+          Containers are split across three network zones. Only the
+          <strong>public</strong> zone faces outward; <code>data</code> and
+          <code>docker</code> are closed (<code>internal</code>) — there is no
+          path to the databases from outside, only through the application.
+        </p>
+
+        <div class="dep-topo">
+          <div class="dep-net">Internet</div>
+          <div class="dep-flow">HTTPS · 443 / 80 ▼</div>
+
+          <div class="dep-zone dep-zone--public">
+            <div class="dep-zone__label">
+              zone: public <span class="dep-zone__hint">only nginx is exposed outward</span>
+            </div>
+            <div class="dep-nodes">
+              <div class="dep-node dep-node--edge">
+                nginx<span>single entry · TLS · security headers</span>
+              </div>
+              <div class="dep-node">
+                frontend<span>React static · :8080</span>
+              </div>
+              <div class="dep-node">
+                backend<span>FastAPI · API :8000</span>
+              </div>
+              <div class="dep-node dep-node--ops">
+                certbot<span>auto-renew TLS · Let's Encrypt</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="dep-flow">▲ internal traffic ▼</div>
+
+          <div class="dep-zone dep-zone--data">
+            <div class="dep-zone__label">
+              zone: data <span class="dep-lock">internal — closed to the outside</span>
+            </div>
+            <div class="dep-nodes">
+              <div class="dep-node dep-node--store">
+                postgres + pgvector<span>relational · vectors · graph</span>
+              </div>
+              <div class="dep-node dep-node--store">
+                redis-durable<span>queues · counters · AOF persistence</span>
+              </div>
+              <div class="dep-node">
+                redis-cache<span>cache · memory-based eviction</span>
+              </div>
+              <div class="dep-node">
+                worker (SAQ)<span>background execution outside the request</span>
+              </div>
+              <div class="dep-node dep-node--once">
+                migrate<span>alembic upgrade · one-shot</span>
+              </div>
+              <div class="dep-node dep-node--v2">
+                graph engine<span><span class="iter v2">v2</span> dedicated graph engine</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="dep-zone dep-zone--docker">
+            <div class="dep-zone__label">
+              zone: docker <span class="dep-lock">internal</span>
+            </div>
+            <div class="dep-nodes">
+              <div class="dep-node dep-node--ops">
+                socket-proxy ◄ autoheal<span>restarts unhealthy containers without direct socket access</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

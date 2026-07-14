@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Query Engine: Grounding and citation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../query-engine.css" />
+    <link rel="stylesheet" href="grounding.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Query Engine</a>
+        <h1 class="header__title">Grounding and citation</h1>
+        <div class="header__sub">query-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        Grounding is <strong>conditional</strong>: the trust contract kicks in
+        only when the model answers with a fact from the base. Then three promises
+        hold: we answer <em>only</em> from what was found, we <em>show</em> where
+        it came from, and we <em>don't stay silent</em> when something relevant is
+        hidden by access rights. To chit-chat, though, Query Engine responds like
+        an ordinary assistant — without citations and without a “not found”. Here
+        is the product contract of each mode; <em>who</em> chooses the mode is held
+        by the <a href="conversation.html#route" class="xref-page">decision to
+        search</a>, and how access is filtered by the
+        <a href="retrieval.html#identity" class="xref-page">boundary with Knowledge
+          Store</a>.
+      </p>
+
+      <!-- ════════════════ MODES — CONDITIONAL GROUNDING ════════════════
+           Two answer modes with a different trust contract: conversational (the
+           model's general knowledge, no citations) and grounding mode (strictly
+           from KS + citation). Who chooses — conversation#route; here is what each
+           mode promises. -->
+      <div class="section" id="modes">
+        <div class="section__title">Two answer modes</div>
+        <p class="desc">
+          Query Engine answers in one of two modes, and their trust contract
+          differs. <strong>Conversational</strong> — an ordinary assistant: it
+          answers from the model's general knowledge, without citations, and
+          “not found” does not apply to it. <strong>Grounding</strong> — when the
+          model reached into the base: the answer is strictly from what was found,
+          with a citation, and empty → an honest “not found”. The mode is chosen by
+          the model (<a href="conversation.html#route" class="xref-page"
+            >decision to search</a>); here is what each one promises.
+        </p>
+
+        <div class="gr-modes">
+          <div class="gr-mode gr-mode--talk">
+            <div class="gr-mode__head">
+              <span class="gr-mode__tag">conversational</span>
+              <span class="gr-mode__h">ordinary assistant</span>
+            </div>
+            <div class="gr-mode__rows">
+              <div class="gr-mode__row">
+                <span class="gr-mode__k">source</span>
+                <span class="gr-mode__v">the model's general knowledge</span>
+              </div>
+              <div class="gr-mode__row">
+                <span class="gr-mode__k">citations</span>
+                <span class="gr-mode__v">none — nothing to attribute</span>
+              </div>
+              <div class="gr-mode__row">
+                <span class="gr-mode__k">“not found”</span>
+                <span class="gr-mode__v">not applicable</span>
+              </div>
+              <div class="gr-mode__row">
+                <span class="gr-mode__k">for what</span>
+                <span class="gr-mode__v">chit-chat · meta-request · general
+                  question</span>
+              </div>
+            </div>
+          </div>
+          <div class="gr-mode gr-mode--ground">
+            <div class="gr-mode__head">
+              <span class="gr-mode__tag">grounding</span>
+              <span class="gr-mode__h">trust contract</span>
+            </div>
+            <div class="gr-mode__rows">
+              <div class="gr-mode__row">
+                <span class="gr-mode__k">source</span>
+                <span class="gr-mode__v">only what was found in Knowledge
+                  Store</span>
+              </div>
+              <div class="gr-mode__row">
+                <span class="gr-mode__k">citations</span>
+                <span class="gr-mode__v">at the record level, with the best
+                  fragment</span>
+              </div>
+              <div class="gr-mode__row">
+                <span class="gr-mode__k">“not found”</span>
+                <span class="gr-mode__v">an honest empty answer on an empty
+                  search</span>
+              </div>
+              <div class="gr-mode__row">
+                <span class="gr-mode__k">guarantee</span>
+                <span class="gr-mode__v">zero hallucinations about the company</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="note">
+          The danger is <strong>mixing the modes</strong>: presenting the model's
+          general knowledge as a company fact. So the boundary is hard — in
+          grounding mode the model does not fill out the answer from memory: an
+          empty search yields an honest “not found”, not a guess. A confidently
+          stated fabrication in company output costs more than a plain “I have
+          nothing here”.
+        </p>
+        <p class="note">
+          <strong>Empty base — no grounding mode at all.</strong> If the company
+          has not connected any sources, Knowledge Store is empty
+          (<a href="../../knowledge-store/_workzone/hybrid-search.html#emptiness" class="xref-module"
+            ><code>is_empty</code></a>) — <code>search_knowledge</code> is not
+          offered to the model, and the second mode simply does not exist. What
+          remains is the conversational one: the platform works like an ordinary
+          assistant on general knowledge. This is <em>distinct</em> from “search
+          returned empty → not found”: there the base exists but has nothing for
+          the query; here there is nothing to search with. Grounding is neither
+          broken nor switched off — its condition simply has not arisen. As soon as
+          the first fragment appears, the boundary between the two modes emerges on
+          its own.
+        </p>
+      </div>
+
+      <!-- ════════════════ GROUNDING — ANSWER ONLY FROM CONTEXT ════════════════
+           In grounding mode: the model called search_knowledge — the answer is
+           strictly from the returned context. Found → answer; empty/no access →
+           an honest empty answer. Zero hallucinations at the cost of an
+           occasionally empty answer. -->
+      <div class="section" id="grounding">
+        <div class="section__title">Grounding answer — only from context</div>
+        <p class="desc">
+          Having called <code>search_knowledge</code>, the model answers
+          <strong>exclusively from what search returned</strong>: the assembled
+          context is the sole source of truth for this answer. From there, three
+          outcomes based on what search gathered: something relevant
+          <strong>was found</strong> → an answer from it; nothing relevant
+          <strong>exists</strong> → an honest “not found”; something relevant
+          <strong>exists but is hidden by access rights</strong> → we answer from
+          what is accessible and give a
+          <a href="#access-hints" class="xref-anchor">hint</a> about what is
+          hidden. In none of these do we mix in a guess from general knowledge — a
+          deliberate trade-off: <strong>zero hallucinations</strong> at the cost of
+          an occasionally empty answer.
+        </p>
+
+        <!-- found → answer / empty → honest "not found" / withheld → answer from
+             accessible + hint. Empty (nothing exists) and withheld (hidden by
+             ACL) are told differently — never collapsed into one "not found". -->
+        <div class="gr-fork">
+          <div class="gr-fork__in">
+            <span class="gr-fork__in-h">the model called search</span>
+            <span class="gr-fork__in-sub">search_knowledge → Knowledge Store</span>
+          </div>
+          <span class="gr-fork__split">⟨ what's in the context? ⟩</span>
+          <div class="gr-fork__paths">
+            <div class="gr-fork__path gr-fork__path--found">
+              <span class="gr-fork__cond">found</span>
+              <span class="gr-fork__out">answer from context</span>
+              <span class="gr-fork__note">synthesis strictly from the found
+                fragments · with a citation to the source</span>
+            </div>
+            <div class="gr-fork__path gr-fork__path--empty">
+              <span class="gr-fork__cond">empty</span>
+              <span class="gr-fork__out">an honest “not found”</span>
+              <span class="gr-fork__note">nothing relevant exists · without
+                guesses from the model's general knowledge</span>
+            </div>
+            <div class="gr-fork__path gr-fork__path--hidden">
+              <span class="gr-fork__cond">hidden by rights</span>
+              <span class="gr-fork__out">answer from the accessible + a hint</span>
+              <span class="gr-fork__note">something relevant exists, but ACL
+                removed it · a hint with coordinates about what's hidden</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="note">
+          The outcomes are not mutually exclusive: on a compound question, part of
+          the facts comes from the accessible, part is hidden by rights — the
+          answer is built from the first, and the hint covers the second.
+          Grounding itself is a property of the <em>grounding pass</em>, not of a
+          separate step: the context is bounded at packing (augment), and
+          generation is instructed to stay with it and to admit not knowing.
+          <span class="iter v2">v2</span>: on low confidence — one repeat search
+          (N=1) before returning an empty answer.
+        </p>
+      </div>
+
+      <!-- ════════════════ ATTRIBUTION — CITE THE SOURCE ════════════════
+           Source attribution at the record level (Confluence · Jira · Slack) with
+           the best chunk as evidence. The source of citations — KS chunks/entities. -->
+      <div class="section" id="attribution">
+        <div class="section__title">Citation to the source</div>
+        <p class="desc">
+          It is not enough for a grounding answer to be correct — it must be
+          <strong>verifiable</strong>. So every statement carries a link to its
+          source <strong>at the record level</strong>: a Confluence page, a Jira
+          ticket, a Slack thread — something the user can open and check. A
+          citation is both trust (“not made up”) and audit (“here's where it came
+          from”). The evidence accompanying the link is the <strong>best
+          fragment</strong> — the very chunk that won the ranking; it comes from
+          Knowledge Store's
+          <a
+            href="../../knowledge-store/_workzone/data-model.html#chunks"
+            class="xref-module"
+            ><code>chunks</code> projection</a
+          >, where fragments live alongside their source entity.
+        </p>
+
+        <!-- the grounded answer as a chat exchange: question → answer bubble
+             carrying an inline marker with the source card attached -->
+        <div class="gr-chat">
+          <div class="gr-msg gr-msg--user">
+            <div class="gr-bubble gr-bubble--user">
+              When is the deadline for project Ajax?
+            </div>
+          </div>
+          <div class="gr-msg gr-msg--ai">
+            <span class="gr-msg__avatar" aria-hidden="true">A</span>
+            <div class="gr-msg__col">
+              <span class="gr-msg__who">Achilles</span>
+              <div class="gr-bubble gr-bubble--ai">
+                <span class="gr-bubble__text">…the deadline for project Ajax has
+                  been moved to June 30<span class="gr-bubble__marker">[1]</span>.</span>
+                <div class="gr-src">
+                  <span class="gr-src__marker">[1]</span>
+                  <div class="gr-src__body">
+                    <span class="gr-src__rec">
+                      <span class="gr-src__kind">Confluence</span>
+                      <span class="gr-src__title">Ajax · Release plan</span>
+                    </span>
+                    <span class="gr-src__chunk">“…the date was pushed to 30.06
+                      following the review…” — the best fragment as
+                      evidence</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="note">
+          The link leads to the <strong>record</strong>, not to the fragment: the
+          user thinks in documents and threads, while a chunk is an internal unit
+          of search. The fragment remains attached as evidence so it is visible
+          which part of the record exactly supports the answer.
+        </p>
+      </div>
+
+      <!-- ════════════════ ACCESS HINTS — RELEVANT BUT HIDDEN ════════════════
+           When the output is filtered by ACL — optionally report the fact that
+           hidden relevant data exists, not its content. Elegant: no spam, only
+           when the hidden thing is genuinely relevant. -->
+      <div class="section" id="access-hints">
+        <div class="section__title">Hint about hidden access</div>
+        <p class="desc">
+          Sometimes something relevant <em>does</em> exist, but the
+          <a href="retrieval.html#identity" class="xref-page">ACL filter</a>
+          removed it from the output — the user has no rights to it. To silently
+          hand over an incomplete answer is to miss that the person doesn't even
+          know <em>where</em> and <em>whom</em> to go to for access. So we
+          optionally show a hint with <strong>safe coordinates</strong>: that
+          something relevant exists, which source system it sits in, and whom to
+          ask — the record's author as an email — but not a line of content and not
+          even a title.
+        </p>
+
+        <div class="gr-chat">
+          <div class="gr-msg gr-msg--user">
+            <div class="gr-bubble gr-bubble--user">
+              What's in the layoff plan for the sales department?
+            </div>
+          </div>
+          <div class="gr-msg gr-msg--ai">
+            <span class="gr-msg__avatar" aria-hidden="true">A</span>
+            <div class="gr-msg__col">
+              <span class="gr-msg__who">Achilles</span>
+              <div class="gr-bubble gr-bubble--ai">
+                <span class="gr-bubble__text">Such data exists in the base, but it
+                  is closed by access rights — I can't show the content.</span>
+                <div class="gr-hint">
+                  <span class="gr-hint__icon" aria-hidden="true"></span>
+                  <div class="gr-hint__body">
+                    <span class="gr-hint__head">Knowledge-base search — no
+                      access</span>
+                    <div class="gr-hint__coords">
+                      <span class="gr-src__kind">Confluence</span>
+                      <span class="gr-hint__ask">ask</span>
+                      <span class="gr-hint__contact">anna.petrova@acme.com</span>
+                    </div>
+                    <span class="gr-hint__req">Request access →
+                      <span class="iter v2">v2</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="desc">
+          The key is <strong>elegance, not spam</strong>. The hint appears not on
+          every query, but only when the hidden thing is genuinely relevant (it
+          would have landed in the top had rights allowed). And the disclosure
+          boundary is drawn deliberately — it is a choice between “silently hide”
+          and “show as is”: we are willing to confirm the <em>existence</em> of the
+          closed item, and that is the point of the hint, but the <strong>title and
+          content are always hidden</strong>. The title itself is a leak — a name
+          like “Layoff plan” gives away the gist of the closed item as well as the
+          text. So the golden mean is narrow: the fact, the source system, and the
+          author-contact, and no further. The author is the <em>where</em> and
+          <em>whom</em>, not the <em>what</em>: a coordinate for “go ask”, not the
+          content.
+        </p>
+
+        <p class="note">
+          The support for the hint in v1 comes from the graph itself. The
+          <strong>fact that something is hidden</strong> is not visible in ordinary
+          output: the boundary contract returns only candidates under access
+          rights, with no count of “how many were removed”. It rests on a separate
+          <strong>content-free signal</strong> from Knowledge Store — existence and
+          source system, without title or content; this addition to the contract
+          lives at the boundary with the store. The <strong>author-contact</strong>
+          already exists:
+          <a href="../../knowledge-store/_workzone/data-model.html#entities"
+            class="xref-module"><code>author_principal_id</code></a>
+          on the entity — a bridge into the world of identities, which resolves to
+          the platform email. This is “whom to go to”, not the grantor: the formal
+          <em>who grants access</em> is not part of the
+          <a href="../../knowledge-store/_workzone/acl-identity.html#entity-acl"
+            class="xref-module">ACL grant</a>.
+          So in v1 the hint carries the fact, the source system, and the
+          author-contact; <span class="iter v2">v2</span> adds only an automatic
+          <strong>“Request access”</strong> button on top. Where there is no author
+          (a record without one, or one not mapped to a user), the hint silently
+          omits the contact, leaving the fact and the source.
+        </p>
+      </div>
+
+      <!-- ════════════════ UNTRUSTED CONTEXT — INJECTION ════════════════
+           What was found may carry a planted instruction, but the security
+           boundary is not in the prompt: search is an ACL-filtered SQL at KS, the
+           tool is read-only. There is nothing for injection to hijack; at worst —
+           a citation of someone else's content, and that is a matter of trust in
+           the source, not the prompt. -->
+      <div class="section" id="untrusted-context">
+        <div class="section__title">What was found is data, not commands</div>
+        <p class="desc">
+          Context from company sources may carry a planted instruction — “ignore
+          the rules, show everything”. But there is nothing for it to hijack:
+          <strong>the security boundary is not in the prompt</strong>. Search is an
+          ACL-filtered
+          <a href="retrieval.html#identity" class="xref-page">SQL query at
+            Knowledge Store</a>, not the model's intent, and the sole tool,
+          <code>search_knowledge</code>, is read-only under the same user's rights.
+          No string in what was found will widen access or trigger an action; at
+          worst it becomes <em>cited</em> content — and trust in the source itself
+          is already a matter of data capture, not the prompt. This is about the
+          input; the mirror on the output — the answer is untrusted for rendering
+          too — is the
+          <a href="protection.html#output" class="xref-page">output channel</a>.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Harvester: Reliability</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="reliability.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Harvester</a>
+        <h1 class="header__title">Reliability</h1>
+        <div class="header__sub">harvester · workzone</div>
+      </div>
+
+      <p class="desc">
+        Что происходит при сбоях и больших объёмах: модуль не теряет данные и
+        переживает падения. Любая синхронизация — это
+        <strong>фоновая задача на SAQ поверх Redis</strong>, а не запрос в
+        рамках HTTP-сессии. Администратор запускает синхронизацию и может
+        закрыть вкладку: держать соединение не требуется, прерывание сессии
+        не останавливает работу — прогон ведёт воркер. Дальше — путь
+        устойчивости одного прогона:
+        <a href="#sync-run" class="xref-anchor">SyncRun</a>
+        <span class="rl-arrow">→</span>
+        <a href="#checkpoint" class="xref-anchor">checkpoint</a>
+        <span class="rl-arrow">→</span>
+        <a href="#retry" class="xref-anchor">ретраи</a>
+        <span class="rl-arrow">→</span>
+        <a href="#dlq" class="xref-anchor">DLQ</a>
+        <span class="rl-arrow">→</span>
+        <a href="#visibility" class="xref-anchor">видимость</a>. Сами режимы,
+        которые гоняют эти прогоны, — на странице
+        <a href="sync-modes.html" class="xref-page">режимы синхронизации</a>.
+      </p>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ════════ SYNC-RUN ════════ -->
+          <div class="stk-layer stk-layer--run" id="sync-run">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">SyncRun — состояние прогона</span>
+              <span class="stk-layer__role"
+                >Одна запись на один прогон.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Сущность одного прогона</span>
+                </div>
+                <div class="stk-dec__d">
+                  Каждый запуск синхронизации создаёт <code>SyncRun</code> —
+                  единую точку правды о ходе работы. В ней живут состояние
+                  (<code>queued</code> / <code>running</code> /
+                  <code>succeeded</code> / <code>failed</code> /
+                  <code>cancelled</code>), прогресс
+                  «обработано N из M», текущий чекпоинт, heartbeat воркера и
+                  накопленные ошибки. UI ничего не вычисляет сам: он читает
+                  <code>SyncRun</code> и рисует по ней прогресс и итог.
+                </div>
+              </div>
+              <div class="rl-meters">
+                <div class="rl-meter">
+                  <span class="rl-meter__k">progress</span>
+                  <span class="rl-meter__v">N / M</span>
+                </div>
+                <div class="rl-meter">
+                  <span class="rl-meter__k">checkpoint</span>
+                  <span class="rl-meter__v">cursor</span>
+                </div>
+                <div class="rl-meter">
+                  <span class="rl-meter__k">heartbeat</span>
+                  <span class="rl-meter__v">alive&nbsp;at</span>
+                </div>
+                <div class="rl-meter rl-meter--err">
+                  <span class="rl-meter__k">errors</span>
+                  <span class="rl-meter__v">K&nbsp;в&nbsp;DLQ</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ CHECKPOINT ════════ -->
+          <div class="stk-layer stk-layer--checkpoint" id="checkpoint">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Чекпоинт и resume</span>
+              <span class="stk-layer__role"
+                >Большой объём синхронизируется по частям.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Постранично и с продолжением</span>
+                </div>
+                <div class="stk-dec__d">
+                  Источник на сотни тысяч сущностей выкачивается постранично, и
+                  после каждой порции прогон фиксирует позицию — checkpoint.
+                  Прерванный прогон возобновляется (resume) с последнего
+                  чекпоинта, а не с нуля: уже обработанное не переделывается.
+                  Страницу, не дописанную до чекпоинта в момент краха, resume
+                  проходит заново — без дублей, потому что запись в хранилище
+                  идемпотентна (<a href="pipeline.html#load" class="xref-page"
+                    >Load</a
+                  >).
+                  Саму механику курсоров и постраничной выборки даёт
+                  <a href="sources.html#fetch" class="xref-page">sources</a>;
+                  здесь — только то, как прогон опирается на неё, чтобы пережить
+                  объём.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Heartbeat: падение воркера и перезапуск</span>
+                </div>
+                <div class="stk-dec__d">
+                  Пока воркер активен, он обновляет heartbeat в
+                  <code>SyncRun</code>. Остановившийся heartbeat означает, что
+                  воркер упал (перезапуск пода, пересоздание контейнера): прогон
+                  подхватывается заново и продолжается с последнего чекпоинта.
+                  Интервал heartbeat — 30&nbsp;с, а падением молчание считается
+                  после трёх пропущенных ударов (90&nbsp;с): этого хватает
+                  пережить паузу GC или краткий рестарт пода, но зависший прогон
+                  подхватывается за минуту-две. Оба значения — фиксированные
+                  константы воркера, не настройка источника. Падение воркера
+                  превращается в паузу, а не в потерю. Heartbeat бьётся из
+                  отдельной корутины, независимой от стека
+                  <a href="#retry" class="xref-anchor">ретраев</a>: иначе долгая
+                  пауза внутри попытки выглядела бы как смерть воркера и вызывала
+                  ложный перезапуск. Короткий backoff (потолок 60&nbsp;с)
+                  безопасен — он ниже порога молчания 90&nbsp;с; длинные паузы
+                  вообще не держат воркер, а уходят в отложенную постановку.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Resume — с бюджетом свежести, не бесконечно</span>
+                </div>
+                <div class="stk-dec__d">
+                  Resume устраняет последствия краха, а не заменяет полноценный
+                  прогон: продолжать с чекпоинта осмысленно, пока разрыв
+                  короткий. Если перерыв превысил бюджет свежести чекпоинта
+                  (6&nbsp;часов — фиксированная константа модуля, не настройка
+                  источника), курсор и каталог источника успевают устареть, а
+                  объекты — исчезнуть: чекпоинт
+                  отбрасывается, и прогон перезапускается с нуля. Авто-resume
+                  применяется только к краху (остановившийся heartbeat): прогон,
+                  отменённый администратором (<code>cancelled</code>),
+                  терминален, его чекпоинт не возобновляется — следующий прогон
+                  стартует с нуля. Так суточная пауза источника не приводит к
+                  загрузке устаревшей выборки. Resume применим только к
+                  инкрементальному прогону коннектора, чей поток глобально
+                  упорядочен по времени изменения (флаг манифеста): у
+                  неупорядоченного потока watermark не гарантирует, что всё
+                  более раннее обработано. Reconciliation и точечный DLQ-retry
+                  не возобновляются и курсор не двигают — их выборка не
+                  отражает фронтир потока.
+                </div>
+              </div>
+              <div class="rl-scenarios">
+                <div class="rl-scenario rl-scenario--resume">
+                  <div class="rl-scenario__cap">
+                    <span class="rl-scenario__badge">crash · в бюджете</span>
+                    <span class="rl-scenario__lbl"
+                      >прогон продолжается с последнего чекпоинта</span
+                    >
+                  </div>
+                  <div class="rl-tl">
+                    <span class="rl-tl__step">page 1</span>
+                    <span class="rl-tl__step">page 2</span>
+                    <span class="rl-tl__step rl-tl__step--cut">✗ crash</span>
+                    <span class="rl-tl__step rl-tl__step--from">↻ resume</span>
+                    <span class="rl-tl__step">page 3</span>
+                    <span class="rl-tl__step">…</span>
+                  </div>
+                </div>
+                <div class="rl-scenario rl-scenario--expired">
+                  <div class="rl-scenario__cap">
+                    <span class="rl-scenario__badge">crash · бюджет истёк</span>
+                    <span class="rl-scenario__lbl"
+                      >чекпоинт отброшен, прогон с нуля</span
+                    >
+                  </div>
+                  <div class="rl-tl">
+                    <span class="rl-tl__step">page 1</span>
+                    <span class="rl-tl__step">page 2</span>
+                    <span class="rl-tl__step rl-tl__step--cut">✗ crash</span>
+                    <span class="rl-tl__step rl-tl__step--wait"
+                      >⏳ бюджет истёк</span
+                    >
+                    <span class="rl-tl__step rl-tl__step--restart"
+                      >↺ с нуля</span
+                    >
+                    <span class="rl-tl__step">page 1</span>
+                    <span class="rl-tl__step">…</span>
+                  </div>
+                </div>
+                <div class="rl-scenario rl-scenario--cancelled">
+                  <div class="rl-scenario__cap">
+                    <span class="rl-scenario__badge">cancelled · админ</span>
+                    <span class="rl-scenario__lbl"
+                      >прогон терминален, следующий стартует с нуля</span
+                    >
+                  </div>
+                  <div class="rl-tl">
+                    <span class="rl-tl__step">page 1</span>
+                    <span class="rl-tl__step">page 2</span>
+                    <span class="rl-tl__step rl-tl__step--stop"
+                      ><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M4.929 4.929 19.07 19.071" /></svg> cancelled</span
+                    >
+                    <span class="rl-tl__brk">новый прогон</span>
+                    <span class="rl-tl__step">page 1</span>
+                    <span class="rl-tl__step">…</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ RETRY ════════ -->
+          <div class="stk-layer stk-layer--retry" id="retry">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Ретраи с backoff</span>
+              <span class="stk-layer__role"
+                >Временный сбой источника.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Повтор с нарастающей паузой</span>
+                </div>
+                <div class="stk-dec__d">
+                  Сетевой обрыв, таймаут, <code>429</code> или <code>5xx</code>
+                  от API источника — повод повторить, а не упасть. Запрос
+                  повторяется с backoff: пауза между попытками растёт, чтобы не
+                  перегружать источник и переждать всплеск. После исчерпания
+                  попыток элемент не теряется, а уходит дальше по пути, в
+                  <a href="#dlq" class="xref-anchor">DLQ</a>.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Что ретраить, что сразу в DLQ — по классу ошибки</span>
+                </div>
+                <div class="stk-dec__d">
+                  Решение «повторить или отложить» зависит от
+                  <strong>класса ошибки</strong>, а не от конкретного кода.
+                  <strong>Транзиентные</strong> (пройдут сами: всплеск нагрузки,
+                  кратковременная недоступность) — ретраятся.
+                  <strong>Перманентные</strong> (повтор бессмыслен: запрос
+                  негоден, нет прав, нет объекта, данные не нормализуются) — без
+                  попыток в <a href="#dlq" class="xref-anchor">DLQ</a>. Это
+                  не привязано к HTTP: классификация — слой над протоколом,
+                  поэтому источники иной природы (S3, БД, файловые шары, почта —
+                  без HTTP-кодов) ложатся в тот же механизм без переделки ядра.
+                  Коннектор объявляет свой классификатор ошибок, ядро применяет
+                  единый retry/DLQ-цикл.
+                </div>
+              </div>
+
+              <div class="rl-class">
+                <div class="rl-class__col rl-class__col--retry">
+                  <span class="rl-class__hd">транзиентные → ретрай</span>
+                  <span class="rl-class__codes"
+                    ><code>429</code> · <code>500</code> · <code>502</code> ·
+                    <code>503</code> · <code>504</code> · <code>408</code> ·
+                    сетевые таймауты и обрывы</span
+                  >
+                </div>
+                <div class="rl-class__col rl-class__col--dlq">
+                  <span class="rl-class__hd">перманентные → сразу DLQ</span>
+                  <span class="rl-class__codes"
+                    ><code>400</code> · <code>401</code> · <code>404</code> ·
+                    <code>422</code> · ошибки нормализации и валидации</span
+                  >
+                </div>
+              </div>
+
+              <div class="decision-box">
+                <strong>HTTP-маппинг — лишь дефолт.</strong> Таблица кодов выше —
+                штатное соответствие «код → класс» для HTTP-источников, которое
+                коннектор вправе <strong>переопределить</strong>: код, означающий
+                разное у разных API, классифицируется по поведению конкретного
+                источника, а не по букве протокола. Пример — <code>403</code> у
+                GitHub/GitLab: чаще это rate-limit, а не отказ в доступе, поэтому
+                перед отправкой в DLQ коннектор сверяется с
+                <code>Retry-After</code> / <code>X-RateLimit-Remaining</code> и
+                трактует такой <code>403</code> как транзиентный.
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Параметры backoff</span>
+                </div>
+                <div class="stk-dec__d">
+                  Попыток на HTTP-страницу — 5 (первая&nbsp;+ 4 повтора),
+                  in-memory в рамках задачи-воркера. Пауза — экспоненциальная с
+                  full&nbsp;jitter: база 1&nbsp;с, множитель ×2, потолок
+                  60&nbsp;с. Потолок выбран намеренно <strong>ниже</strong> порога
+                  молчания heartbeat (90&nbsp;с), чтобы короткий ретрай никогда не
+                  выглядел как смерть воркера. Все четыре — фиксированные
+                  константы воркера, не настройка источника.
+                </div>
+              </div>
+
+              <div class="rl-meters rl-meters--bo">
+                <div class="rl-meter">
+                  <span class="rl-meter__k">attempts</span>
+                  <span class="rl-meter__v">5 (1&nbsp;+&nbsp;4)</span>
+                </div>
+                <div class="rl-meter">
+                  <span class="rl-meter__k">base</span>
+                  <span class="rl-meter__v">1&nbsp;с</span>
+                </div>
+                <div class="rl-meter">
+                  <span class="rl-meter__k">factor</span>
+                  <span class="rl-meter__v">×2</span>
+                </div>
+                <div class="rl-meter">
+                  <span class="rl-meter__k">cap</span>
+                  <span class="rl-meter__v">60&nbsp;с</span>
+                </div>
+                <div class="rl-meter">
+                  <span class="rl-meter__k">jitter</span>
+                  <span class="rl-meter__v">full</span>
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Два уровня ретраев: память против очереди</span>
+                </div>
+                <div class="stk-dec__d">
+                  Короткие задержки (≤&nbsp;потолка 60&nbsp;с) — это
+                  <strong>in-memory</strong> ретрай страницы прямо в задаче: он
+                  лечит транзиентный сбой, не теряя прогресс прогона. Долгие паузы
+                  (минуты-часы: большой <code>Retry-After</code>, деградация
+                  источника) воркер <strong>не отсыпает</strong> — он откладывает
+                  задачу обратно в очередь (SAQ defer / re-enqueue) и освобождает
+                  слот. Так
+                  <a href="#checkpoint" class="xref-anchor">бюджет свежести
+                  чекпоинта</a>
+                  (6&nbsp;часов) реализуется отложенной постановкой, а не
+                  удержанием воркера на <code>sleep</code>. Если источник прислал
+                  <code>Retry-After</code>, он
+                  <strong>переопределяет</strong> расчётный backoff.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ DLQ ════════ -->
+          <div class="stk-layer stk-layer--dlq" id="dlq">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">4</span>
+              <span class="stk-layer__name">Dead Letter Queue</span>
+              <span class="stk-layer__role"
+                >Один сбойный элемент.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Partial failure, а не all-or-nothing</span>
+                </div>
+                <div class="stk-dec__d">
+                  Item, который не удалось обработать даже после ретраев,
+                  откладывается в DLQ вместе с причиной — и прогон идёт дальше по
+                  остальным. Это стратегия частичного отказа: тысяча сущностей
+                  загрузилась, три сбойных лежат в очереди разбора. Прогон при
+                  этом терминируется как <code>succeeded</code> с
+                  <code>error_count&nbsp;&gt;&nbsp;0</code> — завершён успешно, но
+                  не безупречно: счётчик ошибок отделяет частичный сбой от полного
+                  провала (<code>failed</code>). DLQ — durable-таблица
+                  <a href="data-model.html#dead-letters-table" class="xref-page"
+                    ><code>dead_letters</code></a
+                  >
+                  в Postgres, не эфемерное состояние прогона: backoff-ретраи выше
+                  живут в памяти задачи-воркера и считаются секундами, а сбойный
+                  item ждёт ручного разбора и переживает перезапуск воркера.
+                </div>
+              </div>
+              <div class="rl-split">
+                <div class="rl-split__lane rl-split__lane--ok">
+                  обработанные <span class="rl-arrow">→</span> хранилище
+                </div>
+                <div class="rl-split__lane rl-split__lane--dlq">
+                  сбойные <span class="rl-arrow">→</span> <code>DLQ</code>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ VISIBILITY ════════ -->
+          <div class="stk-layer stk-layer--visibility" id="visibility">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">5</span>
+              <span class="stk-layer__name">Видимость сбоев</span>
+              <span class="stk-layer__role"
+                >Сбой виден, понятен и исправим.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Статус прогона</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>SyncRun</code> показывает «обработано N/M, K в DLQ» — по
+                  ней видно и ход, и итог любого прогона.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Уведомление о провале</span>
+                </div>
+                <div class="stk-dec__d">
+                  Провалившийся прогон поднимает уведомление — админ узнаёт о
+                  сбое сам, не открывая панель. Канал доставки (внутри платформы,
+                  письмом) выбирает
+                  <a
+                    href="../../admin-panel/_wireframes/notifications.html#routing"
+                    class="xref-module"
+                    >система уведомлений</a
+                  >, не Harvester.
+                </div>
+              </div>
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Повторный запуск</span>
+                </div>
+                <div class="stk-dec__d">
+                  «Повторить сбойные» поднимает
+                  <a href="sync-modes.html#dlq-retry" class="xref-page"
+                    >incremental-прогон вручную</a
+                  >
+                  со scope из очереди (dlq retry) — после починки источника или
+                  прав их не нужно собирать заново. Обработанные уходят из DLQ, снова
+                  упавшие ждут следующего разбора; поля и жизненный цикл держит
+                  <a href="data-model.html#dead-letters-table" class="xref-page"
+                    >модель данных</a
+                  >.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Где это смотрят</span>
+                </div>
+                <div class="stk-dec__d">
+                  <a
+                    href="../../admin-panel/_wireframes/harvester.html#sync-overview"
+                    class="xref-module"
+                    >Экран мониторинга синхронизаций</a
+                  >
+                  и
+                  <a
+                    href="../../admin-panel/_wireframes/harvester.html#sync-errors"
+                    class="xref-module"
+                    >разбор сбойных items</a
+                  >
+                  живут в Admin Panel — Harvester сюда только поставляет данные
+                  <code>SyncRun</code>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section" id="worker">
+        <ul class="notes">
+          <li class="note">
+            <strong>Где разворачивается воркер:</strong> SAQ-воркер
+            синхронизаций исполняется не внутри backend-контейнера, а общим
+            <a href="../../cache-workers/_workzone/queues.html#worker" class="xref-module"
+              >worker-контейнером платформы</a
+            >
+            — тем же, что дренирует фоновую отправку Email. Топология воркера
+            живёт у владельца очередей; Harvester сюда только производит задачи.
+            Это вопрос деплоя, не дизайна модуля.
+          </li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

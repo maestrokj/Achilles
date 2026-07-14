@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Agent Engine: Triggering and lanes</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="execution.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Agent Engine</a>
+        <h1 class="header__title">Triggering and lanes</h1>
+        <div class="header__sub">agent-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        When an agent fires and where its run executes. Triggering has two
+        occasions: <strong>manually</strong> by button and by a
+        <strong>simple schedule</strong>. And the
+        <a href="runtime.html#loop" class="xref-page">agentic loop</a> itself
+        runs in a <strong>separate background lane</strong> — multi-step and
+        unhurried, it must neither slow the live chat nor wait on source syncs.
+      </p>
+
+      <!-- ════════════════ SCHEDULE ════════════════
+           Two triggering occasions: manual “Run now” and a simple
+           schedule (interval or calendar HH:MM). Stored in
+           agents.schedule; NULL = manual only. Event triggers, raw cron — v2. -->
+      <div class="section" id="schedule">
+        <h2 class="section__title">Two triggering occasions <a class="xref-badge" href="../../cache-workers/_workzone/scheduling.html#registry">→ Cache &amp; Workers</a></h2>
+        <p class="desc">
+          Manual “Run now” needs no schedule but honors the locks: the run
+          starts if the agent is switched on by the owner, not locked by the
+          admin, and the weekly budget is not exhausted. The schedule is an
+          optional add-on: an <strong>interval</strong> (“every N hours”) or a
+          <strong>calendar</strong> slot (“daily / weekly at HH:MM”). It is
+          stored in a single field
+          <a href="data-model.html#agents" class="xref-page"
+            ><code>schedule</code></a>; empty means the agent is purely manual.
+          Raw cron and event triggers are deliberately out of scope:
+          <span class="iter v2">v2</span>.
+        </p>
+
+        <div class="ex-triggers">
+          <div class="ex-trig ex-trig--manual">
+            <div class="ex-trig__h">▶ Manual</div>
+            <span class="ex-trig__ex">Run now</span>
+            <div class="ex-trig__desc">
+              a button on the agent's screen — needs no schedule; available while
+              the agent is switched on and not locked by the admin.
+            </div>
+          </div>
+          <div class="ex-trig ex-trig--interval">
+            <div class="ex-trig__h">↻ Interval</div>
+            <span class="ex-trig__ex">every 6 h</span>
+            <div class="ex-trig__desc">
+              a simple period — for regular background watching.
+            </div>
+          </div>
+          <div class="ex-trig ex-trig--calendar">
+            <div class="ex-trig__h"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></svg> Calendar</div>
+            <span class="ex-trig__ex">Mon 09:00</span>
+            <div class="ex-trig__desc">
+              daily or weekly at a set hour — a morning digest.
+            </div>
+          </div>
+        </div>
+
+        <p class="note">
+          The schedule computes the next slot into
+          <a href="data-model.html#agents" class="xref-page"><code>next_run_at</code></a>;
+          the scheduler wakes the agent by it and queues the run into the
+          background lane. An agent switched off by the owner, locked by the
+          admin, or left without a model takes no part in the scan: its
+          <code>next_run_at</code> is cleared — a closed
+          <a href="governance.html#gate" class="xref-page">gate</a> condition
+          leaves no trace in the journal (overlap, below, does). A calendar
+          “09:00” resolves against the <strong>owner's</strong> timezone (their
+          <code>timezone</code>, or on <code>NULL</code> the organization's
+          timezone from <code>platform_settings</code>) and only then lands in
+          <code>next_run_at</code> as UTC. Event triggers (a new commit, an
+          incident) and raw cron are on the v2 horizon.
+        </p>
+        <p class="note">
+          A single agent's runs do not overlap: an agent has at most one
+          unfinished run — the base itself holds this lock (a partial unique on
+          <code>state</code> <code>queued</code>/<code>running</code> —
+          <a href="data-model.html#agent-runs" class="xref-page">data
+            model</a>). A slot that comes due, or a manual trigger, on top of a
+          loop still running breeds no new one — a <code>skipped</code> is
+          written with <code>reason=already_running</code>, so the skip is
+          visible in the journal rather than lost to silence. If a worker dies
+          without closing the run, a stale <code>heartbeat_at</code> releases
+          the lock (the hung run is reaped into
+          <code>failed</code>/<code>stale</code>), and the agent starts again:
+          a zombie does not lock it out.
+        </p>
+      </div>
+
+      <!-- ════════════════ LANE ════════════════
+           Runs go in a separate background lane (their own worker pool), off the
+           live-chat path and out of the sync queue. KS reads are read-only,
+           so the lane safely runs in parallel with graph writes. -->
+      <div class="section" id="lane">
+        <h2 class="section__title">Background execution lane <a class="xref-badge" href="../../cache-workers/_workzone/queues.html#lanes">→ Cache &amp; Workers</a></h2>
+        <p class="desc">
+          An agent run is seconds to minutes of a multi-step loop. Putting that
+          on the live-chat path would hang the user; queuing it behind sync
+          would mean waiting for the import. So agents run in
+          <strong>their own background lane</strong>, a separate worker pool.
+          And since their KS reads are
+          <a href="identity.html#ks-boundary" class="xref-page">strictly
+            read-only</a>, the lane calmly runs <strong>in parallel with graph
+            writes</strong> — sync and curation: there is nothing to contend for
+          over the data.
+        </p>
+
+        <div class="ex-lanes">
+          <div class="ex-lane">
+            <div class="ex-lane__rail">
+              <span class="ex-lane__name">Live chat</span>
+              <span class="ex-lane__kind">synchronous</span>
+            </div>
+            <div class="ex-lane__body">
+              <span class="ex-lane__tag ex-lane__tag--live">low-latency</span>
+              an answer to the user here and now — priority on response
+            </div>
+          </div>
+          <div class="ex-lane">
+            <div class="ex-lane__rail">
+              <span class="ex-lane__name">Sync</span>
+              <span class="ex-lane__kind">background</span>
+            </div>
+            <div class="ex-lane__body">
+              <span class="ex-lane__tag ex-lane__tag--write">writes the graph</span>
+              knowledge import and curation — Harvester and Curation Pass
+            </div>
+          </div>
+          <div class="ex-lane ex-lane--agent">
+            <div class="ex-lane__rail">
+              <span class="ex-lane__name">Agents</span>
+              <span class="ex-lane__kind">background · our lane</span>
+            </div>
+            <div class="ex-lane__body">
+              <span class="ex-lane__tag ex-lane__tag--read">reads the graph</span>
+              agentic loops — their own worker pool, read-only against KS
+            </div>
+          </div>
+        </div>
+        <p class="ex-lanes__cap">
+          three independent lanes · agents wait on no write and slow no chat
+        </p>
+      </div>
+
+      <!-- ════════════════ CONCURRENCY ════════════════
+           The limit on agents' concurrent LLM calls is separated from live chat —
+           so the multi-step loop does not eat the provider's shared rate limit
+           and does not starve interactive answers. -->
+      <div class="section" id="concurrency">
+        <h2 class="section__title">A separate per-model limit <a class="xref-badge" href="../../cache-workers/_workzone/queues.html#lanes">→ Cache &amp; Workers</a></h2>
+        <p class="desc">
+          The model provider has one shared rate limit for the whole platform.
+          The agentic loop is greedy — many calls per run — and if let into the
+          common pot, it will <strong>eat the live chat's limit</strong>: the
+          user waits while someone's background agent grinds through its tenth
+          step. So agents have <strong>their own cap on concurrent LLM
+          calls</strong>, separated from interactive traffic: background yields
+          to response.
+        </p>
+        <p class="note">
+          The cap itself is a platform setting
+          (<a href="../../admin-panel/_workzone/data-model.html#singleton" class="xref-module"
+            ><code>platform_settings.agent_max_concurrency</code></a>, one number
+          per organization), alongside the
+          <a href="runtime.html#loop" class="xref-page">iteration cap</a> and the
+          weekly <a href="governance.html#budget" class="xref-page">budget</a>.
+          This is a cap on the lane's <em>parallelism</em>, not the weekly
+          spend: the budget limits how much an employee spends in a week; here it
+          is how many runs turn at once, so as not to touch the chat.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

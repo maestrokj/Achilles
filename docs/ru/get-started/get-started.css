@@ -1,0 +1,439 @@
+/* Get Started (docs/get-started/) — layers on shared.css + presentation.css */
+
+/* ── Table of contents ── */
+.toc {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1.75rem 0;
+}
+
+.toc__item {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  padding: 0.85rem 1.1rem;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: inherit;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s,
+    border-color 0.15s;
+}
+
+.toc__item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--card-shadow-hover);
+  border-color: var(--accent);
+}
+
+.toc__num {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--tint-8);
+  border: 1.5px solid var(--tint-25);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.1rem;
+}
+
+.toc__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.toc__title {
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.toc__text {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-top: 0.15rem;
+}
+
+/* ── "optional" badge ── */
+.opt {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  border: 1px dashed var(--accent-muted);
+  border-radius: var(--pill-radius);
+  padding: 0.12rem 0.4rem;
+  margin-left: 0.45rem;
+  vertical-align: middle;
+}
+
+/* ── Numbered step rows ── */
+.step-rows {
+  display: grid;
+  gap: 1.1rem;
+  margin: 1.5rem 0;
+}
+
+.step-row {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+}
+
+.step-row__num {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0.15rem;
+}
+
+.step-row__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.step-row__title {
+  font-size: 0.94rem;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+
+.step-row__text {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+/* ── URL chip: where to click in the running system ──
+   Click-to-copy: the inline script stamps `.copied` for the tooltip. */
+.chip-url {
+  display: inline-block;
+  position: relative;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--link-anchor-fg);
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 0.14rem 0.5rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.chip-url:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.chip-url::after {
+  content: "скопировано";
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) translateY(3px);
+  background: var(--text);
+  color: var(--bg);
+  font-family: var(--font);
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.18rem 0.55rem;
+  border-radius: 6px;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  transition:
+    opacity 0.15s,
+    transform 0.15s;
+}
+
+.chip-url.copied::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Shell block ── */
+.codeblock {
+  position: relative;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  line-height: 1.7;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.85rem 1.1rem;
+  margin: 0.9rem 0;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--text);
+}
+
+.codeblock .copy-btn {
+  position: absolute;
+  top: 0.45rem;
+  right: 0.45rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  padding: 0.24rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    border-color 0.15s,
+    color 0.15s;
+}
+
+.codeblock:hover .copy-btn,
+.codeblock .copy-btn:focus-visible {
+  opacity: 1;
+}
+
+.codeblock .copy-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.codeblock .copy-btn.copied {
+  opacity: 1;
+  border-color: var(--s3);
+  color: var(--link-page-fg);
+}
+
+.codeblock .cmt {
+  color: var(--text-muted);
+}
+
+/* ── UI fragment mockup: a piece of the real screen ── */
+.ui-card {
+  background: var(--paper);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  max-width: 480px;
+  margin: 1.2rem 0;
+  overflow: hidden;
+}
+
+.ui-card--wide {
+  max-width: 580px;
+}
+
+.ui-card__bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.55rem 1rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.ui-card__bar-note {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ui-card__row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.2rem 1rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px dashed var(--border);
+  font-size: 0.8rem;
+}
+
+.ui-card__row:last-child {
+  border-bottom: none;
+}
+
+.ui-card__row--focus {
+  background: var(--s3-pale);
+}
+
+.ui-card__label {
+  color: var(--text-dim);
+}
+
+.ui-card__value {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.ui-card__value--in {
+  color: var(--link-page-fg);
+  font-weight: 700;
+}
+
+.ui-card__btn {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  background: var(--s3);
+  color: #fff;
+}
+
+.ui-card__caption {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin: -0.6rem 0 1.2rem 0.2rem;
+}
+
+/* ── Setup panel mockup: the dashboard card, rows link to sections ── */
+.setup-mock__row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 1rem;
+  border-bottom: 1px dashed var(--border);
+  font-size: 0.82rem;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.15s;
+}
+
+.setup-mock__row:last-child {
+  border-bottom: none;
+}
+
+.setup-mock__row:hover {
+  background: var(--tint-8);
+}
+
+.setup-mock__check {
+  flex: none;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent-muted);
+}
+
+.setup-mock__title {
+  flex: 1;
+  font-weight: 600;
+}
+
+.setup-mock__where {
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Architecture reference links ── */
+.arch-ref {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.2rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.arch-ref a {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.22rem 0.6rem;
+  border-radius: 6px;
+  background: var(--tint-8);
+  border: 1px solid var(--tint-25);
+  color: var(--accent);
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.arch-ref a:hover {
+  background: var(--tint-15);
+}
+
+/* ── Prerequisites checklist ── */
+.prereqs {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1.5rem 0;
+}
+
+.prereq {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.prereq::before {
+  content: "✓";
+  color: var(--s3);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.prereq strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ── Milestone callout ── */
+.milestone {
+  background: var(--s3-pale);
+  border-left: 3px solid var(--s3);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  padding: 0.85rem 1.1rem;
+  margin: 1.75rem 0;
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+
+.milestone strong {
+  color: var(--text);
+}

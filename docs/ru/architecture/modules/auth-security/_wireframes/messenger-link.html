@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Привязка мессенджера</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Привязка мессенджера</h1>
+        <div class="header__sub">auth / security · макеты · после входа</div>
+      </div>
+
+      <p class="desc">
+        Экран выдаёт код для привязки аккаунта мессенджера (Slack · Telegram · Mattermost) к учётке.
+        Открывается по ссылке бота-ассистента (или из Профиля) и <strong>требует входа</strong>
+        — код виден только во вошедшей сессии. Контракт —
+        <a href="../_workzone/authentication.html#messenger-link" class="xref-page">Привязка мессенджера</a>.
+      </p>
+
+      <!-- ═══ Макет ═══ -->
+      <div class="section">
+        <div class="section__title">Макет</div>
+        <div class="wf-stage">
+          <div class="wf-frame">
+            <div class="wf-screen wf-screen--narrow">
+              <div class="wf-chrome">
+                <div class="wf-chrome__dots">
+                  <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                </div>
+                <div class="wf-chrome__url" tabindex="0">
+                  achilles.local/link
+                  <span class="wf-urltip">
+                    <span class="wf-urltip__route">/link · требует входа</span>
+                    <span class="wf-urltip__body">Не вошедшего сначала ведёт на /login, затем сюда.</span>
+                  </span>
+                </div>
+              </div>
+              <div class="wf-body">
+                <div class="wf-stack">
+                  <div class="wf-center wf-stack wf-stack--tight">
+                    <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                    <h2 class="wf-title">Привязка мессенджера</h2>
+                    <p class="wf-subtitle">
+                      Вы вошли как <strong>maxim@company.com</strong>. Отправьте код боту
+                      Achilles в личных сообщениях (Slack, Telegram или Mattermost) — и он будет отвечать
+                      под вашими доступами.
+                    </p>
+                  </div>
+
+                  <div class="wf-field">
+                    <span class="wf-label">Ваш код привязки</span>
+                    <div class="wf-input wf-input--focus">
+                      <span class="wf-code">K7P2-9XQ4</span>
+                      <span class="wf-input__action" title="Скопировать код">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                      </span>
+                      <span class="wf-annot">1</span>
+                    </div>
+                    <div class="wf-row wf-spread">
+                      <span class="wf-hint">Действует 15 минут <span class="wf-annot">2</span></span>
+                      <span class="wf-hint">Жду код в мессенджере… <span class="wf-annot">3</span></span>
+                    </div>
+                  </div>
+
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <span class="wf-text">Как привязать</span>
+                    <span class="wf-hint">1 · Откройте личные сообщения с ботом Achilles (Slack, Telegram или Mattermost).</span>
+                    <span class="wf-hint">2 · Отправьте ему код выше — бот подтвердит привязку.</span>
+                  </div>
+
+                  <div class="wf-center">
+                    <a class="wf-a" href="profile-account.html">Вернуться в профиль</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Код одноразовый, в БД — только хэш
+              (<a href="../_workzone/data-model.html#link-tokens" class="xref-page"><code>link_tokens</code></a>).
+              Привязывается тот аккаунт, что <strong>вернёт</strong> код, к <strong>этой</strong> учётке.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              TTL 15 минут; истёк — запросите новый у бота
+              (<code>410 LINK_EXPIRED</code>).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Направление <strong>браузер&nbsp;→&nbsp;бот</strong>: пересланная ссылка не даёт
+              угнать учётку — код виден только в этой вошедшей сессии. Почему так —
+              <a href="../_workzone/authentication.html#messenger-link" class="xref-page">контракт привязки</a>.
+            </li>
+            <li class="wf-legend__item">
+              Аккаунт уже привязан к другой учётке — бот ответит отказом
+              (<code>409 ALREADY_LINKED</code>); существующую связь входа снимает админ.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

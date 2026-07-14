@@ -1,0 +1,2685 @@
+/* Wireframe kit (wf-*) — the expressive screen-mockup layer.
+   Page chrome comes from module.css; this sheet adds the wf-* primitives
+   that render a schematic screen mockup — a wireframe, not pixel-accurate
+   design. Register: mid-fidelity and deliberately more accented than the
+   calm architecture diagrams — a crisp "screen" floats on a tinted mat so
+   it reads as UI, built from the shared design tokens so it still belongs
+   to the family. Compose screens from these primitives; reach for new CSS
+   only when a screen genuinely needs a shape the kit can't express.
+   Loaded by every screen page (_wireframes and feature screens) on top
+   of module.css.
+   Placement convention: docs/architecture/README.md §Styling.
+
+   Contents (═══ banners, in source order): Frame · Content & typography ·
+   Form controls · Auth-flow primitives · Pieces & blocks ·
+   Layout & composition · Admin shell & data display · Overlays ·
+   Responsive & markers. */
+
+/* ═══════════════════════════════════════════
+   Frame
+   Local tokens, page width, and the screen shell: stage · screen /
+   modal / backdrop · window chrome · app bar · body.
+   ═══════════════════════════════════════════ */
+
+:root {
+  /* Wireframe-local tokens (layered on shared.css palette) */
+  --wf-mat: linear-gradient(160deg, var(--tint-8), var(--tint-4));
+  --wf-screen-bg: var(--paper);
+  --wf-screen-shadow: 0 12px 40px rgba(46, 34, 24, 0.12);
+  --wf-field-bg: #fbf7f0;
+  --wf-radius: 16px;
+  --wf-radius-sm: 9px;
+  /* Depth tiers — one shared ramp so cards/fields/menus read as one family
+     instead of each primitive inventing a shadow. raised = an inner block
+     lifted off the screen; inset = a recessed input well. */
+  --wf-shadow-raised: 0 1px 2px rgba(46, 34, 24, 0.05);
+  --wf-field-inset: inset 0 1px 2px rgba(46, 34, 24, 0.05);
+  /* One interaction timing so hovers/reveals across the kit feel coherent. */
+  --wf-ease: 0.15s ease;
+}
+
+/* Wireframe pages carry mockups, not prose — give them more width than the
+   720px reading column so a multi-up gallery fits side by side. Wide screens
+   only; below this the module.css responsive rules keep the narrow layout. */
+@media (min-width: 880px) {
+  .page {
+    max-width: 940px;
+  }
+}
+
+/* Landing highlight for cross-linked sub-blocks. Sections already flash
+   (module.css .section:target); the inner anchor hosts a link can point at —
+   a stack, frame, fold, legend item or stray prose paragraph — did not.
+   Reuse the .section:target keyframes (module.css) so the flash is identical. */
+.wf-stack[id],
+.wf-frame[id],
+.wf-fold[id],
+.wf-state[id],
+.wf-card[id],
+.wf-legend__item[id],
+.desc[id] {
+  scroll-margin-top: 1rem;
+}
+
+.wf-stack[id]:target,
+.wf-frame[id]:target,
+.wf-fold[id]:target,
+.wf-state[id]:target,
+.wf-appbar[id]:target,
+.wf-alert[id]:target,
+.wf-card[id]:target,
+.wf-legend__item[id]:target,
+.desc[id]:target {
+  border-radius: var(--radius-md);
+  animation: target-highlight 2.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wf-stack[id]:target,
+  .wf-frame[id]:target,
+  .wf-fold[id]:target,
+  .wf-state[id]:target,
+  .wf-appbar[id]:target,
+  .wf-alert[id]:target,
+  .wf-card[id]:target,
+  .wf-legend__item[id]:target,
+  .desc[id]:target {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+}
+
+/* ── Stage: the mat a mockup sits on ── */
+.wf-stage {
+  background: var(--wf-mat);
+  border: 1px solid var(--border);
+  border-radius: var(--wf-radius);
+  padding: 2rem 1.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+/* Breathing room where a note leads into (or follows) a stage — the global
+   reset zeroes <p> margins, so the surface note would otherwise sit flush
+   against the hatched mat. */
+.note + .wf-stage,
+.wf-stage + .note {
+  margin-top: 1.25rem;
+}
+
+/* Legend that explains the stage above it — give it air so the list doesn't
+   read as part of the hatched mat it describes. */
+.wf-stage + .wf-legend {
+  margin-top: 1.5rem;
+}
+
+/* Mockup code stays schematic — cancel the module-wide code chip
+   (module.css .page code); page prose outside the stage keeps it. */
+.wf-stage code {
+  font-size: inherit;
+  color: inherit;
+  background: none;
+  padding: 0;
+}
+
+/* Caption — a figure-style label for the mockup (mono, muted) */
+.wf-stage__caption {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ── Screen: the window / device ── */
+.wf-screen {
+  width: 100%;
+  max-width: 460px;
+  background: var(--wf-screen-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--wf-radius);
+  box-shadow: var(--wf-screen-shadow);
+  overflow: hidden;
+}
+
+.wf-screen--narrow {
+  max-width: 360px;
+} /* auth cards, mobile */
+.wf-screen--wide {
+  max-width: 100%;
+} /* full app shell */
+
+/* Screen that hosts a bottom-anchored .wf-pop menu: the kit's radius clip
+   (overflow:hidden) crops the open menu where it escapes below the last row.
+   Drop the clip so the menu floats out under the screen, and re-round the
+   chrome's top corners so the unclipped surface still meets the rounded border.
+   Mirror of .wf-table--pops for the screen shell. */
+.wf-screen--pops {
+  overflow: visible;
+}
+.wf-screen--pops .wf-chrome {
+  border-top-left-radius: var(--wf-radius);
+  border-top-right-radius: var(--wf-radius);
+}
+
+/* Modal — a dialog floating on a dimmed backdrop */
+.wf-screen--modal {
+  max-width: 380px;
+  border-radius: var(--wf-radius);
+}
+/* Diagonal hatch = a dimmed modal scrim. Two carriers for two situations:
+   · .wf-stage--backdrop — the whole stage, for a standalone modal mockup whose
+     subject IS the dialog (no host screen behind it; e.g. re-auth-modal).
+   · .wf-backdrop — a nested inset INSIDE a screen's plain .wf-stage, for a modal
+     shown over its host screen. The screen and its legend stay on the plain mat;
+     only the dialog sits on the hatch, reading as the overlay covering the screen
+     above it. The inset border + radius set the scrim apart from the mat around it. */
+.wf-stage--backdrop,
+.wf-backdrop {
+  background:
+    var(--wf-mat),
+    repeating-linear-gradient(
+      45deg,
+      rgba(46, 34, 24, 0.04) 0,
+      rgba(46, 34, 24, 0.04) 8px,
+      transparent 8px,
+      transparent 16px
+    );
+}
+.wf-backdrop {
+  /* Hug the dialog(s) inside rather than spanning the stage — the scrim sizes
+     to its content (+ padding), centred under the screen. max-content (not
+     fit-content) keeps sibling dialogs on one row: fit-content would collapse
+     just below the row's width and wrap the last dialog under the others.
+     max-width caps it on narrow viewports, where the gallery then wraps. */
+  width: max-content;
+  /* Cap below the stage's content area minus the scrim's own padding (1.75rem ×2),
+     so when the gallery is wide the hatch stays inside the content box and the
+     stage's horizontal padding (1.75rem) reads as a gap to the card edge — without
+     it the content-box padding spills the hatch onto the stage border. */
+  max-width: calc(100% - 3.5rem);
+  /* content-box so max-content = the row's own width; with the global border-box
+     the padding would eat into it and wrap the last dialog. */
+  box-sizing: content-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--wf-radius);
+}
+
+/* ── Window chrome (browser-like top bar) ── */
+.wf-chrome {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.85rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.wf-chrome__dots {
+  display: flex;
+  gap: 0.3rem;
+}
+.wf-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--dot);
+}
+.wf-chrome__url {
+  position: relative;
+  flex: 1;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.2rem 0.7rem;
+  text-align: center;
+  cursor: help;
+}
+/* The url bar doubles as a doc affordance: an ⓘ glyph hints it's hoverable,
+   a popover below explains the route (purpose · access · params). Shown on
+   :hover and :focus-within so it's reachable by keyboard (tabindex on the bar);
+   :focus covers the bar itself receiving focus. */
+.wf-chrome__url::after {
+  content: "ⓘ";
+  margin-left: 0.4rem;
+  font-family: var(--font);
+  font-size: 1.05em;
+  font-weight: 700;
+  vertical-align: -0.05em;
+  /* Bright accent at rest so the affordance reads clearly without a hover;
+     glows brighter on hover. */
+  color: var(--s1-glow);
+  transition: text-shadow 0.15s ease;
+}
+.wf-chrome__url:hover::after,
+.wf-chrome__url:focus::after,
+.wf-chrome__url:focus-within::after {
+  text-shadow: 0 0 6px var(--tint-25);
+}
+.wf-urltip {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 50%;
+  z-index: 20;
+  width: max-content;
+  max-width: 270px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow-hover);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(-4px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+.wf-chrome__url:hover .wf-urltip,
+.wf-chrome__url:focus .wf-urltip,
+.wf-chrome__url:focus-within .wf-urltip {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(0);
+}
+.wf-urltip__route {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+.wf-urltip__body {
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+/* ── App bar (in-product top navigation) ── */
+.wf-appbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.wf-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.wf-brand__mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.8rem;
+}
+.wf-appbar__spacer {
+  flex: 1;
+}
+
+/* ── Screen body (content padding) ── */
+.wf-body {
+  padding: 1.5rem 1.4rem;
+}
+.wf-body--tight {
+  padding: 1rem 1.1rem;
+}
+
+/* ═══════════════════════════════════════════
+   Content & typography
+   Headings, body text, labels, and skeleton placeholder bars.
+   ═══════════════════════════════════════════ */
+
+/* ── Typography inside a screen ── */
+.wf-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: var(--heading-spacing);
+  color: var(--text);
+}
+.wf-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.wf-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+.wf-text {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+
+/* Skeleton bars — for placeholder copy you don't want to write out */
+.wf-line {
+  height: 0.6rem;
+  border-radius: 4px;
+  background: var(--tint-15);
+}
+.wf-line--w40 {
+  width: 40%;
+}
+.wf-line--w60 {
+  width: 60%;
+}
+.wf-line--w80 {
+  width: 80%;
+}
+.wf-line--full {
+  width: 100%;
+}
+
+/* ═══════════════════════════════════════════
+   Form controls
+   Fields, password-strength meter, buttons, and text links.
+   ═══════════════════════════════════════════ */
+
+/* ── Form fields ── */
+.wf-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.wf-input {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  background: var(--wf-field-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--wf-radius-sm);
+  padding: 0.6rem 0.8rem;
+  /* Subtle inset well so an input reads as a recessed surface to type into,
+     not a flat tile — and the focus ring then lifts out of it. */
+  box-shadow: var(--wf-field-inset);
+  transition:
+    border-color var(--wf-ease),
+    box-shadow var(--wf-ease);
+}
+.wf-input__icon {
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+/* Trailing affordance inside a field — e.g. show/hide-password eye */
+.wf-input__action {
+  margin-left: auto;
+  display: inline-flex;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+/* Focused state — accent ring, to spotlight where input begins */
+.wf-input--focus {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 3px var(--tint-25),
+    var(--wf-field-inset);
+  color: var(--text);
+}
+/* Read-only / pre-filled value the user can't edit — e.g. the email baked into
+   an invite token (email↔role are bound to the token). Muted fill + dim text +
+   a lock affordance in the __action slot; reused wherever a field is fixed. */
+.wf-input--locked {
+  background: var(--tint-8);
+  color: var(--text-dim);
+}
+/* Empty assign-target — a select with nothing chosen yet (e.g. a platform
+   function whose model the Admin hasn't picked). Dashed accent border + accent
+   prompt text read as a call-to-action ("fill me"), distinct both from a filled
+   select and from a disabled "—" / "awaiting module" cell. */
+.wf-input--empty {
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.wf-hint {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.wf-hint--error {
+  color: var(--s1);
+}
+
+/* Group heading inside a form — a section title above a cluster of fields
+   (General · Run parameters · Log). Built on .wf-label but lifted to the
+   accent hue and a hair larger so it outranks the muted per-field labels under
+   it: a long editor then reads as titled groups, not one flat run of fields. */
+.wf-grouphead {
+  font-size: 0.74rem;
+  color: var(--accent);
+}
+
+/* Password-strength meter — segmented bar (zxcvbn-style estimate) of four
+   plain __seg spans; the level modifier fills the leading segments itself:
+   --weak 1, --medium 2, --strong all 4. Reused across reset / setup /
+   invite / change-pwd. */
+.wf-meter {
+  display: flex;
+  gap: 0.3rem;
+}
+.wf-meter__seg {
+  flex: 1;
+  height: 0.3rem;
+  border-radius: 3px;
+  background: var(--tint-15);
+}
+.wf-meter--weak .wf-meter__seg:first-child {
+  background: var(--s1);
+}
+.wf-meter--medium .wf-meter__seg:nth-child(-n + 2) {
+  background: var(--s4);
+}
+.wf-meter--strong .wf-meter__seg {
+  background: var(--s3);
+}
+
+/* Multi-line input — textarea stand-in (paste a list / free text): top-aligns
+   content and reserves height; everything else inherits .wf-input. */
+.wf-input--area {
+  align-items: flex-start;
+  min-height: 4.5rem;
+  line-height: 1.7;
+}
+/* Label + control on one row (a compact in-header picker beside a title)
+   instead of the stacked default. */
+.wf-field--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ═══════════════════════════════════════════
+   Bulk import — upload & dry-run preview kit
+   Drop zone (file target), summary bar (count chips), success check.
+   ═══════════════════════════════════════════ */
+
+/* ── Drop zone — drag-drop / click file target; schematic, no real input ── */
+.wf-dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1.6rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+  background: var(--tint-8);
+  border: 1.5px dashed var(--border);
+  border-radius: var(--wf-radius-sm);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+.wf-dropzone:hover {
+  border-color: var(--accent);
+  background: var(--tint-15);
+}
+.wf-dropzone__title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.wf-dropzone__hint {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+/* The "pick a file" affordance — reads as a link, underlines on hover so the
+   click-to-open-dialog behaviour of the whole zone is discoverable. */
+.wf-dropzone__pick {
+  color: var(--accent);
+  font-weight: 600;
+}
+.wf-dropzone:hover .wf-dropzone__pick {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ── Summary bar — a row of count chips with labels (dry-run totals) ── */
+.wf-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.9rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.wf-summary__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* ── Success check — circular confirmation glyph for a completed action ── */
+.wf-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  color: var(--s3);
+  border: 2px solid var(--s3);
+}
+
+/* ── Buttons ── */
+.wf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: 0.83rem;
+  font-weight: 600;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--wf-radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-dim);
+  /* A button rendered as <a> (navigates to another screen) must not inherit
+     the global link underline — it's a button, not inline link text. */
+  text-decoration: none;
+  transition:
+    box-shadow var(--wf-ease),
+    transform var(--wf-ease),
+    border-color var(--wf-ease);
+}
+/* Hover lift — a button reads as pressable when it rises slightly on hover.
+   Non-filled buttons borrow the accent edge; filled variants deepen below. */
+.wf-btn:hover {
+  border-color: var(--accent-muted);
+  transform: translateY(-1px);
+}
+.wf-btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  /* Soft cast so the primary CTA sits a touch above the form it submits. */
+  box-shadow: var(--wf-shadow-raised);
+}
+.wf-btn--primary:hover {
+  border-color: var(--accent);
+  box-shadow: var(--card-shadow-hover);
+}
+.wf-btn--ghost {
+  background: none;
+  border-color: var(--accent-muted);
+  color: var(--accent);
+}
+/* Destructive primary — the confirm button of an irreversible action. Error
+   hue (not accent) so "delete / revoke" never blends into a routine CTA. */
+.wf-btn--danger {
+  background: var(--s1);
+  border-color: var(--s1);
+  color: #fff;
+  box-shadow: var(--wf-shadow-raised);
+}
+.wf-btn--danger:hover {
+  border-color: var(--s1);
+  box-shadow: var(--card-shadow-hover);
+}
+.wf-btn--block {
+  width: 100%;
+}
+/* Disabled — present but not actionable (e.g. SSO before a provider is set).
+   Muted via tokens, not opacity, so an annotation pin on it stays legible.
+   Stays flat: no hover lift, no cast — it isn't pressable. */
+.wf-btn--disabled,
+.wf-btn--disabled:hover {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text-muted);
+  box-shadow: none;
+  transform: none;
+}
+
+/* ── Text link ── */
+.wf-a {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+/* Destructive link — a self-service action that removes protection (disable
+   2FA, revoke a session). Carries the error hue so it doesn't read as routine. */
+.wf-a--danger {
+  color: var(--s1);
+}
+/* Inline dot separator between sibling links in an action row. */
+.wf-sep {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+/* Icon affordance for a row's primary recurring action (re-check connection).
+   The labeled verb still lives in the ⋯ menu; the row surfaces it as an accent
+   icon — one click, aligned to the status chip it refreshes — so a text link
+   doesn't crowd the action cell. Carries .wf-a's accent hue to read clickable. */
+.wf-a--icon {
+  display: inline-flex;
+  vertical-align: middle;
+  text-decoration: none;
+}
+.wf-a--icon svg {
+  display: block;
+}
+/* Quiet identity link — a person's name or email that opens their card. Unlike
+   .wf-a it keeps the body text color, so a column of names doesn't read as a
+   wall of links; the medium weight marks it as the row's anchor while the accent
+   + underline surface only on hover (§ Hover = clickable). In a .wf-rowlink table
+   the whole row already navigates, so the name carries this purely for keyboard
+   reach without competing with the row affordance. */
+.wf-userlink {
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+}
+a.wf-userlink:hover {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Two-line identity cell — the person's name as the row anchor (.wf-userlink)
+   over their email muted below. Email is the unambiguous handle (names collide),
+   the name keeps the column human-scannable. Generic, purpose-named so it stays
+   decoupled from the run-status idiom (.wf-runcell) it visually echoes. */
+.wf-idcell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  line-height: 1.3;
+}
+.wf-idcell__email {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+}
+
+/* ═══════════════════════════════════════════
+   Auth-flow primitives
+   Stepper, QR placeholder, OTP cells, recovery codes — the MFA and
+   credential-entry mockups.
+   ═══════════════════════════════════════════ */
+
+/* ── Stepper — progress through a multi-step flow (e.g. MFA enrollment) ── */
+/* Numbered circles joined by thin bars. States reuse the on-accent inversion:
+   upcoming = muted disc, current = filled accent, done = accent ring on a
+   surface disc. Reusable by any wizard the kit later grows. */
+.wf-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+.wf-step {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-family: var(--font);
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: var(--tint-15);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.wf-step--current {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.wf-step--done {
+  background: var(--surface);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.wf-step__bar {
+  width: 1.4rem;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── QR placeholder — a schematic code, not a real encode ── */
+/* Three finder squares + scattered modules read as "QR" at a glance. The inline
+   SVG inherits these colors via currentColor / var(--surface). */
+.wf-qr {
+  align-self: center;
+  width: 136px;
+  height: 136px;
+  padding: 0.55rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--wf-radius-sm);
+  color: var(--text);
+}
+
+/* ── OTP — segmented single-char verification code (TOTP, recovery entry) ── */
+.wf-otp {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: center;
+}
+.wf-otp__cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.5rem;
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--wf-field-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--wf-radius-sm);
+  box-shadow: var(--wf-field-inset);
+  transition:
+    border-color var(--wf-ease),
+    box-shadow var(--wf-ease);
+}
+.wf-otp__cell--focus {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 3px var(--tint-25),
+    var(--wf-field-inset);
+}
+
+/* ── Recovery codes — one-time backup codes in a mono grid ── */
+.wf-codes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem 1rem;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  color: var(--text-dim);
+}
+/* Single mono value token — one secret on a line (e.g. a temporary password),
+   paired with a trailing copy action via .wf-row.wf-spread. */
+.wf-code {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
+  color: var(--text-dim);
+}
+
+/* ═══════════════════════════════════════════
+   Pieces & blocks
+   Small inline pieces (icon · avatar · chip · divider · checkbox ·
+   toggle), inner cards, and callout / state messages.
+   ═══════════════════════════════════════════ */
+
+/* ── Small UI pieces ── */
+/* Leading glyph — a muted line icon at the head of a list row (device, session,
+   channel). Cools and aligns an inline SVG so rows scan evenly; size comes from
+   the SVG's own width/height, color via currentColor. */
+.wf-ico {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+.wf-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--s2-pale);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  color: var(--s2);
+}
+a.wf-avatar {
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+a.wf-avatar:hover {
+  border-color: var(--accent);
+}
+.wf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  font-weight: 600;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  background: var(--tint-8);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.wf-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.2rem 0;
+}
+/* Grows to fill a row — for an "or"-style divider flanking a label */
+.wf-divider--grow {
+  flex: 1;
+}
+.wf-checkbox {
+  width: 15px;
+  height: 15px;
+  border-radius: 4px;
+  border: 1.5px solid var(--accent-muted);
+  flex-shrink: 0;
+}
+.wf-checkbox--on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.wf-toggle {
+  width: 32px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--tint-25);
+  border: 1px solid var(--border);
+  position: relative;
+  flex-shrink: 0;
+}
+.wf-toggle::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--card-shadow);
+}
+.wf-toggle--on {
+  background: var(--accent);
+}
+.wf-toggle--on::after {
+  left: auto;
+  right: 1px;
+}
+/* Locked on — a forced-on toggle the user can't disable (critical routing) */
+.wf-toggle--locked {
+  opacity: 0.5;
+  box-shadow: 0 0 0 2px var(--tint-25);
+}
+
+/* Padlock glyph — a small monochrome lock that inherits currentColor, so it
+   takes the hue of whatever marks it (an accent pill, a muted line). Marks a
+   control that's on and cannot be turned off (locked routing). Drawn, not an
+   emoji, so it sits in the calm palette like the other geometric kit glyphs. */
+.wf-lock {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  width: 9px;
+  height: 8px;
+  border: 1.5px solid currentColor;
+  border-radius: 1.5px;
+  vertical-align: -0.05em;
+}
+.wf-lock::before {
+  /* shackle — a hoop rising out of the lock body */
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -4.5px;
+  width: 5px;
+  height: 5px;
+  border: 1.5px solid currentColor;
+  border-bottom: none;
+  border-radius: 2.5px 2.5px 0 0;
+  transform: translateX(-50%);
+}
+
+/* ── Selectable pill — a labeled on / off / locked channel selector ──
+   A rounded control whose label rides ON the pill (In-app · Email · Slack), so
+   unlike a bare toggle in a matrix cell the reader never maps a control back to
+   a column header — the pill says what it is and whether it's active in one
+   glance. A leading state dot reads filled = on, hollow ghost = off; the locked
+   variant swaps the dot for a padlock — on and unchangeable (routing that must
+   reach). Accent marks an active pill; off stays a quiet dashed ghost inviting a
+   click. Reused wherever a row picks from a small fixed set of channels/tags. */
+.wf-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+}
+/* Leading state dot — hollow ring by default; the --on variant fills it. */
+.wf-pill::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  flex-shrink: 0;
+}
+/* On — accent edge, tinted fill, filled dot: this channel carries the event. */
+.wf-pill--on {
+  border-color: var(--accent);
+  background: var(--tint-6);
+  color: var(--accent);
+}
+.wf-pill--on::before {
+  background: currentColor;
+}
+/* Off — dashed ghost, hollow dot: not routed here, a click would add it. */
+.wf-pill--off {
+  border-style: dashed;
+}
+/* Locked — on and fixed: same accent treatment as --on, but the leading slot
+   carries a .wf-lock instead of a dot (drop the ::before so they don't double). */
+.wf-pill--locked {
+  border-color: var(--accent);
+  background: var(--tint-6);
+  color: var(--accent);
+}
+.wf-pill--locked::before {
+  display: none;
+}
+/* Paused — the route is on, but its channel is switched off in Channels: the pill
+   stays to show the intent (re-enable the channel and it fires again), but drops
+   to a muted filled dot so it reads "wired, not firing" — distinct from --off,
+   which is no route at all. */
+.wf-pill--paused {
+  border-color: var(--border);
+  background: var(--tint-4);
+  color: var(--text-muted);
+}
+.wf-pill--paused::before {
+  background: currentColor;
+}
+
+/* Routing line — the pills for one event, split into personal channels and
+   webhook channels by a hairline, so a card reads "to my inbox │ to external
+   tools" without repeating group labels on every row. Wraps on narrow. */
+.wf-route {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+.wf-route__sep {
+  align-self: stretch;
+  width: 1px;
+  min-height: 1.2rem;
+  margin: 0 0.35rem;
+  background: var(--border);
+}
+
+/* Inner card / list row — a content block within the screen */
+.wf-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--wf-radius-sm);
+  padding: 0.75rem 0.9rem;
+  /* Faint cast lifts the block off the screen surface so a stack of cards
+     reads as discrete tiles, not one ruled list. */
+  box-shadow: var(--wf-shadow-raised);
+}
+/* Card header — hosts a corner action (e.g. copy) in the top-right, above the
+   card body, so it never overlaps the content grid below. */
+.wf-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+/* Themed corner button — accent-tinted ghost with a leading glyph. Compact, for
+   a primary card action (copy recovery codes) pinned to the card's top-right. */
+.wf-copybtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.3rem 0.6rem;
+  border-radius: var(--wf-radius-sm);
+  border: 1px solid var(--accent-muted);
+  background: var(--tint-6);
+  color: var(--accent);
+}
+
+/* ── Stat card — one headline metric (count / volume) for a dashboard row.
+   A big mono number over a muted label, optional sub line; lay several in a
+   .wf-row (wraps) so the strip reflows. --muted dims a forecast / soft metric. */
+.wf-stat {
+  flex: 1 1 7.5rem;
+  min-width: 6.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--wf-radius-sm);
+  padding: 0.7rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  box-shadow: var(--wf-shadow-raised);
+}
+.wf-stat__num {
+  font-family: var(--mono);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.1;
+}
+.wf-stat__label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+.wf-stat__sub {
+  font-size: 0.62rem;
+  color: var(--text-dim);
+}
+.wf-stat--muted .wf-stat__num {
+  color: var(--text-dim);
+}
+
+/* Budget gauge inside a stat card — spend read against a ceiling. The headline
+   carries used, a faded /cap trails it, and a slim track fills to the used
+   share. Hue splits enforcement: --soft (accent-muted) marks an advisory
+   ceiling, the accent fill a blocking one. Fill width is set inline per mockup. */
+.wf-stat__cap {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.wf-gauge {
+  margin-top: 0.3rem;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--tint-8);
+  overflow: hidden;
+}
+.wf-gauge__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
+.wf-gauge--soft .wf-gauge__fill {
+  background: var(--accent-muted);
+}
+
+/* ── Disclosure — collapsible block grouping secondary content in a card ── */
+/* A clickable header toggles the body; the caret reads ▸ collapsed / ▾ open,
+   and a summary pinned right gives the gist without expanding. Mockups render
+   the open state so the body reads — a default-collapsed block says so in the
+   legend. */
+.wf-fold {
+  border: 1px solid var(--border);
+  border-radius: var(--wf-radius-sm);
+  background: var(--surface);
+  overflow: hidden;
+}
+.wf-fold__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  cursor: pointer;
+  background: var(--tint-4);
+  border: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+/* Toggle affordance pinned to the header's top-right; the chevron points down
+   when open and rotates flat (▸) when collapsed. */
+.wf-fold__caret {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.wf-fold__body {
+  padding: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+/* Callout / state message — accent-tinted, harmonized with .draft-notice */
+.wf-alert {
+  font-size: 0.76rem;
+  line-height: 1.5;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--wf-radius-sm);
+  border: 1px solid var(--border);
+  background: var(--tint-6);
+  color: var(--text-dim);
+}
+.wf-alert--error {
+  border-color: var(--s1);
+  background: var(--s4-pale);
+  color: var(--s1);
+}
+.wf-alert--ok {
+  border-color: var(--s3);
+  color: var(--s3);
+}
+/* ── KB-search note — system annotation on a grounded answer ── */
+/* A slim plashka our layer attaches under the assistant's own words: it marks
+   that the reply came through a knowledge-base search and how that search
+   landed — nothing found, access withheld, or part hidden. Info-toned, never
+   an error: the user still got a reply, so no red. Carries safe coordinates
+   only — source system + who to ask (the record's author, resolved to email) —
+   never the closed title or content. Catalogued once here; chat mockups across
+   surfaces reuse it. */
+.wf-kbnote {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--wf-radius-sm);
+  border: 1px solid var(--s2-glow);
+  background: var(--s2-pale);
+}
+.wf-kbnote__icon {
+  flex: 0 0 auto;
+  margin-top: 0.08rem;
+  width: 0.78rem;
+  height: 0.78rem;
+  position: relative;
+}
+.wf-kbnote__icon::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0.6rem;
+  height: 0.6rem;
+  border: 1.5px solid var(--s2);
+  border-radius: 50%;
+}
+.wf-kbnote__icon::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 0.32rem;
+  height: 1.5px;
+  background: var(--s2);
+  border-radius: 1px;
+  transform: rotate(45deg);
+  transform-origin: right bottom;
+}
+.wf-kbnote__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+.wf-kbnote__head {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--s2);
+  line-height: 1.4;
+}
+.wf-kbnote__coords {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.wf-kbnote__ask {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+/* Who to ask — the record's author, resolved to a platform email. A safe
+   coordinate (where to go), not the closed content. */
+.wf-kbnote__contact {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+
+/* ── Toast — transient feedback after an action ── */
+/* The acknowledgement that a state-changing action landed (saved, sent,
+   revoked) or failed — distinct from .wf-alert, which is inline copy that
+   stays on the screen. A toast floats in a corner over the app and
+   auto-dismisses; here it's drawn static. Catalogued once in shared-ui;
+   screens don't re-draw it. Semantic hue rides the left edge + the icon disc:
+   success --s3 · error --s1 · info --accent · warn --s4. Glyph (✓ ! i ⚠) and
+   copy live in the markup. */
+.wf-toaststack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  max-width: 340px;
+}
+.wf-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left-width: 3px;
+  border-radius: var(--wf-radius-sm);
+  box-shadow: var(--card-shadow-hover);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+/* Icon disc — the hue carrier; the per-variant rule fills it. */
+.wf-toast__icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  font-family: var(--font);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #fff;
+}
+.wf-toast__body {
+  flex: 1;
+  min-width: 0;
+}
+.wf-toast__title {
+  font-weight: 600;
+  color: var(--text);
+}
+/* Optional inline action — undo, view, configure (e.g. an error toast that
+   links to the setting that would fix it). */
+.wf-toast__action {
+  display: inline-block;
+  margin-top: 0.25rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.wf-toast__close {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  line-height: 1;
+}
+.wf-toast--success {
+  border-left-color: var(--s3);
+}
+.wf-toast--success .wf-toast__icon {
+  background: var(--s3);
+}
+.wf-toast--error {
+  border-left-color: var(--s1);
+}
+.wf-toast--error .wf-toast__icon {
+  background: var(--s1);
+}
+.wf-toast--info {
+  border-left-color: var(--accent);
+}
+.wf-toast--info .wf-toast__icon {
+  background: var(--accent);
+}
+.wf-toast--warn {
+  border-left-color: var(--s4);
+}
+.wf-toast--warn .wf-toast__icon {
+  background: var(--s4);
+}
+
+/* Big centred mark for a system / error page — the status code (404, 500…) or
+   an icon (offline, maintenance) that anchors the page above its message. */
+.wf-errcode {
+  font-family: var(--mono);
+  font-size: 2.6rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--accent-muted);
+}
+.wf-errcode svg {
+  display: block;
+}
+
+/* ═══════════════════════════════════════════
+   Layout & composition
+   Stack / row helpers, the multi-up gallery, and numbered annotations
+   with their legend.
+   ═══════════════════════════════════════════ */
+
+/* ── Layout helpers ── */
+.wf-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+.wf-stack--tight {
+  gap: 0.45rem;
+}
+.wf-stack--loose {
+  gap: 1.3rem;
+}
+.wf-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.wf-spread {
+  justify-content: space-between;
+}
+.wf-center {
+  text-align: center;
+  align-items: center;
+}
+/* Two-up field grid — pairs two compact fields on one row that split the width
+   evenly and top-align (start) so an uneven pair doesn't stretch. auto-fit means
+   no media query: below the min track the second field wraps to its own line, so
+   it stays legible on a narrow screen. For groups where two short controls read
+   better side by side (model + tools) than stacked. */
+.wf-grid2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.85rem 1rem;
+  align-items: start;
+}
+
+/* ── Gallery — several mockups side by side on one stage ── */
+/* For showing states of the same screen (default / error / …) together.
+   Mockups stretch to the tallest one's height so the states line up. */
+.wf-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
+  gap: 1.75rem;
+  width: 100%;
+}
+/* A captioned mockup within a gallery — caption stacked above its screen */
+.wf-frame {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.7rem;
+}
+/* Vertical group of frames inside a gallery — keeps related states stacked in
+   one column (so they sit beside a tall reference frame) instead of wrapping to
+   a fresh row. Same gap as the gallery between the stacked frames. */
+.wf-frame-col {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+/* Frame holding a bare floating control (a button + tooltip, a popover) rather
+   than a full screen — centre it in the gallery's stretched height instead of
+   pinning to the top, so it reads as deliberately floating. */
+.wf-frame--center {
+  justify-content: center;
+}
+/* In a gallery, the screen fills the frame's stretched height and centers
+   its content vertically, so shorter states don't look truncated. */
+.wf-frame .wf-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.wf-frame .wf-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ── Surface attribution — library-owned chrome vs our custom layer ──
+   A surface screen (Web App chat, …) renders inside a ready-made library:
+   the chat thread, composer, streaming and autoscroll are NOT hand-built.
+   Two markers split a mockup so the reader sees at a glance which pixels the
+   library gives and which are our domain layer nested inside it.
+
+   .wf-lib  — wraps library-owned chrome (assistant-ui thread + composer): a
+              neutral dashed frame with a corner tag linking to the library.
+              Dashed + muted reads as "given, not ours". Sits inside a padded
+              .wf-body so its offset corner tag isn't clipped by the screen.
+   .wf-own  — wraps our custom layer (grounding answer, sources, feedback): an
+              accent left-stripe + faint accent wash reads as "this part is ours". */
+.wf-lib {
+  position: relative;
+  border: 1px dashed var(--accent-muted);
+  border-radius: var(--wf-radius-sm);
+  background: var(--tint-4);
+  padding: 1.35rem 0.85rem 0.85rem;
+}
+.wf-lib__tag {
+  position: absolute;
+  top: -0.7rem;
+  left: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.14rem 0.5rem;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px dashed var(--accent-muted);
+  color: var(--text-muted);
+  text-decoration: none;
+}
+a.wf-lib__tag {
+  cursor: pointer;
+  transition:
+    border-color var(--wf-ease),
+    color var(--wf-ease);
+}
+a.wf-lib__tag:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.wf-own {
+  border-left: 2px solid var(--accent);
+  border-radius: 0 var(--wf-radius-sm) var(--wf-radius-sm) 0;
+  background: var(--tint-6);
+  padding: 0.7rem 0.85rem;
+}
+.wf-own__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* ── State catalog — one screen's variants stacked vertically ──
+   For a screen whose subject is its set of states (answer: found / not-found /
+   no-access / conversational). Each .wf-state is its own anchored block (so a
+   deep link lands on the exact variant, not a shared gallery) pairing the mini
+   mockup with its explanation: screen left, doc column right, wrapping to a
+   stack on narrow. Flash rule lives with the other wf block targets (top). */
+.wf-statelist {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+.wf-state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+}
+.wf-state > .wf-screen {
+  flex: 0 1 340px;
+}
+.wf-state__doc {
+  flex: 1 1 240px;
+  min-width: 220px;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.wf-state__name {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* ── Annotations — explain parts of a wireframe ── */
+/* A numbered pin sits on the screen; the legend below pairs number → note.
+   Placement is single-home: the pin always TRAILS the label it annotates —
+   inside a control it follows the label after the control's own gap
+   (`<button>Save <span class="wf-annot wf-annot--on-accent">3</span>`),
+   in a hint / legend row it sits at the line's end. Never a leading pin. */
+.wf-annot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  /* Sans (--font), NOT --mono: monospace digits reserve descender room and
+     ride visibly high in the circle — the body sans centres the glyph. Set
+     explicitly (not inherit) so a pin placed in a mono context (e.g. the
+     .wf-chrome url bar) doesn't pick mono back up. */
+  font-family: var(--font);
+  font-size: 0.64rem;
+  font-weight: 700;
+  line-height: 1; /* flex centres the line box; sans keeps the ink centred */
+  /* A pin sitting inside a link/button must not inherit its underline — the
+     digit is a badge, not link text. */
+  text-decoration: none;
+  flex-shrink: 0;
+  /* Line alignment for the inline case: when the pin trails plain text (a hint
+     or legend line, not a flex child) vertical-align centres the disc on the
+     text line so it doesn't ride low on the baseline; the markup space before
+     it carries the trailing gap. In a flex parent (button / row) the parent's
+     gap drives both spacing and centring and vertical-align is inert — so the
+     same pin lands cleanly in both homes without a manual margin that would
+     otherwise stack on top of the flex gap. */
+  vertical-align: -0.28em;
+  /* Digits carry no descender, so their ink rides above the line-box centre
+     even with sans — visible in an 18px disc. border-box keeps the disc 18px
+     while a hair of padding-top drops the glyph into the optical centre. */
+  box-sizing: border-box;
+  padding-top: 1px;
+}
+/* Pin placed on a filled accent surface (e.g. a primary button) — the default
+   accent fill would vanish into it. Invert to a light disc with accent ink so
+   the pin still reads. Mirrors the wf-toggle knob (surface on accent). */
+.wf-annot--on-accent {
+  background: var(--surface);
+  color: var(--accent);
+}
+.wf-legend {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 460px;
+}
+/* Block (not flex) so inline badges/links inside the note stay in the text
+   flow; the pin sits in a left gutter via absolute positioning. A flex item
+   here would fragment each inline child into its own wrapping column. */
+.wf-legend__item {
+  position: relative;
+  padding-left: 1.65rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.wf-legend__num {
+  position: absolute;
+  left: 0;
+  top: 0.15rem;
+}
+/* Lead line above the slot legend — shares the list's column width so the
+   intro and the numbered slots line up under one another. */
+.wf-legend__lead {
+  width: 100%;
+  max-width: 460px;
+}
+/* Conceptual note in the legend that isn't a pinned slot (e.g. "Groundwork") — drop
+   the pin gutter and rule it off from the numbered slots above. */
+.wf-legend__item--note {
+  padding-left: 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ═══════════════════════════════════════════
+   Admin shell & data display
+   Sidebar + content shell, tabs, the schematic data table, status and
+   editable chips, compact input, and the whole-row link.
+   ═══════════════════════════════════════════ */
+
+/* ── Admin shell — sidebar + content split ── */
+/* For wide app screens (wf-screen--wide): a fixed nav rail on the left, the
+   routed content on the right. The rail mirrors the product's AdminLayout —
+   grouped items, one active. Section screens usually skip the rail (the shell
+   is documented once, on the layout page) and render content only. */
+.wf-shell {
+  display: flex;
+  align-items: stretch;
+}
+.wf-side {
+  width: 148px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.75rem 0.6rem;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+.wf-side__group {
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 0.45rem 0.5rem 0.15rem;
+}
+.wf-side__group:first-child {
+  margin-top: 0;
+}
+.wf-side__item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+}
+.wf-side__item--active {
+  background: var(--tint-8);
+  color: var(--accent);
+  font-weight: 600;
+}
+/* Clickable mock chrome — nav elements that route to their own screen.
+   The anchor keeps the static look; only the hover affordance + pointer
+   cursor mark it navigable (§ Hover = clickable). Bound to `a.…` so the
+   plain `<span>` instances on other screens stay inert. */
+a.wf-side__item {
+  color: var(--text-dim);
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+a.wf-side__item--active {
+  color: var(--accent);
+}
+a.wf-side__item:hover {
+  background: var(--tint-8);
+  color: var(--accent);
+}
+.wf-main {
+  flex: 1;
+  min-width: 0;
+  padding: 1.1rem 1.2rem;
+}
+
+/* ── Tabs — horizontal view switcher ── */
+.wf-tabs {
+  display: flex;
+  gap: 0.15rem;
+  border-bottom: 1px solid var(--border);
+}
+.wf-tab {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  padding: 0.4rem 0.75rem;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.wf-tab--active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+/* ── Data table — schematic rows for list screens ── */
+/* Semantic <table>: columns size themselves from content, no per-table grid
+   CSS. Radius needs border-collapse: separate + overflow: hidden. */
+.wf-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.72rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--wf-radius-sm);
+  overflow: hidden;
+}
+.wf-table th {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--text-muted);
+  background: var(--tint-4);
+  padding: 0.45rem 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.wf-table td {
+  padding: 0.5rem 0.65rem;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.wf-table tr:last-child td {
+  border-bottom: none;
+}
+/* Deactivated / expired row — muted so the state reads at a glance */
+.wf-table__row--muted td {
+  color: var(--text-muted);
+  background: var(--tint-4);
+}
+/* Table that hosts an inline popover (.wf-pop dropdown) in a cell: the kit's
+   radius clip (overflow:hidden) crops the open menu where it overflows the
+   table. Drop the clip and round the corner cells instead, so the menu escapes
+   downward over the rows below. */
+.wf-table--pops {
+  overflow: visible;
+}
+.wf-table--pops thead th:first-child {
+  border-top-left-radius: var(--wf-radius-sm);
+}
+.wf-table--pops thead th:last-child {
+  border-top-right-radius: var(--wf-radius-sm);
+}
+.wf-table--pops tr:last-child td:first-child {
+  border-bottom-left-radius: var(--wf-radius-sm);
+}
+.wf-table--pops tr:last-child td:last-child {
+  border-bottom-right-radius: var(--wf-radius-sm);
+}
+
+/* ── Run cell — last-sync summary as "when" over a muted outcome line ── */
+/* The last-sync column carries heterogeneous facts per row (idle / syncing /
+   failed). Flattening them into one dot-run reads as a pile; stacking does the
+   work — when on top, the run outcome (duration · delta · DLQ chip / error)
+   muted below. The outcome line flexes and wraps so a chip sits inline with the
+   text, and --live tints the primary while a run is in flight. The delta carries
+   a leading "+" to read as this run's gain, distinct from the cumulative total
+   in the Entities column. */
+.wf-runcell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  line-height: 1.3;
+}
+.wf-runcell__when--live {
+  color: var(--accent);
+}
+.wf-runcell__meta {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.4rem;
+  font-size: 0.66rem;
+  color: var(--text-muted);
+}
+.wf-runcell__meta--err {
+  color: var(--s1);
+}
+
+/* ── Sortable column header — lists sort by clicking a th, no sort menu ── */
+/* At rest a sortable header carries a faint ↕ hint; hover lifts it (cursor +
+   caret) so it reads as clickable, the active column is accent-tinted with a
+   direction arrow (↓ desc / ↑ asc). Sort rides in the URL and resets to page 1
+   — mechanic unified in _workzone/list-controls.html#page-params. */
+.wf-th--sort {
+  cursor: pointer;
+}
+.wf-th__caret {
+  margin-left: 0.25rem;
+  font-size: 0.6rem;
+  opacity: 0.4;
+}
+.wf-th--sort:hover {
+  color: var(--text-dim);
+}
+.wf-th--sort:hover .wf-th__caret {
+  opacity: 0.7;
+}
+.wf-th--sorted {
+  color: var(--accent);
+}
+.wf-th--sorted .wf-th__caret {
+  opacity: 1;
+}
+
+/* ── Pager — page navigation below a data table ── */
+/* Footer for a paginated list: a range/total readout ("X–Y of N") on the left,
+   numbered page controls on the right. Offset model — numbered pages + jump,
+   not a load-more cursor. Sits in the .wf-stack after the table; behaviour is
+   unified across lists and fixed once in
+   _workzone/list-controls.html#pagination. */
+.wf-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.wf-pager__count {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  color: var(--text-muted);
+}
+.wf-pager__pages {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.wf-page {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+/* Current page — accent fill, mirrors .wf-tab--active / .wf-filter--on. */
+.wf-page--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+/* Prev/next arrow control. */
+.wf-page--nav {
+  color: var(--text-muted);
+}
+/* Inert boundary arrow (e.g. ‹ on the first page) — present but not actionable. */
+.wf-page--off {
+  color: var(--text-muted);
+  opacity: 0.4;
+}
+/* Skipped-range marker (…) between far page numbers — a label, not a button. */
+.wf-page--gap {
+  border-color: transparent;
+  background: none;
+  color: var(--text-muted);
+}
+
+/* ── Status chips — state hues on the base chip ── */
+.wf-chip--ok {
+  border-color: var(--s3);
+  color: var(--s3);
+  background: var(--s3-pale);
+}
+.wf-chip--warn {
+  border-color: var(--s4);
+  color: var(--s4);
+  background: var(--s4-pale);
+}
+.wf-chip--err {
+  border-color: var(--s1);
+  color: var(--s1);
+  background: var(--s4-pale);
+}
+
+/* ── Editable chip — a rebindable cell (identity-mapping matrix) ── */
+/* Any mapped cell, auto-matched or manual, is a clickable chip that opens the
+   binding popover — the admin can override even a confident auto-match. The
+   pencil affordance sits faint at rest and lifts on hover (§ Hover =
+   clickable); provenance stays visible alongside it — a manual pin (📌) marks a
+   binding the admin set, which the conservative auto-match never overwrites. */
+a.wf-chip {
+  text-decoration: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+a.wf-chip:hover {
+  border-color: var(--accent);
+}
+.wf-chip__edit {
+  font-size: 0.6rem;
+  opacity: 0.45;
+}
+a.wf-chip:hover .wf-chip__edit {
+  opacity: 1;
+}
+.wf-chip__pin {
+  font-size: 0.58rem;
+  opacity: 0.7;
+}
+
+/* Compact input — filter bars and dense forms */
+.wf-input--sm {
+  padding: 0.35rem 0.6rem;
+  font-size: 0.72rem;
+}
+
+/* ── Whole-row link — a list row that navigates to its detail screen ── */
+/* In product the row wraps an onClick→route; here the hover tint + pointer mark
+   it clickable (§ Hover = clickable), and the row's name stays a real <a> so the
+   target is keyboard-reachable. The trailing ⋯ cell opens a menu, not the route —
+   it stops propagation, so it carries no row-link affordance. */
+.wf-table tr.wf-rowlink {
+  cursor: pointer;
+}
+.wf-table tr.wf-rowlink:hover td {
+  background: var(--tint-6);
+}
+.wf-table tr.wf-rowlink.wf-table__row--muted:hover td {
+  background: var(--tint-8);
+}
+
+/* ── Whole-card link — a list card that navigates to its detail screen ── */
+/* The card idiom of .wf-rowlink: the whole .wf-card reads clickable (pointer +
+   the hover lift the .wf-btn already uses) and routes to the detail screen,
+   while the card's name stays a real <a> for keyboard reach. Interactive
+   controls inside (a toggle, a run button) stop propagation, so they act in
+   place without firing the card route — same exception the row-link's ⋯ cell
+   makes. Bound to the modifier so a plain .wf-card stays inert (§ Hover =
+   clickable). */
+.wf-card.wf-cardlink {
+  cursor: pointer;
+  transition:
+    border-color var(--wf-ease),
+    box-shadow var(--wf-ease),
+    transform var(--wf-ease);
+}
+.wf-card.wf-cardlink:hover {
+  border-color: var(--accent-muted);
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-1px);
+}
+
+/* ═══════════════════════════════════════════
+   Loading & async states
+   Transient states while data is in flight: the skeleton pulse for a cold
+   load, the keep-previous dim for a warm refetch, a small spinner for an
+   unknown-shape wait, and the slim top bar for route navigation. Vocabulary
+   fixed once in shared-ui/_wireframes/loading-states.html; screens compose
+   these, they don't redraw them.
+   ═══════════════════════════════════════════ */
+
+/* ── Skeleton pulse — placeholder bars while content loads ── */
+/* The .wf-line bars (typography section) drawn as a *loading* placeholder: the
+   pulse marks them as "content is coming", mirroring shadcn's animate-pulse.
+   Opt-in, so static placeholder bars used as filler copy stay still. Motion
+   here is non-affordance (§ Hover = clickable carve-out) — it signals loading,
+   not "click me". */
+@keyframes wf-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+.wf-skel {
+  animation: wf-pulse 1.5s ease-in-out infinite;
+}
+
+/* ── Spinner — indeterminate wait with no known content shape ── */
+/* A small spinning ring for a button or a tiny region; for a whole list the
+   skeleton reads better. In product: a Lucide Loader2 + Tailwind animate-spin. */
+@keyframes wf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.wf-spinner {
+  width: 1.1rem;
+  height: 1.1rem;
+  border: 2px solid var(--tint-15);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: wf-spin 0.7s linear infinite;
+}
+.wf-spinner--lg {
+  width: 1.8rem;
+  height: 1.8rem;
+  border-width: 3px;
+}
+
+/* ── Top progress bar — route-level navigation between screens ── */
+/* A slim indeterminate sliver pinned under the chrome while the next route
+   loads (router pending state); a thin shuttle slides across. */
+.wf-progress {
+  position: relative;
+  height: 2px;
+  width: 100%;
+  background: var(--tint-8);
+  overflow: hidden;
+}
+.wf-progress::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 35%;
+  background: var(--accent);
+  animation: wf-progress-slide 1.2s ease-in-out infinite;
+}
+@keyframes wf-progress-slide {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+/* ── Keep-previous dim — warm refetch over already-shown content ── */
+/* On a page/filter/sort change the prior rows stay put, dimmed a touch, while
+   the next set loads (TanStack Query placeholderData: keepPreviousData) — the
+   list never blanks to a spinner. Pair with .wf-progress under the chrome. */
+.wf-dim {
+  opacity: 0.45;
+}
+
+/* ═══════════════════════════════════════════
+   Overlays
+   Filter pills, the popover menu / dropdown, and the .wf-pop anchored-
+   overlay host with its plain tip bubble.
+   ═══════════════════════════════════════════ */
+
+/* ── Filter bar — dropdown filter pills above a list ── */
+/* Each pill is a dropdown trigger ("label ▾"); --on marks an applied facet.
+   Facets intersect (AND across pills); multi-select inside one facet is OR. The
+   open facet renders as a .wf-menu of .wf-opt checkbox rows. */
+.wf-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.wf-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  background: var(--wf-field-bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+}
+.wf-filter__caret {
+  font-size: 0.6rem;
+  opacity: 0.55;
+}
+.wf-filter--on {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--tint-6);
+}
+.wf-filter--clear {
+  color: var(--text-muted);
+  background: none;
+  border-style: dashed;
+}
+
+/* ── Popover — action menu / filter dropdown floating off a trigger ── */
+/* One shape for the ⋯ row-actions menu, the export-format menu and an open
+   filter facet. Floats on its own surface + shadow, so it reads as an overlay
+   without a backdrop stage. Lives in a .wf-pop host (below): hidden at rest,
+   revealed on hover / focus of its trigger — the open state the product toggles,
+   not a frozen preview. */
+.wf-menu {
+  min-width: 172px;
+  max-width: 230px;
+  padding: 0.3rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--wf-radius-sm);
+  box-shadow: var(--card-shadow-hover);
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+.wf-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  padding: 0.4rem 0.55rem;
+  border-radius: 6px;
+}
+.wf-menu__item--danger {
+  color: var(--s1);
+}
+/* Selected row in a single-select menu (e.g. the schedule-mode picker) — accent
+   label + a trailing check pushed to the edge; the rest of the list stays neutral. */
+.wf-menu__item--on {
+  color: var(--accent);
+  font-weight: 600;
+}
+.wf-menu__item--on svg {
+  margin-left: auto;
+}
+/* Blocked item — present but not actionable (e.g. last-Owner guard); muted, with
+   the reason in a trailing .wf-menu__why. */
+.wf-menu__item--disabled {
+  color: var(--text-muted);
+}
+.wf-menu__why {
+  margin-left: auto;
+  font-size: 0.6rem;
+  font-style: italic;
+  color: var(--text-muted);
+}
+.wf-menu__sep {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0.25rem 0;
+}
+/* Checkbox option row inside a filter facet — leading box + label. */
+.wf-opt {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  padding: 0.3rem 0.4rem;
+}
+.wf-opt__box {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+  border: 1.5px solid var(--accent-muted);
+  flex-shrink: 0;
+}
+.wf-opt__box--on {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* ── Overlay host — .wf-pop ── */
+/* Anchored overlays don't reserve space: wrap the real trigger (a button, a
+   filter pill, a chip) and its overlay — a .wf-menu list or a plain .wf-tip
+   bubble — in .wf-pop. The overlay stays hidden until the trigger is hovered or
+   focused (keyboard-reachable when the trigger takes focus), then floats out
+   below — the same reveal the chrome url popover uses. So a captioned mockup
+   shows the product control, not its open state frozen in place. */
+.wf-pop {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+.wf-pop .wf-menu,
+.wf-pop .wf-tip {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 50%;
+  z-index: 20;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(-4px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+.wf-pop:hover .wf-menu,
+.wf-pop:focus-within .wf-menu,
+.wf-pop:hover .wf-tip,
+.wf-pop:focus-within .wf-tip {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateX(-50%) translateY(0);
+}
+/* Full-width host — a combobox/typeahead that fills its field (vs an inline
+   pill). The trigger input stretches to the field; its suggestion menu aligns
+   to the field edges instead of centering under a narrow control. */
+.wf-pop--block {
+  display: block;
+}
+.wf-pop--block .wf-menu {
+  left: 0;
+  right: 0;
+  max-width: none;
+  transform: translateY(-4px);
+}
+.wf-pop--block:hover .wf-menu,
+.wf-pop--block:focus-within .wf-menu {
+  transform: translateY(0);
+}
+/* Plain explanatory bubble (vs the .wf-menu list) — e.g. why a disabled control
+   is blocked. Appearance only; .wf-pop owns its positioning + reveal. */
+.wf-tip {
+  width: max-content;
+  max-width: 230px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  text-align: left;
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow-hover);
+}
+
+/* ═══════════════════════════════════════════
+   Notification feed
+   The in-app channel's reader surface: a bell with an unread count in the
+   app bar, the dropdown panel the bell opens, and the feed item shared by
+   that panel and the full inbox screen. Severity rides a status chip
+   (--err / --warn / plain); unread vs read is carried by the item's left
+   rail + lead dot, so a critical-but-read event still recedes into history.
+   ═══════════════════════════════════════════ */
+
+/* ── Bell — app-bar trigger carrying an unread count ── */
+/* The notification-center entry: a line-icon bell with a small accent count
+   badge pinned to its corner (unread in_app deliveries of the current admin).
+   The badge wears a surface-colored ring so it punches off the bar instead of
+   smearing into the icon. Zero unread → omit .wf-bell__count, no badge. */
+.wf-bell {
+  position: relative;
+  display: inline-flex;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color var(--wf-ease);
+}
+a.wf-bell:hover {
+  color: var(--accent);
+}
+.wf-bell__count {
+  position: absolute;
+  top: -6px;
+  right: -7px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 0.22rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--accent);
+  border: 1.5px solid var(--surface);
+  color: #fff;
+  font-family: var(--font);
+  font-size: 0.55rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* ── Feed item — one notification in the panel or the inbox ── */
+/* A card row: a lead dot in a fixed gutter (so titles align down the list), the
+   body stack (type label + severity chip · title · a footer with the source
+   deep-link and a ⋯ menu or an inline action), and a mono timestamp pinned
+   top-right. The left rail is 2px on every item and starts neutral, so flipping
+   it to accent for unread shifts no geometry. */
+.wf-noti {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--border);
+  border-radius: var(--wf-radius-sm);
+  box-shadow: var(--wf-shadow-raised);
+}
+.wf-noti__dot {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  margin-top: 0.4rem;
+  border-radius: 50%;
+  background: var(--border);
+}
+.wf-noti__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.wf-noti__title {
+  font-size: 0.84rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+}
+.wf-noti__time {
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+/* Unread — accent left rail + filled accent dot: a new event not yet opened. */
+.wf-noti--unread {
+  border-left-color: var(--accent);
+}
+.wf-noti--unread .wf-noti__dot {
+  background: var(--accent);
+}
+/* Read — recedes into history: muted fill, dimmed title, hollow dot. Mirrors
+   .wf-table__row--muted for the card idiom. */
+.wf-noti--read {
+  background: var(--tint-4);
+}
+.wf-noti--read .wf-noti__title {
+  color: var(--text-dim);
+  font-weight: 500;
+}
+.wf-noti--read .wf-noti__dot {
+  background: transparent;
+  border: 1.5px solid var(--border);
+  box-sizing: border-box;
+}
+
+/* ── Bell panel — the dropdown the bell opens ── */
+/* A wider .wf-menu surface: the base caps at 230px for a short action list, but
+   the feed needs room for titled rows and a footer. Padding drops to zero so the
+   panel's own header / body / footer rule their edges. Drawn as a standalone
+   .wf-menu card in the docs (not nested in a live .wf-pop) so the contents read;
+   in product it hangs off the bell like any popover. */
+.wf-menu--panel {
+  min-width: 340px;
+  max-width: 360px;
+  padding: 0;
+  gap: 0;
+}
+.wf-notipanel__head,
+.wf-notipanel__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem;
+}
+.wf-notipanel__head {
+  border-bottom: 1px solid var(--border);
+}
+.wf-notipanel__foot {
+  border-top: 1px solid var(--border);
+  justify-content: center;
+}
+.wf-notipanel__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.5rem;
+}
+
+/* ═══════════════════════════════════════════
+   Responsive & markers
+   Narrow-viewport overrides, the in-shell embedded-screen marker, and the
+   guard marker for confirm-protected destructive actions.
+   ═══════════════════════════════════════════ */
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .wf-stage {
+    padding: 1.25rem 1rem;
+  }
+  .wf-screen,
+  .wf-screen--narrow,
+  .wf-screen--modal {
+    max-width: 100%;
+  }
+  .wf-side {
+    width: 112px;
+  }
+}
+
+/* ── "shell" marker ──
+   Replaces the repeated prose "The screen renders inside the shell". A drawn mini
+   app-frame (outline = shell chrome, the warm band = the content area this
+   screen fills, the left gap = sidebar, the top strip = header) plus a link to
+   layout.html, where the shell is fixed once. Sits at the tail of
+   .header__sub and inherits its muted mono color; the content band is the one
+   spot of accent so the glyph reads as "screen, embedded". */
+.in-shell {
+  display: flex;
+  width: max-content;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.in-shell:hover {
+  color: var(--accent);
+}
+.in-shell__frame {
+  position: relative;
+  flex: none;
+  width: 15px;
+  height: 11px;
+  border: 1.5px solid currentColor;
+  border-radius: 3px;
+}
+.in-shell__frame::before {
+  /* shell top bar */
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2.5px;
+  background: currentColor;
+  border-radius: 1.5px 1.5px 0 0;
+  opacity: 0.5;
+}
+.in-shell__frame::after {
+  /* the content area this screen renders into */
+  content: "";
+  position: absolute;
+  top: 4.5px;
+  bottom: 1.5px;
+  left: 4px;
+  right: 1.5px;
+  background: var(--accent);
+  border-radius: 1px;
+}
+
+/* ── "load" marker ──
+   Sibling to .in-shell: flags that a screen has a loading / waiting state and
+   links to the matching mechanism in shared-ui's loading-states vocabulary — so
+   a screen never redraws the mechanism, it points to the catalogued copy. The
+   glyph differs per mechanism (skeleton · keep-previous · spinner · progress)
+   so the screen's dominant wait reads at a glance; one accent spot per glyph
+   echoes the shell marker's idiom. Static — a label, not a live loader. Sits at
+   the tail of .header__sub, right after .in-shell when present. */
+.in-load {
+  display: flex;
+  width: max-content;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+  color: inherit;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+.in-load:hover {
+  color: var(--accent);
+}
+.in-load__icon {
+  position: relative;
+  flex: none;
+  width: 15px;
+  height: 11px;
+}
+
+/* skeleton — stacked content bars (a muted full line + a short accent line) */
+.in-load--skeleton .in-load__icon {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2.5px;
+}
+.in-load--skeleton .in-load__icon::before,
+.in-load--skeleton .in-load__icon::after {
+  content: "";
+  height: 2.5px;
+  border-radius: 1.5px;
+}
+.in-load--skeleton .in-load__icon::before {
+  width: 100%;
+  background: currentColor;
+  opacity: 0.5;
+}
+.in-load--skeleton .in-load__icon::after {
+  width: 60%;
+  background: var(--accent);
+}
+
+/* keep-previous — screen frame: an accent progress bar on top, the previous row
+   kept but dimmed below (prev data stays while the refetch runs) */
+.in-load--keep .in-load__icon {
+  border: 1.5px solid currentColor;
+  border-radius: 2.5px;
+  overflow: hidden;
+}
+.in-load--keep .in-load__icon::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 55%;
+  height: 2.5px;
+  background: var(--accent);
+}
+.in-load--keep .in-load__icon::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  height: 2px;
+  background: currentColor;
+  opacity: 0.4;
+}
+
+/* spinner — a ring with one accent quadrant (the moving head) */
+.in-load--spinner .in-load__icon::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border: 1.5px solid currentColor;
+  border-top-color: var(--accent);
+  border-radius: 50%;
+}
+
+/* progress — a track with a leading accent segment (route transition) */
+.in-load--progress .in-load__icon {
+  display: flex;
+  align-items: center;
+}
+.in-load--progress .in-load__icon::before {
+  content: "";
+  width: 100%;
+  height: 3px;
+  border-radius: 1.5px;
+  background: currentColor;
+  opacity: 0.35;
+}
+.in-load--progress .in-load__icon::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 45%;
+  height: 3px;
+  border-radius: 1.5px;
+  background: var(--accent);
+}
+
+/* ── "guard" marker ──
+   Flags a destructive control that's gated by a confirm dialog. A small
+   caution disc that links to the matching variant of shared-ui's confirm
+   dialog (#reversible · #irreversible · #type-to-confirm) — so a screen never
+   redraws the dialog, it points to the single catalogued copy. Append it right
+   after the danger control; reserve it for destructive actions only (toasts and
+   routine actions stay unmarked, per README §Shared UI). Error-hued and quiet
+   at rest, lifts to accent on hover like the other clickable affordances. */
+/* A control and its guard form one unit — wrap them so a flex parent
+   (e.g. .wf-row.wf-spread) treats the pair as a single item and the badge
+   stays glued to its control instead of scattering to the row's far edge.
+   Order is fixed: [control][guard] inside .wf-guarded, with the guard right of
+   the control (its margin-left sets the gap). When the same control also takes
+   an annotation pin, the pin trails the whole wrapper — .wf-guarded first, then
+   the .wf-annot last — so the read is always control → guard → pin. */
+.wf-guarded {
+  display: inline-flex;
+  align-items: center;
+}
+/* Guard wrapping a full-width block control (.wf-btn--block): stretch the
+   wrapper to the column width and let the button fill it, so a guarded block
+   button lines up with the unguarded block buttons stacked beside it; the
+   guard stays a fixed trailing badge. */
+.wf-guarded--block {
+  display: flex;
+  width: 100%;
+}
+.wf-guarded--block > .wf-btn--block {
+  flex: 1;
+}
+.wf-guard {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  margin-left: 0.3rem;
+  color: var(--s1);
+  text-decoration: none;
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+.wf-guard:hover {
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+.wf-guard__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  /* Sans, not inherited mono — a mono "!" rides high in the disc. */
+  font-family: var(--font);
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.wf-guard__icon::after {
+  content: "!";
+}

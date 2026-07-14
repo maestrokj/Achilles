@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Agent Engine: Team agents</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="horizon.css" />
+    <link rel="stylesheet" href="horizon-identity.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--horizon">
+      <div class="header">
+        <a class="back" href="../index.html">← Agent Engine</a>
+        <span class="hz-eyebrow">Beyond the horizon</span>
+        <h1 class="header__title">
+          Team agents <span class="iter v2">v2</span>
+        </h1>
+        <div class="header__sub">agent-engine · beyond the horizon</div>
+      </div>
+
+      <!-- ── hero: the intrigue ── -->
+      <div class="hz-hero">
+        <p class="hz-hero__lead">
+          The agent outgrows the personal: <b>team, company, service
+          identities</b>.
+        </p>
+        <p class="hz-hero__sub">
+          The v1 personal agent is only the core. Around it grow team and company
+          agents with their own visibility facets, and “under whose access to
+          read knowledge” becomes a separate choice.
+        </p>
+      </div>
+
+      <!-- ════════════ Rings of scale ════════════ -->
+      <div class="section" id="scope">
+        <h2 class="section__title">Rings of scale — grown from the personal core</h2>
+        <div class="hz-stage">
+          <span class="hz-stage__cap">personal → team → company</span>
+          <div class="hzi-rings">
+            <span class="hzi-ring__tag"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12h4" /><path d="M10 8h4" /><path d="M14 21v-3a2 2 0 0 0-4 0v3" /><path d="M6 10H4a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-2" /><path d="M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" /></svg> company — visible to all</span>
+            <div class="hzi-rings hzi-rings--team">
+              <span class="hzi-ring__tag"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><path d="M16 3.128a4 4 0 0 1 0 7.744" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><circle cx="9" cy="7" r="4" /></svg> team — configured by leads</span>
+              <div class="hzi-core">
+                <span class="hzi-core__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10h2" /><path d="M16 14h2" /><path d="M6.17 15a3 3 0 0 1 5.66 0" /><circle cx="9" cy="11" r="2" /><rect x="2" y="5" width="20" height="14" rx="2" /></svg></span>
+                <span class="hzi-core__t">Personal agent</span>
+                <span class="hzi-core__s">available now</span>
+              </div>
+              <p class="hzi-aside">
+                A team lead manages their team's agents — model and permission
+                visibility is scoped by team and role.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════ ACL fork ════════════ -->
+      <div class="section" id="acl-fork">
+        <h2 class="section__title">Whose ACL applies</h2>
+        <div class="hzi-fork">
+          <div class="hzi-opt">
+            <div class="hzi-opt__h"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10h2" /><path d="M16 14h2" /><path d="M6.17 15a3 3 0 0 1 5.66 0" /><circle cx="9" cy="11" r="2" /><rect x="2" y="5" width="20" height="14" rx="2" /></svg> Owner's identity</div>
+            <div class="hzi-opt__d">
+              As in v1: the agent reads knowledge exactly under the creator's
+              permissions — nothing beyond what they see themselves.
+            </div>
+          </div>
+          <div class="hzi-opt">
+            <div class="hzi-opt__h"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8" /><rect width="16" height="12" x="4" y="8" rx="2" /><path d="M2 14h2" /><path d="M20 14h2" /><path d="M15 13v2" /><path d="M9 13v2" /></svg> Service account</div>
+            <div class="hzi-opt__d">
+              Its own identity with its own access — a shared team agent that is
+              not tied to any one person.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── foot: closing line + tie to the v1 identity ── -->
+      <div class="hz-foot">
+        <span>
+          <b>The personal core remains.</b> Scale is built up in rings around it.
+        </span>
+        <a href="identity.html#owner-rights" class="xref-page">Identity and permissions</a>
+      </div>
+    </div>
+  </body>
+</html>

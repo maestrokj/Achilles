@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Agent Engine: Identity and permissions</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="identity.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Agent Engine</a>
+        <h1 class="header__title">Identity and permissions</h1>
+        <div class="header__sub">agent-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        An agent reads company knowledge — so something has to decide
+        <strong>which identity</strong> it sees that knowledge under. This is not
+        a user setting or a line in the prompt, but a <em>frame</em> the engine
+        binds to the run. The frame is simple: the agent acts
+        <strong>under its owner's permissions</strong> — it sees exactly what the
+        employee sees, and read-only.
+      </p>
+
+      <!-- ════════════════ AGENT FRAME ════════════════
+           “Which identity” is an engineering layer (the engine), not admin and
+           not a prompt field. The frame binds to the run and determines whose
+           ACL filters the reads. Frame = owner's identity. -->
+      <div class="section" id="agent-frame">
+        <h2 class="section__title">The agent frame — an engineering layer</h2>
+        <p class="desc">
+          “Which identity the agent reads the knowledge base under” is decided
+          neither by the admin nor by the prompt itself, but by the
+          <strong>agent frame</strong> — an engineering layer the engine blends
+          into <a href="runtime.html#prompt-composition" class="xref-page"
+            >prompt composition</a> and uses to filter every request to knowledge.
+          The prompt can be spoofed with words — the frame cannot: it is imposed
+          from outside the loop. The engine sets the
+          <strong>owner's identity</strong> in the frame, and all reading runs
+          under their ACL.
+        </p>
+
+        <div class="id-bind">
+          <div class="id-node id-node--owner">
+            <div class="id-node__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg></div>
+            <div class="id-node__t">Owner</div>
+            <div class="id-node__s">employee who created the agent</div>
+          </div>
+          <div class="id-edge">
+            <span class="id-edge__arr">▸</span>
+            grants<br />identity
+          </div>
+          <div class="id-frame">
+            <span class="id-frame__cap">agent frame · engine</span>
+            <div class="id-frame__t">run identity</div>
+            <div class="id-frame__s">imposed from outside, unbeatable by the prompt</div>
+            <span class="id-frame__eq">identity = owner</span>
+          </div>
+          <div class="id-edge">
+            <span class="id-edge__arr">▸</span>
+            reads<br />under ACL
+          </div>
+          <div class="id-node id-node--ks">
+            <div class="id-node__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6 4 14" /><path d="M12 6v14" /><path d="M8 8v12" /><path d="M4 4v16" /></svg></div>
+            <div class="id-node__t">Knowledge Store</div>
+            <div class="id-node__s">permission-scoped · read-only</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ OWNER RIGHTS ════════════════
+           Owner's permissions: the creator's ACL is applied on the KS side via
+           a pre-filter. Agent identity = owner's identity (the bridge already
+           exists: identity.user_id). Service accounts and scope facets — v2. -->
+      <div class="section" id="owner-rights">
+        <h2 class="section__title">Under the owner's permissions</h2>
+        <p class="desc">
+          The agent inherits the <strong>creator's ACL</strong> in full: their
+          projects, spaces, channels. What is closed to the employee is closed to
+          their agent too; permissions are applied on the
+          <a href="../../knowledge-store/_workzone/hybrid-search.html#acl-prefilter" class="xref-module"
+            >Knowledge Store</a> side by a pre-filter — the same mechanism as in
+          live search. The agent has no identity model of its own — it
+          <strong>is</strong> its owner before the knowledge base.
+        </p>
+
+        <div class="id-versions">
+          <div class="id-ver id-ver--now">
+            <div class="id-ver__h">Owner's identity</div>
+            <ul class="id-ver__list">
+              <li>frame = creator's ACL, one scope per agent</li>
+              <li>permissions change together with the owner's permissions</li>
+              <li>revoke access → the agent narrows in step, the ACL is live</li>
+              <li>no need to choose “whose ACL” — there is only one</li>
+            </ul>
+          </div>
+          <div class="id-ver id-ver--later">
+            <div class="id-ver__h"><span class="iter v2">v2</span> full identity model</div>
+            <ul class="id-ver__list">
+              <li>service accounts with their own access</li>
+              <li>choice of “under whose identity” at creation time</li>
+              <li>scope facets: personal · team · company</li>
+              <li>a team agent under the team's permissions, not the author's</li>
+            </ul>
+          </div>
+        </div>
+
+        <p class="note">
+          Linking an agent to its owner is cheap: the employee's identity is
+          already reconciled with their account (the <code>identity.user_id</code>
+          bridge in the
+          <a href="../../knowledge-store/_workzone/acl-identity.html#identity" class="xref-module"
+            >identity model</a>), and the run's FK to the owner leads straight to
+          that ACL — see <a href="data-model.html#agents" class="xref-page">agents</a>.
+        </p>
+        <p class="note">
+          This concerns the <em>live</em> ACL of an active employee. An owner
+          leaving is a separate mechanism: deactivation flips the agent's switch
+          off (<code>enabled=false</code>), deleting the account removes it by
+          cascade — see
+          <a href="governance.html#lifecycle" class="xref-page">owner
+            lifecycle</a>.
+        </p>
+      </div>
+
+      <!-- ════════════════ KS BOUNDARY ════════════════
+           The agent only reads the KS. Writing to the graph (entities, edges)
+           belongs to Harvester and Curation Pass, not the agent. Read-only
+           isolation makes a run safe to execute in parallel with writes. -->
+      <div class="section" id="ks-boundary">
+        <h2 class="section__title">The boundary: read-only</h2>
+        <p class="desc">
+          Whatever an agent may “decide,” it
+          <strong>writes nothing</strong> to the Knowledge Store. All three tools —
+          <a href="runtime.html#tools" class="xref-page">search, graph, sql</a> —
+          are read-only; writing to the graph (entities, edges, vectors) belongs
+          to <a href="../../knowledge-store/_workzone/lifecycle.html#curation-pass" class="xref-module"
+            >knowledge curation</a> and ingestion, not the agent. Two consequences
+          follow: a run cannot corrupt the base, and its reads run comfortably
+          <a href="execution.html#lane" class="xref-page">in parallel with graph
+            writes</a> — there is nothing to contend over.
+        </p>
+        <p class="note">
+          Before the KS, the agent is <strong>indistinguishable from the
+          owner</strong>: the request runs under their identity, and there is no
+          separate access log on the KS side. The trace of an automated run lives
+          in the
+          <a href="data-model.html#agent-runs" class="xref-page">run journal</a>;
+          telling “agent or human” apart inside the KS audit itself is
+          <span class="iter v2">v2</span>, along with a KS access log.
+        </p>
+        <p class="note">
+          Writing an agent's results back into the graph as new insights is a
+          meaningful but separate branch: <span class="iter v2">v2</span>, with
+          its own write-permission perimeter. The agent's output stays in the
+          <a href="data-model.html#agent-runs" class="xref-page">run
+            journal</a>, outside knowledge.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

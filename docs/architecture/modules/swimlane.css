@@ -1,0 +1,256 @@
+/* Swimlane stack kit (swl-*) — the stack & structure workzone diagram.
+   A module's _workzone/stack.html lays its libraries and file tree side by
+   side inside horizontal lanes: each .swl-lane runs two columns (library
+   stack | package tree), and .swl-grp clusters pills (.swl-pill) by role.
+   Backend-only modules run one Backend lane; a module with a UI adds a
+   Frontend lane (.swl-lane--fe). Shared side-notes (.swl-defer callout,
+   .swl-fe-note thin-client note) are kit primitives; only truly bespoke
+   callouts (a blacklist, a full-width routing lane) live as deltas in the
+   page's own _workzone/stack.css on top of this kit.
+   Reuses module.css .file-tree / .draft-notice / .xref / [data-tip] and
+   shared .iter. Static blocks — only <summary> toggles, .xref links and
+   [data-tip] hover are interactive (README §Hover).
+   Loaded by _workzone/stack.html on top of ../../module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Swimlane band ── */
+.swl-lane {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  /* visible (not hidden): let data-tip bubbles escape the lane at the left/top
+     edges. The rail has no background, so rounded corners need no clipping. */
+  overflow: visible;
+  margin-bottom: 1.1rem;
+}
+
+.swl-lane--be {
+  border-left: var(--border-w) solid var(--s1);
+}
+
+.swl-lane--fe {
+  border-left: var(--border-w) solid var(--s3);
+}
+
+.swl-lane__rail {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.swl-lane__tag {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.55rem;
+  border-radius: var(--pill-radius);
+  color: #fff;
+}
+
+.swl-lane--be .swl-lane__tag {
+  background: var(--s1);
+}
+
+.swl-lane--fe .swl-lane__tag {
+  background: var(--s3);
+}
+
+/* ── Two columns inside a lane: stack | structure ── */
+.swl-lane__body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.swl-col {
+  padding: 1rem 1.1rem 1.2rem;
+}
+
+.swl-col + .swl-col {
+  border-left: 1px solid var(--border);
+  background: var(--tint-4);
+}
+
+/* Column heads are .mod-label in HTML; local deltas only. */
+.swl-col__head {
+  font-size: 0.66rem;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+/* ── Library groups (stack column) ── */
+.swl-grp {
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
+.swl-grp:last-child {
+  margin-bottom: 0;
+}
+
+.swl-grp--v2 {
+  border-style: dashed;
+}
+
+.swl-grp__head {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.5rem;
+}
+
+.swl-grp__label {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.swl-grp__pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* Stacked pill rows in one group — keep them off each other. */
+.swl-grp__pills + .swl-grp__pills {
+  margin-top: 0.4rem;
+}
+
+.swl-pill {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: var(--tint-8);
+  color: var(--text);
+  border: 1px solid var(--tint-15);
+  border-radius: var(--tag-radius);
+  padding: 0.22rem 0.5rem;
+}
+
+.swl-pill--std {
+  background: var(--s2-pale);
+  border-color: var(--tint-15);
+  color: var(--s2);
+}
+
+/* ── Decision notes (collapsible, under the structure column) ── */
+.swl-note {
+  margin-top: 0.7rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+.swl-note > summary {
+  padding: 0.5rem 0.7rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.swl-note > summary::before {
+  content: "▸";
+  color: var(--accent);
+  font-size: 0.7rem;
+}
+
+.swl-note[open] > summary::before {
+  content: "▾";
+}
+
+.swl-note > summary:hover {
+  color: var(--text);
+}
+
+.swl-note__body {
+  padding: 0 0.7rem 0.65rem 1.7rem;
+  font-size: 0.77rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.swl-note__body code {
+  font-size: 0.92em;
+  color: var(--text);
+}
+
+/* ── Frontend thin-client note (module has no own UI — surfaces render it) ── */
+/* Frontend lane carries a single note, not two columns. */
+.swl-lane__body--note {
+  grid-template-columns: 1fr;
+}
+
+.swl-fe-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-dim);
+}
+
+.swl-fe-note__ico {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.swl-fe-note b {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* ── Callout (.swl-defer) — a neutral side-note below the lanes ──
+   one block carrying a cross-cutting decision a page wants stated next to its
+   stack: a deferred engine ("not in v1"), or a shared layer that isn't this
+   module's to own (the tool-calling harness). Neutral tint, never a blacklist.
+   Each page fills it with its own copy; .pkg highlights an inline keyword. */
+.swl-defer {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  background: var(--tint-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.8rem 1.1rem;
+  margin-bottom: 1rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.swl-defer__ico {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.swl-defer b {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.swl-defer .pkg {
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--text);
+}
+
+@media (max-width: 880px) {
+  .swl-lane__body {
+    grid-template-columns: 1fr;
+  }
+  .swl-col + .swl-col {
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
+}

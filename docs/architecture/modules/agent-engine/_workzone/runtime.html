@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Agent Engine: Agent runtime</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="runtime.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Agent Engine</a>
+        <h1 class="header__title">Agent runtime</h1>
+        <div class="header__sub">agent-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        What it means for an agent to “run.” A run is an
+        <strong>agentic loop</strong>: the platform assembles the prompt, hands
+        it to a chat model with three knowledge tools, and the model drives the
+        turn itself — thinks, calls a tool, reads the result, repeats — until it
+        has an answer. Not a workflow builder and not a single RAG call:
+        <a href="../../query-engine/_workzone/rag-pipeline.html#agent-boundary" class="xref-module"
+          >where one search call ends and the full loop begins</a
+        >
+        — the boundary with Query Engine. Whose permissions the reads run under is
+        held by the
+        <a href="identity.html#owner-rights" class="xref-page">agent’s identity</a>.
+      </p>
+
+      <!-- ════════════════ PROMPT COMPOSITION ════════════════
+           The prompt is assembled in layers before every run: the platform
+           prompt (safety + org, shared with chat and agents) → the agent
+           prompt → identity binding + tool descriptions. The policy home is
+           Admin (prompt-library); the agent only mixes in its own layer. -->
+      <div class="section" id="prompt-composition">
+        <h2 class="section__title">The prompt is assembled in layers</h2>
+        <p class="desc">
+          Before every run the platform assembles the prompt in layers, in a
+          strict order. The <strong>platform prompt</strong> goes first:
+          safety and organizational rules, shared across all AI calls; it is
+          owned by <a href="../../admin-panel/_wireframes/ai-behavior.html#composition" class="xref-module"
+            >Admin Panel</a
+          >, not the agent’s author. On top of it — the <strong>agent
+          prompt</strong>: task, tone, what to look for. The engineering layer
+          closes it out: identity binding and tool descriptions. An employee
+          edits only their own layer; platform rules can’t be overridden by a
+          prompt.
+        </p>
+
+        <div class="rt-compose">
+          <div class="rt-layer rt-layer--platform">
+            <span class="rt-layer__n">1</span>
+            <span class="rt-layer__name"
+              >Platform prompt
+              <small>safety core + org rules · shared with chat</small></span
+            >
+            <span class="rt-layer__who">Admin</span>
+          </div>
+          <div class="rt-layer rt-layer--agent">
+            <span class="rt-layer__n">2</span>
+            <span class="rt-layer__name"
+              >Agent prompt
+              <small>task, tone, what to look for — the owner’s free text</small></span
+            >
+            <span class="rt-layer__who">owner</span>
+          </div>
+          <div class="rt-layer">
+            <span class="rt-layer__n">3</span>
+            <span class="rt-layer__name"
+              >Engineering layer
+              <small
+                ><a href="identity.html#agent-frame" class="xref-page">identity</a> binding +
+                tool descriptions</small
+              ></span
+            >
+            <span class="rt-layer__who">engine</span>
+          </div>
+        </div>
+        <p class="rt-compose__seam">
+          the engine sets the order, not the owner: <b>platform rules can’t be
+          overridden by a prompt</b>, and tool results arrive as data, not
+          commands. The identity is likewise imposed from outside the loop — its
+          binding is set by the
+          <a href="../../ai-foundation/_workzone/prompt-library.html#identity-binding" class="xref-module"
+            >Prompt library</a
+          >.
+        </p>
+      </div>
+
+      <!-- ════════════════ AGENT LOOP ════════════════
+           The model drives the turn: think → tool → observe, round and round
+           until it finishes or hits the iteration cap. The cap is a safeguard
+           against looping, not a budget (the budget is weekly, per-user,
+           governance). -->
+      <div class="section" id="loop">
+        <h2 class="section__title">The model drives the agentic loop</h2>
+        <p class="desc">
+          The assembled prompt goes to the chat model
+          <span class="ai-tag" title="This step uses a neural network — model inference"
+            ><span class="ai-tag__icon"></span>AI</span
+          >, and from there the model drives the turn. At each step it decides for
+          itself: call a tool for facts, or start composing the answer. The
+          tool result comes back into its context, and the step repeats. The
+          tool-calling itself is not our code: it’s the shared
+          <a href="harness.html" class="xref-page">harness</a>, shared with Query
+          Engine; the loop and the cap are the agentic parameterization on top of
+          it.
+        </p>
+        <p class="note">
+          The run’s model is the one the owner picked from the
+          <a href="../../ai-foundation/_workzone/data-model.html#ai-models" class="xref-module"
+            >agent_models</a> list (which is why an agent’s model must be able to
+          call tools). If an admin removes the model from the list, the agent
+          halts until it’s switched to another (<a href="governance.html#model" class="xref-page">the
+            model as a start condition</a>).
+        </p>
+
+        <div class="rt-loop">
+          <div class="rt-end rt-end--in">
+            <span class="rt-end__g">▦</span>
+            <span class="rt-end__t">Prompt assembled</span>
+            <span class="rt-end__s">layers + tools</span>
+          </div>
+
+          <div class="rt-cycle">
+            <span class="rt-cycle__cap">agentic loop</span>
+            <div class="rt-steps">
+              <div class="rt-step rt-step--ai">
+                <div class="rt-step__g">✦</div>
+                <div class="rt-step__t">thinks</div>
+                <div class="rt-step__s">what’s needed next</div>
+              </div>
+              <span class="rt-arr">▸</span>
+              <div class="rt-step">
+                <div class="rt-step__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.106-3.105c.32-.322.863-.22.983.218a6 6 0 0 1-8.259 7.057l-7.91 7.91a1 1 0 0 1-2.999-3l7.91-7.91a6 6 0 0 1 7.057-8.259c.438.12.54.662.219.984z" /></svg></div>
+                <div class="rt-step__t">calls a tool</div>
+                <div class="rt-step__s">search · graph · sql</div>
+              </div>
+              <span class="rt-arr">▸</span>
+              <div class="rt-step">
+                <div class="rt-step__g"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" /></svg></div>
+                <div class="rt-step__t">reads</div>
+                <div class="rt-step__s">result into context</div>
+              </div>
+            </div>
+            <div class="rt-cycle__back">
+              ↻ repeats until it has an answer — or until it hits the
+              <b>iteration cap</b> (a safeguard against looping, not a budget)
+            </div>
+          </div>
+
+          <div class="rt-end rt-end--out">
+            <span class="rt-end__g">▤</span>
+            <span class="rt-end__t">Exit</span>
+            <span class="rt-end__s">→ run record</span>
+          </div>
+        </div>
+
+        <p class="note">
+          The iteration cap is a single run’s safety net: a platform setting
+          (<a href="../../admin-panel/_workzone/data-model.html#singleton" class="xref-module"
+            ><code>platform_settings.agent_iteration_cap</code></a>, one number per
+          organization), not a field on the agent. How many runs an employee can
+          afford per week is bounded by a separate
+          <a href="governance.html#budget" class="xref-page">token budget</a>.
+          The loop runs on a <a href="execution.html#lane" class="xref-page">background
+            lane</a>, separated from live chat.
+        </p>
+      </div>
+
+      <!-- ════════════════ TOOLS ════════════════
+           The core is 3 read-only KS tools (locked, always on, under the
+           owner's identity). On top of that the owner attaches optional
+           read-only external tools from the admin-allowed catalog. Removal is
+           graceful degradation: the agent runs on the core, and it doesn't
+           enter the readiness gate. Write and MCP — v2. -->
+      <div class="section" id="tools">
+        <h2 class="section__title">A core of three tools + optional ones</h2>
+        <p class="desc">
+          The model always holds a <strong>core of three tools</strong> into
+          <a href="../../knowledge-store/_workzone/hybrid-search.html#fusion" class="xref-module"
+            >Knowledge Store</a
+          >, chosen by query intent. Search, graph traversal, and SQL are KS
+          primitives; the agent <strong>calls</strong> them rather than
+          implementing them, always under the permissions of the
+          <a href="identity.html#owner-rights" class="xref-page">agent’s identity</a>:
+          it sees exactly what the owner would see. The core is
+          <strong>locked</strong> — read-only, can’t be turned off, present on
+          every agent.
+        </p>
+
+        <div class="rt-tools">
+          <div class="rt-tool">
+            <div class="rt-tool__name">search</div>
+            <div class="rt-tool__intent">“find something about…”</div>
+            <div class="rt-tool__desc">
+              hybrid search — vector + lexical, by meaning and by words.
+            </div>
+          </div>
+          <div class="rt-tool">
+            <div class="rt-tool__name">graph</div>
+            <div class="rt-tool__intent">“what’s connected to…”</div>
+            <div class="rt-tool__desc">
+              traversing the knowledge graph — neighbors, paths, dependencies.
+            </div>
+          </div>
+          <div class="rt-tool">
+            <div class="rt-tool__name">sql</div>
+            <div class="rt-tool__intent">“count, group by”</div>
+            <div class="rt-tool__desc">
+              aggregates and selections over structure — counts, trends, cuts;
+              the engine does the arithmetic, not the model.
+            </div>
+          </div>
+        </div>
+
+        <p class="note">
+          Permissions trim the results <strong>on the KS side</strong>, via an
+          ACL pre-filter on the identity — not a post-filter in the agent. The
+          same tool returns different results for two employees: each sees their
+          own slice.
+        </p>
+
+        <p class="note">
+          <strong>Empty knowledge base — no core, by derivation.</strong>
+          “Locked” means “can’t be turned off by hand,” not “present in any state
+          of the knowledge base.” When there’s nothing to search
+          (<a href="../../knowledge-store/_workzone/hybrid-search.html#emptiness" class="xref-module"
+            ><code>is_empty</code></a>), the shared
+          <a href="harness.html#params" class="xref-page">harness</a> doesn’t offer
+          the core — consistent with chat. The agent degrades gracefully: it runs
+          on the optional external tools if any are selected, otherwise it plainly
+          reports there’s no data. An empty knowledge base doesn’t enter the
+          <a href="governance.html#gate" class="xref-page">readiness gate</a> — it
+          doesn’t block the start, just as removing an added tool doesn’t; once
+          the knowledge base fills up, the core returns on its own.
+        </p>
+
+        <p class="note">
+          On top of the core the owner may attach <strong>optional read-only
+          external tools</strong> — from those the admin allowed in the
+          <a href="../../ai-foundation/_workzone/tool-catalog.html#surfaces" class="xref-module">tool
+            catalog</a> (the choice is recorded in
+          <a href="data-model.html#agent-tools" class="xref-page">agent_tools</a>).
+          Removing such a tool is <strong>graceful degradation</strong>: the agent
+          carries on with the core, and this doesn’t enter the
+          <a href="governance.html#gate" class="xref-page">readiness gate</a> (unlike
+          a removed model, which does block the start). Write tools and MCP
+          sources — <span class="iter v2">v2</span>.
+        </p>
+      </div>
+
+      <!-- ════════════════ OUTPUT ════════════════
+           Run terminal: the model's final answer lands in the run record
+           (agent_runs.output) + token spend. Home — the run journal. Delivery
+           to a chat thread and notifications — v2. -->
+      <div class="section" id="output">
+        <h2 class="section__title">The output — into the run record</h2>
+        <p class="desc">
+          When the loop ends, the model’s final answer is written as a row in the
+          <a href="data-model.html#agent-runs" class="xref-page">run
+            journal</a> together with token spend and the outcome
+          (<code>succeeded</code> / <code>failed</code> — a run that hit the
+          iteration cap also lands in <code>failed</code>). That’s the whole
+          output: the result lives in the journal and is visible on the agent’s
+          screen. The agent writes nothing to Knowledge Store — its access is
+          <a href="identity.html#ks-boundary" class="xref-page">strictly
+            read-only</a>.
+        </p>
+        <div class="rt-foot">
+          <span><b>now</b> — the result in the run journal, read on the agent’s screen</span>
+          <span
+            ><span class="iter v2">v2</span> delivery to a chat thread · completion
+            notification · writing insights back into the graph</span
+          >
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

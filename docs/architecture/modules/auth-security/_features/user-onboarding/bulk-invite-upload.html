@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Bulk Invite Upload</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit (feature-local screen,
+         one level deeper than _wireframes/ — see README → Styling) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../wireframe.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="index.html">← User onboarding</a>
+        <h1 class="header__title">Bulk Invite · Upload</h1>
+        <div class="header__sub">
+          auth / security · features · onboarding
+          <div class="header__markers">
+            <a class="in-shell" href="../../../admin-panel/_wireframes/layout.html" title="Screen renders in the content area of the Admin Panel shell">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--spinner" href="../../../shared-ui/_wireframes/loading-states.html#spinner" title="Waiting on an action — spinner">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">
+        Step 1 of the bulk import — uploading the list of invitees; parsing moves on to the
+        <a href="bulk-invite-preview.html" class="xref-page">review step</a>.
+      </p>
+
+      <!-- Wireframe -->
+      <div class="section">
+        <div class="section__title">Wireframe</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">step 1 · upload</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/users/import
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/users/import · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-steps">
+                  <span class="wf-step wf-step--current">1</span>
+                  <span class="wf-step__bar"></span>
+                  <span class="wf-step">2</span>
+                </div>
+
+                <div class="wf-center wf-stack wf-stack--tight">
+                  <h2 class="wf-title">Import users</h2>
+                  <p class="wf-subtitle">
+                    Upload a list — everyone receives an email invitation.
+                  </p>
+                </div>
+
+                <label class="wf-dropzone" for="bulk-file">
+                  <input id="bulk-file" type="file" accept=".csv,text/csv" hidden />
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                  <span class="wf-dropzone__title">Drag a CSV here</span>
+                  <span class="wf-dropzone__hint">or <span class="wf-dropzone__pick">choose a file</span> <span class="wf-annot">1</span></span>
+                </label>
+
+                <div class="wf-field">
+                  <span class="wf-label">File format</span>
+                  <div class="wf-input wf-input--locked">email, role, name</div>
+                  <span class="wf-hint">
+                     role and name are optional ·
+                    <a class="wf-a">download template</a>
+                  <span class="wf-annot">2</span>
+                  </span>
+                </div>
+
+                <div class="wf-field">
+                  <span class="wf-label">Or paste addresses as a list</span>
+                  <div class="wf-input wf-input--area">
+                    anna@company.com<br />dmitry@company.com, admin<br />igor@company.com
+                  </div>
+                  <span class="wf-hint">
+                     one address per line <span class="wf-annot">3</span></span>
+                </div>
+
+                <a class="wf-btn wf-btn--primary wf-btn--block" href="bulk-invite-preview.html">Next — review</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- State: file selected, the list field is disabled -->
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">state · file selected</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <label class="wf-dropzone" for="bulk-file-picked">
+                      <input id="bulk-file-picked" type="file" accept=".csv,text/csv" hidden />
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /></svg>
+                      <span class="wf-dropzone__title">employees.csv · 240 rows</span>
+                      <span class="wf-dropzone__hint"><span class="wf-dropzone__pick">replace file</span></span>
+                    </label>
+                    <div class="wf-field">
+                      <span class="wf-label">Or paste addresses as a list</span>
+                      <div class="wf-input wf-input--area wf-input--locked">
+                        Unavailable while a file is selected
+                      </div>
+                      <span class="wf-hint">
+
+                        remove the file to paste a list
+                        <span class="wf-annot">4</span></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Accepts a <code>.csv</code> file. Exceeding the row limit is rejected with an explicit message.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              The <code>email</code> column is required; <code>role</code> and
+              <code>name</code> are not. The template is the same set with a sample row.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Pasting text is a fast way to enter short lists: one address per line, role after a comma optional.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              One source at a time: the active input disables the other; clearing it reopens both.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              Import is available to Owner / Admin. Role assignment and the permission boundary are the same as the single invite,
+              <a href="../../_workzone/authentication.html#invite-flow" class="xref-page">invite flow</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

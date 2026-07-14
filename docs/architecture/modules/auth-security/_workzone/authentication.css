@@ -1,0 +1,141 @@
+/* Auth & Security — authentication workzone diagrams.
+   The login descent: Channels → Registration → Password → Token →
+   Session → Lifecycle/ACL. Reuses the stk-* kit; adds per-layer accent
+   presets and the page-only primitives (channel fan-in, parameter pills,
+   password-policy checklist, terminal sink).
+   Loaded by _workzone/authentication.html on top of ../../module.css
+   + ../../layered-stack.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* Shared inline arrow used by fan-in / flow / sink notes */
+.stk-arrow {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ── Layer accent presets — descend warm→cool down the login funnel ── */
+.stk-layer--chan {
+  --stk-lc: var(--s1);
+  --stk-lc-pale: var(--s4-pale);
+}
+.stk-layer--reg {
+  --stk-lc: var(--s2);
+  --stk-lc-pale: var(--s2-pale);
+}
+.stk-layer--pwd {
+  --stk-lc: var(--s4);
+  --stk-lc-pale: var(--s4-pale);
+}
+.stk-layer--tok {
+  --stk-lc: var(--accent);
+  --stk-lc-pale: var(--tint-8);
+}
+.stk-layer--sess {
+  --stk-lc: var(--s2-glow);
+  --stk-lc-pale: var(--s2-pale);
+}
+.stk-layer--life {
+  --stk-lc: var(--s3);
+  --stk-lc-pale: var(--s3-pale);
+}
+
+/* ── Fan-in note — all channels converge to one user_id → role → ACL ── */
+.stk-converge {
+  flex: 1 1 100%;
+  margin-top: 0.2rem;
+  padding: 0.55rem 0.8rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-align: center;
+  background: var(--tint-6);
+  border: 1px dashed var(--tint-25);
+  border-radius: 8px;
+}
+.stk-converge b {
+  color: var(--s1);
+}
+
+/* ── Parameter pills — argon2 params, cookie flags, claims ── */
+.stk-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-top: 0.4rem;
+}
+.stk-pill {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--s2);
+  background: var(--s2-pale);
+  border-radius: 5px;
+  padding: 0.12rem 0.42rem;
+}
+
+/* ── Password-policy checklist — rule chip + meaning, then rejected anti-rules ── */
+.stk-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+.stk-rule {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  font-size: 0.77rem;
+  color: var(--text-dim);
+}
+.stk-rule code {
+  flex: 0 0 auto;
+  min-width: 96px;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.12rem 0.4rem;
+  border-radius: 5px;
+}
+.stk-rule b {
+  color: var(--text);
+}
+.stk-anti-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+.stk-anti {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #9a3a2a;
+  background: rgba(184, 78, 48, 0.1);
+  border: 1px solid rgba(184, 78, 48, 0.25);
+  border-radius: 6px;
+  padding: 0.12rem 0.45rem;
+}
+
+/* ── Mini-flow — change-password / session-end inside a full-width block ── */
+.stk-flow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.4rem;
+  margin-top: 0.3rem;
+  font-size: 0.77rem;
+  color: var(--text-dim);
+}
+
+/* Follow-up note line under a flow */
+.stk-flow-note {
+  margin-top: 0.4rem;
+}
+
+/* ── Terminal sink — access granted, at the foot of the stack ── */
+.stk-sink {
+  flex: 1 1 100%;
+  margin-top: 0.2rem;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--s1);
+}

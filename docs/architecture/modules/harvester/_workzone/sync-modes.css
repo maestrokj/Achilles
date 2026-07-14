@@ -1,0 +1,77 @@
+/* Harvester — sync-modes workzone diagrams.
+   When and how data refreshes: Full Sync → Incremental → Reconciliation.
+   Reuses the stk-* kit for the three mode bands joined by .mod-conn; the only
+   page-local primitive is the per-mode accent preset (one custom property each),
+   so the three layers read at a glance as "three ways to update".
+   Loaded by _workzone/sync-modes.html on top of ../../module.css
+   + ../../layered-stack.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Mode accent presets — full (cool) → incremental (accent) → recon (warm) ── */
+.stk-layer--full {
+  --stk-lc: var(--s2);
+  --stk-lc-pale: var(--s2-pale);
+}
+.stk-layer--incremental {
+  --stk-lc: var(--accent);
+  --stk-lc-pale: var(--tint-8);
+}
+.stk-layer--reconciliation {
+  --stk-lc: var(--s4);
+  --stk-lc-pale: var(--s4-pale);
+}
+
+/* ── "auto" marker — a mode the platform fires on its own (watchdog or
+   schedule), with no manual launch in the Admin UI. Outlined neutral pill so
+   it reads as a static mark, distinct from the solid .iter version fill and the
+   accent .ai-tag; sits in a .stk-dec__h beside the decision title. ── */
+.stk-dec__auto {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.26rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.14rem 0.42rem;
+  border-radius: var(--pill-radius);
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  cursor: default;
+}
+.stk-dec__auto::before {
+  content: "↻";
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+/* ── UI-touchpoint chip — a link from a mode to the Admin screen where it is
+   launched, configured or observed. Sits in a .stk-dec__h beside the title (and
+   the .stk-dec__auto tag); accent-tinted with a leading → to read as the chip
+   form of an xref-module link. ── */
+.stk-dec__ui {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.14rem 0.46rem;
+  border-radius: var(--pill-radius);
+  color: var(--accent);
+  background: var(--tint-8);
+  border: 1px solid var(--tint-25);
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background 0.12s ease;
+}
+.stk-dec__ui::before {
+  content: "→";
+  font-family: var(--mono);
+  font-weight: 700;
+}
+.stk-dec__ui:hover {
+  background: var(--tint-15);
+}

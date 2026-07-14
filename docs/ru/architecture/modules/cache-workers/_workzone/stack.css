@@ -1,0 +1,71 @@
+/* Cache & Workers — stack.html deltas (stk-*) — the container-orchestration
+   block this page adds below the swimlane stack: a heading, lead, and the
+   docker-compose service table (one backend image in several roles + two Redis
+   instances). The swimlane lanes, library pills, file tree, decision boxes and
+   draft notice all come from the kits below — only the service-table view is
+   bespoke here.
+   Loaded by _workzone/stack.html on top of ../../module.css + ../../swimlane.css.
+   Static blocks; .xref links and [data-tip] hover are the only interactive
+   parts (README §Hover).
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Section heading + lead — the orchestration block under #structure ── */
+.stk-h2 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.4rem;
+}
+
+.stk-lead {
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-dim);
+}
+
+.stk-foot {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* ── Service table — docker-compose roles of the one backend image ── */
+.stk-svc {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  font-size: 0.8rem;
+}
+
+.stk-svc th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  background: var(--tint-4);
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.stk-svc td {
+  padding: 0.5rem 0.75rem;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  line-height: 1.45;
+}
+
+.stk-svc tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Singleton row — the one service that must never scale past one replica. */
+.stk-svc--single td {
+  background: var(--s4-pale);
+}

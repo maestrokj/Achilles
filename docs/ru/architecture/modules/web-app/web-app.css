@@ -1,0 +1,81 @@
+/* Web App — bespoke module diagrams.
+   The module's thesis is composition: an end-user shell that nests a ready-made
+   chat library and wraps our own domain layer inside it. The overview poster
+   draws that ownership as concentric bands (shell ▸ library ▸ ours).
+   Loaded by web-app/index.html on top of shared.css + module.css.
+   Placement convention: a single module's bespoke diagrams live here. §Styling. */
+
+/* ── Composition poster — nested ownership bands ── */
+.wa-comp {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.1rem;
+  background: var(--surface);
+}
+.wa-band {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.85rem 1rem;
+}
+/* Outer band — the Web App shell itself (layout chrome). */
+.wa-band--shell {
+  background: var(--tint-4);
+}
+/* Middle band — the ready-made chat library, set off with a dashed edge the
+   same way the wireframe kit marks library-owned chrome (.wf-lib). */
+.wa-band--lib {
+  margin-top: 0.85rem;
+  border-style: dashed;
+  border-color: var(--accent-muted);
+  background: var(--tint-6);
+}
+/* Inner band — our domain layer, the accent core. */
+.wa-band--ours {
+  margin-top: 0.85rem;
+  border-color: var(--accent);
+  background: var(--tint-8);
+}
+.wa-band__head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.wa-band__name {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+.wa-band--ours .wa-band__name {
+  color: var(--accent);
+}
+.wa-band__owner {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.wa-band__parts {
+  margin-top: 0.55rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.wa-part {
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  padding: 0.16rem 0.5rem;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+.wa-band--ours .wa-part {
+  border-color: var(--accent-muted);
+  color: var(--accent);
+}

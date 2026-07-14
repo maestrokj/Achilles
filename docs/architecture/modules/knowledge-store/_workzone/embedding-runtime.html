@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Knowledge Store: embeddings runtime</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="embedding-runtime.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Knowledge Store</a>
+        <h1 class="header__title">Embeddings runtime</h1>
+        <div class="header__sub">knowledge-store · workzone</div>
+      </div>
+
+      <p class="desc">
+        The embedder is <strong>one shared service</strong> for the whole platform:
+        it turns text into a vector, and Harvester, Knowledge Store,
+        Query Engine, and Agent Engine all call it. The load-bearing decision was
+        already made on the model registry side: the embedder is factored out as a
+        <strong>separate network service</strong> (OpenAI-compatible,
+        weights loaded
+        <a
+          href="../../ai-foundation/_workzone/data-model.html#ai-builtin"
+          class="xref-module"
+          >lazily</a
+        >), not baked into the backend. So scale here is an operations question, not
+        a redesign.
+      </p>
+
+      <!-- ════════════════ LOAD PATHS ════════════════ -->
+      <div class="section" id="load-paths">
+        <div class="section__title">Load paths</div>
+        <p class="desc">
+          Four sources of load converge on <strong>one shared</strong> runtime.
+        </p>
+
+        <div class="er-flow">
+          <div class="er-sources">
+            <div class="er-src er-src--bulk">
+              <div class="er-src__name">Harvester · ingest</div>
+              <div class="er-src__role">
+                <a href="../../harvester/_workzone/pipeline.html#embed" class="xref-module"
+                  >the <code>embed</code> stage</a
+                >
+                — chunks in batches at ingestion
+              </div>
+              <span class="er-chip er-chip--bulk">background · can wait</span>
+            </div>
+            <div class="er-src er-src--bulk">
+              <div class="er-src__name">Knowledge Store · re-embedding</div>
+              <div class="er-src__role">
+                <a href="lifecycle.html#embedding-refresh" class="xref-page"
+                  >a bulk run</a
+                >
+                on model change
+              </div>
+              <span class="er-chip er-chip--bulk">background · can wait</span>
+            </div>
+            <div class="er-src er-src--live">
+              <div class="er-src__name">Query Engine · search</div>
+              <div class="er-src__role">
+                <a href="hybrid-search.html#primitives" class="xref-page"
+                  >a query vector</a
+                >
+                for every user query
+              </div>
+              <span class="er-chip er-chip--live">user awaits the answer</span>
+            </div>
+            <div class="er-src er-src--agent">
+              <div class="er-src__name">Agent Engine · search</div>
+              <div class="er-src__role">
+                <a href="../../agent-engine/_workzone/runtime.html#tools" class="xref-module"
+                  >the KS <code>search</code> primitive</a
+                >
+                in the agent loop — an intent vector
+              </div>
+              <span class="er-chip er-chip--agent">background · small · online path</span>
+            </div>
+          </div>
+
+          <div class="er-merge">→</div>
+
+          <div class="er-runtime">
+            <div class="er-runtime__name">embeddings :80</div>
+            <div class="er-runtime__sub">
+              OpenAI-compatible · model-agnostic · weights lazy, the assigned model warmed
+            </div>
+          </div>
+
+          <div class="er-out">
+            <span class="er-out__arr">→</span><span>vector</span>
+          </div>
+        </div>
+
+        <table class="er-tbl">
+          <thead>
+            <tr>
+              <th>Path</th>
+              <th>Volume</th>
+              <th>Latency</th>
+              <th>Waiting</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="er-row--live">
+              <th>Search · QE</th>
+              <td>a small request</td>
+              <td>user awaits the answer</td>
+              <td><span class="er-tag er-tag--now">critical</span></td>
+            </tr>
+            <tr>
+              <th>Search · Agent</th>
+              <td>a small request</td>
+              <td>background, but small</td>
+              <td><span class="er-tag er-tag--agent">tolerates · online</span></td>
+            </tr>
+            <tr>
+              <th>Ingest · Harvester</th>
+              <td>large batches</td>
+              <td>background</td>
+              <td><span class="er-tag er-tag--wait">tolerates</span></td>
+            </tr>
+            <tr>
+              <th>Re-embedding · KS</th>
+              <td>a bulk run, rare</td>
+              <td>background</td>
+              <td><span class="er-tag er-tag--wait">tolerates</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p class="note">
+          <strong>Per-source unevenness is not the embedder's concern.</strong>
+          The chunk stream no longer carries a source: the embedder cares only about the
+          total volume, while the pace and steadiness of ingestion per source are held by
+          <a href="../../harvester/_workzone/reliability.html#worker" class="xref-module"
+            >Harvester's ingestion workers</a
+          >.
+        </p>
+      </div>
+
+      <!-- ════════════════ CONTENTION ════════════════ -->
+      <div class="section" id="contention">
+        <div class="section__title">The bottleneck is contention, not capacity <a class="xref-badge" href="../../cache-workers/_workzone/queues.html#lanes">→ Cache &amp; Workers</a></div>
+        <p class="desc">
+          The risk is not the volume itself but the <strong>different shape of load</strong>
+          across the paths. A big reindex of hundreds of thousands of chunks can occupy
+          the runtime entirely — and a user's query queues up behind it, search
+          slows down. It's a matter of priority, not of hardware count.
+        </p>
+        <div class="decision-box">
+          <strong>Search does not share a limit with the bulk run.</strong>
+          Background load (ingest + re-embedding) goes through a task queue with
+          bounded concurrency; search requests call the runtime directly,
+          outside that limit. So the interactive path doesn't queue behind the whole
+          reindex — the limits are separate, not shared. Ingest already runs on
+          background workers; their concurrency cap is simply not shared with search.
+          This doesn't give full decoupling in v1: the runtime is one, and an online
+          request will still wait for the <em>current</em> bulk batch in flight — but the
+          delay is bounded by one batch, not the whole queue; the flows are fully
+          separated by distinct online/bulk pools in v2 (below).
+        </div>
+        <div class="decision-box">
+          <strong>Agent search takes the direct path, not the bulk queue.</strong>
+          Although the agent loop is background, its call to the embedder is a
+          <em>small query vector</em> through the same KS
+          <code>search</code> primitive as a user's: queueing it behind a
+          reindex would freeze the loop for minutes for the sake of a
+          millisecond task. So it shares the <strong>online path</strong> with search,
+          not the bulk limit. It adds no volume: the pace of agent requests is capped
+          from above by the
+          <a
+            href="../../agent-engine/_workzone/execution.html#concurrency"
+            class="xref-module"
+            >agent concurrency cap</a
+          >, not by the embedder's throughput.
+        </div>
+        <div class="decision-box">
+          <strong>The first query doesn't wait for the weights.</strong>
+          Lazy loading protects deployment, but on the latency-critical path it
+          would translate into seconds of cold start. So the runtime warms
+          the assigned model <strong>proactively</strong> — on its
+          <a
+            href="../../admin-panel/_wireframes/ai-models.html#model-assignment"
+            class="xref-module"
+            >assignment in Admin</a
+          >
+          and on its own startup, not on the first search call: by the first
+          live query the weights are already in memory. The desired model is
+          persisted next to the weights cache, so a restarted container reloads
+          it by itself — a restart mid-download resumes rather than coming back
+          empty.
+        </div>
+        <div class="decision-box">
+          <strong>Memory is a budget, not a hope.</strong>
+          The runtime reads its container limit at startup and keeps loaded
+          models <strong>as long as they fit</strong>: on a switch the new model
+          loads alongside the old one, which keeps serving search until the new
+          weights are ready — eviction (LRU) fires only under real pressure, so
+          a roomy host gets a seamless switch and a small one peaks at a single
+          resident model as before. A model that cannot fit even alone is
+          <strong>rejected at assignment</strong> (<code>MODEL_TOO_LARGE</code>;
+          the preflight runs before anything commits) instead of surfacing later
+          as an OOM kill. The per-model phase (loading / ready / error) is
+          served on a dedicated status endpoint — the Admin screens show
+          “loading weights” and “re-indexing” as distinct stages — while
+          <code>/healthz</code> stays pure liveness: a container busy loading
+          weights is alive, and the autoheal watchdog must not shoot it.
+        </div>
+        <div class="decision-box">
+          <strong>If the embedder doesn't answer — search degrades, it doesn't fail.</strong>
+          The runtime call on the online path runs under a
+          <strong>bounded timeout</strong>: hanging in wait for a vector
+          while the user awaits an answer is unacceptable. If it misses the deadline or
+          is unavailable, search returns a result from the remaining
+          <a href="hybrid-search.html#primitives" class="xref-page"
+            >primitives that don't need the vector</a
+          >
+          (lexical, graph, filters): the vector is just one of the two text legs; without
+          it the results get poorer, but the query doesn't go unanswered — a vector
+          failure is visible honestly, not hidden behind a hang. On the bulk path a
+          failure brings nothing down: the chunk goes back into the queue and is picked
+          up by the
+          <a href="../../harvester/_workzone/reliability.html#retry" class="xref-module"
+            >ingestion workers' retry</a
+          >; no user is waiting on it.
+        </div>
+      </div>
+
+      <!-- ════════════════ SCALING v1 → v2 ════════════════ -->
+      <div class="section" id="scaling">
+        <div class="section__title">Scale: v1 → v2</div>
+        <p class="desc">
+          The service has two capacity levers. <strong>Batching</strong> — the runtime
+          accumulates requests for a few milliseconds and computes them as one batch;
+          it gives a multiple throughput gain on a <em>single</em> container and
+          comes free with a batching-capable runtime.
+          <strong>Replicas behind a load balancer</strong> — N copies: embedding is
+          <strong>stateless</strong> (text in, vector out, no
+          state between requests), so any copy can serve any request.
+          Squeeze batching first, then replicas.
+        </p>
+
+        <div class="er-scale">
+          <!-- v1 panel -->
+          <div class="er-panel">
+            <div class="er-panel__head">
+              Doing now <span class="iter v1">v1</span>
+            </div>
+            <div class="er-lane er-lane--live">
+              <span class="er-lane__tag">search</span>
+              <span class="er-lane__arr">───→</span>
+              <div class="er-node">embeddings :80</div>
+            </div>
+            <div class="er-lane er-lane--bulk">
+              <span class="er-lane__tag">ingest · re-emb.</span>
+              <span class="er-lane__arr">→</span>
+              <span class="er-gate">queue · limit</span>
+              <span class="er-lane__arr">→</span>
+            </div>
+            <ul class="er-panel__notes">
+              <li>One logical service behind a configured address.</li>
+              <li>A runtime with dynamic batching — as a requirement.</li>
+              <li>One host → scale vertically.</li>
+            </ul>
+          </div>
+
+          <!-- v2 panel -->
+          <div class="er-panel er-panel--v2">
+            <div class="er-panel__head">
+              Deferring <span class="iter v2">v2</span>
+            </div>
+            <div class="er-node er-node--lb">load balancer</div>
+            <div class="er-fan">⤋</div>
+            <div class="er-reps">
+              <div class="er-node">replica</div>
+              <div class="er-node">replica</div>
+              <div class="er-node">replica</div>
+            </div>
+            <ul class="er-panel__notes">
+              <li>A pool of N replicas behind the same address.</li>
+              <li>Autoscaling with load.</li>
+              <li>Pool split: “online” (search) vs. “bulk” (ingest).</li>
+              <li>Requires orchestration (k8s / GPU).</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="decision-box">
+          <strong>The v1 → v2 transition — with no edits on the consumer side.</strong>
+          Both deployments live behind one address
+          (<a href="../../ai-foundation/_workzone/data-model.html#ai-builtin" class="xref-module"
+            ><code>base_url</code></a
+          >): growing the pool means changing the address's target; the code of
+          Harvester, Knowledge Store, and Query Engine doesn't change.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

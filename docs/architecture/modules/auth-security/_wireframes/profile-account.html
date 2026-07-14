@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Profile / Account</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Profile / Account</h1>
+        <div class="header__sub">
+          auth / security · wireframes · user-facing
+          <a class="in-shell" href="../../web-app/_wireframes/layout.html"><span class="in-shell__frame"></span>shell</a>
+          <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Screen load — skeleton">
+            <span class="in-load__icon"></span>loading
+          </a>
+        </div>
+      </div>
+
+      <p class="desc">Personal account: your details, password change, sessions.</p>
+
+      <div class="section">
+        <div class="section__title">Wireframe</div>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <!-- State: default (password collapsed) -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">default</div>
+              <div class="wf-screen">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/account
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/account · after sign-in</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-appbar">
+                  <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                  <span class="wf-appbar__spacer"></span>
+                  <span class="wf-chip">Member</span>
+                  <span class="wf-avatar">DS</span>
+                </div>
+
+                <div class="wf-body">
+                  <div class="wf-stack wf-stack--loose">
+                    <!-- Profile -->
+                    <div class="wf-stack">
+                      <span class="wf-label">Profile</span>
+
+                      <div class="wf-field">
+                        <span class="wf-label">Full name</span>
+                        <div class="wf-input wf-input--focus">Dmitry Sokolov</div>
+                      </div>
+
+                      <!-- Email -->
+                      <div class="wf-field">
+                        <span class="wf-label">Email</span>
+                        <div class="wf-input wf-input--locked">
+                          dmitry@company.com
+                          <span class="wf-input__action" title="Email is set by the administrator">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                          </span>
+                          <span class="wf-annot">1</span>
+                        </div>
+                      </div>
+
+                      <div class="wf-field">
+                        <span class="wf-label">Role</span>
+                        <div class="wf-row">
+                          <span class="wf-chip">Member</span>
+                          <span class="wf-hint">assigned by the administrator</span>
+                          <span class="wf-annot">2</span>
+                        </div>
+                      </div>
+
+                      <button class="wf-btn wf-btn--block">Save</button>
+                    </div>
+
+                    <hr class="wf-divider" />
+
+                    <!-- Language and region -->
+                    <div class="wf-stack" id="locale">
+                      <span class="wf-label">Language and region</span>
+
+                      <div class="wf-field">
+                        <span class="wf-label">Timezone</span>
+                        <div class="wf-input">
+                          Same as organization · Europe/Moscow
+                          <span class="wf-input__action" title="Choose">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                          </span>
+                          <span class="wf-annot">3</span>
+                        </div>
+                      </div>
+                      <div class="wf-row">
+                        <div class="wf-field">
+                          <span class="wf-label">UI language</span>
+                          <div class="wf-input wf-input--sm">Auto · RU ▾</div>
+                        </div>
+                        <div class="wf-field">
+                          <span class="wf-label">Date format</span>
+                          <div class="wf-input wf-input--sm">Auto · DD.MM.YYYY ▾</div>
+                        </div>
+                      </div>
+
+                      <button class="wf-btn wf-btn--block">Save</button>
+                    </div>
+
+                    <hr class="wf-divider" />
+
+                    <!-- Change password — collapsed (disclosure) -->
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">Change password</span>
+                      <span class="wf-row">
+                        <span class="wf-hint">Expand</span>
+                        <span class="wf-input__action" title="Expand">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </span>
+                    </div>
+
+                    <hr class="wf-divider" />
+
+                    <!-- Security -->
+                    <div class="wf-stack">
+                      <span class="wf-label">Security</span>
+
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-text">
+                          Two-factor authentication
+                          <span class="iter v2">v2</span><br />
+                          <span class="wf-hint">Not configured</span>
+                        </span>
+                        <span class="wf-row">
+                          <a class="wf-a" href="../_features/mfa/mfa-setup.html">Set up</a>
+                          <span class="wf-annot">4</span>
+                          </span>
+                      </div>
+
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-text">
+                          Active sessions<br />
+                          <span class="wf-hint">this device</span>
+                        </span>
+                        <span class="wf-row">
+                          <a class="wf-a" href="session-management.html">Manage</a>
+                          <span class="wf-annot">5</span>
+                          </span>
+                      </div>
+                    </div>
+
+                    <hr class="wf-divider" />
+
+                    <!-- API keys — collapsed (disclosure) -->
+                    <div class="wf-card wf-row wf-spread" id="api-keys">
+                      <span class="wf-text">
+                        API keys
+                      </span>
+                      <span class="wf-row">
+                        <span class="wf-hint">1 active</span>
+                        <span class="wf-input__action" title="Expand">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </span>
+                    </div>
+
+                    <hr class="wf-divider" />
+
+                    <!-- Session -->
+                    <div class="wf-stack">
+                      <span class="wf-label">Session</span>
+                      <button class="wf-btn wf-btn--block">Sign out</button>
+                      <div class="wf-center">
+                        <span class="wf-guarded"
+                          ><a class="wf-a" href="login.html">Sign out on all devices</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a
+                        ></span>
+                        <span class="wf-annot">6</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wf-frame-col">
+            <!-- State: change password expanded -->
+              <div class="wf-frame">
+              <div class="wf-stage__caption">change password — expanded</div>
+              <div class="wf-screen">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/account
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/account · after sign-in</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-appbar">
+                  <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                  <span class="wf-appbar__spacer"></span>
+                  <span class="wf-chip">Member</span>
+                  <span class="wf-avatar">DS</span>
+                </div>
+
+                <div class="wf-body">
+                  <div class="wf-card wf-stack">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text">Change password</span>
+                      <span class="wf-row">
+                        <span class="wf-hint">Collapse</span>
+                        <span class="wf-input__action" title="Collapse">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+                        </span>
+                      </span>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Current password</span>
+                      <div class="wf-input">
+                        ••••••••••
+                        <span class="wf-input__action" title="Show password">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">New password</span>
+                      <div class="wf-input wf-input--focus">
+                          ••••••••••
+                          <span class="wf-input__action" title="Show password">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                      </div>
+                      <!-- Strength indicator: 4 segments filled → strong -->
+                        <div class="wf-meter wf-meter--strong">
+                        <span class="wf-meter__seg"></span>
+                        <span class="wf-meter__seg"></span>
+                        <span class="wf-meter__seg"></span>
+                        <span class="wf-meter__seg"></span>
+                      </div>
+                      <div class="wf-row wf-spread">
+                        <span class="wf-hint">
+                          At least 8 characters · must differ from the current one <span class="wf-annot">7</span></span>
+                          <span class="wf-hint">Strong <span class="wf-annot">8</span></span>
+                      </div>
+                    </div>
+
+                    <div class="wf-field">
+                      <span class="wf-label">Repeat new password</span>
+                      <div class="wf-input">
+                        ••••••••••••
+                        <span class="wf-input__action" title="Show password">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                        </span>
+                      </div>
+                    </div>
+
+                    <button class="wf-btn wf-btn--primary wf-btn--block">
+
+                        Change password
+                        <span class="wf-annot wf-annot--on-accent">9</span></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- State: API keys expanded -->
+              <div class="wf-frame">
+              <div class="wf-stage__caption">API keys — expanded</div>
+              <div class="wf-screen">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/account
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/account · after sign-in</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-appbar">
+                  <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                  <span class="wf-appbar__spacer"></span>
+                  <span class="wf-chip">Member</span>
+                  <span class="wf-avatar">DS</span>
+                </div>
+
+                <div class="wf-body">
+                  <div class="wf-card wf-stack">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text">API keys</span>
+                      <span class="wf-row">
+                        <span class="wf-hint">Collapse</span>
+                        <span class="wf-input__action" title="Collapse">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+                        </span>
+                      </span>
+                    </div>
+
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">
+                        CI server
+                        <a class="wf-a" title="Rename">Rename</a>
+                        <span class="wf-annot">10</span><br />
+                        <span class="wf-code">ach_7f2k…</span>
+                        <span class="wf-chip">read-only</span>
+                        <span class="wf-chip">Jira</span><br />
+                        <span class="wf-hint">expires in 84 days</span>
+                      </span>
+                      <span class="wf-guarded"
+                          ><a class="wf-a wf-a--danger">Revoke</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#irreversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a
+                        ></span>
+                    </div>
+
+                    <a class="wf-btn wf-btn--primary wf-btn--block" href="../_features/api-keys/api-key-create-modal.html#api-key-create">
+
+                        Create key
+                        <span class="wf-annot wf-annot--on-accent">11</span></a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- State: administrator profile — personal notification settings -->
+              <div class="wf-frame">
+              <div class="wf-stage__caption">Owner / Admin — notifications</div>
+              <div class="wf-screen">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/account
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/account · Owner / Admin</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-appbar">
+                  <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                  <span class="wf-appbar__spacer"></span>
+                  <span class="wf-chip">Admin</span>
+                  <span class="wf-avatar">DM</span>
+                </div>
+
+                <div class="wf-body">
+                  <div class="wf-stack" id="notifications">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-label">Notifications</span>
+                      <span class="wf-hint">you receive these as Admin</span>
+                    </div>
+                    <span class="wf-hint">Channels per type — in-app and email separately; turn off either, or both, if a type is not your concern <span class="wf-annot">12</span></span>
+
+                    <span class="wf-label">Organization — for Owner / Admin</span>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">Sync <span class="wf-chip wf-chip--warn">warning</span></span>
+                      <span class="wf-row"><span class="wf-hint">in-app</span><span class="wf-toggle wf-toggle--on"></span><span class="wf-hint">email</span><span class="wf-toggle wf-toggle--on"></span></span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">Security <span class="wf-chip wf-chip--err">critical</span></span>
+                      <span class="wf-row"><span class="wf-hint">in-app</span><span class="wf-toggle wf-toggle--on"></span><span class="wf-hint">email</span><span class="wf-toggle"></span></span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">Budget <span class="wf-chip wf-chip--warn">warning</span></span>
+                      <span class="wf-row"><span class="wf-hint">in-app</span><span class="wf-toggle"></span><span class="wf-hint">email</span><span class="wf-toggle"></span></span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">System <span class="wf-chip wf-chip--err">critical</span></span>
+                      <span class="wf-row"><span class="wf-hint">in-app</span><span class="wf-toggle wf-toggle--on"></span><span class="wf-hint">email</span><span class="wf-toggle wf-toggle--on"></span></span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">Discovery <span class="wf-chip">info</span></span>
+                      <span class="wf-row"><span class="wf-hint">in-app</span><span class="wf-toggle"></span><span class="wf-hint">email</span><span class="wf-toggle"></span></span>
+                    </div>
+
+                    <span class="wf-label">Personal — for everyone <span class="wf-annot">13</span></span>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">Agent <span class="wf-chip wf-chip--warn">warning</span></span>
+                      <span class="wf-row"><span class="wf-hint">in-app</span><span class="wf-toggle wf-toggle--on"></span><span class="wf-hint">email</span><span class="wf-toggle"></span></span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">Account <span class="wf-chip">info</span></span>
+                      <span class="wf-row"><span class="wf-hint">in-app</span><span class="wf-toggle wf-toggle--on"></span><span class="wf-hint">email</span><span class="wf-toggle"></span></span>
+                    </div>
+
+                    <div class="wf-alert">Organization defaults are set by the Owner on the notifications screen; here you only narrow them personally. For personal types, email is off by default — opt-in.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Email — read-only, the login identifier. Changed by the administrator in
+              <a href="../../admin-panel/_wireframes/user-card.html#user-card" class="xref-module">Admin Panel</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Role — read-only; users cannot change their own role. Assigned by an Owner / Admin in
+              <a href="../../admin-panel/_wireframes/users.html#users-tabs" class="xref-module">Admin Panel</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Language and region — a personal override of the organization defaults (timezone, UI language, date format). Affects display only. Mechanics —
+              <a href="../../admin-panel/_workzone/locale.html#locale-resolution" class="xref-module">Language and region</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              MFA <span class="iter v2">v2</span> — required for Owner / Admin, optional for Member. Setup — <a href="../_features/mfa/index.html" class="xref-page">Two-factor authentication</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Active sessions — a device list
+              with per-device revocation. Screen —
+              <a href="session-management.html" class="xref-page">session management</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              “Sign out on all devices” ends every session; a regular “Sign out” ends only the current one. Mechanics —
+              <a href="../_workzone/authentication.html#session-end" class="xref-page">Ending a session</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              Password rules —
+              <a href="../_workzone/authentication.html#password-policy" class="xref-page">Password policy</a>. The new password must differ from the current one.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              Strength indicator — a strength estimate as you type.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">9</span>
+              Changing the password requires entering the current one. Mechanics —
+              <a href="../_workzone/authentication.html#change-password" class="xref-page">Change password</a>.
+              <span class="iter v2">v2</span>: the current password replaces sudo-mode via <a href="re-auth-modal.html" class="xref-page">re-auth-modal</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">10</span>
+              An optional name labels the key above its prefix; “Rename” edits it in place — the name is the owner's, even when an Owner / Admin set a starting value at issue. An unnamed key shows the prefix alone.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">11</span>
+              API keys — the user issues and revokes their own keys. “Create key” opens the <a href="../_features/api-keys/api-key-create-modal.html#api-key-create" class="xref-page">creation dialog</a>. Mechanics — <a href="../_workzone/authentication.html#api-keys" class="xref-page">API keys</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">12</span>
+              Each type has two independent toggles, in-app and email; turn off either or both — there are no bindings or locks. Organization types (Sync · Security · Budget · System · Discovery) are visible only to Owner / Admin — they alone are the recipients of these alerts. Shared team webhooks (Slack / Ops) and organization defaults — <a href="../../admin-panel/_wireframes/notifications.html#recipients" class="xref-module">Notifications</a> in Admin Panel.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">13</span>
+              Personal types (Agent — runs of the user’s own agents; Account — role, temporary password) reach every user, including members — these are <a href="../../notifications/_workzone/dispatcher.html#addressing" class="xref-module">targeted</a> events aimed at the person themselves. Email for them is off by default (<a href="../../notifications/_workzone/data-model.html#notif-defaults" class="xref-module">opt-in</a>); in-app shows immediately.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

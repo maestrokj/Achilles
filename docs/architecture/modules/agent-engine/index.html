@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Agent Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="agent-engine.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← Back to architecture</a>
+        <h1 class="header__title">Agent Engine</h1>
+        <div class="header__sub">analytics · autonomous · configurable</div>
+      </div>
+
+      <!-- ═══ Description ═══ v1: an employee's personal agent on top of
+           Knowledge Store, under the owner's permissions. An analyst library
+           and team agents — v2. -->
+      <p class="desc">
+        A single module of <strong>autonomous agents</strong> on top of
+        <a href="../knowledge-store/_workzone/hybrid-search.html#fusion" class="xref-module">Knowledge Store</a>.
+        An employee sets up a <strong>personal agent</strong> — prompt, schedule,
+        knowledge tools — and it works on its own, under the owner’s permissions.
+        An analyst library and team agents are the next horizon.
+      </p>
+
+      <!-- ═══ Essence ═══ The invariant core, version-independent. Anchor
+           #agent-prompt — the module's overview poster; the target of the
+           screen badge on Web App · my-agents. Don't change the id. -->
+      <div class="section" id="agent-prompt">
+        <h2 class="section__title">Architecture</h2>
+        <div class="ae-tl">
+          <!-- ═══ t0 — trigger + prompt assembly ═══ -->
+          <div class="ae-tl__ev">
+            <div class="ae-tl__ev-dot"></div>
+            <div class="ae-tl__ev-card">
+              <div class="ae-tl__ev-t"><span class="ae-tl__ev-ts">t0</span> Trigger</div>
+              <div class="ae-tl__ev-d">the owner initiates a run, or the schedule fires</div>
+              <a class="ae-tl__ev-link" href="_workzone/identity.html#owner-rights">Agent = the owner before KS · the full ACL, pre-filter on the KS side</a>
+            </div>
+          </div>
+
+          <div class="ae-tl__seg"></div>
+
+          <div class="ae-tl__ev">
+            <div class="ae-tl__ev-dot"></div>
+            <div class="ae-tl__ev-card">
+              <div class="ae-tl__ev-t"><span class="ae-tl__ev-ts">t0</span> Prompt assembly · 3 layers</div>
+              <div class="ae-tl__layers">
+                <a class="ae-tl__layer ae-tl__layer--lock" href="_workzone/runtime.html#prompt-composition">
+                  <span class="ae-tl__layer-n">1</span>
+                  <span class="ae-tl__layer-b"><b>platform</b><span class="ae-tl__layer-d">safety + organization</span></span>
+                  <svg class="ae-tl__layer-lk" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a5 5 0 0 0-5 5v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7a5 5 0 0 0-5-5zm-3 8V7a3 3 0 0 1 6 0v3H9z"/></svg>
+                </a>
+                <a class="ae-tl__layer" href="_workzone/runtime.html#prompt-composition">
+                  <span class="ae-tl__layer-n">2</span>
+                  <span class="ae-tl__layer-b"><b>agent prompt</b><span class="ae-tl__layer-d">set by the owner</span></span>
+                </a>
+                <a class="ae-tl__layer" href="_workzone/runtime.html#prompt-composition">
+                  <span class="ae-tl__layer-n">3</span>
+                  <span class="ae-tl__layer-b"><b>engineering</b><span class="ae-tl__layer-d">identity + tools</span></span>
+                </a>
+              </div>
+              <div class="ae-tl__ev-note">the platform can’t be overridden by the agent prompt</div>
+            </div>
+          </div>
+
+          <div class="ae-tl__seg"></div>
+
+          <!-- ═══ t1 — start gate ═══ -->
+          <div class="ae-tl__ev ae-tl__ev--gate">
+            <div class="ae-tl__ev-dot ae-tl__ev-dot--gate"></div>
+            <div class="ae-tl__ev-card ae-tl__ev-card--gate">
+              <div class="ae-tl__ev-t"><span class="ae-tl__ev-ts">t1</span> Start gate</div>
+              <a class="ae-tl__gate" href="_workzone/governance.html#gate">
+                <span class="ae-tl__cond">enabled</span>
+                <span class="ae-tl__and">∧</span>
+                <span class="ae-tl__cond">¬admin_paused</span>
+                <span class="ae-tl__and">∧</span>
+                <span class="ae-tl__cond">budget</span>
+                <span class="ae-tl__and">∧</span>
+                <span class="ae-tl__cond">model_id≠NULL</span>
+                <span class="ae-tl__gate-arr">→ start</span>
+              </a>
+              <div class="ae-tl__guards">
+                <a class="ae-tl__guard" href="_workzone/governance.html#admin-pause"><b>enabled</b> · owner’s lock</a>
+                <a class="ae-tl__guard" href="_workzone/governance.html#admin-pause"><b>admin_paused</b> · sticky lock, admin</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="ae-tl__seg"></div>
+
+          <!-- ═══ t2 — loop (the repeating stretch) + budget side-rail ═══ -->
+          <div class="ae-tl__ev ae-tl__ev--loop">
+            <div class="ae-tl__ev-dot ae-tl__ev-dot--loop"></div>
+            <div class="ae-tl__ev-card ae-tl__ev-card--loop">
+              <div class="ae-tl__brace">
+                <div class="ae-tl__ev-t"><span class="ae-tl__ev-ts">t2</span> Agentic loop · the model drives</div>
+                <div class="ae-tl__cyc">
+                  <span class="ae-tl__cyc-step"><a href="_workzone/runtime.html#loop">thinks</a></span>
+                  <span class="ae-tl__cyc-arr">▸</span>
+                  <span class="ae-tl__cyc-step">calls a tool</span>
+                  <span class="ae-tl__cyc-arr">▸</span>
+                  <span class="ae-tl__cyc-step">observes</span>
+                  <span class="ae-tl__cyc-back">↻ again</span>
+                </div>
+                <div class="ae-tl__brace-label">repeats as a stretch, not a one-off event</div>
+              </div>
+              <div class="ae-tl__ev-note">
+                spins <b>until an answer</b> or until the <b>iteration cap</b> ·
+                <code>agent_iteration_cap</code>
+              </div>
+              <div class="ae-tl__tools">
+                <small>core · 3 read-only KS primitives:</small>
+                <a class="ae-tl__tool" href="_workzone/runtime.html#tools">search</a>
+                <a class="ae-tl__tool" href="_workzone/runtime.html#tools">graph</a>
+                <a class="ae-tl__tool" href="_workzone/runtime.html#tools">sql</a>
+                <small>+ the owner’s choice from the catalog</small>
+              </div>
+              <div class="ae-tl__ks">
+                <span class="ae-tl__ks-h">Knowledge Store · read-only</span>
+                <span class="ae-tl__ks-d">the tools pull from knowledge — the agent doesn’t write to KS</span>
+              </div>
+            </div>
+
+            <!-- side-rail — background, not a point in time -->
+            <div class="ae-tl__rail">
+              <a class="ae-tl__rail-bar" href="_workzone/governance.html#budget">
+                <span class="ae-tl__rail-t">Weekly budget</span>
+                <span class="ae-tl__rail-d">a per-user token cap · spent as the loop runs, lives longer than a single run</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="ae-tl__seg"></div>
+
+          <!-- ═══ t3 — stop ═══ -->
+          <div class="ae-tl__ev ae-tl__ev--stop">
+            <div class="ae-tl__ev-dot"></div>
+            <div class="ae-tl__ev-card">
+              <div class="ae-tl__ev-t"><span class="ae-tl__ev-ts">t3</span> Stop</div>
+              <div class="ae-tl__ev-d">an answer is reached <b>or</b> the iteration cap is hit</div>
+            </div>
+          </div>
+
+          <div class="ae-tl__seg"></div>
+
+          <!-- ═══ t4 — journal ═══ -->
+          <div class="ae-tl__ev ae-tl__ev--end">
+            <div class="ae-tl__ev-dot ae-tl__ev-dot--end"></div>
+            <div class="ae-tl__ev-card">
+              <div class="ae-tl__ev-t"><span class="ae-tl__ev-ts">t4</span> Journal record</div>
+              <a class="ae-tl__ev-link" href="_workzone/runtime.html#output">Run journal</a>
+              <div class="ae-tl__ev-d"><code>agent_runs.output</code> · <code>tokens_used</code></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="ae-tl__foot">
+          <span><b>Not a workflow builder</b> — the model combines tools by intent, not a graph of nodes</span>
+          <span
+            >before the agent prompt —
+            <a href="../admin-panel/_wireframes/ai-behavior.html#composition" class="xref-module">the platform prompt</a>:
+            safety and organizational rules,
+            <a href="../ai-foundation/_workzone/prompt-library.html#identity-binding" class="xref-module">shared with chat</a></span
+          >
+        </div>
+      </div>
+
+      <!-- ═══ API ═══ Full contract paths of the module under the version. -->
+      <section class="section" id="api">
+        <div class="section__title">API</div>
+        <ul class="api-list">
+          <li><span class="api-list__m">POST · GET</span><span class="api-list__p">/api/v1/agents</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/agents/options</span></li>
+          <li><span class="api-list__m">GET · PATCH · DELETE</span><span class="api-list__p">/api/v1/agents/{id}</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/agents/{id}/run</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/agents/{id}/runs</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/admin/agents</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/admin/agents/{id}</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/admin/agents/{id}/runs</span></li>
+          <li><span class="api-list__m">PATCH</span><span class="api-list__p">/api/v1/admin/agents/{id}/pause</span></li>
+          <li><span class="api-list__m">GET · PATCH</span><span class="api-list__p">/api/v1/admin/agent-limits</span></li>
+        </ul>
+        <p class="note">
+          Run-journal changes reach open screens as push nudges over the platform
+          <a href="../api/_workzone/live-updates.html#boards" class="xref-module">live-updates stream</a>
+          — the owner sees own agents, admins see all; the endpoints above stay the
+          single source the client refetches.
+        </p>
+      </section>
+
+      <!-- ═══ Workzone ═══ Seven design pages + the grey horizon group:
+           four v2 teasers (analysts, orchestration, swarm, scale). -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Design</span>
+        </div>
+        <p class="workzone-hint">
+          Detailed design decisions for the module.
+        </p>
+
+        <div class="wz-nav">
+          <a class="wz-link" href="_workzone/runtime.html">
+            <span>Agent runtime</span>
+          </a>
+          <a class="wz-link" href="_workzone/harness.html">
+            <span>Tool-calling harness</span>
+          </a>
+          <a class="wz-link" href="_workzone/identity.html">
+            <span>Identity and permissions</span>
+          </a>
+          <a class="wz-link" href="_workzone/execution.html">
+            <span>Launch and lanes</span>
+          </a>
+          <a class="wz-link" href="_workzone/governance.html">
+            <span>Budget and control</span>
+          </a>
+          <a class="wz-link" href="_workzone/data-model.html">
+            <span>Data model</span>
+          </a>
+          <a class="wz-link" href="_workzone/stack.html">
+            <span>Stack and structure</span>
+          </a>
+          <a class="wz-link" href="_workzone/tests.html">
+            <span>Tests</span>
+          </a>
+
+          <div class="wz-nav__group wz-nav__group--horizon">Beyond the horizon</div>
+          <a class="wz-link wz-link--horizon" href="_workzone/horizon-analytics.html">
+            <span>Analyst library</span>
+            <span class="iter v2">v2</span>
+          </a>
+          <a class="wz-link wz-link--horizon" href="_workzone/horizon-orchestration.html">
+            <span>External orchestration</span>
+            <span class="iter v2">v2</span>
+          </a>
+          <a class="wz-link wz-link--horizon" href="_workzone/horizon-swarm.html">
+            <span>Agent swarm</span>
+            <span class="iter v2">v2</span>
+          </a>
+          <a class="wz-link wz-link--horizon" href="_workzone/horizon-identity.html">
+            <span>Team agents</span>
+            <span class="iter v2">v2</span>
+          </a>
+          <a class="wz-link wz-link--horizon" href="_workzone/horizon-launch.html">
+            <span>Launch and spend</span>
+            <span class="iter v2">v2</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ═══ Wireframes (surfaces) ═══ The module has no frontend of its own —
+           the screens are rendered by surfaces as thin clients of the shared
+           API (precedent: Query Engine's chat screens live in Web App). A
+           pointer here; the lane layout is in the workzone (stack). -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Wireframes</span>
+          <span class="workzone-title">Surfaces</span>
+        </div>
+        <p class="workzone-hint">
+          The module has no frontend of its own: the employee and admin screens are rendered by surfaces as thin clients of the shared
+          API — <a href="../web-app/_wireframes/my-agents.html#my-agents" class="xref-badge">→ Web App</a>
+          for the employee,
+          <a href="../admin-panel/_wireframes/agents.html" class="xref-badge">→ Admin Panel</a>
+          for the admin.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

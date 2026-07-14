@@ -1,0 +1,417 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Agent Engine: Test cases</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Agent Engine</a>
+        <h1 class="header__title">Test cases</h1>
+        <div class="header__sub">agent-engine · workzone</div>
+      </div>
+
+      <!-- ── Overview band: decisions + stack ── -->
+      <div class="test-overview">
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Decisions made</div>
+          <div class="decision-box">
+            <strong>The loop runs on a fake model</strong>
+            The agentic loop (thinks → calls a tool → reads the result) is
+            checked deterministically: a fake chat-client with a recorded
+            sequence of tool-calls and fake tools. The real model and provider
+            stay out of CI, for manual debugging; only a reproducible double goes
+            into the automated run.
+          </div>
+          <div class="decision-box">
+            <strong>Tools — a contract to KS, not a re-run of it</strong>
+            <code>search</code> · <code>graph</code> · <code>sql</code> are tested
+            as <em>calls</em> to Knowledge Store primitives under the owner’s
+            identity ACL: the right tool is chosen by intent, and permissions trim
+            on the KS side. The results, ranking, and fusion themselves are held
+            and tested by Knowledge Store — not duplicated here.
+          </div>
+          <div class="decision-box">
+            <strong>Budget, stops, cascades — domain tests</strong>
+            The module’s safety core: the weekly sum of
+            <code>tokens_used</code>, two locks (the owner’s switch
+            <code>enabled</code> and the sticky <code>admin_paused</code>) plus
+            the model condition (<code>model_id IS NOT NULL</code>; removal from
+            the list → <code>SET NULL</code> → stop), account deactivation →
+            <code>enabled=false</code> for its agents, a
+            <code>skipped</code> record on a runtime refusal (<code>budget_exceeded</code> /
+            <code>already_running</code>) and the scheduler’s <em>silence</em> when
+            a lock is closed, FK cascades from the agent and from the account.
+            Also here — that outwardly this surfaces as clean codes, not
+            <code>500</code>.
+          </div>
+        </div>
+
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Stack and infrastructure</div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">On hand <span class="iter done">done</span></span>
+            <span>pytest, pytest-asyncio, pytest-cov, httpx</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Model doubles</span>
+            <span
+              >fake chat-client (recorded tool-call sequences)
+              + fake tools <code>search</code> / <code>graph</code> /
+              <code>sql</code></span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Time</span>
+            <span
+              >time-machine — schedule, <code>next_run_at</code>, the weekly
+              budget window</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Other</span>
+            <span
+              >factory_boy (<code>agents</code> / <code>agent_runs</code>),
+              SAQ handler called directly — without spinning up a worker</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Markers</span>
+            <span
+              ><code>@pytest.mark.unit</code> / <code>@pytest.mark.integration</code> —
+              by type; <code>@pytest.mark.p0</code> / <code>p1</code> — by
+              priority, orthogonal to type</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Unit ═══ Agentic loop and prompt composition on a fake model. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--unit">Unit</span>
+        <span class="test-sec__title">Loop and prompt composition on a fake model <span class="ai-tag" title="This step uses a neural network — model inference"><span class="ai-tag__icon"></span>AI</span></span>
+        <span class="test-sec__meta">deterministic · every PR</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg></span><span class="name">test_agent_loop.py</span></div>
+            <div class="test-card__sub">think → tool → observe on a fake chat-client</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="runtime.html#loop">→ Agentic loop</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">step with a tool</span><span class="test-case__e">the model calls a tool → the result comes back into context → the model takes the next step with it in hand</span></div>
+              <div class="test-case"><span class="test-case__k">completion</span><span class="test-case__e">a final answer with no tool-call stops the loop; the output goes to the run journal</span></div>
+              <div class="test-case"><span class="test-case__k">iteration cap</span><span class="test-case__e">looping is cut off at the step limit — the run is <code>failed</code> with <code>reason=iteration_cap</code> (it hit the cap, not rejected before start), not an endless model call</span></div>
+              <div class="test-case"><span class="test-case__k">many steps in a run</span><span class="test-case__e">several consecutive tool calls in one run — context accumulates step by step</span></div>
+              <div class="test-case"><span class="test-case__k">choice by intent</span><span class="test-case__e">the recorded sequence calls the right one of the three tools for the task — tool-call dispatch by name works</span></div>
+              <div class="test-case"><span class="test-case__k">tool output is data, not a command</span><span class="test-case__e">a fake tool returns text with an injection (“ignore previous, do X”) → the result is placed into context as data, not as an instruction; the safety perimeter holds, an injection via tool output can’t override platform rules <a class="xref-badge xref-badge--page" href="runtime.html#prompt-composition">→ Prompt composition</a></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg></span><span class="name">test_prompt_composition.py</span></div>
+            <div class="test-card__sub">Layered prompt assembly, safety isn’t overridden</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="runtime.html#prompt-composition">→ Prompt composition</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">layer order</span><span class="test-case__e">the platform prompt at the bottom (safety + org), the owner’s prompt on top, the engineering layer closing it out — assembly happens in exactly this order</span></div>
+              <div class="test-case"><span class="test-case__k">owner can’t override safety</span><span class="test-case__e">the owner’s prompt doesn’t override the platform safety layer — the owner’s wording can’t cut out the perimeter</span></div>
+              <div class="test-case"><span class="test-case__k">binding is added in code</span><span class="test-case__e">the owner’s identity binding and the descriptions of the three tools are inserted by the engineering layer, not taken from the owner’s text</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Unit/Contract ═══ Tools as calls to KS primitives under the identity ACL. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--unit">Unit / Contract</span>
+        <span class="test-sec__title">Tools into Knowledge Store</span>
+        <span class="test-sec__meta">fake KS primitives · every PR</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9" /><path d="m18 15 4-4" /><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5" /></svg></span><span class="name">test_tools.py</span></div>
+            <div class="test-card__sub">search / graph / sql — called under the identity ACL, reading KS</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Contract</span>
+              <a class="xref-badge xref-badge--page" href="runtime.html#tools">→ Tools</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">three tools by intent</span><span class="test-case__e"><code>search</code> · <code>graph</code> · <code>sql</code> are dispatched by the tool-call name and call the corresponding Knowledge Store primitive</span></div>
+              <div class="test-case"><span class="test-case__k">under the identity ACL</span><span class="test-case__e">the call runs with the owner’s identity permissions (the owner’s frame), not a separate agent identity — the fake primitive receives the creator’s context</span></div>
+              <div class="test-case"><span class="test-case__k">KS trims permissions</span><span class="test-case__e">the cut by permissions is a pre-filter on the Knowledge Store side, not a post-filter in the agent; here we check that the ACL context is passed through, and KS holds the results</span></div>
+              <div class="test-case"><span class="test-case__k">read-only</span><span class="test-case__e">the agent writes nothing in Knowledge Store — all three tools are read-only, no mutating primitive is given to them (<a class="xref-page" href="identity.html#ks-boundary">the KS read boundary</a>)</span></div>
+              <div class="test-case"><span class="test-case__k">empty knowledge base → core not offered</span><span class="test-case__e">Knowledge Store is empty (is_empty) → the harness doesn’t include the core <code>search</code> · <code>graph</code> · <code>sql</code> in the set, even though it’s locked; “locked” = can’t be turned off by hand, not “present in any state of the knowledge base”; the agent starts and degrades onto external tools, or plainly reports there’s no data — an empty knowledge base doesn’t enter the <a class="xref-page" href="governance.html#gate">readiness gate</a></span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P0 ═══ Run lifecycle: states, accounting, timestamps. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p0">Integration · P0</span>
+        <span class="test-sec__title">Run lifecycle</span>
+        <span class="test-sec__meta">DB · separate CI step</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12h-5" /><path d="M15 8h-5" /><path d="M19 17V5a2 2 0 0 0-2-2H4" /><path d="M8 21h12a2 2 0 0 0 2-2v-1a1 1 0 0 0-1-1H11a1 1 0 0 0-1 1v1a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v2a1 1 0 0 0 1 1h3" /></svg></span><span class="name">test_run_lifecycle.py</span></div>
+            <div class="test-card__sub">agent_runs states, the single-active-run lock, spend accounting, timestamps</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#agent-runs">→ Agent runs</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">success path</span><span class="test-case__e"><code>queued</code> → <code>running</code> → <code>succeeded</code>; <code>output</code> written to the run row</span></div>
+              <div class="test-case"><span class="test-case__k">failure</span><span class="test-case__e">the run goes to <code>failed</code>, <code>error</code> is filled; distinct from <code>skipped</code></span></div>
+              <div class="test-case"><span class="test-case__k">token accounting</span><span class="test-case__e"><code>tokens_used</code> is set from the actual run — the basis for the weekly budget sum</span></div>
+              <div class="test-case"><span class="test-case__k">work timestamps</span><span class="test-case__e"><code>started_at</code> / <code>finished_at</code> are set at start and finish; <code>created_at</code> / <code>updated_at</code> — server_default + trigger</span></div>
+              <div class="test-case"><span class="test-case__k">skipped without a start</span><span class="test-case__e">a run that never started (<code>skipped</code>) has no <code>started_at</code> — it was rejected before launch, not cut off mid-work</span></div>
+              <div class="test-case"><span class="test-case__k">single active run</span><span class="test-case__e">a second unfinished run of the agent is rejected by the partial unique index <code>UNIQUE (agent_id) WHERE state IN ('queued','running')</code> — the race (a manual launch coinciding with a fired slot) is quashed by the database itself, not just a code check</span></div>
+              <div class="test-case"><span class="test-case__k">stale heartbeat → stale</span><span class="test-case__e">the worker died without closing <code>running</code> → once <code>heartbeat_at</code> goes stale the run is reaped to <code>failed</code> with <code>reason=stale</code>, the lock is released, and the agent starts again — a zombie doesn’t lock it out</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P1 ═══ Budget, schedule, control, lane isolation. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">Integration · P1</span>
+        <span class="test-sec__title">Budget, schedule, control, isolation</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2" /><circle cx="12" cy="12" r="2" /><path d="M6 12h.01M18 12h.01" /></svg></span><span class="name">test_budget.py</span></div>
+            <div class="test-card__sub">Weekly per-user token limit</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="governance.html#budget">→ Weekly budget</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">weekly sum</span><span class="test-case__e">spend = <code>SUM(tokens_used)</code> across all of the owner’s agents for the current week (by <code>finished_at</code>), not per agent</span></div>
+              <div class="test-case"><span class="test-case__k">over limit → skipped</span><span class="test-case__e">limit exhausted → the run doesn’t start, a <code>skipped</code> is written with <code>reason=budget_exceeded</code>, <code>tokens_used=0</code></span></div>
+              <div class="test-case"><span class="test-case__k">week reset</span><span class="test-case__e">the weekly window rolls over → spend resets to zero, the owner’s agents start again</span></div>
+              <div class="test-case"><span class="test-case__k">limit from settings</span><span class="test-case__e">the limit value comes from <code>platform_settings</code>, not stored in the module — changed centrally</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></svg></span><span class="name">test_scheduling.py</span></div>
+            <div class="test-card__sub">Manual + interval/calendar, next_run_at, enqueueing</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="execution.html#schedule">→ Schedule</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">manual only</span><span class="test-case__e"><code>schedule</code> <code>NULL</code> → the agent runs only manually, the scheduler leaves it alone</span></div>
+              <div class="test-case"><span class="test-case__k">interval</span><span class="test-case__e">an interval schedule computes the next <code>next_run_at</code> from the previous run</span></div>
+              <div class="test-case"><span class="test-case__k">calendar (time-machine)</span><span class="test-case__e">a calendar schedule — daily / weekly at <code>HH:MM</code> — yields the correct <code>next_run_at</code></span></div>
+              <div class="test-case"><span class="test-case__k">owner’s timezone</span><span class="test-case__e">the calendar <code>HH:MM</code> resolves against the owner’s <code>users.timezone</code> (on <code>NULL</code> — the org default <code>platform_settings.timezone</code>), then is stored in UTC</span></div>
+              <div class="test-case"><span class="test-case__k">enqueueing</span><span class="test-case__e">when <code>next_run_at</code> arrives, the scheduler places the run on the background queue with <code>trigger=scheduled</code></span></div>
+              <div class="test-case"><span class="test-case__k">overlap doesn’t multiply</span><span class="test-case__e">a slot (or a manual launch) on top of a still-<code>running</code>/<code>queued</code> run creates no new cycle — a <code>skipped</code> row, <code>reason=already_running</code></span></div>
+              <div class="test-case"><span class="test-case__k">manual without a schedule</span><span class="test-case__e">“Run now” (<code>trigger=manual</code>) needs no schedule — it works even with <code>schedule=NULL</code>; the locks (<code>enabled</code>, <code>admin_paused</code>) are still honored</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg></span><span class="name">test_governance.py</span></div>
+            <div class="test-card__sub">Two locks (enabled · admin_paused), deactivation, account cascades</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="governance.html#admin-pause">→ Two locks</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">admin_paused is sticky</span><span class="test-case__e">the owner can’t clear <code>admin_paused</code> — only an admin can; the owner’s attempt leaves the flag unchanged</span></div>
+              <div class="test-case"><span class="test-case__k">start conditions</span><span class="test-case__e">the agent starts — by schedule or manually — only when <code>enabled</code>, not <code>admin_paused</code>, budget within bounds AND <code>model_id IS NOT NULL</code>; the axes are independent</span></div>
+              <div class="test-case"><span class="test-case__k">removed model → stop</span><span class="test-case__e">the admin removed the model from <code>agent_models</code> → <code>ON DELETE SET NULL</code> nulls <code>agents.model_id</code> → the agent drops out of the scan (<code>next_run_at</code> cleared), launch is unavailable, no <code>skipped</code> is written — as with a closed lock; it doesn’t fall back to a default</span></div>
+              <div class="test-case"><span class="test-case__k">closed lock — silent, no row</span><span class="test-case__e">with <code>enabled=false</code> or <code>admin_paused=true</code> the agent is out of the scheduler’s scan (<code>next_run_at</code> cleared) and the manual-launch button is unavailable — no run happens and no <code>skipped</code> appears; the journal doesn’t accumulate durable stops</span></div>
+              <div class="test-case"><span class="test-case__k">deactivation → enabled=false</span><span class="test-case__e">deactivating the owner’s account clears <code>enabled</code> on all their agents; reactivation doesn’t restore the flag — only the owner brings them back to life by hand</span></div>
+              <div class="test-case"><span class="test-case__k">deletion → cascade</span><span class="test-case__e">deleting the account → <code>agents</code> and behind them <code>agent_runs</code> go via <code>ON DELETE CASCADE</code></span></div>
+              <div class="test-case"><span class="test-case__k">banner — on the surface</span><span class="test-case__e">“paused by administrator” is drawn on the surface side from the flag; the domain merely holds <code>admin_paused</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3" /><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" /><circle cx="18" cy="5" r="3" /></svg></span><span class="name">test_isolation.py</span></div>
+            <div class="test-card__sub">Background lane: own pool, separate LLM cap, read-only</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="execution.html#lane">→ Background lane</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">separate worker pool</span><span class="test-case__e">runs go on the background lane with their own pool, off the live-chat path — agent load doesn’t crowd the interactive path</span></div>
+              <div class="test-case"><span class="test-case__k">separate LLM cap</span><span class="test-case__e">the background lane’s cap on concurrent model calls is separate from the live-chat cap (<a class="xref-page" href="execution.html#concurrency">concurrency</a>)</span></div>
+              <div class="test-case"><span class="test-case__k">read-only alongside writes</span><span class="test-case__e">reading Knowledge Store runs alongside graph writes without locks — the agent doesn’t queue behind data ingestion</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ API P1 ═══ HTTP contract of the owner and admin endpoints. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">API · P1</span>
+        <span class="test-sec__title">Endpoints — HTTP contract</span>
+        <span class="test-sec__meta">httpx · ASGI · DB · <a href="../../api/index.html#surface-map" class="xref-badge">→ HTTP API</a> <a class="xref-badge" href="../../api/_workzone/tests.html#conformance">→ Conformance</a></span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg></span><span class="name">test_api_agents.py</span></div>
+            <div class="test-card__sub">CRUD of your own agents, launch, reading the journal</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#agents">→ Agent model</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">CRUD of your own</span><span class="test-case__e">create / edit / delete your own agents over HTTP — name, description, prompt, model, schedule, the <code>enabled</code> flag</span></div>
+              <div class="test-case"><span class="test-case__k">model choice</span><span class="test-case__e"><code>model_id</code> from the <a class="xref-module" href="../../ai-foundation/_workzone/data-model.html#ai-models">allowed list</a> is saved and applied in the run; on creation the field is set (preselect — the list default)</span></div>
+              <div class="test-case"><span class="test-case__k">model not in the list → 422</span><span class="test-case__e"><code>model_id</code> outside <code>agent_models</code> (or an embedding type) → <code>422</code>, not <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">run now</span><span class="test-case__e">“Run now” → <code>202</code> + run id; an <code>agent_run</code> is created (<code>trigger=manual</code>, <code>queued</code>), a task in SAQ</span></div>
+              <div class="test-case"><span class="test-case__k">repeat /run under an active run</span><span class="test-case__e">a second <code>POST /agents/{id}/run</code> while the agent’s run is already <code>running</code> → <code>409 CONFLICT</code> (single-flight, doesn’t double the run); consistent with the domain <code>already_running → skipped</code></span></div>
+              <div class="test-case"><span class="test-case__k">/run on a nonexistent agent → 404</span><span class="test-case__e">an unknown <code>{id}</code> → <code>404</code>, not <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">/run with budget exhausted</span><span class="test-case__e">the agent’s budget is spent → <code>POST /run</code> doesn’t start a run: <code>409</code> (or a domain <code>skipped</code> with reason <code>budget_exceeded</code>) — a fixed HTTP outcome, not <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">CHECK surfaces as 422</span><span class="test-case__e">an invalid <code>trigger</code> / <code>state</code> off the enum, an empty <code>name</code> → <code>422</code>, not <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">schedule shape → 422</span><span class="test-case__e"><code>schedule</code> is a tagged union by <code>type</code> (<code>interval</code> / <code>calendar</code>), <code>weekday</code> 0–6, <code>time</code> <code>HH:MM</code>; a malformed input is rejected by validation: (a) unknown <code>type</code>; (b) <code>calendar</code> without <code>time</code>; (c) <code>weekday</code> outside 0–6 → <code>422</code>, not <code>500</code> <a class="xref-badge xref-badge--page" href="data-model.html#schedule-shape">→ Schedule shape</a></span></div>
+              <div class="test-case"><span class="test-case__k">reading the journal</span><span class="test-case__e">GET the agent’s runs with <code>output</code>, <code>tokens_used</code> and outcome; <code>skipped</code> with <code>reason</code> is returned distinctly from <code>failed</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" /></svg></span><span class="name">test_api_admin.py</span></div>
+            <div class="test-card__sub">Registry of all agents, read-only profile, admin lock</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="governance.html#admin-pause">→ Two locks</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">list all</span><span class="test-case__e">the admin sees ALL agents on the platform — search and filters by owner / state</span></div>
+              <div class="test-case"><span class="test-case__k">both locks in the registry</span><span class="test-case__e">the registry returns both the owner’s switch (<code>enabled</code>, read-only for the admin) and <code>admin_paused</code> — the row’s combined status is visible to the admin</span></div>
+              <div class="test-case"><span class="test-case__k">read-only profile</span><span class="test-case__e">the admin opens another user’s agent profile read-only: owner, prompt, schedule, runs</span></div>
+              <div class="test-case"><span class="test-case__k">lock / unlock</span><span class="test-case__e">the admin sets and clears <code>admin_paused</code> on any agent; leaves the owner’s <code>enabled</code> switch untouched</span></div>
+              <div class="test-case"><span class="test-case__k">no deleting another’s</span><span class="test-case__e">the admin route doesn’t delete another user’s agent — deletion stays with the owner (or the account cascade)</span></div>
+              <div class="test-case"><span class="test-case__k">owner can’t clear another’s admin_paused</span><span class="test-case__e">an owner on the admin action over <code>admin_paused</code> → <code>403</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="16" r="1" /><rect x="3" y="10" width="18" height="12" rx="2" /><path d="M7 10V7a5 5 0 0 1 10 0v3" /></svg></span><span class="name">test_api_access.py</span></div>
+            <div class="test-card__sub">Owner sees their own; roles and authentication on every route</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="governance.html#admin-pause">→ Two locks</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">own only</span><span class="test-case__e">the owner manages only their own agents; another’s agent is neither visible nor editable in their routes</span></div>
+              <div class="test-case"><span class="test-case__k">member blocked</span><span class="test-case__e">a member on another’s agent or on an admin route → <code>403 FORBIDDEN</code></span></div>
+              <div class="test-case"><span class="test-case__k">anonymous</span><span class="test-case__e">no token → <code>401 UNAUTHORIZED</code> (parameterized across all routes)</span></div>
+              <div class="test-case"><span class="test-case__k">expired token</span><span class="test-case__e">an expired access JWT → <code>401</code></span></div>
+              <div class="test-case"><span class="test-case__k">routes behind the guard</span><span class="test-case__e">every Agent Engine endpoint is genuinely behind the guard — a parameterized coverage audit; the end-to-end RBAC / JWT mechanics are held by Auth &amp; Security, here we only check the routes sit behind it</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Structure ═══ Test catalog: level by purpose, priority by markers. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Structure</span>
+        <span class="test-sec__title">Test file structure</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          The split is set by purpose, not folders. <code>unit/</code> runs on
+          every PR deterministically — a fake model and fake primitives, no
+          network or DB. <code>integration/</code> and <code>api/</code> — a
+          separate, rarer step on a live DB: the first checks the domain (runs,
+          budget, control, lane), the second — the HTTP contract on the ASGI app.
+          The real model and provider stay out of CI, for manual debugging.
+          Priority (P0–P1) is orthogonal to the folders and set by markers
+          (<code>pytest -m p0</code>).
+        </p>
+        <div class="test-tree">
+          <ul>
+            <li>
+              <span class="test-tree__row"><code>tests/agent_engine/</code><span class="d">module directory</span></span>
+              <ul>
+                <li><span class="test-tree__row"><code>conftest.py</code><span class="d">fake chat-client · fake tools search/graph/sql · time-machine · agents/agent_runs factories · SAQ directly</span></span></li>
+                <li>
+                  <span class="test-tree__row"><code>unit/</code><span class="d">loop and tools on a fake model — every PR, deterministic</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_agent_loop.py · test_prompt_composition.py</code><span class="d">think→tool→observe, layered prompt assembly</span></span></li>
+                    <li><span class="test-tree__row"><code>test_tools.py</code><span class="d">search/graph/sql as calls to KS primitives under the identity ACL</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>integration/</code><span class="d">domain on a live DB</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_run_lifecycle.py</code><span class="d">run states, single-active lock + stale reaping by heartbeat, token accounting, timestamps</span></span></li>
+                    <li><span class="test-tree__row"><code>test_budget · test_scheduling · test_governance · test_isolation</code><span class="d">weekly budget, schedule, locks and cascades, background lane</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>api/</code><span class="d">HTTP contract of the endpoints — httpx + ASGI + DB</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_api_agents · _admin · _access</code><span class="d">CRUD and launch, admin registry and lock, roles and authentication</span></span></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

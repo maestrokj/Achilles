@@ -1,0 +1,330 @@
+/* Knowledge Store — lifecycle workzone diagrams.
+   Page-bespoke pieces around Curation Pass: the orchestrator step chain
+   (lc-steps — resolution → staleness → retention by schedule, with embedding
+   refresh standing apart as an event-driven aside), the resolution case pair
+   (lc-cases), the trust-decay in→out box (lc-decay), and the retention tiers
+   (lc-retain). The DB-table matrix (dm-tbl · dm-fields · dm-c · dm-badge) and
+   the band accent (stk-layer--ks) come from ../knowledge-store.css; the bands
+   themselves from ../../layered-stack.css.
+   Static — no hover affordance for non-clickable blocks (README §Hover); the
+   lc-step tiles are <a> links and react on hover.
+   Loaded by _workzone/lifecycle.html on top of ../../module.css
+   + ../knowledge-store.css + ../../layered-stack.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ════════════════ CURATION STEP CHAIN ════════════════ three scheduled steps
+   in one chain, with embedding refresh set apart as an event-driven aside. */
+.lc-steps {
+  margin: 1.1rem 0 0.4rem;
+}
+.lc-steps__chain {
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+.lc-step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  text-decoration: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--dot);
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.8rem;
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+}
+a.lc-step:hover {
+  border-color: var(--accent-muted);
+  transform: translateY(-2px);
+}
+.lc-step--resolve {
+  border-top-color: var(--s3);
+}
+.lc-step--stale {
+  border-top-color: var(--s2);
+}
+.lc-step--retain {
+  border-top-color: var(--s4);
+}
+.lc-step--materialize {
+  border-top-color: var(--s1);
+}
+.lc-step--embed {
+  border-top-color: var(--accent);
+  border-style: dashed;
+}
+.lc-step__n {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.lc-step__t {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.lc-step__d {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+.lc-step__seam {
+  align-self: center;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent-muted);
+}
+.lc-step__badge {
+  align-self: flex-start;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  background: var(--tint-8);
+  border-radius: var(--tag-radius);
+  padding: 0.1rem 0.4rem;
+}
+.lc-steps__cap {
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  margin-top: 0.45rem;
+}
+.lc-steps__aside {
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px dashed var(--border);
+  display: flex;
+}
+.lc-steps__aside .lc-step {
+  flex: 1;
+}
+
+/* ════════════════ RESOLUTION CASES ════════════════ the two shapes of
+   fuzzy cross-source resolution — identities and graph-node merge. */
+.lc-cases {
+  display: flex;
+  gap: 0.6rem;
+  margin: 0.9rem 0 0.4rem;
+}
+.lc-case {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--s3);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.9rem;
+}
+.lc-case__h {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+}
+.lc-case__d {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ════════════════ TRUST DECAY ════════════════ inputs feed the decay
+   function, output lowers the ranking weight. */
+.lc-decay {
+  display: flex;
+  align-items: stretch;
+  gap: 0.6rem;
+  margin: 0.9rem 0 0.4rem;
+}
+.lc-decay__in,
+.lc-decay__out {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.9rem;
+}
+.lc-decay__out {
+  border-left: 4px solid var(--s2);
+  background: var(--tint-6);
+}
+.lc-decay__h {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.45rem;
+}
+.lc-decay__list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+.lc-decay__list li {
+  margin-bottom: 0.25rem;
+}
+.lc-decay__arrow {
+  align-self: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.lc-decay__field {
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 0.3rem;
+}
+.lc-decay__note {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ════════════════ RETENTION TIERS ════════════════ keep · archive · purge,
+   warming-to-cooling left to right. */
+.lc-retain {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.9rem 0 0.4rem;
+}
+.lc-retain__tier {
+  flex: 1;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--dot);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.85rem;
+}
+.lc-retain__tier--keep {
+  border-top-color: var(--s3);
+}
+.lc-retain__tier--archive {
+  border-top-color: var(--s2);
+}
+.lc-retain__tier--purge {
+  border-top-color: var(--s4);
+}
+.lc-retain__t {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.3rem;
+}
+.lc-retain__d {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ════════════════ LANE COORDINATION ════════════════ delivery and doctoring
+   run as parallel rails; only the destructive doctoring window holds a lock,
+   and the affected source's sync waits in queue for it. */
+.lc-lanes {
+  margin: 1rem 0 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.lc-lane {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.85rem;
+}
+.lc-lane__tag {
+  flex: 0 0 9rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  border-left: 4px solid var(--dot);
+  padding-left: 0.6rem;
+  line-height: 1.25;
+}
+.lc-lane--deliver .lc-lane__tag {
+  border-left-color: var(--s3);
+}
+.lc-lane--doctor .lc-lane__tag {
+  border-left-color: var(--s2);
+}
+.lc-lane__sub {
+  display: block;
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+.lc-lane__track {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.lc-lane__flow {
+  flex: 1;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--tint-8);
+}
+.lc-lane__lock {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--s4);
+  border-radius: var(--tag-radius);
+  padding: 0.12rem 0.45rem;
+}
+.lc-lanes__cap {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+  margin-top: 0.15rem;
+}
+
+@media (max-width: 640px) {
+  .lc-steps__chain,
+  .lc-cases,
+  .lc-decay,
+  .lc-retain {
+    flex-direction: column;
+  }
+  .lc-step__seam,
+  .lc-decay__arrow {
+    transform: rotate(90deg);
+  }
+  .lc-lane {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .lc-lane__tag {
+    flex-basis: auto;
+  }
+}

@@ -1,0 +1,387 @@
+/* Harvester — connectors workzone diagrams.
+   The connector layer: the source-specific contract surface a connector owns
+   (extract + normalize, plus the list_catalog and check_connection operational
+   capabilities) handing off to the shared pipeline, the manifest → UI mapping
+   that drives the add-source form, the built-in catalog table, and the
+   custom-connector recipe. Reuses module.css primitives (mod-card,
+   decision-box); adds the page-only contract cards, the declaration→UI map,
+   the catalog table, and the dark IDE block (pseudocode + package tree).
+   Loaded by _workzone/connectors.html on top of ../../module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* Shared inline arrow, echoing the pipeline/sources accent connector. */
+.cn-arrow {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ════════ CONTRACT ════════ */
+
+/* The connector-owned methods as wrapping cards, then the hand-off note. */
+.cn-contract {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--grid-gap);
+}
+
+.cn-method {
+  flex: 1 1 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.9rem 1rem;
+  border-left: 3px solid var(--s2);
+}
+
+.cn-method__tag {
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--s2);
+}
+
+.cn-method__sig {
+  font-size: 0.9rem;
+}
+
+.cn-method__sig code {
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.cn-method__d {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+/* The "→ shared pipeline" hand-off — a full-width dashed return. */
+.cn-handoff {
+  flex: 1 1 100%;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+  background: var(--paper);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+}
+
+/* ════════ MANIFEST → UI MAP ════════ */
+
+/* Two-column mapping: what the connector declares → what grows in the UI. */
+.cn-map {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.cn-map__head {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0 0.85rem;
+}
+
+.cn-map__decl-h,
+.cn-map__ui-h {
+  flex: 1 1 0;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+.cn-map__row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.cn-map__decl,
+.cn-map__ui {
+  flex: 1 1 0;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.cn-map__decl {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Accent arrow drawn between the two columns of every row. */
+.cn-map__ui {
+  position: relative;
+  padding-left: 1.2rem;
+}
+
+.cn-map__ui::before {
+  content: "→";
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ════════ CATALOG CARDS ════════ */
+
+/* Built-in connectors as a gallery of portrait tiles — one card per type,
+   each with its own id so a source badge on the hub deep-links to the exact
+   connector. Content stacks down the card, not across it. */
+.cn-catalog {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: var(--grid-gap);
+}
+
+.cn-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.1rem;
+  /* Keep the targeted card clear of the viewport top on deep-link landing. */
+  scroll-margin-top: 1rem;
+}
+
+/* Identity row: app-tile icon + name and library stacked beside it. */
+.cn-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.cn-card__icon {
+  flex: none;
+  width: 2.4rem;
+  height: 2.4rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.3rem;
+  background: var(--tint-8);
+  border-radius: var(--radius-md);
+}
+
+.cn-card__id {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.cn-card__name {
+  font-weight: 700;
+  font-size: 0.98rem;
+  color: var(--text);
+}
+
+/* Library as a quiet mono chip under the name. */
+.cn-card__lib {
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+/* Version badge pinned to the card's top-right corner. */
+.cn-card > .iter {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+}
+
+/* Attributes stacked vertically below a divider — the card grows downward. */
+.cn-card__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+
+.cn-card__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+}
+
+.cn-card__label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+.cn-card__val {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+/* Landing highlight when a source badge on the hub deep-links to a card. */
+.cn-card:target {
+  border-color: var(--accent);
+  background: var(--tint-8);
+}
+
+.cn-card:target .cn-card__name {
+  color: var(--accent);
+}
+
+/* Keep the icon tile readable against the tinted target background. */
+.cn-card:target .cn-card__icon {
+  background: var(--surface);
+}
+
+/* ════════ CUSTOM CONNECTOR ════════ */
+
+/* Build-your-own recipe: three two-word steps as a legend, then the whole
+   class skeleton as annotated pseudocode — the code carries the detail the
+   prose used to spell out. Numbers in the legend echo the # n · markers in
+   the snippet's comments. */
+.cn-recipe {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+
+.cn-recipe__step {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.3rem 0.75rem 0.3rem 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.cn-recipe__step b {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.3rem;
+  height: 1.3rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--accent);
+  background: var(--tint-15);
+  border-radius: 50%;
+}
+
+/* The IDE block — a dark editor stacked vertically: the class skeleton on top,
+   the package tree (where that file lands) below it. Dark tones are warm,
+   not cold blue, so the block still belongs to the paper-toned docs. Local
+   --ide-* tokens keep the dark palette in one place instead of scattered
+   literals. */
+.cn-ide {
+  --ide-bg: #2a2018;
+  --ide-pane: #322820;
+  --ide-fg: #e9dcc9;
+  --ide-dim: #9a8872;
+  --ide-kw: #e0905c;
+  --ide-add: #e8b070;
+  --ide-border: #443628;
+
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  background: var(--ide-border);
+  border: 1px solid var(--ide-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.cn-ide__pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--ide-bg);
+}
+
+/* Editor tab / breadcrumb strip atop each pane. */
+.cn-ide__tab {
+  padding: 0.5rem 1rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ide-dim);
+  background: var(--ide-pane);
+  border-bottom: 1px solid var(--ide-border);
+}
+
+/* Annotated class skeleton — keywords in warm accent, RU glosses dimmed. */
+.cn-code,
+.cn-tree {
+  margin: 0;
+  padding: 0.95rem 1.15rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  line-height: 1.7;
+  color: var(--ide-fg);
+  background: var(--ide-bg);
+  overflow-x: auto;
+}
+
+.cn-code .kw {
+  color: var(--ide-kw);
+  font-weight: 700;
+}
+
+.cn-code .cm,
+.cn-tree .cm {
+  color: var(--ide-dim);
+}
+
+/* The file being added — highlighted as the one new line in the tree. */
+.cn-tree__new {
+  display: block;
+  color: var(--ide-add);
+  font-weight: 700;
+}
+
+/* Deploy caveat, pinned right beside the pseudocode so it can't be missed. */
+.cn-warn {
+  display: block;
+  margin-top: 0.7rem;
+  padding: 0.35rem 0.6rem;
+  border-left: 2px solid var(--ide-kw);
+  background: rgba(224, 144, 92, 0.12);
+  color: var(--ide-fg);
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .cn-map__row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.3rem;
+  }
+  .cn-map__head {
+    display: none;
+  }
+  .cn-map__ui::before {
+    content: "↳";
+  }
+}

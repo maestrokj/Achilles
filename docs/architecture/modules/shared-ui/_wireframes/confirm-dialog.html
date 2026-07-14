@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Shared UI: Confirm Dialog</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Shared UI</a>
+        <h1 class="header__title">Confirm Dialog</h1>
+        <div class="header__sub">shared ui · wireframes · shared component</div>
+      </div>
+
+      <p class="desc">Confirming a destructive action. Three levels by the weight of consequences.</p>
+
+      <!-- Decision table: which variant to use (§9 — a legitimate component doc) -->
+      <table class="wf-table">
+        <thead>
+          <tr>
+            <th>Variant</th>
+            <th>When</th>
+            <th>Tone</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><a href="#reversible" class="xref-anchor">Reversible</a></td>
+            <td>State comes back, data intact</td>
+            <td>Accent button</td>
+          </tr>
+          <tr>
+            <td>
+              <a href="#irreversible" class="xref-anchor">Irreversible</a></td>
+            <td>Data or access is destroyed</td>
+            <td>Alert + red button</td>
+          </tr>
+          <tr>
+            <td>
+              <a href="#type-to-confirm" class="xref-anchor">Type-to-confirm</a></td>
+            <td>The heaviest: deleting a user or an organization</td>
+            <td>Typing the name unlocks the button</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- ═══ Variant: reversible ═══ The canonical one, with a full legend;
+           irreversible/type-to-confirm are presented as a delta from it. -->
+      <div class="section" id="reversible">
+        <h2 class="section__title">Reversible</h2>
+        <div class="wf-stage wf-stage--backdrop">
+          <div class="wf-stage__caption">confirm · reversible</div>
+          <div class="wf-screen wf-screen--modal">
+            <div class="wf-body">
+              <div class="wf-stack">
+                <h3 class="wf-title">
+                  Deactivate this user? <span class="wf-annot">1</span></h3>
+                <p class="wf-text">
+                   Sign-in for <strong>Anna Petrova</strong>
+                  will be closed and active sessions ended. The account and its history
+                  are kept — you can reactivate it at any time.
+                <span class="wf-annot">2</span>
+                </p>
+                <div class="wf-row wf-spread">
+                  <a class="wf-btn wf-btn--ghost">Cancel <span class="wf-annot">3</span></a>
+                  <div class="wf-guarded">
+                    <a class="wf-btn wf-btn--primary">
+                    Deactivate</a>
+                    <a class="wf-guard"><span class="wf-guard__icon"></span></a>
+                    <span class="wf-annot">4</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ol class="wf-legend">
+          <li class="wf-legend__item">
+            <span class="wf-annot wf-legend__num">1</span>
+            <strong>Question</strong> — action verb + object, one line.
+          </li>
+          <li class="wf-legend__item">
+            <span class="wf-annot wf-legend__num">2</span>
+            <strong>Consequences</strong> — what will happen; the object's name is emphasized.
+          </li>
+          <li class="wf-legend__item">
+            <span class="wf-annot wf-legend__num">3</span>
+            <strong>Cancel</strong> — a ghost button, focused by default.
+          </li>
+          <li class="wf-legend__item">
+            <span class="wf-annot wf-legend__num">4</span>
+            <strong>Confirm</strong> — an accent button with a guard marker; the label repeats the verb (not “OK”).
+          </li>
+        </ol>
+      </div>
+
+      <!-- ═══ Variant: irreversible ═══ Irreversible: hard delete / revocation. -->
+      <div class="section" id="irreversible">
+        <h2 class="section__title">Irreversible</h2>
+        <div class="wf-stage wf-stage--backdrop">
+          <div class="wf-stage__caption">confirm · irreversible</div>
+          <div class="wf-screen wf-screen--modal">
+            <div class="wf-body">
+              <div class="wf-stack">
+                <h3 class="wf-title">Revoke this API key?</h3>
+                <p class="wf-text">
+                  The key <code>ach_live_••••4f2a</code> will stop working
+                  immediately. Integrations using it will lose access.
+                </p>
+                <div class="wf-alert wf-alert--error">
+                  This action is irreversible — a revoked key cannot be restored,
+                  you will need to create a new one.
+                </div>
+                <div class="wf-row wf-spread">
+                  <a class="wf-btn wf-btn--ghost">Cancel</a>
+                  <div class="wf-guarded">
+                    <a class="wf-btn wf-btn--danger">Revoke key</a>
+                    <a class="wf-guard"><span class="wf-guard__icon"></span></a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        </div>
+        <p class="wf-subtitle wf-legend__lead">Delta from <a href="#reversible" class="xref-anchor">reversible</a>: an irreversibility alert and a red button instead of the accent one.</p>
+      </div>
+
+      <!-- ═══ Variant: type-to-confirm ═══ The heaviest actions. -->
+      <div class="section" id="type-to-confirm">
+        <h2 class="section__title">Type-to-confirm</h2>
+        <div class="wf-stage wf-stage--backdrop">
+          <div class="wf-stage__caption">confirm · type-to-confirm</div>
+          <div class="wf-screen wf-screen--modal">
+            <div class="wf-body">
+              <div class="wf-stack">
+                <h3 class="wf-title">Delete this user?</h3>
+                <p class="wf-text">
+                  The account of <strong>Anna Petrova</strong> and its links will be
+                  deleted with no way to recover. The history in the audit log
+                  is retained.
+                </p>
+                <div class="wf-field">
+                  <span class="wf-label">Type the name to confirm</span>
+                  <div class="wf-input">
+                    <span class="wf-line wf-line--w40"></span>
+                  </div>
+                  <span class="wf-hint">Expected: <code>Anna Petrova</code></span>
+                </div>
+                <div class="wf-row wf-spread">
+                  <a class="wf-btn wf-btn--ghost">Cancel</a>
+                  <div class="wf-guarded">
+                    <span class="wf-btn wf-btn--disabled">Delete</span>
+                <a class="wf-guard"><span class="wf-guard__icon"></span></a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="wf-subtitle wf-legend__lead">Delta from <a href="#reversible" class="xref-anchor">reversible</a>: a name input field — the button is active only on an exact match. Used, for example, when deleting an account in <a href="../../admin-panel/_wireframes/users.html" class="xref-module">Admin Panel</a>.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

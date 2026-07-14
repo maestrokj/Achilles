@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Профиль агента</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Профиль агента</h1>
+        <div class="header__sub">
+          admin panel · макеты · ai
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Экран рендерится в контентной области каркаса">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Загрузка экрана — каркас (skeleton)">
+              <span class="in-load__icon"></span>загрузка
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">Чужой агент глазами администратора: конфигурация и прогоны — только на чтение, единственное действие — поставить на паузу или снять её.</p>
+
+      <!-- ═══ Макет ═══ -->
+      <div class="section" id="agent-card">
+        <div class="section__title">
+          Профиль и пауза
+          <a href="../../agent-engine/_workzone/governance.html#admin-pause" class="xref-badge">→ Agent Engine</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">профиль</div>
+              <div class="wf-screen">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/admin/agents/12
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/admin/agents/:id · Owner / Admin</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack wf-stack--loose">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-title">Дайджест релизов</span>
+                        <span class="wf-chip wf-chip--ok">активен</span>
+                      </span>
+                    </div>
+
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">Владелец</span>
+                      <span class="wf-row">
+                        <span class="wf-avatar">ДС</span>
+                        <a href="user-card.html" class="wf-userlink">Дмитрий Соколов</a>
+                        <span class="wf-annot">1</span>
+                      </span>
+                    </div>
+
+                    <div class="wf-stack">
+                      <span class="wf-label">Конфигурация <span class="wf-annot">2</span></span>
+                      <div class="wf-field">
+                        <span class="wf-label">Имя</span>
+                        <div class="wf-input wf-input--locked">Дайджест релизов</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Описание</span>
+                        <div class="wf-input wf-input--locked">Сводка по статусам задач проекта Аякс и открытым блокерам.</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Промт</span>
+                        <div class="wf-input wf-input--area wf-input--locked">Каждый прогон собирай короткий дайджест проекта Аякс: что закрыто, что в работе, какие блокеры открыты. Отвечай списком, по каждому пункту — ссылку на источник.</div>
+                      </div>
+                      <div class="wf-row">
+                        <div class="wf-field">
+                          <span class="wf-label">Модель</span>
+                          <div class="wf-input wf-input--sm wf-input--locked">Claude Sonnet</div>
+                        </div>
+                        <div class="wf-field">
+                          <span class="wf-label">Расписание</span>
+                          <div class="wf-input wf-input--sm wf-input--locked">каждые 6 часов</div>
+                        </div>
+                        <div class="wf-field">
+                          <span class="wf-label">Инструменты <span class="wf-annot">6</span></span>
+                          <div class="wf-route">
+                            <span class="wf-pill wf-pill--locked"><span class="wf-lock"></span>search</span>
+                            <span class="wf-pill wf-pill--locked"><span class="wf-lock"></span>graph</span>
+                            <span class="wf-pill wf-pill--locked"><span class="wf-lock"></span>sql</span>
+                            <span class="wf-route__sep"></span>
+                            <span class="wf-pill wf-pill--on">web_search</span>
+                          </div>
+                          <span class="wf-hint">ядро KS · внешние выбраны владельцем из разрешённых</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="wf-stack">
+                      <span class="wf-label">Бюджет недели владельца</span>
+                      <div class="wf-row">
+                        <div class="wf-stat">
+                          <span class="wf-stat__num">1.2M / 2M</span>
+                          <span class="wf-stat__label">Токены недели</span>
+                          <span class="wf-stat__sub">по всем агентам владельца</span>
+                        </div>
+                        <span class="wf-annot">3</span>
+                      </div>
+                    </div>
+
+                    <hr class="wf-divider" />
+
+                    <div class="wf-stack">
+                      <span class="wf-label">Журнал прогонов <span class="wf-annot">4</span></span>
+                      <div class="wf-fold" id="run-output">
+                        <button class="wf-fold__head">
+                          <span class="wf-runcell">
+                            <span>Сегодня 14:00</span>
+                            <span class="wf-runcell__meta">по расписанию · succeeded · 14 с · 38k</span>
+                          </span>
+                          <span class="wf-fold__caret">Вывод
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                          </span>
+                        </button>
+                        <div class="wf-fold__body">
+                          <span class="wf-text">За период закрыто 7 задач; в работе — 3. Открыт блокер: ревью архитектуры по AJX-218. Дедлайн сдвинут на 30 июня.</span>
+                        </div>
+                      </div>
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-runcell">
+                          <span>Вчера 14:00</span>
+                          <span class="wf-runcell__meta">по расписанию · succeeded · 11 с · 31k</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <hr class="wf-divider" />
+
+                    <div class="wf-stack">
+                      <span class="wf-label">Замок администратора <span class="wf-annot">5</span></span>
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-text">
+                          Пауза администратора<br />
+                          <span class="wf-hint">останавливает агента; владелец снять не может</span>
+                        </span>
+                        <span class="wf-guarded"
+                          ><span class="wf-toggle"></span><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                        ></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wf-frame">
+              <div class="wf-stage__caption">состояние · на паузе</div>
+              <div class="wf-screen">
+                <div class="wf-body">
+                  <div class="wf-stack wf-stack--loose">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-title">Сводка инцидентов</span>
+                        <span class="wf-chip wf-chip--warn">на паузе · админ</span>
+                      </span>
+                    </div>
+                    <div class="wf-alert">
+                      Агент на паузе администратора. Прогоны не запускаются; владельцу видна плашка «приостановлен администратором».
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">
+                        Пауза администратора<br />
+                        <span class="wf-hint">поставлена · снимается тем же тумблером</span>
+                      </span>
+                      <span class="wf-guarded"
+                        ><span class="wf-toggle wf-toggle--on"></span><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                      ></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Личность агента — это личность владельца: агент читает Knowledge Store строго под его правами, запись в граф недоступна. Ссылка ведёт в
+              <a href="user-card.html" class="xref-page">карточку владельца</a>.
+              <a href="../../agent-engine/_workzone/identity.html#ks-boundary" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Конфигурация — имя, описание, промт, расписание, инструменты — только на чтение: правит её владелец в
+              <a href="../../web-app/_wireframes/agent-editor.html#editor" class="xref-module">Web App</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Расход недели владельца против общего потолка — справочно. Сам потолок задаётся на экране
+              <a href="usage.html#limits" class="xref-page">Расходы AI</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Журнал прогонов — те же записи, что видит владелец: время, исход, длительность, токены, раскрываемый вывод.
+              <a href="../../agent-engine/_workzone/data-model.html#agent-runs" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Единственный рычаг администратора над чужим агентом в v1 — липкая пауза с подтверждением; владелец её не снимет. Массовые действия и kill switch — <span class="iter v2">v2</span>.
+              <a href="../../agent-engine/_workzone/governance.html#admin-pause" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              Инструменты — ядро KS (поиск, граф, SQL) плюс внешние, выбранные владельцем из разрешённых администратором; только на чтение, всё под личностью владельца. Допуск внешних инструментов задаётся в разделе
+              <a href="tools.html" class="xref-page">Инструменты AI</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Query Engine: Protection and privacy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../query-engine.css" />
+    <link rel="stylesheet" href="protection.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Query Engine</a>
+        <h1 class="header__title">Protection and privacy</h1>
+        <div class="header__sub">query-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        The security surface of the conversation layer — what Query Engine holds
+        itself, and what it merely presents. Injection into the <em>input</em> was
+        already covered by
+        <a href="grounding.html#untrusted-context" class="xref-page">grounding</a>
+        (what was found is data, not commands), and injection through the
+        <em>tool arguments</em> by
+        <a href="retrieval.html#identity" class="xref-page">retrieval</a>
+        (the identity for ACL comes from the session, not from the model's
+        arguments, so spoofing access is impossible); rights over knowledge and
+        authentication are held by Auth. Here are four things the conversation
+        itself owns: access to the
+        <a href="#ownership" class="xref-anchor">thread</a> itself, the answer as
+        an untrusted <a href="#output" class="xref-anchor">output channel</a>, the
+        <a href="#egress" class="xref-anchor">egress</a> of context to the model,
+        and the <a href="#traces" class="xref-anchor">traces</a> of queries. The
+        rest — authentication, rights, limits, model config, rendering — belongs to
+        the neighbors; the map below separates one from another.
+      </p>
+
+      <!-- ════════════════ RESPONSIBILITY MAP ════════════════
+           What the QE layer holds itself (links down to sections) vs what it
+           relies on from neighbors (only the home name; the real cross-links are
+           in the section prose). -->
+      <div class="prot-map">
+        <div class="prot-map__col prot-map__col--own">
+          <div class="prot-map__head">Query Engine holds</div>
+          <a class="prot-map__item" href="#ownership">
+            <span class="prot-map__k">Conversation ownership</span>
+            <span class="prot-map__v">the thread — for the owner only, not by knowing the id</span>
+          </a>
+          <a class="prot-map__item" href="#output">
+            <span class="prot-map__k">Output under suspicion</span>
+            <span class="prot-map__v">the answer is not executed and loads nothing external</span>
+          </a>
+          <a class="prot-map__item" href="#egress">
+            <span class="prot-map__k">Context egress</span>
+            <span class="prot-map__v">context leaves to the selected model</span>
+          </a>
+          <a class="prot-map__item" href="#traces">
+            <span class="prot-map__k">Traces and privacy</span>
+            <span class="prot-map__v">traces and history are company data</span>
+          </a>
+        </div>
+        <div class="prot-map__col prot-map__col--lean">
+          <div class="prot-map__head">relies on</div>
+          <span class="prot-map__item">
+            <span class="prot-map__k">Authentication and rights</span>
+            <span class="prot-map__v">who you are · what you see — Auth &amp; Security</span>
+          </span>
+          <span class="prot-map__item">
+            <span class="prot-map__k">Limits and cost</span>
+            <span class="prot-map__v">per-user rate limit, expensive LLMs — Auth</span>
+          </span>
+          <span class="prot-map__item">
+            <span class="prot-map__k">Model config and admission</span>
+            <span class="prot-map__v">allow-list, sensitivity axis — Admin</span>
+          </span>
+          <span class="prot-map__item">
+            <span class="prot-map__k">Answer rendering</span>
+            <span class="prot-map__v">markup sanitization — the Web App shell</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- ════════════════ OWNERSHIP — A THREAD BELONGS TO ITS OWNER ════════════════
+           Access to a conversation — by ownership, not by knowing the
+           conversation_id. A user_id check on top of RBAC, with the same pattern
+           Auth applies to personal agents and keys. Resume by someone else's id is
+           a textbook IDOR. -->
+      <div class="section" id="ownership">
+        <div class="section__title">Conversation ownership</div>
+        <p class="desc">
+          <code>conversation_id</code> addresses a thread but does not prove a
+          right to it. Access is the owner's alone: on read, continuation
+          (<a href="conversation.html#session-boundary" class="xref-page">resume</a>),
+          and deletion, the endpoint checks the conversation owner's
+          <code>user_id</code> against the current one — <strong>on top of</strong>
+          RBAC, with the same “is it over your own object” pattern that
+          <a href="../../auth-security/_workzone/authorization.html#resource-ownership" class="xref-module"
+            >Auth</a
+          >
+          applies to personal agents and keys. The foundation is already in the
+          model:
+          <a href="data-model.html#conversations" class="xref-page">conversations</a>
+          carry the owner's <code>user_id</code>.
+        </p>
+
+        <div class="decision-box">
+          <strong>The thread — for the owner only.</strong> Knowing the
+          <code>conversation_id</code> grants no access: a matching
+          <code>user_id</code> does. Without this check, continuing an exchange by
+          someone else's identifier is a textbook IDOR: A would be reading B's
+          messages.
+        </div>
+      </div>
+
+      <!-- ════════════════ OUTPUT — UNTRUSTED RENDER CHANNEL ════════════════
+           Mirror of grounding#untrusted-context: the input is handled, the output
+           is under suspicion too. A string planted in what was found can make the
+           model output an exfil link/image; the surface's render neutralizes it. -->
+      <div class="section" id="output">
+        <div class="section__title">The output is under suspicion too</div>
+        <p class="desc">
+          <a href="grounding.html#untrusted-context" class="xref-page">Grounding</a>
+          closed the input — what was found is not a command. The mirror is the
+          output: the model's answer is <strong>untrusted</strong> for the surface
+          that renders it too. A string planted in a found fragment can make the
+          model output a link or an image like <code>http://attacker/?leak=…</code>;
+          the chat, auto-loading the resource, would drag context outside. So the
+          answer rendering neutralizes the markup: it does not execute it, does not
+          auto-load external resources (images, fetch), and escapes the output.
+        </p>
+
+        <div class="decision-box decision-box--warn">
+          <strong>The leak channel is the render, not the prompt.</strong> The
+          access breach is closed in SQL+ACL; injection's “teeth” are in the
+          output. The answer is rendered by the Web App shell, which is also where
+          sanitization and the ban on auto-loading external resources live.
+        </div>
+      </div>
+
+      <!-- ════════════════ EGRESS — CONTEXT LEAVES TO THE PROVIDER ════════════════
+           The RAG context leaves to the selected chat model; a cloud provider
+           sees the found fragments. The Admin allow-list narrows by cost, not by
+           sensitivity. Control (sensitivity axis, redaction) — v2. -->
+      <div class="section" id="egress">
+        <div class="section__title">Where the context goes</div>
+        <p class="desc">
+          The user picks a chat model, and generation sends it the packed context
+          — the found company fragments. If the model is in the cloud, those
+          fragments <strong>leave the perimeter</strong> and go to the provider.
+          The Admin
+          <a href="../../admin-panel/_wireframes/ai-models.html#model-assignment" class="xref-module"
+            >model allow-list</a
+          >
+          already narrows the choice — but by cost and availability, not by data
+          sensitivity.
+        </p>
+
+        <div class="decision-box decision-box--warn">
+          <strong>Context goes to the selected model.</strong> A cloud provider
+          sees the found fragments in full. For now the choice is limited by the
+          Admin allow-list. <span class="iter v2">v2</span> — a sensitivity axis
+          “data class → permitted model” (cloud forbidden for a closed class) and
+          context redaction/minimization before sending — the control home is with
+          Admin / ai-models (see open-questions).
+        </div>
+      </div>
+
+      <!-- ════════════════ TRACES — QUERY TRAIL IS DATA, NOT DEBUG ════════════════
+           A conversation leaves traces (history + retrieval_trace) — company
+           data. Two views: own history for the owner (v1, screen — Web App) and
+           admin access to others' traces (v2, not pursued in the first iteration).
+           Minimization in logs, retention — with conversation management (Web App,
+           open-question); the cascade on user deletion is already in the model. -->
+      <div class="section" id="traces">
+        <div class="section__title">Traces and privacy</div>
+        <p class="desc">
+          A conversation leaves traces — the history
+          (<a href="data-model.html#conversations" class="xref-page">conversations</a>
+          /<a href="data-model.html#messages" class="xref-page">messages</a> with
+          the texts of queries and answers) and
+          <a href="data-model.html#retrieval-trace" class="xref-page">retrieval_trace</a>
+          (what was searched and what was found). This is company data: it lives
+          under the same rights and cascades away when a user is deleted; we do not
+          write the full context and secrets to logs.
+        </p>
+
+        <p class="desc">
+          Viewing traces is two different cases, not to be confused.
+          <strong>Own history</strong>: a user browses their own conversations —
+          what they asked and what was answered; visible to the owner only (by
+          <code>user_id</code>, like
+          <a href="#ownership" class="xref-anchor">thread ownership</a>), and the
+          screen itself is the Web App shell. <strong>Admin access</strong> to
+          others' conversations and <code>retrieval_trace</code> is a rare,
+          oversight right <span class="iter v2">v2</span>: not pursued in the first
+          iteration.
+        </p>
+
+        <div class="decision-box">
+          <strong>Traces are data, not debug.</strong> Minimization in logs; own
+          history is seen by the owner, others' — only by an admin, not by a
+          fellow chat user. Retention and auto-cleanup are decided together with
+          conversation management (home — the Web App shell, see open-questions);
+          the data model is already ready for cascading deletion.
+        </div>
+      </div>
+
+      <p class="note">
+        What this layer does not hold but merely respects: <em>who</em> the user is
+        and <em>what</em> they can see — established by
+        <a href="../../auth-security/_workzone/authentication.html#entry-channels" class="xref-module"
+          >Auth</a
+        >
+        (the surface presents a token, it does not dictate the identity), while
+        <a href="../../auth-security/_workzone/authentication.html#api-keys" class="xref-module"
+          >application limits</a
+        >
+        and cost (per-user rate limit, a separate bucket for expensive LLM queries)
+        are designed there too and marked <span class="iter v2">v2</span>. Query
+        Engine presents and honors them; it does not build the scheme.
+      </p>
+    </div>
+  </body>
+</html>

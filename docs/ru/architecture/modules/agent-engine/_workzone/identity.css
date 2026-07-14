@@ -1,0 +1,152 @@
+/* Agent Engine — identity page diagrams: identity binding · version split.
+   Loaded by _workzone/identity.html on top of module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ═══════════════════════════════════════════
+   Identity binding — owner → frame → KS
+   ═══════════════════════════════════════════ */
+.id-bind {
+  display: grid;
+  grid-template-columns: 1fr auto 1.4fr auto 1fr;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0.3rem 0;
+}
+
+.id-node {
+  padding: 0.8rem 0.85rem;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  text-align: center;
+}
+.id-node--owner {
+  border-color: var(--s2);
+}
+.id-node--ks {
+  border-color: var(--s3);
+  background: var(--s3-pale);
+}
+.id-node__g {
+  font-size: 1.3rem;
+}
+.id-node__t {
+  font-weight: 700;
+  font-size: 0.84rem;
+  margin-top: 0.15rem;
+}
+.id-node__s {
+  font-size: 0.73rem;
+  color: var(--text-dim);
+}
+
+.id-frame {
+  position: relative;
+  padding: 1rem 0.9rem 0.75rem;
+  border: 2px dashed var(--accent);
+  border-radius: var(--radius);
+  background: var(--paper);
+  text-align: center;
+}
+.id-frame__cap {
+  position: absolute;
+  top: -0.62rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--paper);
+  padding: 0 0.45rem;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.id-frame__t {
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.id-frame__s {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  margin-top: 0.2rem;
+}
+.id-frame__eq {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--tint-8);
+  border-radius: var(--pill-radius);
+  padding: 0.15rem 0.5rem;
+}
+
+.id-edge {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  line-height: 1.2;
+}
+.id-edge__arr {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+/* ═══════════════════════════════════════════
+   Version split — v1 now / v2 later
+   ═══════════════════════════════════════════ */
+.id-versions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+  margin: 0.3rem 0;
+}
+.id-ver {
+  padding: 0.8rem 0.9rem;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+}
+.id-ver--now {
+  border-left: 3px solid var(--s3);
+}
+.id-ver--later {
+  border-left: 3px dashed var(--text-muted);
+  opacity: 0.92;
+}
+.id-ver__h {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 0.84rem;
+  margin-bottom: 0.4rem;
+}
+.id-ver__h .iter {
+  margin-left: 0;
+}
+.id-ver__list {
+  margin: 0;
+  padding-left: 1rem;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+.id-ver__list li {
+  margin: 0.2rem 0;
+}
+
+@media (max-width: 680px) {
+  .id-bind {
+    grid-template-columns: 1fr;
+  }
+  .id-edge {
+    transform: rotate(90deg);
+  }
+  .id-versions {
+    grid-template-columns: 1fr;
+  }
+}

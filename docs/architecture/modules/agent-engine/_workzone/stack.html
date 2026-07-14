@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Agent Engine: Stack and structure</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../swimlane.css" />
+    <link rel="stylesheet" href="stack.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Agent Engine</a>
+        <h1 class="header__title">Stack and structure</h1>
+        <div class="header__sub">agent-engine · workzone</div>
+      </div>
+
+      <!-- ════════════ LANE: BACKEND ════════════ -->
+      <div class="swl-lane swl-lane--be">
+        <div class="swl-lane__rail">
+          <span class="swl-lane__tag">Backend</span>
+        </div>
+        <div class="swl-lane__body">
+          <!-- col: stack -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg> stack — libraries</div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Background launch</span>
+                <a class="xref-badge xref-badge--page" href="execution.html#lane"
+                  >→ Execution lanes</a
+                >
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="run queue on top of Redis — a separate worker pool on the background lane, off the live-chat path">SAQ · run queue</span>
+                <span class="swl-pill" data-tip="schedule planner — wakes the agent by next_run_at">SAQ cron</span>
+                <a class="xref-badge" href="../../cache-workers/_workzone/queues.html#lanes">→ Cache &amp; Workers</a>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Agentic loop / Models</span>
+                <a class="xref-badge xref-badge--page" href="runtime.html#loop"
+                  >→ Agentic loop</a
+                >
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="chat-model client — the model drives the agentic loop, holds the search/graph/sql tools, and combines them as it goes">chat-client · tool-calling</span>
+                <span class="ai-tag" title="This step uses a neural network — model inference"><span class="ai-tag__icon"></span>AI</span>
+                <span class="swl-pill" data-tip="search/graph/sql — Knowledge Store primitives; the agent calls them, doesn't implement them">KS primitives as tools</span>
+                <a
+                  class="xref-badge"
+                  href="../../knowledge-store/_workzone/hybrid-search.html#fusion"
+                  >→ Knowledge Store</a
+                >
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Storage</span>
+                <a class="xref-badge xref-badge--page" href="data-model.html"
+                  >→ Data model</a
+                >
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill swl-pill--std" data-tip="ORM, async mode — agents · agent_runs">SQLAlchemy 2.0 · async</span>
+                <span class="swl-pill swl-pill--std" data-tip="async PostgreSQL driver">asyncpg</span>
+                <span class="swl-pill swl-pill--std" data-tip="schema migrations">Alembic</span>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label">Framework</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill swl-pill--std" data-tip="ASGI — agent management endpoints">FastAPI</span>
+                <span class="swl-pill swl-pill--std" data-tip="request / response schemas, validation">Pydantic v2</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- col: structure -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head">
+              <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.55l-.42-.85a1 1 0 0 0-.92-.6H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M3 5a2 2 0 0 0 2 2h3" /><path d="M3 3v13a2 2 0 0 0 2 2h3" /></svg> structure — files · <code>achilles/agent_engine/</code>
+            </div>
+<pre class="file-tree">
+agent_engine/      <span class="dim">module = its own package</span>
+├── *.py           <span class="dim">router · service · schemas · constants</span>
+├── runtime/       <span class="dim">agentic loop: prompt composition → tools → output</span>
+└── scheduler/     <span class="dim">schedule + enqueueing runs onto the background queue</span>
+</pre>
+
+            <details class="swl-note">
+              <summary>Why <code>runtime/</code> is its own folder</summary>
+              <div class="swl-note__body">
+                The agentic loop is a layer of its own on top of the service:
+                composing the prompt layers, calling the
+                <a href="runtime.html#tools" class="xref-page">KS tools</a>,
+                multi-step reasoning, and writing the output to the run journal.
+                The search, graph, and sql primitives themselves live in Knowledge
+                Store, not here.
+              </div>
+            </details>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════ LANE: FRONTEND ════════════ -->
+      <div class="swl-lane swl-lane--fe">
+        <div class="swl-lane__rail">
+          <span class="swl-lane__tag">Frontend</span>
+        </div>
+        <div class="swl-lane__body swl-lane__body--note">
+          <div class="swl-col">
+            <div class="swl-fe-note">
+              <span class="swl-fe-note__ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.67 19a2 2 0 0 0 1.416-.588l6.154-6.172a6 6 0 0 0-8.49-8.49L5.586 9.914A2 2 0 0 0 5 11.328V18a1 1 0 0 0 1 1z" /><path d="M16 8 2 22" /><path d="M17.5 15H9" /></svg></span>
+              <div>
+                <b>Agent Engine has no frontend of its own.</b>
+                The employee screens (my agents, the editor with a run journal
+                and “Run now”) and the admin ones (list of all agents, read-only
+                profile, admin lock) are rendered by the surfaces as thin clients
+                of the shared API. For the employee that’s
+                <a href="../../web-app/_wireframes/my-agents.html#my-agents" class="xref-badge">→ Web App</a>,
+                for the admin —
+                <a href="../../admin-panel/_wireframes/agents.html" class="xref-badge">→ Admin Panel</a>.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── cross-cutting: shared tool-calling harness (pointer) ──
+           The shared mechanism lives on its own home page (harness), and on L1
+           as a cross-cutting lane. Only a pointer here, so the module stack
+           doesn't carry a second copy of the description. -->
+      <div class="swl-defer">
+        <span class="swl-defer__ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" /><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" /></svg></span>
+        <div>
+          <b>The tool-calling harness is a shared layer, not ours.</b>
+          The chat-client with tools under the engine is <span class="pkg">one per
+          platform</span>, shared with Query Engine; its home is a separate page,
+          <a href="harness.html" class="xref-page">Tool-calling harness</a>.
+          Agent Engine merely parameterizes it — three tools
+          (<a href="runtime.html#tools" class="xref-page">search / graph / sql</a>)
+          and a loop up to the <a href="runtime.html#loop" class="xref-page">iteration
+          cap</a>.
+        </div>
+      </div>
+
+      <!-- ── cross-cutting: deferred orchestration (decision, not blacklist) ── -->
+      <div class="swl-defer">
+        <span class="swl-defer__ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 14 4 4-4 4" /><path d="m18 2 4 4-4 4" /><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22" /><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2" /><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45" /></svg></span>
+        <div>
+          <b>External orchestration — not in v1.</b>
+          The agent core doesn’t talk to external APIs directly. For complex
+          cross-system orchestration, Achilles acts as a node in an
+          <span class="pkg">n8n</span> workflow (a separate container) —
+          <a href="horizon-orchestration.html#conveyor" class="xref-page"
+            >External orchestration</a
+          >.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

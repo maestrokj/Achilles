@@ -1,0 +1,681 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: AI models</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">AI models</h1>
+        <div class="header__sub">
+          admin panel · wireframes · ai
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Screen renders in the shell's content area">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Screen loading — skeleton">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">Providers, the model catalog, and assignment by function. All AI spend — per-person tokens and per-model billing — is on the <a href="usage.html" class="xref-page">AI usage</a> screen.</p>
+
+      <!-- ═══ Providers ═══ -->
+      <div class="section" id="providers">
+        <div class="section__title">Providers</div>
+        <p class="note">Connections to model sources — cloud services via API key and local runtimes via base URL. The platform embedder is always present.</p>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">provider registry</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/ai-models
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/ai-models · Owner / Admin</span>
+                  </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-row wf-spread">
+                  <span class="wf-title">Providers</span>
+                  <button class="wf-btn wf-btn--primary">
+
+                    Add provider
+                    <span class="wf-annot wf-annot--on-accent">1</span></button>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr>
+                      <th>Provider</th><th>Type</th><th>Base URL</th><th>Key</th><th>Status</th><th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Platform <span class="wf-annot">6</span></td>
+                      <td><span class="wf-chip">Built-in</span></td>
+                      <td>http://embeddings:80</td>
+                      <td>—</td>
+                      <td><span class="wf-chip wf-chip--ok">active</span></td>
+                      <td><a class="wf-a wf-a--icon" title="Test connection"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg></a> <span class="wf-sep">·</span> <span class="wf-chip__edit" title="The platform provider can't be removed"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span></td>
+                    </tr>
+                    <tr>
+                      <td>OpenAI</td>
+                      <td><span class="wf-chip">Cloud</span></td>
+                      <td>api.openai.com</td>
+                      <td>••••a3f7</td>
+                      <td><span class="wf-chip wf-chip--ok">active</span> <span class="wf-annot">2</span></td>
+                      <td><a class="wf-a wf-a--icon" title="Test connection"
+                          ><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg></a> <span class="wf-sep">·</span> ⋯ <span class="wf-annot">3</span></td>
+                    </tr>
+                    <tr>
+                      <td>Anthropic</td>
+                      <td><span class="wf-chip">Cloud</span></td>
+                      <td>api.anthropic.com</td>
+                      <td>••••91kd</td>
+                      <td><span class="wf-chip wf-chip--ok">active</span></td>
+                      <td><a class="wf-a wf-a--icon" title="Test connection"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg></a> <span class="wf-sep">·</span> ⋯</td>
+                    </tr>
+                    <tr>
+                      <td>Ollama (on-prem)</td>
+                      <td><span class="wf-chip">Self-hosted</span> <span class="wf-annot">4</span></td>
+                      <td>http://gpu-01:11434</td>
+                      <td>—</td>
+                      <td><span class="wf-chip wf-chip--ok">active</span></td>
+                      <td><a class="wf-a wf-a--icon" title="Test connection"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg></a> <span class="wf-sep">·</span> ⋯</td>
+                    </tr>
+                    <tr>
+                      <td>vLLM (research)</td>
+                      <td><span class="wf-chip">Self-hosted</span></td>
+                      <td>http://vllm:8000</td>
+                      <td>—</td>
+                      <td><span class="wf-chip wf-chip--err">error</span> <span class="wf-annot">5</span></td>
+                      <td><a class="wf-a wf-a--icon" title="Test connection"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg></a> <span class="wf-sep">·</span> ⋯</td>
+                    </tr>
+                    <tr class="wf-table__row--muted">
+                      <td>Google</td>
+                      <td><span class="wf-chip">Cloud</span></td>
+                      <td>generativelanguage.googleapis.com</td>
+                      <td>••••0b2e</td>
+                      <td><span class="wf-chip">unchecked</span></td>
+                      <td><a class="wf-a wf-a--icon" title="Test connection"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg></a> <span class="wf-sep">·</span> ⋯</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">⋯ provider menu</div>
+              <div class="wf-pop">
+                <button class="wf-btn">⋯</button>
+                <div class="wf-menu">
+                  <span class="wf-menu__item">Edit</span>
+                  <span class="wf-menu__item">Test connection</span>
+                  <hr class="wf-menu__sep" />
+                  <span class="wf-menu__item wf-menu__item--danger"><span class="wf-guarded">Delete provider<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#irreversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a></span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-backdrop">
+            <div class="wf-gallery">
+              <div class="wf-frame">
+                <div class="wf-stage__caption">“add provider” modal · preset picked</div>
+                <div class="wf-screen wf-screen--modal">
+                  <div class="wf-body">
+                    <div class="wf-stack">
+                      <span class="wf-title">Add provider</span>
+                      <div class="wf-field">
+                        <span class="wf-label">Provider <span class="wf-annot">7</span></span>
+                        <div class="wf-input">
+                          DeepSeek
+                          <span class="wf-input__action">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                          </span>
+                        </div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Name</span>
+                        <div class="wf-input">DeepSeek</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Base URL</span>
+                        <div class="wf-input">https://api.deepseek.com</div>
+                        <span class="wf-hint">prefilled by the preset — editable <span class="wf-annot">8</span></span>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">API key</span>
+                        <div class="wf-input wf-input--focus">sk-…</div>
+                        <span class="wf-hint">entered once — never shown back</span>
+                      </div>
+                      <div class="wf-row">
+                        <button class="wf-btn">Test connection</button>
+                        <button class="wf-btn wf-btn--primary">Add</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wf-gallery">
+              <div class="wf-frame">
+                <div class="wf-stage__caption">provider preset menu · grouped</div>
+                <div class="wf-pop">
+                  <div class="wf-input">DeepSeek <span class="wf-input__action"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg></span></div>
+                  <div class="wf-menu">
+                    <span class="wf-menu__label">Cloud vendors</span>
+                    <span class="wf-menu__item">OpenAI</span>
+                    <span class="wf-menu__item">Anthropic</span>
+                    <span class="wf-menu__item">Google Gemini</span>
+                    <span class="wf-menu__item">xAI Grok</span>
+                    <span class="wf-menu__item">Mistral</span>
+                    <span class="wf-menu__label">Self-hosted <span class="wf-annot">9</span></span>
+                    <span class="wf-menu__item">Ollama</span>
+                    <span class="wf-menu__item">vLLM · TGI · OpenAI-compatible</span>
+                    <span class="wf-menu__label">Aggregators</span>
+                    <span class="wf-menu__item">OpenRouter <span class="wf-menu__why">one key · many models</span></span>
+                    <span class="wf-menu__item">Groq</span>
+                    <span class="wf-menu__item">Together AI</span>
+                    <span class="wf-menu__item">Fireworks AI</span>
+                    <span class="wf-menu__item">Other (OpenAI-compatible)</span>
+                    <span class="wf-menu__label">Chinese clouds</span>
+                    <span class="wf-menu__item wf-menu__item--active">DeepSeek</span>
+                    <span class="wf-menu__item">Qwen (Alibaba)</span>
+                    <span class="wf-menu__item">GLM (Zhipu)</span>
+                    <span class="wf-menu__item">Kimi (Moonshot)</span>
+                    <span class="wf-menu__item">MiniMax</span>
+                    <span class="wf-menu__item">Baidu ERNIE</span>
+                    <span class="wf-menu__item">Yi (01.AI)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Opens the add modal — the provider is chosen from a grouped preset catalog. Once added, its model catalog (<a href="#model-discovery" class="xref-anchor">below</a>) fills in automatically.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              The status of the last connection test. “Test” raises a
+              <a href="../../shared-ui/_wireframes/toasts.html" class="xref-module">toast</a>
+              with the verdict.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Provider menu: edit · test · delete. “Delete” is blocked while any of its models is assigned to a function or is in chat (<a href="#model-assignment" class="xref-anchor">assignment by function</a>).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              The API key is shown only as a mask; local providers usually have none.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              When a provider errors, its models are unavailable: the affected
+              <a href="#model-assignment" class="xref-anchor">functions</a> wait for the connection to recover or for the Admin to reassign. The rest of the platform keeps running.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              <b>Platform</b> (<code>is_system</code>) — the platform's built-in embedder, out of the box and with no external provider. Can't be deleted, has no key.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              <b>Provider</b> is picked from a grouped preset catalog (cloud vendors · aggregators · Chinese clouds · self-hosted). The preset carries both <code>kind</code> (Cloud / Self-hosted) and <code>adapter</code>, and adapts the form: a cloud vendor requires a key; a self-hosted runtime requires a base URL and leaves the key optional.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              <b>Base URL</b> is prefilled by the preset (Chinese clouds, aggregators, self-hosted) and stays editable. Native-SDK clouds (OpenAI / Anthropic / Google) hide the field — the SDK knows the endpoint.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">9</span>
+              <b>Self-hosted</b> — the company's own runtime (vLLM · TGI · Ollama). Most speak the OpenAI dialect, so they ride the same <code>openai_compatible</code> adapter as OpenAI-compatible clouds; <code>kind</code> — not the adapter — is what separates own hardware from a cloud.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Provider catalog and activation ═══ -->
+      <div class="section" id="model-discovery">
+        <div class="section__title">Provider catalog and activation</div>
+        <p class="note">The selected provider's models: discovery fills the catalog automatically, the rest the Admin adds by hand. From the catalog a model is enabled on the platform right in the row.</p>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">provider catalog · discovery</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-row wf-spread">
+                  <span class="wf-row">
+                    <div class="wf-input">
+                      OpenAI
+                      <span class="wf-input__action">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                      </span>
+                    </div>
+                    <span class="wf-annot">1</span>
+                  </span>
+                  <span class="wf-row">
+                    <button class="wf-btn">Refresh</button>
+                    <button class="wf-btn wf-btn--primary">
+
+                      Add model ID
+                      <span class="wf-annot wf-annot--on-accent">2</span></button>
+                  </span>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr><th>Model ID</th><th>Name <span class="wf-annot">3</span></th><th>Type</th><th>Source</th><th></th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>gpt-4o</td>
+                      <td>GPT-4o <a class="wf-a wf-a--icon" title="Edit name"
+                          ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></a></td>
+                      <td><a class="wf-chip" tabindex="0" title="Edit type">chat <span class="wf-chip__edit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                        ></a> <span class="wf-annot">4</span></td>
+                      <td><span class="wf-chip wf-chip--ok">discovered</span></td>
+                      <td><span class="wf-guarded"
+                          >Disable<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a
+                        ></span> <span class="wf-annot">5</span></td>
+                    </tr>
+                    <tr>
+                      <td>text-embedding-3-large</td>
+                      <td>Embedding 3 Large <a class="wf-a wf-a--icon" title="Edit name"
+                          ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></a></td>
+                      <td><a class="wf-chip" tabindex="0" title="Edit type">embedding <span class="wf-chip__edit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                        ></a> <span class="wf-chip">3072-dim</span> <span class="wf-annot">6</span></td>
+                      <td><span class="wf-chip wf-chip--ok">discovered</span></td>
+                      <td><span class="wf-guarded"
+                          >Disable<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a
+                        ></span></td>
+                    </tr>
+                    <tr class="wf-table__row--muted">
+                      <td>gpt-4o-mini</td>
+                      <td>gpt-4o-mini</td>
+                      <td><a class="wf-chip" tabindex="0" title="Edit type"
+                          >chat <span class="wf-chip__edit"
+                            ><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                        ></a></td>
+                      <td><span class="wf-chip wf-chip--ok">discovered</span></td>
+                      <td><a class="wf-a">Enable</a></td>
+                    </tr>
+                    <tr class="wf-table__row--muted">
+                      <td>ft:custom-internal</td>
+                      <td>Internal FT</td>
+                      <td><a class="wf-chip" tabindex="0" title="Edit type"
+                          >chat <span class="wf-chip__edit"
+                            ><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                        ></a></td>
+                      <td><span class="wf-chip">manual</span></td>
+                      <td><a class="wf-a">Enable</a></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-backdrop">
+            <div class="wf-gallery">
+              <div class="wf-frame">
+                <div class="wf-stage__caption">“add model ID” modal</div>
+                <div class="wf-screen wf-screen--modal">
+                  <div class="wf-body">
+                    <div class="wf-stack">
+                      <span class="wf-title">Add model ID</span>
+                      <div class="wf-field">
+                        <span class="wf-label">Model ID</span>
+                        <div class="wf-input wf-input--focus">my-llama3-ft</div>
+                        <span class="wf-hint">the exact model identifier at the provider</span>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Name</span>
+                        <div class="wf-input">Internal FT</div>
+                        <span class="wf-hint">the display name in assignment and spend; editable later</span>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Type</span>
+                        <div class="wf-input">
+                          embedding
+                          <span class="wf-input__action">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                          </span>
+                        </div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Embedding dimensions <span class="wf-annot">7</span></span>
+                        <div class="wf-input wf-input--focus">1024</div>
+                        <span class="wf-hint">shown for the embedding type — the vector width the knowledge base is sized to</span>
+                      </div>
+                      <div class="wf-row">
+                        <button class="wf-btn">Cancel</button>
+                        <button class="wf-btn wf-btn--primary">Add</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">edit · name</div>
+              <div class="wf-pop">
+                <a class="wf-a wf-a--icon" tabindex="0"
+                  ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></a>
+                <div class="wf-menu">
+                  <div class="wf-field">
+                    <span class="wf-label">Name</span>
+                    <div class="wf-input wf-input--sm wf-input--focus">GPT-4o</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">edit · type</div>
+              <div class="wf-pop">
+                <a class="wf-chip" tabindex="0">chat <span class="wf-chip__edit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                ></a>
+                <div class="wf-menu">
+                  <span class="wf-menu__item">chat <span class="wf-menu__why">text</span></span>
+                  <span class="wf-menu__item">embedding <span class="wf-menu__why">vector</span></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Provider selector — the table below it redraws for that provider's models.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Opens the manual-entry modal — for providers without discovery and for fine-tuned / custom models (source “manual”).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              The model's display name in assignment and spend. The pencil edits it right in the row.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              The type (chat / embedding) decides which functions the model can be assigned to. Edited in the row; the change is blocked while the model is assigned to a function or is in chat.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              “Enable” activates the model, “Disable” returns it to the not-enabled set. Disabling is blocked while the model is assigned to a function or is in chat — reassign first.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              An embedding model carries its vector width. Only a model whose width matches the knowledge base can be assigned (<a href="#model-assignment" class="xref-anchor">assignment by function</a>), so it's shown right on the row.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              Embedding dimensions — the model's vector width, entered here because discovery doesn't report it. Built-in models come pre-declared; the field appears only for the embedding type.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Model assignment by function ═══ -->
+      <div class="section" id="model-assignment">
+        <div class="section__title">
+          Model assignment by function
+          <a href="../../harvester/_workzone/pipeline.html#embed" class="xref-badge">→ Harvester</a>
+          <a href="../../knowledge-store/_workzone/hybrid-search.html" class="xref-badge">→ Knowledge Store</a>
+          <a href="../../query-engine/_workzone/rag-pipeline.html#admin-row" class="xref-badge">→ Query Engine</a>
+        </div>
+        <p class="note">
+          Every platform function consumes a model.
+          <strong>System</strong> functions (embedding) — one model per function, assigned by the Admin. <strong>Chat and agents</strong> — a default model plus a list the employee or the agent's owner picks from.
+        </p>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">platform functions</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-stack">
+                  <span class="wf-label">System functions</span>
+                  <table class="wf-table wf-table--pops">
+                    <thead>
+                      <tr><th>Function</th><th>Model</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>
+                          Embedding
+                          <span class="ai-tag" title="Step runs a neural network — model inference"><span class="ai-tag__icon"></span>AI</span>
+                        </td>
+                        <td>
+                          <span class="wf-pop">
+                            <span class="wf-input wf-input--sm" tabindex="0">Cohere embed-v3 ▾</span>
+                            <div class="wf-menu">
+                              <span class="wf-menu__item">Cohere embed-v3 <span class="wf-menu__why">Cohere · 1024 · current</span></span>
+                              <span class="wf-menu__item">bge-m3 <span class="wf-menu__why">Platform · 1024</span></span>
+                              <span class="wf-menu__item">Qwen3-Embedding-0.6B <span class="wf-menu__why">Platform · 1024</span></span>
+                              <span class="wf-menu__item wf-menu__item--disabled">Embedding 3 Small <span class="wf-menu__why">OpenAI · 1536 · needs 1024</span></span>
+                              <span class="wf-menu__item wf-menu__item--disabled">Embedding 3 Large <span class="wf-menu__why">OpenAI · 3072 · needs 1024</span></span>
+                              <span class="wf-menu__item wf-menu__item--disabled">Nomic Embed <span class="wf-menu__why">Ollama · dimension not set</span></span>
+                            </div>
+                          </span>
+                          <span class="wf-annot">1</span>
+                        </td>
+                        <td><span class="wf-chip wf-chip--ok">assigned</span></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <div class="wf-stack">
+                  <span class="wf-label">
+                    User chat
+                    <span class="ai-tag" title="An employee's chat query — model inference"><span class="ai-tag__icon"></span>AI</span>
+                  </span>
+                  <span class="wf-hint">
+                    The employee picks the chat model themselves — from this list;
+                    the primary one opens by default. <span class="wf-annot">2</span>
+                  </span>
+                  <div class="wf-stack wf-stack--tight">
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-text">Claude Sonnet</span>
+                        <span class="wf-chip">Anthropic</span>
+                      </span>
+                      <span class="wf-chip wf-chip--ok">default</span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-text">GPT-4o</span>
+                        <span class="wf-chip">OpenAI</span>
+                      </span>
+                      <span class="wf-row">
+                        <a class="wf-a">Make primary</a>
+                        <span class="wf-sep">·</span>
+                        <span class="wf-guarded"
+                          ><a class="wf-a">Remove</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a
+                        ></span>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="wf-row">
+                    <button class="wf-btn">Add model</button>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <div class="wf-stack">
+                  <span class="wf-label">
+                    Agents
+                    <span class="ai-tag" title="An agent run — model inference"><span class="ai-tag__icon"></span>AI</span>
+                  </span>
+                  <span class="wf-hint">
+                    The owner picks the agent's model from this list; the primary
+                    one by default. The model must be able to call
+                    <a href="tools.html" class="xref-page">tools</a>. <span class="wf-annot">3</span>
+                  </span>
+                  <div class="wf-stack wf-stack--tight">
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-text">Claude Sonnet</span>
+                        <span class="wf-chip">Anthropic</span>
+                      </span>
+                      <span class="wf-chip wf-chip--ok">default</span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-text">GPT-4o</span>
+                        <span class="wf-chip">OpenAI</span>
+                      </span>
+                      <span class="wf-row">
+                        <a class="wf-a">Make primary</a>
+                        <span class="wf-sep">·</span>
+                        <span class="wf-guarded"
+                          ><a class="wf-a">Remove</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a
+                        ></span>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="wf-row">
+                    <button class="wf-btn">Add model</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">embedding with no assignment · picker</div>
+              <div class="wf-pop">
+                <span class="wf-input wf-input--sm wf-input--empty" tabindex="0">Choose model ▾</span>
+                <div class="wf-menu">
+                  <span class="wf-menu__item">bge-m3 <span class="wf-menu__why">Platform · 1024 · out of the box</span></span>
+                  <span class="wf-menu__item">Qwen3-Embedding-0.6B <span class="wf-menu__why">Platform · 1024 · out of the box</span></span>
+                  <span class="wf-menu__item">Cohere embed-v3 <span class="wf-menu__why">Cohere · 1024</span></span>
+                  <span class="wf-menu__item wf-menu__item--disabled">Embedding 3 Small <span class="wf-menu__why">OpenAI · 1536 · needs 1024</span></span>
+                  <span class="wf-menu__item wf-menu__item--disabled">Nomic Embed <span class="wf-menu__why">Ollama · dimension not set</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">list · no enabled models</div>
+              <div class="wf-pop">
+                <span class="wf-input wf-input--sm wf-input--empty" tabindex="0">Choose model ▾</span>
+                <div class="wf-menu">
+                  <span class="wf-menu__item wf-menu__item--disabled">No enabled models of this type</span>
+                  <hr class="wf-menu__sep" />
+                  <a class="wf-menu__item" href="#model-discovery">Enable in the catalog →</a>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">chat · add model</div>
+              <div class="wf-pop">
+                <button class="wf-btn" tabindex="0">Add model</button>
+                <div class="wf-menu">
+                  <span class="wf-menu__item">GPT-4o mini <span class="wf-menu__why">OpenAI</span></span>
+                  <span class="wf-menu__item">Claude Haiku <span class="wf-menu__why">Anthropic</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">embedding · re-embedding in progress</div>
+              <div class="wf-card wf-stack wf-stack--tight">
+                <div class="wf-row wf-spread">
+                  <span class="wf-text">Embedding</span>
+                  <div class="wf-input wf-input--sm wf-input--locked">
+                    bge-m3
+                    <span class="wf-chip__edit"
+                      ><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span></div>
+                </div>
+                <span class="wf-row">
+                  <span class="wf-spinner"></span>
+                  <span class="wf-chip wf-chip--warn">re-embedding · 62%</span>
+                </span>
+                <span class="wf-hint">
+                  the change is blocked until it completes ·
+                  <a href="knowledge-store.html#curation-run" class="xref-page">status in Knowledge Store</a>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-backdrop">
+            <div class="wf-gallery">
+              <div class="wf-frame">
+                <div class="wf-stage__caption">“change embedding model” modal</div>
+                <div class="wf-screen wf-screen--modal">
+                  <div class="wf-body">
+                    <div class="wf-stack">
+                      <span class="wf-title">Change the embedding model?</span>
+                      <div class="wf-alert wf-alert--error">
+                        The platform will regenerate every vector under the new model —
+                        a bulk re-embedding (≈13.1k chunks). A background run will
+                        start; while it's in progress, changing again is unavailable.
+                      </div>
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-text">Cohere embed-v3</span>
+                        <span class="wf-row">
+                          <span class="wf-sep">→</span>
+                          <span class="wf-chip wf-chip--ok">bge-m3</span>
+                        </span>
+                      </div>
+                      <span class="wf-hint">
+                        Search keeps working during the recompute; the run's
+                        status is in
+                        <a href="knowledge-store.html#curation-run" class="xref-page">Knowledge Store</a>.
+                      </span>
+                      <div class="wf-row">
+                        <button class="wf-btn">Cancel</button>
+                        <button class="wf-btn wf-btn--primary">Change and recompute</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span> Embedding — one model for indexing and search; the assignment is unified, or search breaks. There's no default: the platform option is available out of the box, but embedding waits for the Admin's explicit choice (built-in <em>or</em> your own). Assigning warms the <a href="../../knowledge-store/_workzone/embedding-runtime.html#contention" class="xref-module">runtime</a> ahead of time — the first search doesn't wait on the weights. The knowledge base stores fixed-width vectors — <b>1024</b> in v1 — so only models of that <a href="../../knowledge-store/_workzone/data-model.html#model-metric" class="xref-module">dimensionality</a> can be picked; the rest stay listed but disabled, with the reason inline. A cloud model doesn't report its dimensionality on discovery, so it's declared when the model is added to the catalog. Changing the assigned model is a special case: the new vectors are incompatible with the old, so the choice opens a <b>confirmation</b> that starts a full re-embedding. While the run is in progress, the row shows its progress and changing again is blocked (<a href="../../knowledge-store/_workzone/lifecycle.html#embedding-refresh" class="xref-module">refresh</a>). </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span> User chat — the employee's choice: the Admin assembles the list of allowed chat models and marks one as the default. That same chat model runs the conversation and decides for itself whether to reach into the knowledge base. </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span> Agents — a separate list of chat models with one default; the owner picks the agent's model from it. Removing a model here stops the agents that chose it, until they're switched to another.
+              <a href="../../agent-engine/_workzone/governance.html#model" class="xref-module">Agent Engine</a>. </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

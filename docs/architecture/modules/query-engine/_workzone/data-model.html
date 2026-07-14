@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Query Engine: Data model</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="data-model.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Query Engine</a>
+        <h1 class="header__title">Data model</h1>
+        <div class="header__sub">query-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        Query Engine stores the <strong>conversation</strong> and the
+        <strong>access signal</strong>, but not knowledge. The module's data home
+        is conversation sessions and messages (<a href="#conversations" class="xref-anchor"
+          >conversations</a
+        >, <a href="#messages" class="xref-anchor">messages</a>), a retrieval
+        snapshot for each grounding answer (<a href="#retrieval-trace" class="xref-anchor"
+          >retrieval_trace</a
+        >), and an aggregate of how often entities are accessed
+        (<a href="#access-counter" class="xref-anchor">access_counter</a>).
+        The entities themselves live in Knowledge Store: the ids recorded here are
+        <strong>references</strong>, not copies. Where this line runs is at the
+        <a href="#boundary" class="xref-anchor">boundary with Knowledge Store</a>.
+      </p>
+
+      <!-- ════════════════ CONVERSATIONS ════════════════ -->
+      <div class="section" id="conversations">
+        <div class="section__title">
+          Conversation session: <code>conversations</code>
+        </div>
+        <p class="desc">
+          The top level is a user's conversation session on one of the surfaces
+          (web · slack · telegram · mattermost · mcp · extension). The session owns the flow of
+          the conversation: the message history is bound to it, and the model
+          looks into its past messages when formulating a search query. A mutable
+          row — the title, the selected chat model, and <code>updated_at</code>
+          are edited as the conversation goes.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--qe">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Session</span>
+              <span class="stk-layer__role">A conversation on one surface — owns the flow.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">conversations</span>
+                  <span class="dm-tbl__sub">conversation sessions</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → users</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">user_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">session owner · CASCADE · their identity is the retrieval input</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">surface</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (web | slack | telegram | mattermost | mcp | extension)">CHECK</span>
+                      </td>
+                      <td class="dm-note">where the conversation comes from · web · slack · telegram · mattermost · mcp · extension</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">title</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">title · auto-generated from the first message, editable</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">selected_model</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">sticky chat-model choice · validated against the Admin allow-list · NULL = default model</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">meta</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">flexible session attributes · surface context · for Slack, the thread key <code>(team, channel, thread_ts)</code>; for Telegram, <code>chat_id</code>; for Mattermost, <code>(channel_id, root_id)</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · title edit and each new message</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">One session model for all surfaces</span>
+                </div>
+                <div class="stk-dec__d">
+                  One conversation model per platform: the surface (web · slack ·
+                  telegram · mattermost · mcp · extension) is just a field, not a separate table
+                  per client. Thin clients write to a shared contract, so history
+                  and context carry behave identically everywhere. The
+                  conversation is mutable: <code>title</code> is refined and
+                  <code>updated_at</code> is moved by each new message — hence both
+                  timestamps and the <code>set_updated_at()</code> trigger.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full" id="sticky-model">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">The model choice is sticky — two layers: the conversation, then the person</span>
+                </div>
+                <div class="stk-dec__d">
+                  An employee picks a chat model from the
+                  <a href="../../admin-panel/_wireframes/ai-models.html#model-assignment" class="xref-module"
+                    >allow-list assembled by Admin</a>; the choice
+                  <strong>sticks</strong> to the conversation — it holds for the
+                  next answers and survives a reload, so it lives as a row on the
+                  session (<code>selected_model</code>) rather than a one-off
+                  client-side pick. This is the <strong>intent</strong> of “what
+                  to generate with going forward”, and it must not be confused with
+                  <code>messages.model</code>: that records the <strong>fact</strong>
+                  of “what a specific answer was generated with”. The same pick also
+                  sticks to the <strong>person</strong>
+                  (<a href="../../auth-security/_workzone/data-model.html#col-last_chat_model" class="xref-module"><code>users.last_chat_model</code></a>),
+                  seeding every <em>new</em> conversation ahead of the admin default
+                  — so a returning employee lands on the model they last chose, not
+                  a reset. Resolution runs most-intimate-first:
+                  <strong>this turn’s pick → the conversation’s <code>selected_model</code>
+                  → the person’s <code>last_chat_model</code> → the admin default</strong>;
+                  a stale value (removed from the allow-list) falls quietly to the
+                  next layer. An empty <code>selected_model</code> is therefore no
+                  longer “the admin default” but “inherit the person’s default”.
+                  This sticky pair belongs to surfaces that <em>have</em> a picker
+                  (Web); messengers (Slack/Telegram/Mattermost) and machine surfaces
+                  carry neither layer and always run on the admin default. Changing
+                  the model edits the row — hence the move of <code>updated_at</code>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ MESSAGES ════════════════ -->
+      <div class="section" id="messages">
+        <div class="section__title">
+          Conversation message: <code>messages</code>
+        </div>
+        <p class="desc">
+          An append-only feed of the session's messages: the user's query and the
+          assistant's answer arrive as rows in order, and past ones are never
+          rewritten. On an assistant message, we record which chat model generated
+          it and how many tokens were spent (<code>tokens_used</code> — the whole
+          turnaround of the message, input + output; per-person chat spend), and
+          the same row accumulates <code>feedback</code> — a thumbs rating of the
+          answer, raw material for measuring quality. A turn that ends badly is
+          not swallowed: <code>finish</code> (with <code>error_code</code>) marks
+          it <code>stopped</code> or <code>failed</code> — a write-once terminal
+          stamp so a reload replays the same notice the live stream showed,
+          never a silent question with no answer beneath it.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--qe">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Message</span>
+              <span class="stk-layer__role">A conversation message — query or answer.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">messages</span>
+                  <span class="dm-tbl__sub">conversation messages</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → conversations</span>
+                    <span class="dm-badge dm-badge--flag">append-only</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">conversation_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → conversations, ON DELETE CASCADE">FK→conversations</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">session · CASCADE · history keyed by it</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">role</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (user | assistant)">CHECK</span>
+                      </td>
+                      <td class="dm-note">user · assistant</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">content</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">the message text</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">model</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">what the answer was generated with · fact, not intent (cf. <code>conversations.selected_model</code>) · assistant only</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">tokens_used</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">message tokens · the whole turnaround, input + output (RAG context + answer), not output alone · set on finalization · raw material for per-person chat spend (<a href="../../admin-panel/_wireframes/usage.html" class="xref-module">AI usage</a>) · assistant only</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">feedback</td>
+                      <td class="dm-t">SmallInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (feedback IN (-1, 1))">CHECK</span>
+                      </td>
+                      <td class="dm-note">thumbs ±1 on an assistant message · edited after the fact · raw material for quality measurement</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">finish</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (finish IN ('stopped', 'failed'))">CHECK</span>
+                      </td>
+                      <td class="dm-note">how an assistant turn ended · NULL = completed cleanly · <code>stopped</code> (user cancelled, partial text kept) · <code>failed</code> (errored) · a failed turn lands a row even with empty content, so a reload replays the notice instead of a silent dangling question · assistant only</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">error_code</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">the reason behind <code>finish='failed'</code> (e.g. <code>PROVIDER_UNAVAILABLE</code>) · the replay redraws the same failure plaque from it</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · only under a <code>feedback</code> edit</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">An append-only feed, but <code>feedback</code> is editable — hence both timestamps</span>
+                </div>
+                <div class="stk-dec__d">
+                  The message itself is immutable: the message text and role are
+                  never rewritten — by the journal rule, a single
+                  <code>created_at</code> would suffice. But <code>feedback</code>
+                  is the exception: the user sets and <strong>changes</strong> the
+                  thumbs up/down after the message is already written, and that is
+                  an in-place <code>UPDATE</code> of the row. Once a row gets an
+                  <code>UPDATE</code> on even one field, by project convention it
+                  needs <strong>both</strong> timestamps and the
+                  <code>set_updated_at()</code> trigger — <code>updated_at</code>
+                  honestly marks the moment of rating. The message body stays
+                  unchanged: we don't edit the feed, only annotate it with a
+                  rating.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ RETRIEVAL TRACE ════════════════ -->
+      <div class="section" id="retrieval-trace">
+        <div class="section__title">
+          Retrieval snapshot: <code>retrieval_trace</code>
+        </div>
+        <p class="desc">
+          For every <strong>grounding answer</strong> — when the model called
+          search — an immutable snapshot of what retrieval returned: the
+          self-contained query handed to the tool, the candidates with their
+          scores, and the <strong>citations</strong> that actually made it into
+          the answer. A citation holds the marker
+          (<code>[1]</code>, <code>[2]</code>…), the source record, and the
+          winning fragment-chunk — enough to redraw the history with the same
+          references without asking retrieval again. A conversational answer has
+          no snapshot — there was nothing to search; there is <strong>exactly
+          one</strong> snapshot per message (<code>UNIQUE</code> on
+          <code>message_id</code>), a 0..1 relation. The snapshot is the basis for
+          the <a href="retrieval.html#access-signal" class="xref-page">access
+            signal</a>: frequency is accumulated in
+          <a href="#access-counter" class="xref-anchor">access_counter</a> from
+          <code>citations</code>. Written once and never edited.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--qe">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Snapshot</span>
+              <span class="stk-layer__role">What retrieval found for this answer.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">retrieval_trace</span>
+                  <span class="dm-tbl__sub">retrieval snapshot per message</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → messages</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (message_id)</span>
+                    <span class="dm-badge dm-badge--flag">immutable</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">message_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → messages, ON DELETE CASCADE">FK→messages</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">the assistant message the snapshot belongs to · CASCADE · UNIQUE → exactly one snapshot, idempotent insert</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">search_query</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">the self-contained query handed to the tool · retrieval input</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">candidates</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--ref" title="KS entity ids — references, not copies">REF</span>
+                      </td>
+                      <td class="dm-note">KS entity ids + scores · REFERENCES into KS, not data copies</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">citations</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--ref" title="KS entity and chunk ids — references, not copies">REF</span>
+                      </td>
+                      <td class="dm-note">answer citations · marker → record (<code>entity_id</code>) + winning fragment (<code>chunk_id</code>) + score, in <code>[1][2]</code> order · basis for replay and the access signal</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> · only · the snapshot is never edited</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">The snapshot is written once — hence <code>created_at</code> only</span>
+                </div>
+                <div class="stk-dec__d">
+                  The trace is a photograph of the retrieval moment: what was
+                  rewritten, what was found, what was taken. Once written it does
+                  not change — an append-only journal; by project convention a
+                  single <code>created_at</code> suffices, and
+                  <code>updated_at</code> would be meaningless. <code>candidates</code>
+                  and <code>citations</code> hold <strong>ids of Knowledge Store
+                  entities and chunks</strong>, not their text: the body of the
+                  knowledge lives in KS, and here there is only a reference to it
+                  and a score. A citation records both the record and the winning
+                  chunk precisely so the history can be redrawn with the same
+                  references without asking retrieval again. From
+                  <code>citations</code>, retrieval rolls frequency into
+                  <a href="#access-counter" class="xref-anchor">access_counter</a>
+                  (by their <code>entity_id</code>) — the mechanics are held by the
+                  <a href="retrieval.html#access-signal" class="xref-page"
+                    >access signal</a
+                  >.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ ACCESS COUNTER ════════════════ -->
+      <div class="section" id="access-counter">
+        <div class="section__title">
+          Access counter: <code>access_counter</code>
+        </div>
+        <p class="desc">
+          An aggregate of how often entities are accessed: how many times an
+          entity actually entered an answer or its citation was clicked — and when
+          it was last. It grows by upsert from two sources:
+          <a href="#retrieval-trace" class="xref-anchor">citations</a>
+          (what entered the answer) on each turn, and a click on a citation in the
+          output; Knowledge Store reads it by JOIN when recomputing
+          <em>staleness</em> — demand for an entity raises its curation priority.
+          A mutable counter — hence both timestamps.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--signal">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">4</span>
+              <span class="stk-layer__name">Counter</span>
+              <span class="stk-layer__role">How often an entity is accessed — a signal into KS.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">access_counter</span>
+                  <span class="dm-tbl__sub">access aggregate</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (entity_ref)</span>
+                    <span class="dm-badge dm-badge--flag">upsert · counter</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">entity_ref</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--ref" title="KS entity id — a reference, not an FK across the module boundary">REF</span>
+                      </td>
+                      <td class="dm-note">KS entity id · a REFERENCE, not an FK across the module boundary · upsert key · the index carries <code>UNIQUE</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">hits</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="server_default=0">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">entered an answer or a citation click · incremented by upsert</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">last_accessed_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">when it was last accessed · staleness input</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> · first access to the entity</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · every increment</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">A counter-aggregate · upsert per entity — hence both timestamps</span>
+                </div>
+                <div class="stk-dec__d">
+                  One row per entity: a repeat access does an upsert by
+                  <code>entity_ref</code> — <code>hits++</code> and
+                  <code>last_accessed_at = now()</code>. This is an in-place
+                  <code>UPDATE</code> in its purest form, so the row needs
+                  <strong>both</strong> timestamps with the trigger. The counter is
+                  a demand aggregate: the answer share could be reassembled from
+                  <a href="#retrieval-trace" class="xref-anchor">retrieval_trace</a>
+                  snapshots (by <code>citations</code>), but a citation click
+                  arrives as a separate live event and is not written into a
+                  snapshot — which is why we keep the aggregate as the source of
+                  truth, not just a cache over the feed; staleness reads it by JOIN
+                  without a scan. The mechanics — what counts as an access and how
+                  the signal flows into KS — are held by the
+                  <a href="retrieval.html#access-signal" class="xref-page"
+                    >access signal</a
+                  >.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ BOUNDARY WITH KNOWLEDGE STORE ════════════════ -->
+      <div class="section" id="boundary">
+        <div class="section__title">Boundary with Knowledge Store: references, not copies</div>
+        <p class="desc">
+          Query Engine stores no knowledge. The entity and chunk ids in
+          <code>retrieval_trace</code> (<code>candidates</code>,
+          <code>citations</code>) and the entity ids in <code>access_counter</code>
+          (<code>entity_ref</code>) are <strong>references</strong> into the
+          <a href="../../knowledge-store/_workzone/data-model.html" class="xref-module"
+            >Knowledge Store data model</a
+          >, not copies of entity bodies. The body of the knowledge, its text, and
+          its access rights are there; here are the conversation, what was found
+          per message, and demand for an entity.
+        </p>
+
+        <div class="dm-border">
+          <div class="dm-border__col dm-border__col--here">
+            <div class="dm-border__head">
+              <span class="dm-border__who">Query Engine</span>
+              <span class="dm-border__act">references</span>
+            </div>
+            <p class="dm-border__d">
+              Holds the conversation (<code>conversations</code>, <code>messages</code>),
+              the per-message retrieval snapshot, and the access counter. From what
+              was found — only the <strong>id and score</strong>: a reference to
+              the KS record and the winning chunk, not their body. The demand
+              signal (<code>access_counter</code>) is read by KS via JOIN when
+              recomputing staleness.
+            </p>
+          </div>
+          <div class="dm-border__seam">▸</div>
+          <div class="dm-border__col dm-border__col--there">
+            <div class="dm-border__head">
+              <span class="dm-border__who">Knowledge Store</span>
+              <span class="dm-border__act">stores the knowledge</span>
+            </div>
+            <p class="dm-border__d">
+              The source of truth for entities: body, fragments with vectors,
+              graph, access rights. From the ids in the trace it restores the
+              record for citation. It receives the access signal and raises the
+              curation priority by it — the knowledge stays entirely on the KS
+              side.
+            </p>
+          </div>
+        </div>
+
+        <p class="note">
+          The boundary: “knowledge → Knowledge Store, conversation and access
+          signal → Query Engine”. Citation pulls the record by
+          <code>entity_id</code> from
+          <a href="../../knowledge-store/_workzone/data-model.html#entities" class="xref-module"
+            >entities</a
+          >, and the evidence fragment by <code>chunk_id</code> from
+          <a href="../../knowledge-store/_workzone/data-model.html#chunks" class="xref-module"
+            >chunks</a
+          >.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

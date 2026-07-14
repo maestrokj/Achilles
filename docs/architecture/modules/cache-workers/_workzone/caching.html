@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Cache &amp; Workers: cache</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="caching.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Cache &amp; Workers</a>
+        <h1 class="header__title">Cache</h1>
+        <div class="header__sub">cache-workers · workzone</div>
+      </div>
+
+      <p class="desc">
+        The ephemeral acceleration layer for frequent reads: what to cache, what
+        to key on, when contents go stale. The cache is a fast derivative that
+        rebuilds if lost (<a href="redis-keys.html#principle" class="xref-page">Redis ⟂ Postgres hard boundary</a>).
+      </p>
+
+      <!-- ═══ Policy ═══ One consumer — Query Engine search candidates.
+           We cache the expensive retrieval, not the final LLM answer. TTL-only. -->
+      <div class="section" id="policy">
+        <h2 class="section__title">Cache policy</h2>
+        <p class="note">
+          The only consumer today is search candidates from
+          <a href="../../query-engine/index.html" class="xref-module">Query Engine</a>
+          (exact match on the query). We cache the <strong>expensive retrieval layer</strong>
+          (cold start ~10 min), not the model's final answer — that answer is
+          personalized and access-filtered, so it holds no shared value for a cache.
+        </p>
+        <div class="cch-grid">
+          <div class="cch-cell cch-cell--yes">
+            <div class="cch-cell__h">Cache</div>
+            <p class="cch-cell__d">retrieval candidates — the shared, expensive layer</p>
+          </div>
+          <div class="cch-cell cch-cell--no">
+            <div class="cch-cell__h">Don't cache</div>
+            <p class="cch-cell__d">the final LLM answer — personalization · ACL</p>
+          </div>
+        </div>
+        <ul class="cch-rules">
+          <li>
+            <b>TTL-only.</b> Expiry by time, no event-driven invalidation — stale
+            candidates are cheap and the cost of a mistake is low. The exact TTL is
+            a tuning knob.
+          </li>
+          <li>
+            <b>ACL isn't held at the cache.</b> Access is re-checked by the
+            late-binding trim on the retrieval side, after candidates are returned —
+            so the cache needs no strict ACL invalidation, and access correctness
+            doesn't depend on it.
+          </li>
+          <li>
+            <b>Home — <code>redis-cache</code></b> (evictable, LRU policy): under
+            memory pressure old keys are dropped and the cache refills over time
+            (<a href="redis-keys.html#instances" class="xref-page">two instances</a>).
+          </li>
+          <li>
+            <b>Value carries chunk bodies, not just ids + score.</b> A hit returns
+            the candidates whole, skipping the Postgres row lookup entirely — simpler
+            and faster while the working set is modest. The lean alternative (cache
+            only ids + score, read bodies back from Postgres on a hit) packs an order
+            of magnitude more queries into the same memory
+            (<a href="redis-keys.html#registry" class="xref-page">cache memory</a>) —
+            a <span class="iter v2">v2</span> lever once user count or Redis memory
+            pressure start to hurt the hit-rate.
+          </li>
+          <li>
+            <b>No single-flight lock — the per-user key makes it moot.</b> A cache
+            entry is keyed by <a href="#key" class="xref-anchor">query + identity</a>,
+            so a "hot key" is one user's exact query: two concurrent misses on it
+            would need the same user firing the identical query at the same instant.
+            With no key shared across users there is no thundering herd — a miss just
+            computes and writes, no rebuild lock. A shared cross-user retrieval layer
+            guarded by a single-flight lock
+            (<a href="redis-keys.html#registry" class="xref-page"><code>lock:</code></a>)
+            is a <span class="iter v2">v2</span> lever, should that layer be introduced.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ═══ Key ═══ Key composition + hit/miss flow. The gate sits before
+           model/prompt selection — those don't affect candidates, so they're out of the key. -->
+      <div class="section" id="key">
+        <h2 class="section__title">Key composition</h2>
+        <p class="note">
+          The cache gate sits at the entrance to retrieval, <strong>before model
+          and prompt selection</strong> — those don't affect the candidate set, so
+          they aren't part of the key. The result is determined only by the query
+          itself and the identity; stale candidates expire by TTL, no separate
+          invalidation needed
+          (<a href="../../query-engine/_workzone/rag-pipeline.html#cache" class="xref-module">cache gate in the RAG pipeline</a>).
+        </p>
+
+        <div class="cch-key">
+          <span class="cch-seg">standalone query</span>
+          <span class="cch-key__op">+</span>
+          <span class="cch-seg">identity</span>
+        </div>
+
+        <div class="cch-flow">
+          <div class="cch-flow__step">
+            <span class="cch-flow__t">Query</span>
+            <span class="cch-flow__d">standalone query + identity</span>
+          </div>
+          <div class="cch-flow__arr">→</div>
+          <div class="cch-flow__step">
+            <span class="cch-flow__t">Key</span>
+            <span class="cch-flow__d">assembled from segments</span>
+          </div>
+          <div class="cch-flow__arr">→</div>
+          <div class="cch-flow__fork">
+            <div class="cch-flow__path cch-flow__path--hit">
+              <span class="cch-flow__tag">hit</span>
+              <span class="cch-flow__d">ready candidates from <code>redis-cache</code></span>
+            </div>
+            <div class="cch-flow__path cch-flow__path--miss">
+              <span class="cch-flow__tag">miss</span>
+              <span class="cch-flow__d">expensive retrieval → write with TTL</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Cache &amp; Workers: scheduler</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="scheduling.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Cache &amp; Workers</a>
+        <h1 class="header__title">Scheduler</h1>
+        <div class="header__sub">cache-workers · workzone</div>
+      </div>
+
+      <p class="desc">
+        Who runs tasks on a schedule. Time-based triggers are born here;
+        event-driven triggers (a module calls the queue directly) bypass the
+        scheduler. Where a task lands and who works it off —
+        <a href="queues.html#lanes" class="xref-page">across three lanes</a>; what
+        stops a double run — <a href="lifecycle.html#uniqueness" class="xref-page">uniqueness</a>.
+      </p>
+
+      <!-- ═══ Scheduler ═══ Built-in SAQ cron on a dedicated singleton replica;
+           publishes to a lane, doesn't execute. Singleton vs worker-pool contrast. -->
+      <div class="section" id="cron">
+        <h2 class="section__title">Scheduler</h2>
+
+        <div class="decision-box">
+          <strong>Built-in SAQ cron.</strong>
+          SAQ handles <code>CronJob</code> out of the box — no second scheduler
+          needed. It lives on a <strong>dedicated singleton service</strong> (one
+          replica), separate from the horizontally scalable worker pool: were
+          cron on every worker, with <code>N</code> replicas it would fire
+          <code>N</code> times. The scheduler only <strong>publishes</strong> a
+          task to a lane — the workers execute.
+        </div>
+
+        <div class="sch-topo">
+          <div class="sch-topo__col sch-topo__col--singleton">
+            <div class="mod-label sch-topo__cap">Singleton · 1 replica</div>
+            <div class="sch-node sch-node--cron">
+              <div class="sch-node__t">Scheduler</div>
+              <div class="sch-node__d">SAQ cron · ticks on schedule</div>
+            </div>
+            <div class="sch-topo__note">publishes, doesn't execute</div>
+          </div>
+
+          <div class="sch-topo__arrow" aria-hidden="true">
+            <span class="sch-topo__arrow-l">publishes to lane</span>
+            <span class="sch-topo__arrow-g">──&gt;</span>
+          </div>
+
+          <div class="sch-topo__col sch-topo__col--pool">
+            <div class="mod-label sch-topo__cap">Pool · N replicas (horizontal)</div>
+            <div class="sch-pool">
+              <div class="sch-node sch-node--worker">Worker</div>
+              <div class="sch-node sch-node--worker">Worker</div>
+              <div class="sch-node sch-node--worker">Worker</div>
+            </div>
+            <div class="sch-topo__note">work the lanes off in parallel</div>
+          </div>
+        </div>
+
+        <p class="note">
+          The scheduler is fed by <strong>two trigger sources</strong> — both
+          publish to a lane, and from there the task's path is shared:
+        </p>
+        <div class="sch-trig">
+          <div class="sch-trig__item">
+            <div class="sch-trig__h">fixed cron</div>
+            <div class="sch-trig__d">
+              A <code>CronJob</code> by the calendar — one tick publishes one
+              task: sync, reconcile, health probe, curation, backup.
+            </div>
+          </div>
+          <div class="sch-trig__item">
+            <div class="sch-trig__h"><code>next_run_at</code> scan</div>
+            <div class="sch-trig__d">
+              A periodic pass over agent schedules — one scan publishes
+              <em>every</em> run whose <code>next_run_at</code> has already
+              arrived. The owner sets the time, the scheduler only wakes it.
+            </div>
+          </div>
+        </div>
+
+        <div class="decision-box">
+          <strong>Perfect reliability isn't required — in either direction.</strong>
+          A double tick (restart, race) is safe: the uniqueness lock in Postgres
+          absorbs it — the first run starts, the second catches a conflict and
+          goes to <code>skipped</code>. A missed tick (the singleton was down
+          during the scheduled window) is acceptable too — we don't backfill, we
+          wait for the next window: the cadences are coarse, and one miss is made
+          up by the next run. The scheduler is responsible for “when”; the
+          correctness of a single instance is on
+          <a href="lifecycle.html#uniqueness" class="xref-page">uniqueness</a>.
+        </div>
+
+        <div class="decision-box">
+          <strong>Windows are in the organization's timezone, the tick is in UTC.</strong>
+          Schedules are stored naive, without a zone (<code>HH:MM</code>, minute
+          of the week). At launch the scheduler unfolds the window to UTC via
+          <code>platform_settings.timezone</code> (IANA); agent schedules — via
+          the owner's <code>timezone</code> (<code>NULL</code> → the
+          organization's zone). A single platform contract: set and display in
+          local time, store and tick in UTC — as in Harvester and Agent Engine.
+        </div>
+
+        <div class="note">
+          <strong>v1 schedules are simple:</strong> “every <code>N</code> hours”,
+          “weekly at <code>HH:MM</code>”. A rich / dynamic cron (per-source
+          windows, editing from the UI) — <span class="iter v2">v2</span>.
+        </div>
+      </div>
+
+      <!-- ═══ Schedule registry ═══ What the scheduler publishes and where:
+           schedule → cadence → lane → consumer. Re-embedding is event-driven, not cron. -->
+      <div class="section" id="registry">
+        <h2 class="section__title">Schedule registry</h2>
+
+        <table class="sch-reg">
+          <thead>
+            <tr>
+              <th>Schedule</th>
+              <th>Cadence</th>
+              <th>Lane</th>
+              <th>Consumer</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="sch-reg__name">Incremental sync</td>
+              <td>6&nbsp;h (webhooks) / 15&nbsp;min (polling-only)</td>
+              <td><span class="sch-lane">background</span></td>
+              <td><a href="../../harvester/_workzone/sync-modes.html#incremental" class="xref-module">→ Harvester</a></td>
+            </tr>
+            <tr>
+              <td class="sch-reg__name">Reconcile</td>
+              <td>weekly</td>
+              <td><span class="sch-lane">background</span></td>
+              <td><a href="../../harvester/_workzone/sync-modes.html#reconciliation" class="xref-module">→ Harvester</a></td>
+            </tr>
+            <tr>
+              <td class="sch-reg__name">Source health probe</td>
+              <td>once a day</td>
+              <td><span class="sch-lane">background</span></td>
+              <td><a href="../../harvester/_workzone/sources.html#health-check" class="xref-module">→ Harvester</a></td>
+            </tr>
+            <tr>
+              <td class="sch-reg__name">Curation pass</td>
+              <td>one platform-wide schedule</td>
+              <td><span class="sch-lane">background</span></td>
+              <td><a href="../../knowledge-store/_workzone/lifecycle.html#curation-pass" class="xref-module">→ Knowledge Store</a></td>
+            </tr>
+            <tr>
+              <td class="sch-reg__name">Backup</td>
+              <td>its own schedule</td>
+              <td><span class="sch-lane">background</span></td>
+              <td><a href="../../knowledge-store/_workzone/lifecycle.html#backup" class="xref-module">→ Knowledge Store</a></td>
+            </tr>
+            <tr>
+              <td class="sch-reg__name">Agent scan</td>
+              <td>the scheduler scans <code>next_run_at</code></td>
+              <td><span class="sch-lane">agents</span></td>
+              <td><a href="../../agent-engine/_workzone/execution.html#schedule" class="xref-module">→ Agent Engine</a></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="note">
+          <strong>KS re-embedding is queued by an event</strong> — a model change,
+          not cron alone: the change triggers a run immediately, the schedule
+          here doesn't hold it.
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

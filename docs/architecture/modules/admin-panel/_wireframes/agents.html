@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: AI agents</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">AI agents</h1>
+        <div class="header__sub">
+          admin panel · wireframes · ai
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Screen renders in the shell's content area">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--keep" href="../../shared-ui/_wireframes/loading-states.html#keep-previous" title="Page or filter change — previous rows stay (keep-previous)">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">Oversight of the whole organization's personal agents: a list with statuses, the one lever being to pause an agent. Configuration is edited only by the owner in Web App.</p>
+
+      <!-- ═══ Run limits ═══ The mechanics of the agents' background lane: step
+           cap and concurrency. The weekly token budget (spend limit) has moved
+           from here to the AI usage screen (usage.html#limits), where it lives
+           next to the chat budget and per-person spend. -->
+      <div class="section" id="agent-limits">
+        <div class="section__title">
+          Platform run limits
+          <a href="../../agent-engine/_workzone/runtime.html#loop" class="xref-badge">→ Agent Engine</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">platform_settings · run limits</div>
+          <div class="wf-screen">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/agents
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/agents · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-card">
+                  <div class="wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text"><b>Run step cap</b></span>
+                      <div class="wf-input wf-input--sm">15</div>
+                    </div>
+                    <span class="wf-hint">How many “think → call a tool → read” steps the agent gets in a single run. A safeguard against looping, not a budget. <strong>Default 15</strong>; raised to 30 for deep research.</span>
+                  </div>
+                </div>
+                <div class="wf-card">
+                  <div class="wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text"><b>Concurrent runs per platform</b></span>
+                      <div class="wf-input wf-input--sm">4</div>
+                    </div>
+                    <span class="wf-hint">How many agent runs execute at once across the whole organization. Extra ones wait in the queue rather than being rejected. The real ceiling is set by the <strong>provider's TPM tier</strong>.</span>
+                  </div>
+                </div>
+                <div class="wf-row wf-spread">
+                  <span class="wf-hint">Applies to every agent in the organization</span>
+                  <button class="wf-btn wf-btn--primary">Save</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              Two platform run limits, shared across the organization: the
+              <a href="../../agent-engine/_workzone/runtime.html#loop" class="xref-module">run step</a> cap
+              and the concurrency of the <a href="../../agent-engine/_workzone/execution.html#concurrency" class="xref-module">background lane</a>.
+              The weekly <a href="usage.html#limits" class="xref-page">token budget</a> — a spend limit —
+              has moved to the AI usage screen, next to the chat budget and per-person spend.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ List of all agents ═══ -->
+      <div class="section" id="agents">
+        <div class="section__title">
+          All agents
+          <a href="../../agent-engine/_workzone/governance.html#admin-pause" class="xref-badge">→ Agent Engine</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">list · all owners</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/agents
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/agents · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <span class="wf-title">All agents</span>
+                <div class="wf-input wf-input--sm">
+                  <span class="wf-input__icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                  </span>
+                  Search by name and owner
+                </div>
+                <div class="wf-filters">
+                  <span class="wf-filter">Status <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Owner <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Schedule <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-annot">1</span>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr>
+                      <th>Agent</th><th>Owner</th><th>Status</th><th>Schedule</th><th>Last run</th><th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="wf-rowlink">
+                      <td><a href="agent-card.html" class="wf-userlink">Release digest</a> <span class="wf-annot">2</span></td>
+                      <td><span class="wf-idcell"><a href="user-card.html" class="wf-userlink">Dmitry Sokolov</a><span class="wf-idcell__email">dmitry@company.com</span></span></td>
+                      <td><span class="wf-chip wf-chip--ok">active</span></td>
+                      <td>every 6 h</td>
+                      <td>
+                        <span class="wf-runcell">
+                          <span>2 hours ago</span>
+                          <span class="wf-runcell__meta">succeeded · 14 s · 38k</span>
+                        </span>
+                      </td>
+                      <td>⋯ <span class="wf-annot">3</span></td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><a href="agent-card.html" class="wf-userlink">Incident summary</a></td>
+                      <td><span class="wf-idcell"><a href="user-card.html" class="wf-userlink">Anna Orlova</a><span class="wf-idcell__email">anna@company.com</span></span></td>
+                      <td><span class="wf-chip wf-chip--warn">paused · admin</span> <span class="wf-annot">4</span></td>
+                      <td>Mon 09:00</td>
+                      <td>
+                        <span class="wf-runcell">
+                          <span>3 days ago</span>
+                          <span class="wf-runcell__meta">succeeded · 22 s · 64k</span>
+                        </span>
+                      </td>
+                      <td>⋯</td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><a href="agent-card.html" class="wf-userlink">Documentation gaps</a></td>
+                      <td><span class="wf-idcell"><a href="user-card.html" class="wf-userlink">Igor Lebedev</a><span class="wf-idcell__email">igor@company.com</span></span></td>
+                      <td><span class="wf-chip wf-chip--warn">weekly limit</span></td>
+                      <td>daily 08:00</td>
+                      <td>
+                        <span class="wf-runcell">
+                          <span>yesterday</span>
+                          <span class="wf-runcell__meta wf-runcell__meta--err">skipped · limit</span>
+                        </span>
+                      </td>
+                      <td>⋯</td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><a href="agent-card.html" class="wf-userlink">Market overview</a></td>
+                      <td><span class="wf-idcell"><a href="user-card.html" class="wf-userlink">Pavel Zaytsev</a><span class="wf-idcell__email">pavel@company.com</span></span></td>
+                      <td><span class="wf-chip wf-chip--warn">model removed</span></td>
+                      <td>daily 07:00</td>
+                      <td>
+                        <span class="wf-runcell">
+                          <span>2 days ago</span>
+                          <span class="wf-runcell__meta">succeeded · 17 s · 44k</span>
+                        </span>
+                      </td>
+                      <td>⋯</td>
+                    </tr>
+                    <tr class="wf-rowlink wf-table__row--muted">
+                      <td><a href="agent-card.html" class="wf-userlink">Report draft</a></td>
+                      <td><span class="wf-idcell"><a href="user-card.html" class="wf-userlink">Maria Kim</a><span class="wf-idcell__email">maria@company.com</span></span></td>
+                      <td><span class="wf-chip">disabled</span></td>
+                      <td>manual</td>
+                      <td>
+                        <span class="wf-runcell">
+                          <span>a week ago</span>
+                          <span class="wf-runcell__meta">succeeded · 9 s · 12k</span>
+                        </span>
+                      </td>
+                      <td>⋯</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="wf-pager">
+                  <span class="wf-pager__count">1–50 of 86</span>
+                  <div class="wf-pager__pages">
+                    <span class="wf-page wf-page--nav wf-page--off">‹</span>
+                    <span class="wf-page wf-page--active">1</span>
+                    <span class="wf-page">2</span>
+                    <span class="wf-page wf-page--nav">›</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">⋯ actions menu · active agent</div>
+              <div class="wf-pop">
+                <button class="wf-btn">⋯</button>
+                <div class="wf-menu">
+                  <a class="wf-menu__item" href="agent-card.html">Open profile</a>
+                  <hr class="wf-menu__sep" />
+                  <span class="wf-menu__item"
+                    ><span class="wf-guarded"
+                      >Pause<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a></span
+                  ></span>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">⋯ actions menu · paused</div>
+              <div class="wf-pop">
+                <button class="wf-btn">⋯</button>
+                <div class="wf-menu">
+                  <a class="wf-menu__item" href="agent-card.html">Open profile</a>
+                  <hr class="wf-menu__sep" />
+                  <span class="wf-menu__item">Lift pause</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Filters — Status · Owner · Schedule facets. Search and filter behavior is
+              <a href="../_workzone/list-controls.html#facets" class="xref-page">the same across all lists</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Clicking the name opens the
+              <a href="agent-card.html" class="xref-page">agent profile</a> (read-only); clicking the owner opens the <a href="user-card.html" class="xref-page">user card</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              ⋯ opens the row menu: open profile · pause / lift pause. Pausing requires confirmation; the admin has no other action over someone else's agent in v1.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Status combines the owner's on/off switch, the administrator lock, the weekly budget, and model availability: active · disabled · paused · admin · weekly limit · model removed · error. The administrator pause is sticky — the owner can't lift it.
+              <a href="../../agent-engine/_workzone/governance.html#gate" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              Bulk actions, editing someone else's agent, and an instant abort of a running run — <span class="iter v2">v2</span>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

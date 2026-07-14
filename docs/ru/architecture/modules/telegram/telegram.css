@@ -1,0 +1,745 @@
+/* Telegram — bespoke visuals for the single-page surface doc.
+   Telegram is an INCOMING surface: an employee asks the bot in a DM, Query Engine
+   answers under their ACL — a twin of Slack with one difference, the dialogue
+   boundary is the /new command instead of a thread. The page opens with that flow
+   (DM → door → engine, the answer returning as a message), states the concept in
+   one thesis, then unfolds the four edges (connect · identity · conversation ·
+   delivery) as numbered cards, a literal DM mockup, and the data it touches.
+   Loaded by modules/telegram/index.html on top of module.css.
+   Placement convention: a module's bespoke visuals live beside its index. §Styling */
+
+/* ══════════════════════════════════════════
+   HERO — display headline · lede
+   ══════════════════════════════════════════ */
+.tg-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.55rem;
+  padding: 1.6rem 0 2rem;
+  background:
+    radial-gradient(58% 70% at 50% 0%, var(--tint-15), transparent 68%),
+    radial-gradient(36% 50% at 84% 14%, var(--tint-8), transparent 70%);
+}
+.tg-title {
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-size: clamp(1.9rem, 4.6vw, 2.9rem);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: var(--text);
+  max-width: 19ch;
+  margin: 0.1rem 0 0;
+  text-wrap: balance;
+}
+.tg-lede {
+  font-size: 1.02rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+  max-width: 52ch;
+  margin: 0;
+}
+
+/* ══════════════════════════════════════════
+   FLOW — three stations joined by labelled rails
+   DM (dashed origin) → Achilles door (accent heart) → engine (knowledge graph).
+   First link carries a return rail (the answer posts back as a message);
+   second link is a single forward rail (search under ACL).
+   ══════════════════════════════════════════ */
+.tg-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+  margin: 0.6rem 0 1.4rem;
+}
+.tg-station {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.35rem;
+  padding: 1.1rem 0.9rem 1.2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.tg-station--user {
+  border-style: dashed;
+  border-color: var(--accent-muted);
+}
+.tg-station--door {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 8px 24px -10px var(--accent);
+}
+.tg-station--engine {
+  background: var(--tint-6);
+  border-color: var(--tint-25);
+}
+
+.tg-station__tag {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--pill-radius);
+  padding: 0.08rem 0.45rem;
+}
+.tg-station__tag--on {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.tg-station__glyph {
+  font-size: 1.7rem;
+  line-height: 1;
+  margin-top: 0.1rem;
+}
+.tg-station__glyph--graph {
+  width: 40px;
+  height: 40px;
+}
+.tg-station__glyph--graph svg {
+  width: 100%;
+  height: 100%;
+}
+.tg-station__glyph--graph line {
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  opacity: 0.4;
+}
+.tg-station__glyph--graph circle {
+  fill: var(--paper);
+  stroke: var(--accent);
+  stroke-width: 1.8;
+}
+.tg-graph__hub {
+  fill: var(--accent) !important;
+}
+
+.tg-station__name {
+  font-weight: 700;
+  font-size: 0.96rem;
+  color: var(--text);
+}
+.tg-station--door .tg-station__name {
+  color: #fff;
+}
+.tg-station__desc {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+.tg-station--door .tg-station__desc {
+  color: rgba(255, 255, 255, 0.82);
+}
+.tg-station__desc code {
+  font-size: 0.72rem;
+}
+.tg-station--door .tg-station__desc code {
+  color: #fff;
+}
+
+/* ── Rail — forward + return wires between stations ── */
+.tg-link {
+  flex: 0 1 8.5rem;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0 0.1rem;
+}
+.tg-link__rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+.tg-link__lbl {
+  font-size: 0.66rem;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--text-dim);
+}
+.tg-link__lbl code {
+  font-size: 0.64rem;
+  color: var(--accent);
+}
+.tg-link__wire {
+  position: relative;
+  width: 100%;
+  height: 2px;
+  background-image: linear-gradient(
+    to right,
+    var(--accent) 0 6px,
+    transparent 6px 12px
+  );
+  background-size: 12px 2px;
+  background-repeat: repeat-x;
+  animation: tg-march 0.9s linear infinite;
+}
+.tg-link__wire::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -1px;
+  width: 0;
+  height: 0;
+  transform: translateY(-50%);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid var(--accent);
+}
+.tg-link__rail--back .tg-link__wire {
+  background-image: linear-gradient(
+    to right,
+    var(--accent-muted) 0 6px,
+    transparent 6px 12px
+  );
+  animation-direction: reverse;
+}
+.tg-link__rail--back .tg-link__wire::after {
+  right: auto;
+  left: -1px;
+  border-left: none;
+  border-right: 6px solid var(--accent-muted);
+}
+
+/* ══════════════════════════════════════════
+   THESIS — the concept's heart, one accented line
+   ══════════════════════════════════════════ */
+.tg-thesis {
+  margin: 0 0 1.8rem;
+  padding: 1rem 1.2rem;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--text-dim);
+  background: var(--surface);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+}
+.tg-thesis strong {
+  color: var(--text);
+}
+.tg-thesis .xref-module {
+  display: inline-block;
+  margin-top: 0.2rem;
+  font-size: 0.82rem;
+}
+
+/* ══════════════════════════════════════════
+   CARDS — connect · identity · conversation · delivery (numbered)
+   ══════════════════════════════════════════ */
+.tg-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+  margin-bottom: 2rem;
+}
+.tg-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1.25rem 1.2rem 1.3rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.tg-card__num {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+.tg-card__title {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+  font-size: 1.16rem;
+  line-height: 1.15;
+  color: var(--text);
+  margin: 0;
+}
+.tg-card__sub {
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-dim);
+  margin: 0;
+}
+.tg-card__foot {
+  margin: auto 0 0;
+  padding-top: 0.35rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* ══════════════════════════════════════════
+   CHAT — literal DM mockup (the payoff visual)
+   A Telegram-flavoured direct message: user question, bot answer with a source
+   citation, the /new affordance. Honest UI strings only.
+   ══════════════════════════════════════════ */
+.tg-chat {
+  padding: 0.4rem 0 0.6rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.tg-chat__bar {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+}
+.tg-chat__dm {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.tg-chat__hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.tg-msg {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem 0.2rem;
+}
+.tg-msg__av {
+  flex: none;
+  width: 2.1rem;
+  height: 2.1rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--s3);
+}
+.tg-msg__av--bot {
+  background: var(--accent);
+}
+.tg-msg__body {
+  min-width: 0;
+}
+.tg-msg__who {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+.tg-msg__app {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.02rem 0.22rem;
+  vertical-align: 0.08rem;
+}
+.tg-msg__t {
+  font-weight: 400;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-left: 0.3rem;
+}
+.tg-msg__text {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+/* citation superscript chip — the [n] grounding marker */
+.tg-cite {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
+  height: 1rem;
+  margin-left: 0.15rem;
+  padding: 0 0.2rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  vertical-align: 0.32rem;
+  color: var(--accent);
+  background: var(--tint-15);
+  border-radius: 4px;
+}
+.tg-src {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 7px 7px 0;
+}
+.tg-src .tg-cite {
+  margin: 0;
+  vertical-align: 0;
+}
+/* /new affordance — the command that opens a fresh conversation */
+.tg-cmd {
+  margin-top: 0.45rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+.tg-cmd code {
+  font-size: 0.72rem;
+}
+.tg-chat__note {
+  margin: 0.7rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+/* caption above a second chat sample — own top margin for vertical rhythm */
+.tg-chat__lead {
+  margin: 1.5rem 0 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+/* inline monospace token inside a message — link or linking code */
+.tg-code {
+  padding: 0.05rem 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--accent);
+  background: var(--tint-15);
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+/* ══════════════════════════════════════════
+   DATA — what the surface touches (table · home · role)
+   ══════════════════════════════════════════ */
+.tg-data {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.tg-data__row {
+  display: grid;
+  grid-template-columns: 11rem 8rem 1fr;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.5rem 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.tg-data__tbl {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+.tg-data__home {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.tg-data__home--new {
+  color: var(--accent);
+}
+.tg-data__role {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+.tg-data__role code {
+  font-size: 0.7rem;
+}
+
+/* ── telegram_settings — the one owned table, expanded (field · type · constraint · note) ── */
+.tg-tbl {
+  margin-top: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.tg-tbl__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--tint-4);
+  border-bottom: 1px solid var(--border);
+}
+.tg-tbl__name {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.tg-tbl__sub {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+.tg-tbl__badge {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+  background: var(--tint-15);
+  border: 1px solid var(--tint-25);
+  border-radius: var(--pill-radius);
+  padding: 0.12rem 0.45rem;
+}
+.tg-fields {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+.tg-fields td {
+  padding: 0.32rem 0.7rem;
+  border-top: 1px solid var(--border);
+  vertical-align: baseline;
+}
+.tg-fields tr:first-child td {
+  border-top: none;
+}
+.tg-f {
+  font-family: var(--mono);
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.tg-t {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.tg-cons {
+  white-space: nowrap;
+}
+.tg-n {
+  width: 100%;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+.tg-n code {
+  font-size: 0.7rem;
+}
+.tg-c {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 0.1rem 0.38rem;
+  margin-right: 0.2rem;
+  border-radius: var(--pill-radius);
+  line-height: 1.4;
+}
+.tg-c--pk {
+  background: var(--s1);
+  color: #fff;
+}
+.tg-c--nn {
+  background: var(--s3);
+  color: #fff;
+}
+.tg-c--null {
+  background: var(--paper);
+  color: var(--text-muted);
+  border: 1px solid var(--accent-muted);
+}
+.tg-c--chk {
+  background: var(--tint-15);
+  color: var(--accent);
+  border: 1px solid var(--tint-25);
+}
+.tg-c--def {
+  background: var(--s2-pale);
+  color: var(--s2);
+  border: 1px solid var(--tint-15);
+}
+.tg-tbl__derived {
+  margin: 0;
+  padding: 0.45rem 0.7rem;
+  border-top: 1px solid var(--border);
+  background: var(--tint-4);
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.tg-tbl__derived code {
+  font-size: 0.7rem;
+}
+
+/* ── Tests — a chip row ── */
+.tg-tests {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.9rem 0 0;
+}
+.tg-tests__lbl {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-right: 0.15rem;
+}
+.tg-chip {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  padding: 0.16rem 0.5rem;
+  background: var(--tint-4);
+  border: 1px solid var(--border);
+  border-radius: var(--tag-radius);
+}
+
+/* ══════════════════════════════════════════
+   Responsive — flow + cards stack on narrow widths
+   ══════════════════════════════════════════ */
+@media (max-width: 680px) {
+  .tg-flow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.3rem;
+  }
+  .tg-link {
+    flex-basis: auto;
+    flex-direction: row;
+    justify-content: center;
+    gap: 1.4rem;
+    padding: 0.35rem 0;
+  }
+  .tg-link__rail {
+    flex-direction: row;
+    gap: 0.4rem;
+  }
+  .tg-link__wire {
+    width: 2px;
+    height: 24px;
+    background-image: linear-gradient(
+      to bottom,
+      var(--accent) 0 6px,
+      transparent 6px 12px
+    );
+    background-size: 2px 12px;
+    background-repeat: repeat-y;
+  }
+  .tg-link__wire::after {
+    top: auto;
+    bottom: -1px;
+    right: 50%;
+    transform: translateX(50%);
+    border: none;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 6px solid var(--accent);
+  }
+  .tg-link__rail--back .tg-link__wire {
+    background-image: linear-gradient(
+      to bottom,
+      var(--accent-muted) 0 6px,
+      transparent 6px 12px
+    );
+  }
+  .tg-link__rail--back .tg-link__wire::after {
+    top: -1px;
+    bottom: auto;
+    border-top: none;
+    border-bottom: 6px solid var(--accent-muted);
+  }
+  .tg-cards {
+    grid-template-columns: 1fr;
+  }
+  .tg-data__row {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+}
+
+/* ══════════════════════════════════════════
+   Entrance — staggered rise on load
+   ══════════════════════════════════════════ */
+.tg-hero > *,
+.tg-flow,
+.tg-thesis,
+.tg-card,
+.tg-chat {
+  animation: tg-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.tg-title {
+  animation-delay: 0.12s;
+}
+.tg-lede {
+  animation-delay: 0.22s;
+}
+.tg-flow {
+  animation-delay: 0.38s;
+}
+.tg-thesis {
+  animation-delay: 0.5s;
+}
+
+@keyframes tg-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes tg-march {
+  to {
+    background-position: 12px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tg-hero > *,
+  .tg-flow,
+  .tg-thesis,
+  .tg-card,
+  .tg-chat,
+  .tg-link__wire {
+    animation: none;
+  }
+}
+
+/* ── Deep-link landing flash — cross-module links land on the thesis / a card / a section ── */
+.tg-thesis:target,
+.tg-card:target {
+  border-radius: var(--radius-md);
+  animation: target-highlight 2.6s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tg-thesis:target,
+  .tg-card:target {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+}

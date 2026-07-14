@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Notifications: test cases</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Notifications</a>
+        <h1 class="header__title">Test cases</h1>
+        <div class="header__sub">notifications · workzone</div>
+      </div>
+
+      <!-- ── Overview band: decisions + stack ── -->
+      <div class="test-overview">
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Accepted decisions</div>
+          <div class="decision-box">
+            <strong>The config matrix isn’t duplicated here</strong>
+            Channels, routes, series dedup, and the builtin seed are verified from
+            the Admin side (<code>admin-panel/test_notifications.py</code>):
+            delete-builtin → reject, a locked route
+            (<code>CHECK (enabled OR NOT locked)</code>), in_app can’t be disabled.
+            Here it’s the <strong>dispatcher and delivery</strong> layer: idempotency,
+            the FK split, the two addressing models.
+          </div>
+          <div class="decision-box">
+            <strong>FK <code>ondelete</code> is split deliberately</strong>
+            The delivery audit survives channel deletion
+            (<code>channel_id</code> → <code>SET NULL</code>, row intact), but
+            goes with the notification and the user (<code>CASCADE</code>). Easy
+            to confuse — kept as a dedicated test with an explicit contrast.
+          </div>
+        </div>
+
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Stack and infrastructure</div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Available <span class="iter done">done</span></span>
+            <span>pytest, pytest-asyncio, pytest-cov</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Test DB</span>
+            <span
+              >testcontainers (PostgreSQL) — real CHECK / FK / triggers;
+              per-test rollback</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Factories</span>
+            <span
+              >factory_boy — notification, channel, delivery; builtin channels from
+              the migration</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Markers</span>
+            <span
+              ><code>@pytest.mark.integration</code> — the whole delivery layer runs
+              against a real DB</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P0 ═══ The heart of the layer — idempotency and the FK split. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p0">Integration · P0</span>
+        <span class="test-sec__title">Delivery idempotency and the FK split</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2" /><path d="M6.453 15h11.094" /><path d="M8.5 2h7" /></svg></span><span class="name">test_delivery_idempotency.py</span></div>
+            <div class="test-card__sub">notification_deliveries — the idempotency key</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="dispatcher.html#fanout">→ Fan-out and delivery write</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">UNIQUE(notification, channel, user)</span><span class="test-case__e">a dispatcher repeat / SAQ retry for the same recipient and channel → one row, an update, no duplicate</span></div>
+              <div class="test-case"><span class="test-case__k">partial UNIQUE WHERE user_id IS NULL</span><span class="test-case__e">webhook broadcast (<code>user_id = NULL</code>) is idempotent without a user — <code>UNIQUE(notification, channel)</code> holds one row</span></div>
+              <div class="test-case"><span class="test-case__k">two channels — two rows</span><span class="test-case__e">one notification over in_app and email → two delivery rows (different <code>channel_id</code>), no conflict</span></div>
+              <div class="test-case"><span class="test-case__k">two recipients — two rows</span><span class="test-case__e">broadcast on one channel to two people → two rows (different <code>user_id</code>), uniqueness per-user</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5V19A9 3 0 0 0 21 19V5" /><path d="M3 12A9 3 0 0 0 21 12" /></svg></span><span class="name">test_delivery_fk.py</span></div>
+            <div class="test-card__sub">The ondelete split — SET NULL (audit) vs CASCADE (lifecycle)</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#notif-journal">→ Event is a journal, delivery is state</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">DELETE channel → SET NULL</span><span class="test-case__e">webhook channel deleted → <code>deliveries.channel_id = NULL</code>, audit row intact, the delivery fact preserved</span></div>
+              <div class="test-case"><span class="test-case__k">one channel DELETE — two outcomes</span><span class="test-case__e">deleting a <code>notification_channels</code> row: its <code>notification_routes</code> go by cascade (<code>channel_id</code> → <code>CASCADE</code>, a route is config), while <code>deliveries.channel_id</code> → <code>NULL</code> (<code>SET NULL</code>, audit intact); same parent, different <code>ondelete</code> on two children <a class="xref-badge xref-badge--page" href="data-model.html#notif-channels">→ Channels and routes</a></span></div>
+              <div class="test-case"><span class="test-case__k">DELETE notification → CASCADE</span><span class="test-case__e"><code>notifications</code> row deleted → its delivery rows go by cascade</span></div>
+              <div class="test-case"><span class="test-case__k">DELETE user → CASCADE</span><span class="test-case__e"><code>users</code> row deleted → their personal delivery rows go by cascade</span></div>
+              <div class="test-case"><span class="test-case__k">contrast in one run</span><span class="test-case__e">deleting a channel keeps the row (audit), deleting an event / user removes it (lifecycle); different <code>ondelete</code> across three FKs of one table</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P1 ═══ Addressing, personal narrowing, the state machine. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">Integration · P1</span>
+        <span class="test-sec__title">Addressing, personal narrowing, the state machine</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 21a8 8 0 0 0-16 0" /><circle cx="10" cy="8" r="5" /><path d="M22 20c0-3.37-2-6.5-4-8a5 5 0 0 0-.45-8.3" /></svg></span><span class="name">test_addressing.py</span></div>
+            <div class="test-card__sub">notifications — two addressing models via target_user_id</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#notif-addressing">→ Two addressing models</a>
+              <a class="xref-badge xref-badge--page" href="dispatcher.html#addressing">→ Dispatcher</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">broadcast — target_user_id NULL</span><span class="test-case__e">recipients are a role slice (<code>owner</code> / <code>admin</code>, <code>status=active</code>), the fan-out is computed by query, not a column</span></div>
+              <div class="test-case"><span class="test-case__k">targeted — target_user_id = N</span><span class="test-case__e"><code>agent</code> / <code>account</code> addressed to one user; FK → <code>users</code>, <code>ON DELETE CASCADE</code></span></div>
+              <div class="test-case"><span class="test-case__k">DELETE user → cascade</span><span class="test-case__e">recipient deleted → their targeted notifications and deliveries go by cascade; broadcast facts intact</span></div>
+              <div class="test-case"><span class="test-case__k">severity CHECK</span><span class="test-case__e"><code>info</code> / <code>warning</code> / <code>critical</code> — outside the set → DB reject; orthogonal to <code>event_type</code></span></div>
+              <div class="test-case"><span class="test-case__k">event_type CHECK</span><span class="test-case__e"><code>sync</code> · <code>security</code> · <code>budget</code> · <code>system</code> · <code>discovery</code> · <code>agent</code> · <code>account</code>; any other value → DB reject</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9" /><path d="M14 17H5" /><circle cx="17" cy="17" r="3" /><circle cx="7" cy="7" r="3" /></svg></span><span class="name">test_prefs.py</span></div>
+            <div class="test-card__sub">notification_prefs — personal narrowing per type</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#notif-defaults">→ Channel default lives in the type catalog</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">UNIQUE(user, event_type)</span><span class="test-case__e">a second preference of the same type for a user → conflict, duplicate rejected</span></div>
+              <div class="test-case"><span class="test-case__k">user_id FK CASCADE</span><span class="test-case__e"><code>users</code> row deleted → their preference rows go by cascade</span></div>
+              <div class="test-case"><span class="test-case__k">no row → catalog default</span><span class="test-case__e">the effective preference = the type’s catalog default (personal <code>agent</code> · <code>account</code>: email opt-in <code>false</code>), NOT a global “both on”</span></div>
+              <div class="test-case"><span class="test-case__k">email_enabled without a column DEFAULT</span><span class="test-case__e">the column has no server_default; the value at INSERT is written by code from the type catalog — platform <code>true</code>, personal <code>false</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></svg></span><span class="name">test_delivery_state.py</span></div>
+            <div class="test-card__sub">notification_deliveries — the state machine</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="dispatcher.html#recipients">→ Delivery state</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">state CHECK</span><span class="test-case__e"><code>queued</code> / <code>sent</code> / <code>failed</code> / <code>read</code>; any other value → DB reject</span></div>
+              <div class="test-case"><span class="test-case__k">read only for in_app</span><span class="test-case__e"><code>read</code> is allowed only for in_app delivery; email / webhook don’t transition to <code>read</code></span></div>
+              <div class="test-case"><span class="test-case__k">set_updated_at trigger</span><span class="test-case__e">a <code>state</code> change moves <code>updated_at</code> strictly forward (new &gt; previous)</span></div>
+              <div class="test-case"><span class="test-case__k">failed carries error</span><span class="test-case__e">a transition to <code>failed</code> comes with a populated <code>error</code></span></div>
+              <div class="test-case"><span class="test-case__k">sent carries sent_at</span><span class="test-case__e"><code>sent</code> sets <code>sent_at</code>; <code>read</code> sets <code>read_at</code></span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ API P1 ═══ The personal notification-bell feed over HTTP. Delivery and its state
+           machine are covered by the Integration tests above; here it’s the consumer’s
+           read contract (Web App / Admin): own feed, counter, mark-as-read. Channel/route
+           config is on the Admin side. Summary — HTTP API. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">API · P1</span>
+        <span class="test-sec__title">Personal feed — HTTP contract</span>
+        <span class="test-sec__meta">httpx · ASGI app · <a href="../../api/index.html#surface-map" class="xref-badge">→ HTTP API</a> · <a href="../../api/_workzone/tests.html#conformance" class="xref-badge">→ Conformance</a></span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0" /><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" /></svg></span><span class="name">test_api_inbox.py</span></div>
+            <div class="test-card__sub">Reading one’s own feed, the counter, mark-as-read</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#notif-addressing">→ Two addressing models</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">own feed only</span><span class="test-case__e">GET → the caller’s in_app deliveries: their targeted plus broadcast for their role; others’ targeted don’t appear in the output</span></div>
+              <div class="test-case"><span class="test-case__k">unread counter</span><span class="test-case__e">GET unread → the count of in_app deliveries not in the <code>read</code> state; decreases after marking</span></div>
+              <div class="test-case"><span class="test-case__k">mark-as-read</span><span class="test-case__e">delivery transitions to <code>read</code> → <code>read_at</code>; idempotent (a repeat is a no-op); in_app only</span></div>
+              <div class="test-case"><span class="test-case__k">feed under one contract</span><span class="test-case__e">pagination / sort by recency — the shared list contract of the summary, not its own schema</span></div>
+              <div class="test-case"><span class="test-case__k">can’t mark someone else’s</span><span class="test-case__e">marking another user’s delivery → <code>404</code> (we don’t disclose existence); anonymous → <code>401</code></span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Structure ═══ Module catalog: the delivery layer against a real DB. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Structure</span>
+        <span class="test-sec__title">Test file structure</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          The delivery layer is fully integration — CHECK, FK and triggers are verified
+          against a real PostgreSQL. The config matrix (channels, routes, dedup,
+          builtin seed) lives in
+          <code>admin-panel/tests.html</code> and isn’t duplicated here.
+        </p>
+        <div class="test-tree">
+          <ul>
+            <li>
+              <span class="test-tree__row"><code>tests/notifications/</code><span class="d">module catalog</span></span>
+              <ul>
+                <li><span class="test-tree__row"><code>conftest.py</code><span class="d">testcontainers PG, factories notification / channel / delivery</span></span></li>
+                <li>
+                  <span class="test-tree__row"><code>integration/</code><span class="d">against a real DB</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>delivery-idempotency · delivery-fk</code><span class="d">idempotency key, ondelete split</span></span></li>
+                    <li><span class="test-tree__row"><code>addressing · prefs · delivery-state</code><span class="d">two addressing models, personal narrowing, state machine</span></span></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,727 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Harvester: Тест-кейсы</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Harvester</a>
+        <h1 class="header__title">Тест-кейсы</h1>
+        <div class="header__sub">harvester · workzone</div>
+      </div>
+
+      <!-- ── Overview band: решения + стек ── -->
+      <div class="test-overview">
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Принятые решения</div>
+          <div class="decision-box">
+            <strong>Что и чем проверяем</strong>
+            Transform → Load одинаков для всех источников — его берёт
+            детерминированный юнит на синтетических <code>RawItem</code>.
+            Source-specific только Extract и <code>normalize</code>: их тестируем
+            против записанных ответов и образов, а живьём — лишь вручную.
+          </div>
+          <div class="decision-box">
+            <strong>Три уровня по воспроизводимости</strong>
+            Воспроизводимость растёт от живого источника к образу и к
+            HTTP-фикстуре: живые free-tier — ручная отладка, вне CI; Docker-образы —
+            интеграция отдельным, более редким шагом CI; HTTP-фикстуры
+            (VCR.py / WireMock) — юнит, контракт и сквозной replay по источникам
+            на каждом PR. В <code>make test</code> входит только фикстурный
+            уровень; Docker-интеграция идёт отдельным шагом.
+          </div>
+          <div class="decision-box">
+            <strong>API-слой проверяет край, не повторяет домен</strong>
+            HTTP-тесты держат границу: форма запроса и валидация схемы, коды
+            ответов, маска секретов, авторизация на каждом роуте. Глубину
+            поведения — замки прогона, каскады удаления, три шага Test
+            Connection — держат доменные тесты выше; эндпоинт обязан лишь
+            корректно отразить их наружу. Сквозной механикой RBAC / JWT / CORS
+            владеет Auth &amp; Security, здесь — только что роуты Harvester за
+            этим guard.
+          </div>
+          <div class="decision-box">
+            <strong>Контракт-кейсы — и kit для автора коннектора</strong>
+            Тот же набор, которым платформа проверяет встроенные коннекторы
+            (<code>test_connector_contract</code> +
+            <code>test_manifest_registry</code>), автор внешнего коннектора
+            прогоняет против своего класса — проверка соответствия контракту до
+            поставки. Контракт до <code>1.0</code> не заморожен: kit меняется
+            вместе с ним.
+          </div>
+        </div>
+
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Стек и инфраструктура</div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Имеется <span class="iter done">done</span></span>
+            <span>pytest, pytest-asyncio, pytest-cov, httpx</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Фикстуры</span>
+            <span
+              >VCR.py (запись / воспроизведение HTTP) + WireMock (нештатные
+              коды, таймауты, искусственные стыки пагинации)</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Образы</span>
+            <span
+              >testcontainers — Gitea / GitLab CE для регулярного CI, Atlassian
+              DC под номерной прогон; засев скриптом при старте</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Прочее</span>
+            <span
+              >factory_boy (<code>RawItem</code> / <code>Entity</code>),
+              time-machine (watchdog, freshness-бюджет), SAQ-обработчик вызовом
+              напрямую — без поднятия воркера</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Маркеры</span>
+            <span
+              ><code>@pytest.mark.unit</code> / <code>@pytest.mark.integration</code> —
+              по типу; <code>@pytest.mark.p0</code> / <code>p1</code> — по
+              приоритету, ортогонально типу</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Unit ═══ Конвейер без источника — синтетические RawItem. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--unit">Unit</span>
+        <span class="test-sec__title">Конвейер без источника — синтетические RawItem</span>
+        <span class="test-sec__meta">детерминированно · каждый PR</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2v6a2 2 0 0 0 .245.96l5.51 10.08A2 2 0 0 1 18 22H6a2 2 0 0 1-1.755-2.96l5.51-10.08A2 2 0 0 0 10 8V2" /><path d="M6.453 15h11.094" /><path d="M8.5 2h7" /></svg></span><span class="name">test_transform.py</span></div>
+            <div class="test-card__sub">Шаги трансформации на сконструированных RawItem</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="pipeline.html#transform">→ Transform</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">filter — встроенные правила</span><span class="test-case__e">пустые сущности, системные события, боты отсеиваются; базовые правила не настраиваются</span></div>
+              <div class="test-case"><span class="test-case__k">filter — манифест</span><span class="test-case__e">переопределения и доп-включения берутся из <code>content_filters</code> манифеста</span></div>
+              <div class="test-case"><span class="test-case__k">classify → статус</span><span class="test-case__e">сущности проставляется <code>draft</code> / <code>final</code> / <code>archived</code></span></div>
+              <div class="test-case"><span class="test-case__k">resolve — дубли в прогоне</span><span class="test-case__e">схлопывание дублей внутри одного прогона + выбор победителя версии; межпрогонная идемпотентность — НЕ здесь</span></div>
+              <div class="test-case"><span class="test-case__k">enrich — связи и refs</span><span class="test-case__e">ребро строится сразу, когда целевой узел уже загружен; иначе (чужой источник или forward) — заявкой <code>refs</code>, ребро не материализуется</span></div>
+              <div class="test-case"><span class="test-case__k">clean — копия под эмбеддинг</span><span class="test-case__e">чистится после <code>enrich</code> и только копия; оригинал в <code>Entity</code> нетронут</span></div>
+              <div class="test-case"><span class="test-case__k">chunk — фрагменты</span><span class="test-case__e">одна <code>Entity</code> → много фрагментов; механики <code>structural</code> / <code>recursive</code> / <code>overlap</code></span></div>
+              <div class="test-case"><span class="test-case__k">embed — модель и кеш</span><span class="test-case__e">каждый фрагмент → вектор моделью из реестра AI; кеш по контент-хешу, неизменные не переэмбеддятся</span></div>
+              <div class="test-case"><span class="test-case__k">embed — назначение обязательно</span><span class="test-case__e">без назначенной embedding-функции приём не стартует (дефолта нет); назначена встроенная модель платформы → приём идёт, фрагменты эмбеддятся ею</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 16h.01" /><path d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /><path d="M21.946 12.013H2.054" /><path d="M6 16h.01" /></svg></span><span class="name">test_load.py</span></div>
+            <div class="test-card__sub">Идемпотентность загрузки и проекции</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="pipeline.html#load">→ Load</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">upsert — один ключ</span><span class="test-case__e">по <code>source_id + source_type + source_entity_id</code> ровно одна строка; повторный прогон обновляет, не плодит дубли</span></div>
+              <div class="test-case"><span class="test-case__k">синхронизация фрагментов</span><span class="test-case__e">набор векторов сверяется целиком: устаревшие удалены, новые добавлены, осиротевших нет</span></div>
+              <div class="test-case"><span class="test-case__k">неизменный фрагмент</span><span class="test-case__e">вектор по контент-хешу — не переэмбеддится при повторе</span></div>
+              <div class="test-case"><span class="test-case__k">три проекции</span><span class="test-case__e">одна <code>Entity</code> → relational + vector + graph (раскладка полей — за Knowledge Store)</span></div>
+              <div class="test-case"><span class="test-case__k">ACL фрагмента</span><span class="test-case__e">фрагмент наследует ACL сущности, своего не имеет</span></div>
+              <div class="test-case"><span class="test-case__k">удаление — отдельная ось</span><span class="test-case__e">пропавшая в источнике запись получает маркер удаления; статус классификации (<code>draft</code> / <code>final</code> / <code>archived</code>) сохраняется как был — скрыта из выдачи, физически хранится</span></div>
+              <div class="test-case"><span class="test-case__k">восстановление</span><span class="test-case__e">маркер снят (запись вернулась / удаление было ошибкой) → прежний статус возвращается сам, без переклассификации</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Contract ═══ Source-specific Extract + normalize против HTTP-фикстур. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--unit">Contract</span>
+        <span class="test-sec__title">Коннекторы — единый интерфейс на HTTP-фикстурах</span>
+        <span class="test-sec__meta">VCR.py + WireMock · каждый PR</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5" /><path d="M15 8V2" /><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" /><path d="M9 8V2" /></svg></span><span class="name">test_connector_contract.py</span></div>
+            <div class="test-card__sub">fetch + normalize против записанных ответов</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Contract</span>
+              <a class="xref-badge xref-badge--page" href="connectors.html#contract">→ Что такое коннектор</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">контракт — 4 метода</span><span class="test-case__e">коннектор реализует <code>fetch</code> · <code>normalize</code> · <code>list_catalog</code> · <code>check_connection</code>; здесь — ядро конвейера <code>fetch</code> + <code>normalize</code>, каталог и проба под api/scope-тестами</span></div>
+              <div class="test-case"><span class="test-case__k">форма выдачи</span><span class="test-case__e"><code>fetch</code> отдаёт поток <code>RawItem</code> с нагрузкой, идентификаторами, метаданными сбора</span></div>
+              <div class="test-case"><span class="test-case__k">инкремент по since</span><span class="test-case__e">Full → <code>since = epoch</code>; Incremental → момент прошлого прогона</span></div>
+              <div class="test-case"><span class="test-case__k">пагинация по курсору</span><span class="test-case__e"><code>listing → page → emit</code>; есть следующий курсор → назад к listing</span></div>
+              <div class="test-case"><span class="test-case__k">пустой / последний ответ</span><span class="test-case__e">нет курсора → цикл завершается чисто, без лишнего запроса</span></div>
+              <div class="test-case"><span class="test-case__k">сбой запроса (WireMock)</span><span class="test-case__e">таймаут / <code>429</code> на странице → повтор с backoff, цикл не рвётся</span></div>
+              <div class="test-case"><span class="test-case__k">normalize → Entity</span><span class="test-case__e">единственный source-specific шаг трансформации даёт <code>source_id + source_type + source_entity_id</code>, тип, статус</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z" /></svg></span><span class="name">test_manifest_registry.py</span></div>
+            <div class="test-card__sub">Манифест декларирует, реестр саморегистрирует</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Contract</span>
+              <a class="xref-badge xref-badge--page" href="connectors.html#manifest">→ Манифест коннектора</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">форма из манифеста</span><span class="test-case__e">UI строит форму подключения из объявленных config-полей и видов credential — фронт не знает про конкретный коннектор</span></div>
+              <div class="test-case"><span class="test-case__k">не в форму</span><span class="test-case__e"><code>rate_limit</code> (стартовый темп) и <code>webhook</code> (поведение) в форму не уходят; из webhook в UI — только сам секрет</span></div>
+              <div class="test-case"><span class="test-case__k">саморегистрация</span><span class="test-case__e">коннектор регистрируется через <code>@register</code> / discovery; реестр — единственный источник истины о типах</span></div>
+              <div class="test-case"><span class="test-case__k">внешний пакет</span><span class="test-case__e">коннектор из установленного пакета с entry point <code>achilles.connectors</code> встаёт в реестр как встроенный — discovery не различает дом класса</span></div>
+              <div class="test-case"><span class="test-case__k">новый тип</span><span class="test-case__e">добавить тип = добавить класс, без правок мастера / фронта / диспетчера</span></div>
+              <div class="test-case"><span class="test-case__k">диспетчер по типу</span><span class="test-case__e">диспетчер поднимает коннектор по <code>connector_type</code></span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Replay ═══ Сквозной E→T→L на кассетах, по типам источников. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p0">Replay · P0</span>
+        <span class="test-sec__title">Сквозной конвейер на кассетах — по типам источников</span>
+        <span class="test-sec__meta">VCR.py · офлайн · каждый PR</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M7 3v18" /><path d="M3 7.5h4" /><path d="M3 12h18" /><path d="M3 16.5h4" /><path d="M17 3v18" /><path d="M17 7.5h4" /><path d="M17 16.5h4" /></svg></span><span class="name">test_pipeline_replay.py</span></div>
+            <div class="test-card__sub">Полный E→T→L поверх записанных ответов, эталон по источнику</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Replay</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="pipeline.html#extract">→ Extract</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">параметризация по типу</span><span class="test-case__e">один прогон на каждый встроенный тип — Jira / GitLab / Slack — из своей закоммиченной кассеты</span></div>
+              <div class="test-case"><span class="test-case__k">весь конвейер офлайн</span><span class="test-case__e"><code>fetch</code> из кассеты → Transform → Load без сети и без образа; сквозное покрытие там, где Docker даёт лишь Git-семейство (у Slack/Jira образа для регулярного CI нет)</span></div>
+              <div class="test-case"><span class="test-case__k">эталон сущностей</span><span class="test-case__e">число, типы и ключи сущностей сверяются с golden-снимком; расхождение — провал, не warning</span></div>
+              <div class="test-case"><span class="test-case__k">детерминизм прогона</span><span class="test-case__e">фиксированный сид чанков и эмбеддинга → повтор бит-в-бит, дифф читаем в ревью</span></div>
+              <div class="test-case"><span class="test-case__k">перезапись кассеты</span><span class="test-case__e">дрейф API чинится перезаписью из <code>manual/</code>; кассета — закоммиченный файл, в CI сети не трогает и не «отваливается»</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P0 ═══ Сквозной E→T→L против Docker-образа. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p0">Integration · P0</span>
+        <span class="test-sec__title">Сквозной конвейер против образа</span>
+        <span class="test-sec__meta">Docker · отдельный шаг CI</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="3" /><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" /><circle cx="18" cy="5" r="3" /></svg></span><span class="name">test_pipeline_e2e.py</span></div>
+            <div class="test-card__sub">Extract → Transform → Load против засеянного источника</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="pipeline.html#extract">→ Extract</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">полный путь</span><span class="test-case__e">прогон против образа с фиксированным сидом → сущности в трёх проекциях</span></div>
+              <div class="test-case"><span class="test-case__k">соответствие сиду</span><span class="test-case__e">число и типы сущностей совпадают с засеянным набором</span></div>
+              <div class="test-case"><span class="test-case__k">повтор идемпотентен</span><span class="test-case__e">второй полный прогон не плодит дубли (Load по ключу)</span></div>
+              <div class="test-case"><span class="test-case__k">инкремент берёт дельту</span><span class="test-case__e">после правки в источнике Incremental подхватывает только изменённое по <code>since</code></span></div>
+              <div class="test-case"><span class="test-case__k">векторы сохранены</span><span class="test-case__e">фрагменты и эмбеддинги персистятся, ключ vector-проекции — id сущности</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P1 ═══ Надёжность, режимы, lifecycle, канал, ACL. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">Integration · P1</span>
+        <span class="test-sec__title">Надёжность, режимы, lifecycle, канал, ACL</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="m4.93 4.93 4.24 4.24" /><path d="m14.83 9.17 4.24-4.24" /><path d="m14.83 14.83 4.24 4.24" /><path d="m9.17 14.83-4.24 4.24" /><circle cx="12" cy="12" r="4" /></svg></span><span class="name">test_reliability.py</span></div>
+            <div class="test-card__sub">SyncRun, checkpoint, ретраи, DLQ</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="reliability.html#sync-run">→ SyncRun — состояние прогона</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">состояния прогона</span><span class="test-case__e"><code>queued</code> / <code>running</code> / <code>succeeded</code> / <code>failed</code> / <code>cancelled</code> + progress, heartbeat</span></div>
+              <div class="test-case"><span class="test-case__k">checkpoint resume</span><span class="test-case__e">фиксация после порции → resume с последнего чекпоинта, недописанная страница без дублей</span></div>
+              <div class="test-case"><span class="test-case__k">heartbeat (time-machine)</span><span class="test-case__e">интервал 30 с; падение = молчание после 3 пропусков (90 с)</span></div>
+              <div class="test-case"><span class="test-case__k">freshness-бюджет</span><span class="test-case__e">разрыв &gt; 6 ч → чекпоинт отброшен, прогон с нуля; <code>cancelled</code> не возобновляется</span></div>
+              <div class="test-case"><span class="test-case__k">retry → DLQ</span><span class="test-case__e">backoff на обрыв / таймаут / <code>429</code> / <code>5xx</code>; после исчерпания item уходит в <code>dead_letters</code>, не теряется</span></div>
+              <div class="test-case"><span class="test-case__k">перманентная → сразу в DLQ</span><span class="test-case__e"><code>400</code> / <code>401</code> / <code>404</code> / <code>422</code> и ошибки нормализации — повтор бессмыслен, элемент уходит в <code>dead_letters</code> без ретраев</span></div>
+              <div class="test-case"><span class="test-case__k">транзиентная → ретрай</span><span class="test-case__e">всплеск нагрузки / кратковременная недоступность — ретрай с backoff; класс ошибки решает, не буква кода</span></div>
+              <div class="test-case"><span class="test-case__k">коннектор переопределяет класс</span><span class="test-case__e"><code>403</code> у GitHub / GitLab — чаще rate-limit: по <code>Retry-After</code> / <code>X-RateLimit-Remaining</code> коннектор трактует его транзиентным, а не перманентным</span></div>
+              <div class="test-case"><span class="test-case__k">два уровня ретраев</span><span class="test-case__e">короткая задержка (≤ 60 с) — in-memory удержание страницы в задаче; долгая пауза (<code>Retry-After</code> в минуты-часы) → SAQ defer / re-enqueue, слот воркера освобождён, не <code>sleep</code></span></div>
+              <div class="test-case"><span class="test-case__k">частичный отказ</span><span class="test-case__e">прогон <code>succeeded</code> с <code>error_count &gt; 0</code> — отличается от <code>failed</code></span></div>
+              <div class="test-case"><span class="test-case__k">уведомление о провале</span><span class="test-case__e"><code>failed</code>-прогон поднимает уведомление; выбор канала — за модулем уведомлений, Harvester лишь сигналит</span></div>
+              <div class="test-case"><span class="test-case__k">один активный прогон</span><span class="test-case__e">partial unique index <code>UNIQUE (source_id) WHERE state IN ('queued','running')</code></span></div>
+              <div class="test-case"><span class="test-case__k">дедуп DLQ</span><span class="test-case__e">тот же item обновляет строку (<code>attempts</code>, <code>reason</code>), не плодит дубль; обработанный — удаляется</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg></span><span class="name">test_sync_modes.py</span></div>
+            <div class="test-card__sub">Полная, инкрементальная, сверка, восстановление</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="sync-modes.html#full-sync">→ Full Sync</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">Full Sync</span><span class="test-case__e"><code>since = epoch</code>, проходит каждую сущность; повтор не плодит дубли</span></div>
+              <div class="test-case"><span class="test-case__k">Incremental</span><span class="test-case__e">webhooks + polling по <code>since</code> — рабочий режим после первичной загрузки</span></div>
+              <div class="test-case"><span class="test-case__k">Reconciliation</span><span class="test-case__e">сверка целиком, агрессивный <code>resolve</code>, чистка исчезнувшего</span></div>
+              <div class="test-case"><span class="test-case__k">детекция удаления mode-специфична</span><span class="test-case__e">Incremental не ставит маркер исчезновения (удаление в дельту не приходит); Reconciliation полным сканом помечает пропавшее</span></div>
+              <div class="test-case"><span class="test-case__k">partial_resync (12 ч)</span><span class="test-case__e">молчание &gt; 12 ч → дешёвый polling → дельта есть → пересбор окна, авто, без человека</span></div>
+              <div class="test-case"><span class="test-case__k">dlq_retry — ручной</span><span class="test-case__e">точечный повтор по identity из очереди после починки; обработанные уходят из DLQ</span></div>
+              <div class="test-case"><span class="test-case__k">per-source</span><span class="test-case__e">каждый источник держит свой <code>since</code> / график / режим; «синхронизировать всё» = запуск всех разом</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></svg></span><span class="name">test_source_lifecycle.py</span></div>
+            <div class="test-card__sub">Состояния, замок прогона, отмена, удаление</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="sources.html#lifecycle">→ Жизненный цикл источника</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">две оси независимы</span><span class="test-case__e"><code>state</code> (<code>active</code>/<code>paused</code>/<code>disconnected</code>) — намерение; health (<code>idle</code>/<code>syncing</code>/<code>error</code>) — вычисляется</span></div>
+              <div class="test-case"><span class="test-case__k">замок на syncing</span><span class="test-case__e">правка / пауза / отключение / удаление недоступны; единственный рычаг — <code>Cancel</code></span></div>
+              <div class="test-case"><span class="test-case__k">Cancel безопасен</span><span class="test-case__e">останов на ближайшем чекпоинте, отката не требует (Load идемпотентен)</span></div>
+              <div class="test-case"><span class="test-case__k">Pause / Disconnect</span><span class="test-case__e">Pause глушит расписание, не живой прогон; Disconnect снимает креды, данные и конфиг целы</span></div>
+              <div class="test-case"><span class="test-case__k">удаление — два режима</span><span class="test-case__e">«только конфигурация» (данные осиротевают) либо «конфигурация + данные» (type-to-confirm, каскад, необратимо)</span></div>
+              <div class="test-case"><span class="test-case__k">Test Connection — 3 шага</span><span class="test-case__e">URL доступен → креды валидны → прав достаточно; ошибки раздельные, провал плановой пробы → health <code>error</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 16.98h-5.99c-1.1 0-1.95.94-2.48 1.9A4 4 0 0 1 2 17c.01-.7.2-1.4.57-2" /><path d="m6 17 3.13-5.78c.53-.97.1-2.18-.5-3.1a4 4 0 1 1 6.89-4.06" /><path d="m12 6 3.13 5.73C15.66 12.7 16.9 13 18 13a4 4 0 0 1 0 8" /></svg></span><span class="name">test_webhook_security.py</span></div>
+            <div class="test-card__sub">Подлинность канала, свежесть, анти-replay</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="security.html#webhooks">→ Webhook'и</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">подлинность</span><span class="test-case__e">HMAC над телом (GitHub / Slack), статичный токен в заголовке (GitLab), fallback — секретный endpoint</span></div>
+              <div class="test-case"><span class="test-case__k">верификатор по провайдеру</span><span class="test-case__e">параметризация подключаемого верификатора по 4 провайдерам, включая Atlassian (JWT Connect-приложения); ядро прогоняет единый порядок <code>свежесть → подпись → дедуп</code></span></div>
+              <div class="test-case"><span class="test-case__k">не подтверждена → отказ</span><span class="test-case__e">подделанная подпись / токен → вызов отклонён</span></div>
+              <div class="test-case"><span class="test-case__k">свежесть метки</span><span class="test-case__e">где есть timestamp (Slack, GitLab) — вызов старше окна 5 мин отброшен до подписи; у источника без метки (GitHub, Atlassian) шаг пропускается, анти-replay целиком несёт дедуп (TTL окна больше — 24 ч)</span></div>
+              <div class="test-case"><span class="test-case__k">анти-replay</span><span class="test-case__e">по timestamp (Slack) / delivery-id (GitHub) — повтор отбрасывается (TTL-память в Redis)</span></div>
+              <div class="test-case"><span class="test-case__k">только TLS</span><span class="test-case__e">канал терминируется reverse-proxy по TLS</span></div>
+              <div class="test-case"><span class="test-case__k">всплеск → уведомление</span><span class="test-case__e">отказы в лог; всплеск → уведомление типа Security</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14" /><path d="M5 2h14" /><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" /><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" /></svg></span><span class="name">test_rate_limit.py</span></div>
+            <div class="test-card__sub">Адаптивный темп per-scope, сигналы провайдера, cost-units</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="security.html#rate-limiting">→ Rate limiting</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">стартовый темп нащупывает границу</span><span class="test-case__e">старт с темпа из манифеста; при спокойных ответах AIMD-разгон +10% за окно — темп нащупывает реальную границу вверх, не только откатывается по <code>429</code></span></div>
+              <div class="test-case"><span class="test-case__k">сигнал провайдера сильнее AIMD</span><span class="test-case__e"><code>Retry-After</code> — жёсткая пауза на весь scope, перекрывает адаптивный темп; уважают все воркеры</span></div>
+              <div class="test-case"><span class="test-case__k">упреждение по Remaining</span><span class="test-case__e"><code>X-RateLimit-Remaining</code> мал → тормозим заранее: <code>safe_rps = Remaining / (Reset − now)</code>, берём <code>min</code> с темпом AIMD</span></div>
+              <div class="test-case"><span class="test-case__k">учёт по стоимости</span><span class="test-case__e">лимитер списывает единицы стоимости (cost-units), не число запросов; сколько единиц стоит запрос — объявляет коннектор (по умолчанию 1)</span></div>
+              <div class="test-case"><span class="test-case__k">ключ по rate_limit_scope</span><span class="test-case__e">ключ лимитера строится по <code>rate_limit_scope</code> манифеста (tenant / account_token / workspace_method / site); два источника на одном токене делят бюджет</span></div>
+              <div class="test-case"><span class="test-case__k">темп переживает прогоны</span><span class="test-case__e">выученная ёмкость API не сбрасывается между прогонами — живёт в Redis с TTL в часы, переживает рестарт воркера</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 10h2" /><path d="M16 14h2" /><path d="M6.17 15a3 3 0 0 1 5.66 0" /><circle cx="9" cy="11" r="2" /><rect x="2" y="5" width="20" height="14" rx="2" /></svg></span><span class="name">test_acl_identity.py</span></div>
+            <div class="test-card__sub">ACL терминами источника, identity по email</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="acl-identity.html#acl">→ Права доступа</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">ACL в терминах источника</span><span class="test-case__e">проект / пространство / канал сохраняются без маппинга на платформенные уровни</span></div>
+              <div class="test-case"><span class="test-case__k">двусторонний захват</span><span class="test-case__e">тег группы на сущности + членство в группе</span></div>
+              <div class="test-case"><span class="test-case__k">полный импорт людей</span><span class="test-case__e">при подключении источника люди импортируются целиком; incremental подхватывает новых</span></div>
+              <div class="test-case"><span class="test-case__k">identity по точному email</span><span class="test-case__e">свод людей в личность по совпадению email; несовпавшие → ручной разбор в Admin, Harvester не угадывает</span></div>
+              <div class="test-case"><span class="test-case__k">мост к users при upsert</span><span class="test-case__e">upsert identity при существующем users того же <code>lower(email)</code> → <code>identity.user_id</code> проставляется; нет users → <code>NULL</code></span></div>
+              <div class="test-case"><span class="test-case__k">нечёткий свод — не здесь</span><span class="test-case__e">разные email → разные личности; «тот же человек под разными email» Harvester не склеивает — deep resolution за Knowledge Store</span></div>
+              <div class="test-case"><span class="test-case__k">синхронизация прав</span><span class="test-case__e">отдельного механизма нет: Incremental точечно, Reconciliation полной сверкой</span></div>
+              <div class="test-case"><span class="test-case__k">отзыв eventually consistent</span><span class="test-case__e">отозванное видимо до ближайшего incremental / resync / reconciliation — принятый компромисс</span></div>
+              <div class="test-case"><span class="test-case__k">применение — за Query Engine</span><span class="test-case__e">pre-filter на выдаче не здесь; Harvester только сохраняет ACL</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P1 ═══ Секреты, контрольный слой БД, scope, расписание. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">Integration · P1</span>
+        <span class="test-sec__title">Секреты, контрольный слой БД, scope, расписание</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="16" r="1" /><rect x="3" y="10" width="18" height="12" rx="2" /><path d="M7 10V7a5 5 0 0 1 10 0v3" /></svg></span><span class="name">test_secrets.py</span></div>
+            <div class="test-card__sub">Credential at-rest: шифрование, расшифровка по требованию, маска</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="sources.html#secrets">→ Секреты</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">шифрование at-rest</span><span class="test-case__e"><code>credential_enc</code> / <code>webhook_secret_enc</code> хранятся зашифрованными AES-256-GCM — не хэш, нужна обратимость</span></div>
+              <div class="test-case"><span class="test-case__k">через крипто-ядро Auth</span><span class="test-case__e">Harvester не держит своего хранилища секретов; шифрование / расшифровка — вызовом крипто-ядра Auth &amp; Security</span></div>
+              <div class="test-case"><span class="test-case__k">расшифровка по требованию</span><span class="test-case__e">открытый секрет восстанавливается только в момент запроса к источнику, в покое не держится</span></div>
+              <div class="test-case"><span class="test-case__k">наружу — только маска</span><span class="test-case__e">в API / экспорт / лог уходит маска; открытое значение не утекает</span></div>
+              <div class="test-case"><span class="test-case__k">Disconnect снимает секрет</span><span class="test-case__e"><code>credential_enc</code> обнуляется, данные и конфиг источника целы</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5V19A9 3 0 0 0 21 19V5" /><path d="M3 12A9 3 0 0 0 21 12" /></svg></span><span class="name">test_data_model.py</span></div>
+            <div class="test-card__sub">Контрольный слой: каскады, констрейнты, выводимые поля</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#operational">→ Контрольный слой</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">каскад от источника</span><span class="test-case__e">DELETE <code>sources</code> → <code>sync_runs</code> и <code>dead_letters</code> уходят по <code>ON DELETE CASCADE</code></span></div>
+              <div class="test-case"><span class="test-case__k"><code>run_id</code> → SET NULL</span><span class="test-case__e">чистка журнала прогонов обнуляет <code>dead_letters.run_id</code>, строка очереди живёт — разный <code>ondelete</code>, легко перепутать</span></div>
+              <div class="test-case"><span class="test-case__k">CHECK-поля</span><span class="test-case__e">недопустимое значение перечислимой колонки под CHECK (<code>state</code>, <code>mode</code>, <code>trigger</code>, <code>scope_mode</code>, <code>reason</code>, <code>auth_method</code>, <code>last_probe_status</code>, …) отвергается БД</span></div>
+              <div class="test-case"><span class="test-case__k">открытый набор типов</span><span class="test-case__e">на <code>connector_type</code> CHECK нет — валидирует манифест, не БД</span></div>
+              <div class="test-case"><span class="test-case__k">здоровье выводится</span><span class="test-case__e">в БД только <code>state</code>; <code>idle</code> / <code>syncing</code> / <code>error</code> деривируются из прогона + пробы, колонкой не хранятся</span></div>
+              <div class="test-case"><span class="test-case__k">тип прогона выводится</span><span class="test-case__e">partial_resync / dlq_retry — пара (<code>mode</code> + <code>trigger</code> + scope), отдельной колонки нет</span></div>
+              <div class="test-case"><span class="test-case__k">дефолты и триггер</span><span class="test-case__e"><code>scope_list</code> <code>[]</code>, <code>content_filters</code> <code>{}</code>, <code>error_count</code> 0, <code>attempts</code> 1; <code>created_at</code> / <code>updated_at</code> server_default + триггер</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" /></svg></span><span class="name">test_scope.py</span></div>
+            <div class="test-card__sub">Режим выборки: allow / deny, политика, не снимок</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="sources.html#allowlist">→ Scope источника</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">два режима</span><span class="test-case__e">«Всё» (deny-list, новые объекты подхватываются авто) / «Только выбранное» (allow-list, новые остаются снаружи)</span></div>
+              <div class="test-case"><span class="test-case__k">политика, не снимок</span><span class="test-case__e">scope сверяется с каталогом источника на каждой синхронизации, не фиксируется однажды</span></div>
+              <div class="test-case"><span class="test-case__k">каталог после Test Connection</span><span class="test-case__e">список объектов строится после шага 2 (креды приняты)</span></div>
+              <div class="test-case"><span class="test-case__k">право на листинг</span><span class="test-case__e">учётке нужно листать инстанс целиком даже при суженной выборке</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4" /><path d="M16 2v4" /><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M3 10h18" /></svg></span><span class="name">test_scheduling.py</span></div>
+            <div class="test-card__sub">Расписание, наследование, веер, watchdog</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="sync-modes.html#scheduling">→ Расписание</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">разрешение расписания</span><span class="test-case__e">per-source <code>sync_interval</code> / <code>reconcile_interval</code> = NULL → наследует глобальный дефолт; задан → идёт по своему</span></div>
+              <div class="test-case"><span class="test-case__k">reconciliation по графику</span><span class="test-case__e">суточный / недельный прогон сверки запускается планировщиком, не вручную</span></div>
+              <div class="test-case"><span class="test-case__k">health-check по расписанию</span><span class="test-case__e">облегчённая проба (шаги 1–2 Test Connection) между синхронизациями; провал → health <code>error</code> + уведомление</span></div>
+              <div class="test-case"><span class="test-case__k">watchdog по таймеру</span><span class="test-case__e">молчание &gt; 12 ч → watchdog сам поднимает partial_resync, без человека</span></div>
+              <div class="test-case"><span class="test-case__k">«синхронизировать всё» = веер</span><span class="test-case__e">запуск всех per-source разом; независимые источники бегут в <code>running</code> параллельно — partial index по <code>source_id</code>, не глобальный</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ API ═══ HTTP-контракт эндпоинтов управления источниками. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">API · P1</span>
+        <span class="test-sec__title">Эндпоинты источников — HTTP-контракт</span>
+        <span class="test-sec__meta">httpx · ASGI-приложение · БД · фейковый коннектор · <a href="../../api/index.html#surface-map" class="xref-badge">→ HTTP API</a> · <a href="../../api/_workzone/tests.html#conformance" class="xref-badge">→ Conformance</a></span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg></span><span class="name">test_api_sources.py</span></div>
+            <div class="test-card__sub">Создание, чтение, правка источника по HTTP</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="sources.html#source-model">→ Модель источника</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">создание</span><span class="test-case__e">валидная форма → <code>201</code> + тело с id; следом авто Full Sync (<code>trigger=connect</code>)</span></div>
+              <div class="test-case"><span class="test-case__k">форма из манифеста</span><span class="test-case__e">поля и виды credential валидируются по манифесту коннектора; лишнее / чужое поле → <code>422 VALIDATION_ERROR</code></span></div>
+              <div class="test-case"><span class="test-case__k">CHECK наружу как 4xx</span><span class="test-case__e">недопустимый <code>auth_method</code> / <code>scope_mode</code>, пустое <code>name</code> → <code>422</code>, не <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">тип вне реестра</span><span class="test-case__e">неизвестный <code>connector_type</code> → <code>422</code> (сверка с реестром, не enum БД)</span></div>
+              <div class="test-case"><span class="test-case__k">чтение</span><span class="test-case__e">список и деталь → <code>state</code> + выведенный health + последний прогон; счётчик сущностей из Knowledge Store</span></div>
+              <div class="test-case"><span class="test-case__k">маска секрета</span><span class="test-case__e">GET / list отдают credential и webhook под маской; открытое значение — только в ответе на создание</span></div>
+              <div class="test-case"><span class="test-case__k">правка конфига</span><span class="test-case__e">PATCH частично; смена credential → перешифровка, наружу новая маска, не значение</span></div>
+              <div class="test-case"><span class="test-case__k">нет ресурса</span><span class="test-case__e">несуществующий id → <code>404 NOT_FOUND</code></span></div>
+              <div class="test-case"><span class="test-case__k">health — лёгкая проба</span><span class="test-case__e">GET <code>/health</code> → <code>state</code> + вычисленный health (<code>idle</code> / <code>syncing</code> / <code>error</code>) + <code>last_probe_status</code>, без полной детали источника — дешёвый эндпоинт для частого поллинга</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg></span><span class="name">test_api_lifecycle.py</span></div>
+            <div class="test-card__sub">Действия жизненного цикла и замок прогона</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="sources.html#lifecycle">→ Жизненный цикл источника</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">Pause / Resume</span><span class="test-case__e">→ <code>state</code> <code>paused</code> / <code>active</code>; повтор идемпотентен, не ошибка</span></div>
+              <div class="test-case"><span class="test-case__k">Disconnect / Reconnect</span><span class="test-case__e">Disconnect → <code>disconnected</code>, маска секрета пустеет; Reconnect переввод кредов без настройки заново</span></div>
+              <div class="test-case"><span class="test-case__k">удаление — только конфигурация</span><span class="test-case__e">→ <code>204</code>, данные осиротевают в Knowledge Store</span></div>
+              <div class="test-case"><span class="test-case__k">удаление — конфигурация + данные</span><span class="test-case__e">требует type-to-confirm в теле, иначе <code>422</code>; ответ помечает необратимый каскад</span></div>
+              <div class="test-case"><span class="test-case__k">Cancel</span><span class="test-case__e">→ <code>202</code>, прогон уходит в <code>cancelled</code> на ближайшем чекпоинте</span></div>
+              <div class="test-case"><span class="test-case__k">замок single-flight</span><span class="test-case__e">под <code>syncing</code> правка / пауза / отключение / удаление / повторный запуск → <code>409 CONFLICT</code>; проходит только Cancel</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5" /><path d="M15 8V2" /><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" /><path d="M9 8V2" /></svg></span><span class="name">test_api_test_connection.py</span></div>
+            <div class="test-card__sub">Проба связи и каталог объектов</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="sources.html#test-connection">→ Test Connection</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">черновик и существующий</span><span class="test-case__e">проба на конфиге из мастера и по id источника → <code>200</code> с поэтапным результатом</span></div>
+              <div class="test-case"><span class="test-case__k">3 шага раздельно</span><span class="test-case__e">URL недоступен / креды невалидны / прав мало → разные машинные коды шага, не общий <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">шаг 2 провален</span><span class="test-case__e">шаг 3 в ответе помечен «не проверялся»</span></div>
+              <div class="test-case"><span class="test-case__k">каталог после шага 2</span><span class="test-case__e">GET каталога объектов доступен только после успешных кредов; до — <code>409</code> / пусто</span></div>
+              <div class="test-case"><span class="test-case__k">плановая проба делит контракт</span><span class="test-case__e">фоновый health-check пишет <code>last_probe_status</code> (<code>ok</code> / <code>unreachable</code> / <code>auth_failed</code>) и роняет health <code>error</code> — та же логика, что ручная</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" /></svg></span><span class="name">test_api_sync.py</span></div>
+            <div class="test-card__sub">Запуск прогонов, веер, чтение журнала и DLQ</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="sync-modes.html#per-source">→ Независимость per-source</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">ручной запуск</span><span class="test-case__e"><code>mode</code> + <code>scope</code> в теле → <code>202</code> + id прогона; создан <code>sync_run</code> (<code>trigger=manual</code>, <code>queued</code>), задача в SAQ</span></div>
+              <div class="test-case"><span class="test-case__k">запуск под замком</span><span class="test-case__e">источник уже <code>syncing</code> → <code>409 CONFLICT</code> (single-flight)</span></div>
+              <div class="test-case"><span class="test-case__k">синхронизировать всё</span><span class="test-case__e">→ <code>202</code> веером: стартуют только Active; Paused / Disconnected / уже-syncing помечены пропущенными; нечего запускать → пустой веер</span></div>
+              <div class="test-case"><span class="test-case__k">dlq_retry</span><span class="test-case__e"><code>scope</code> = конкретные <code>dead_letters</code>, не окно <code>since</code>; обработанные уходят из DLQ</span></div>
+              <div class="test-case"><span class="test-case__k">история прогонов</span><span class="test-case__e">GET журнала <code>sync_runs</code> с прогрессом и исходом; <code>succeeded</code> с <code>error_count &gt; 0</code> отдаётся отлично от <code>failed</code></span></div>
+              <div class="test-case"><span class="test-case__k">просмотр DLQ</span><span class="test-case__e">GET → <code>COUNT</code> + группировка по <code>reason</code></span></div>
+              <div class="test-case"><span class="test-case__k">авто-режимы наружу закрыты</span><span class="test-case__e">ручной <code>reconciliation</code> / <code>partial_resync</code> не выставлены → <code>404</code> / <code>405</code></span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ API P1 ═══ Авторизация эндпоинтов и публичный приём. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">API · P1</span>
+        <span class="test-sec__title">Контроль доступа к эндпоинтам</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg></span><span class="name">test_api_access.py</span></div>
+            <div class="test-card__sub">Роли, аутентификация, маска — на каждом роуте</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge" href="../../auth-security/_workzone/authorization.html#roles-permissions">→ Auth &amp; Security</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Кейсы</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">Owner / Admin</span><span class="test-case__e">управление источниками → <code>2xx</code></span></div>
+              <div class="test-case"><span class="test-case__k">Member</span><span class="test-case__e">любой источниковый эндпоинт → <code>403 FORBIDDEN</code></span></div>
+              <div class="test-case"><span class="test-case__k">аноним</span><span class="test-case__e">без токена → <code>401 UNAUTHORIZED</code> (параметризовано по всем роутам)</span></div>
+              <div class="test-case"><span class="test-case__k">истёкший токен</span><span class="test-case__e">access JWT старше 15 мин → <code>401</code></span></div>
+              <div class="test-case"><span class="test-case__k">нет «голых» роутов</span><span class="test-case__e">каждый write-эндпоинт реально за <code>require(permission)</code> — параметризованный аудит покрытия guard</span></div>
+              <div class="test-case"><span class="test-case__k">API-ключ — только чтение</span><span class="test-case__e">read-only ключ на write-операцию → отказ; шире прав владельца не бывает</span></div>
+              <div class="test-case"><span class="test-case__k">webhook вне сессии</span><span class="test-case__e">публичный приём — подписанный канал, не JWT; его контракт держит <code>test_webhook_security</code></span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Manual ═══ Живые free-tier источники — вне CI, ручная отладка. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Manual</span>
+        <span class="test-sec__title">Живые free-tier источники — вне CI</span>
+        <span class="test-sec__meta">ручная отладка · источник истины для фикстур</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          Бесплатные тарифы реальных SaaS с насеянными sample-данными.
+          Назначение — ручная отладка нового коннектора вживую: видно
+          фактическое поведение API, формы ответов, особенности пагинации и
+          прав, которые не воспроизвести моком. Нестабильны, требуют токенов и
+          сети — в автоматический прогон не входят; служат источником истины
+          при записи HTTP-фикстур (токены вычищаются при записи).
+        </p>
+        <div class="test-stack-row">
+          <span class="test-stack-row__lbl">Atlassian</span>
+          <span
+            >Atlassian Cloud free — Jira + Confluence через
+            <code>atlassian-python-api</code>; реальная модель прав и
+            пагинация</span
+          >
+        </div>
+        <div class="test-stack-row">
+          <span class="test-stack-row__lbl">Slack</span>
+          <span
+            >бесплатный workspace через <code>slack-sdk</code> — каналы, треды,
+            rate-limit вживую</span
+          >
+        </div>
+        <div class="test-stack-row">
+          <span class="test-stack-row__lbl">GitLab</span>
+          <span
+            ><code>gitlab.com</code> + насеянный проект через
+            <code>python-gitlab</code> — issues, MR, wiki</span
+          >
+        </div>
+      </div>
+
+      <!-- ═══ Структура ═══ Каталог тестов: уровень задаётся назначением,
+           приоритет — маркерами, не папками. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Structure</span>
+        <span class="test-sec__title">Файловая структура тестов</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          Разделение задаётся не папками, а назначением. <code>unit/</code>,
+          <code>contract/</code> и <code>replay/</code> входят в <code>make test</code>
+          и идут на каждом PR (детерминированно). <code>integration/</code> и
+          <code>api/</code> — отдельным, более редким шагом: первый на
+          Docker-образах, второй на поднятом приложении и БД. Живые источники
+          остаются ручным инструментом отладки и в автоматический прогон не
+          попадают. Приоритет (P0–P1) ортогонален каталогам и задаётся маркерами
+          (<code>pytest -m p0</code>).
+        </p>
+        <div class="test-tree">
+          <ul>
+            <li>
+              <span class="test-tree__row"><code>tests/harvester/</code><span class="d">каталог модуля</span></span>
+              <ul>
+                <li><span class="test-tree__row"><code>conftest.py</code><span class="d">HTTP-фикстуры VCR.py · WireMock · фабрики RawItem/Entity · SAQ напрямую</span></span></li>
+                <li>
+                  <span class="test-tree__row"><code>unit/</code><span class="d">конвейер на синтетических RawItem</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_transform.py · test_load.py</code><span class="d">шаги трансформации, идемпотентность</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>contract/</code><span class="d">HTTP-фикстуры — единый интерфейс коннектора</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_connector_contract.py · test_manifest_registry.py</code><span class="d">fetch/normalize, манифест/реестр</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>replay/</code><span class="d">сквозной E→T→L на кассетах, по типам источников</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_pipeline_replay.py</code><span class="d">полный конвейер офлайн, эталон сущностей</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>integration/</code><span class="d">Docker-образы + БД</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_pipeline_e2e.py</code><span class="d">сквозной E→T→L</span></span></li>
+                    <li><span class="test-tree__row"><code>reliability · sync-modes · source-lifecycle · webhook-security · rate-limit · acl-identity</code><span class="d">надёжность, режимы, lifecycle, канал, темп, ACL</span></span></li>
+                    <li><span class="test-tree__row"><code>secrets · data-model · scope · scheduling</code><span class="d">секреты at-rest, каскады/констрейнты, выборка, расписание</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>api/</code><span class="d">HTTP-контракт эндпоинтов — httpx + ASGI + БД, фейковый коннектор</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_api_sources · _lifecycle · _test_connection · _sync</code><span class="d">CRUD, действия, проба, запуск</span></span></li>
+                    <li><span class="test-tree__row"><code>test_api_access.py</code><span class="d">роли, аутентификация, маска на каждом роуте</span></span></li>
+                  </ul>
+                </li>
+                <li><span class="test-tree__row"><code>manual/</code><span class="d">вне CI — живые free-tier источники</span></span></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: API Keys</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">API Keys</h1>
+        <div class="header__sub">
+          admin panel · макеты · безопасность
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Экран рендерится в контентной области каркаса">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--keep" href="../../shared-ui/_wireframes/loading-states.html#keep-previous" title="Смена страницы или фильтра — прежние строки остаются (keep-previous)">
+              <span class="in-load__icon"></span>загрузка
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">Надзор Owner / Admin за машинными ключами компании: все ключи в одном месте, отзыв любого, выдача ключа на сотрудника.</p>
+
+      <!-- ═══ Макет ═══ -->
+      <div class="section" id="api-keys">
+        <div class="section__title">
+          Список и создание ключа
+          <a href="../../auth-security/_workzone/authentication.html#api-keys" class="xref-badge">→ Auth &amp; Security</a>
+          <a href="../../mcp/index.html#governance" class="xref-badge">→ MCP</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">список ключей</div>
+              <div class="wf-screen wf-screen--wide">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/admin/api-keys
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/admin/api-keys · Owner / Admin</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-title">API Keys</span>
+                      <a class="wf-btn wf-btn--primary" href="../../auth-security/_features/api-keys/api-key-create-modal.html#api-key-create">Создать ключ <span class="wf-annot wf-annot--on-accent">1</span></a>
+                    </div>
+                    <div class="wf-input wf-input--sm">
+                      <span class="wf-input__icon">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                      </span>
+                      Поиск по префиксу ключа или владельцу
+                    </div>
+                    <div class="wf-filters">
+                      <span class="wf-filter">Статус <span class="wf-filter__caret">▾</span></span>
+                      <span class="wf-filter">Источник <span class="wf-filter__caret">▾</span></span>
+                      <span class="wf-filter">Доступ <span class="wf-filter__caret">▾</span></span>
+                      <span class="wf-annot">2</span>
+                    </div>
+                    <table class="wf-table">
+                      <thead>
+                        <tr><th>Ключ</th><th>Владелец</th><th>Доступ</th><th>Источники</th><th>Истекает</th><th>Использован</th><th></th></tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>ach_7f2k…</td>
+                          <td><span class="wf-idcell"><a class="wf-userlink" href="user-card.html">Дмитрий Соколов</a><span class="wf-idcell__email">dmitry@company.com</span></span> <span class="wf-annot">3</span></td>
+                          <td><span class="wf-chip">read-only</span> <span class="wf-annot">4</span></td>
+                          <td><span class="wf-chip">Jira</span></td>
+                          <td>через 84 дня</td>
+                          <td>5 мин назад</td>
+                          <td><span class="wf-guarded"
+                              ><a class="wf-a wf-a--danger">Отозвать</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#irreversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                            ></span>
+                            <span class="wf-annot">5</span></td>
+                        </tr>
+                        <tr>
+                          <td>ach_x91m…</td>
+                          <td><span class="wf-idcell"><a class="wf-userlink" href="user-card.html">Анна Орлова</a><span class="wf-idcell__email">anna@company.com</span></span></td>
+                          <td><span class="wf-chip">read-only</span></td>
+                          <td><span class="wf-chip">все источники</span></td>
+                          <td>бессрочный</td>
+                          <td>вчера</td>
+                          <td><span class="wf-guarded"
+                              ><a class="wf-a wf-a--danger">Отозвать</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#irreversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                            ></span>
+                          </td>
+                        </tr>
+                        <tr class="wf-table__row--muted">
+                          <td>ach_p03d…</td>
+                          <td><span class="wf-idcell"><a class="wf-userlink" href="user-card.html">Мария Ким</a><span class="wf-idcell__email">maria@company.com</span></span></td>
+                          <td><span class="wf-chip">read-only</span></td>
+                          <td>—</td>
+                          <td><span class="wf-chip wf-chip--err">отозван</span> <span class="wf-annot">6</span></td>
+                          <td>месяц назад</td>
+                          <td></td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div class="wf-pager">
+                      <span class="wf-pager__count">1–50 из 64</span>
+                      <div class="wf-pager__pages">
+                        <span class="wf-page wf-page--nav wf-page--off">‹</span>
+                        <span class="wf-page wf-page--active">1</span>
+                        <span class="wf-page">2</span>
+                        <span class="wf-page wf-page--nav">›</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">фильтр · статус</div>
+              <div class="wf-pop">
+                <span class="wf-filter" tabindex="0">Статус <span class="wf-filter__caret">▾</span></span>
+                <div class="wf-menu">
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> активен</span>
+                  <span class="wf-opt"><span class="wf-opt__box"></span> истёк</span>
+                  <span class="wf-opt"><span class="wf-opt__box"></span> отозван</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Открывает
+              <a href="../../auth-security/_features/api-keys/api-key-create-modal.html#api-key-create" class="xref-module">диалог создания</a>
+              — вспомогательная выдача ключа на сотрудника; основной путь — самовыпуск в
+              <a href="../../auth-security/_wireframes/profile-account.html" class="xref-module">профиле</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Фасеты Статус · Источник · Доступ. Поведение поиска и фильтров —
+              <a href="../_workzone/list-controls.html#facets" class="xref-page">единое для всех списков</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Владелец — ссылка на
+              <a href="user-card.html" class="xref-page">карточку пользователя</a>
+              с его ключами и доступами.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              «Доступ» и «Источники» — скоуп ключа. Потолок прав —
+              <a href="../../auth-security/_workzone/authentication.html#api-keys" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Owner / Admin отзывает любой ключ, отзыв применяется сразу. Механика —
+              <a href="../../auth-security/_workzone/authentication.html#api-keys" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              «отозван» — ключ погашен вручную или при деактивации владельца; реактивация его не возвращает.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

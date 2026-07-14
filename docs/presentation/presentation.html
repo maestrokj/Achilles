@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Presentation</title>
+    <meta
+      name="description"
+      content="Achilles — a company's single AI platform: a hub of providers, models, agents, and spend + answers grounded in company knowledge."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../shared.css" />
+    <link rel="stylesheet" href="presentation.css" />
+    <link rel="stylesheet" href="../landing.css" />
+  </head>
+
+  <body>
+    <a class="home-link" href="../index.html" title="Home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 10.5 12 3l9 7.5" />
+        <path d="M5 9.5V21h14V9.5" />
+      </svg>
+      Home
+    </a>
+    <div class="page">
+      <!-- ══════════════════════════════════════ -->
+      <!-- HERO                                  -->
+      <!-- ══════════════════════════════════════ -->
+      <header class="hero">
+        <h1 class="hero__title">Achilles</h1>
+        <p class="hero__subtitle">Enterprise AI Platform</p>
+        <p class="hero__desc">
+          A company's single AI platform: providers and models, employee
+          agents, tools, and spend — all governed in one place. Answers are
+          grounded in company knowledge, cited to their source and scoped to
+          each user's access rights.
+        </p>
+      </header>
+
+      <!-- Two pillars — anchor navigation -->
+      <nav class="nav-cards">
+        <a class="nav-card" href="#hub">
+          <div class="nav-card__kicker">Pillar 1</div>
+          <div class="nav-card__title">AI governance hub</div>
+          <div class="nav-card__text">
+            How one system replaces a zoo of glued-together AI tools.
+          </div>
+          <div class="nav-card__arrow">To section →</div>
+        </a>
+        <a class="nav-card" href="#knowledge">
+          <div class="nav-card__kicker">Pillar 2</div>
+          <div class="nav-card__title">Company knowledge</div>
+          <div class="nav-card__text">
+            How the platform gathers company context into a single graph
+            and grounds its answers on it.
+          </div>
+          <div class="nav-card__arrow">To section →</div>
+        </a>
+      </nav>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PILLAR 1: HUB                         -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="hub">
+        <div class="section__label section__label--solution">
+          Pillar 1 · Hub
+        </div>
+        <h2 class="section__title">All of a company's AI, in one place</h2>
+        <p class="section__text">
+          A small or mid-size company that wants to give employees LLMs and
+          agents usually has to glue several tools together: a gateway for API
+          keys, a separate chat, a separate knowledge base, a separate agent
+          builder — and then write the glue between them. Achilles replaces
+          that zoo with a single system: connect your providers, configure
+          access, and everything just works.
+        </p>
+
+        <div class="compare">
+          <div class="compare__item compare__item--old">
+            <div class="compare__tag">On your own</div>
+            <div class="compare__title">A zoo of tools</div>
+            <div class="compare__steps">
+              <div class="step step--fail">
+                Key gateway, chat, knowledge, agents — four systems
+              </div>
+              <div class="step step--fail">
+                Between them, homegrown glue you have to maintain
+              </div>
+              <div class="step step--fail">
+                Spend is smeared across tools — no unified picture
+              </div>
+              <div class="step step--fail">
+                Access and permissions differ in every tool
+              </div>
+              <div class="step step--fail">
+                Onboarding an employee means four accounts
+              </div>
+            </div>
+          </div>
+          <div class="compare__item compare__item--new">
+            <div class="compare__tag">With Achilles</div>
+            <div class="compare__title">Connect it and it works</div>
+            <div class="compare__steps">
+              <div class="step step--ok">
+                Providers and models in a single registry
+              </div>
+              <div class="step step--ok">
+                Spend is visible by employee and model; limits keep the budget
+              </div>
+              <div class="step step--ok">
+                Every company agent in one catalog, under admin control
+              </div>
+              <div class="step step--ok">
+                Tools are configured once — for both chat and agents
+              </div>
+              <div class="step step--ok">
+                Web interface, Slack bot, and API out of the box
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hub scheme -->
+        <svg viewBox="0 0 560 350" class="hub-vis">
+          <text x="350" y="14" font-size="7.5" fill="#a09080" text-anchor="middle"
+                font-weight="700" letter-spacing="0.06em">AI PROVIDERS</text>
+          <g>
+            <rect x="177" y="26" width="84" height="26" rx="13" fill="#886040" />
+            <rect x="275" y="26" width="72" height="26" rx="13" fill="#886040" />
+            <rect x="361" y="26" width="68" height="26" rx="13" fill="#886040" />
+            <rect x="443" y="26" width="80" height="26" rx="13" fill="#886040" />
+          </g>
+          <g font-size="10" fill="#fff" text-anchor="middle" font-weight="600">
+            <text x="219" y="43">Anthropic</text>
+            <text x="311" y="43">OpenAI</text>
+            <text x="395" y="43">Google</text>
+            <text x="483" y="43">your LLM</text>
+          </g>
+          <g stroke="#d2c6b6" stroke-width="1.5">
+            <line x1="219" y1="52" x2="219" y2="70" />
+            <line x1="311" y1="52" x2="311" y2="70" />
+            <line x1="395" y1="52" x2="395" y2="70" />
+            <line x1="483" y1="52" x2="483" y2="70" />
+          </g>
+          <g fill="#d2c6b6">
+            <polygon points="215,70 219,78 223,70" />
+            <polygon points="307,70 311,78 315,70" />
+            <polygon points="391,70 395,78 399,70" />
+            <polygon points="479,70 483,78 487,70" />
+          </g>
+          <text x="65" y="96" font-size="7.5" fill="#a09080" text-anchor="middle"
+                font-weight="700" letter-spacing="0.06em">SOURCES</text>
+          <g>
+            <rect x="15" y="106" width="100" height="24" rx="12" fill="#baa898" />
+            <rect x="15" y="138" width="100" height="24" rx="12" fill="#baa898" />
+            <rect x="15" y="170" width="100" height="24" rx="12" fill="#baa898" />
+            <rect x="15" y="202" width="100" height="24" rx="12" fill="#baa898" />
+          </g>
+          <g font-size="9.5" fill="#fff" text-anchor="middle" font-weight="600">
+            <text x="65" y="122">Jira</text>
+            <text x="65" y="154">Slack</text>
+            <text x="65" y="186">Confluence</text>
+            <text x="65" y="218">Wiki · drives</text>
+          </g>
+          <g stroke="#d2c6b6" stroke-width="1.5">
+            <line x1="115" y1="118" x2="150" y2="118" />
+            <line x1="115" y1="150" x2="150" y2="150" />
+            <line x1="115" y1="182" x2="150" y2="182" />
+            <line x1="115" y1="214" x2="150" y2="214" />
+          </g>
+          <g fill="#d2c6b6">
+            <polygon points="150,114 158,118 150,122" />
+            <polygon points="150,146 158,150 150,154" />
+            <polygon points="150,178 158,182 150,186" />
+            <polygon points="150,210 158,214 150,218" />
+          </g>
+          <rect x="160" y="78" width="380" height="150" rx="16" fill="#b84e30" />
+          <text x="350" y="104" font-size="13" fill="#fff" text-anchor="middle"
+                font-weight="700">Achilles</text>
+          <g fill="rgba(255,255,255,0.16)">
+            <rect x="220" y="118" width="70" height="24" rx="12" />
+            <rect x="302" y="118" width="70" height="24" rx="12" />
+            <rect x="384" y="118" width="96" height="24" rx="12" />
+            <rect x="241" y="152" width="76" height="24" rx="12" />
+            <rect x="329" y="152" width="130" height="24" rx="12" />
+          </g>
+          <g font-size="9.5" fill="#fff" text-anchor="middle" font-weight="600">
+            <text x="255" y="134">Models</text>
+            <text x="337" y="134">Agents</text>
+            <text x="432" y="134">Tools</text>
+            <text x="279" y="168">Spend</text>
+            <text x="394" y="168">Company knowledge</text>
+          </g>
+          <text x="350" y="206" font-size="8.5" fill="rgba(255,255,255,0.75)"
+                text-anchor="middle">
+            access · limits · accounting · rights — in one place
+          </text>
+          <g stroke="#d2c6b6" stroke-width="1.5">
+            <line x1="219" y1="228" x2="219" y2="288" />
+            <line x1="325" y1="228" x2="325" y2="288" />
+            <line x1="407" y1="228" x2="407" y2="288" />
+            <line x1="491" y1="228" x2="491" y2="288" />
+          </g>
+          <g fill="#d2c6b6">
+            <polygon points="215,288 219,296 223,288" />
+            <polygon points="321,288 325,296 329,288" />
+            <polygon points="403,288 407,296 411,288" />
+            <polygon points="487,288 491,296 495,288" />
+          </g>
+          <g>
+            <rect x="167" y="296" width="104" height="26" rx="13" fill="#6a8048" />
+            <rect x="285" y="296" width="80" height="26" rx="13" fill="#6a8048" />
+            <rect x="379" y="296" width="56" height="26" rx="13" fill="#6a8048" />
+            <rect x="449" y="296" width="84" height="26" rx="13" fill="#6a8048" />
+          </g>
+          <g font-size="10" fill="#fff" text-anchor="middle" font-weight="600">
+            <text x="219" y="313">Web interface</text>
+            <text x="325" y="313">Slack bot</text>
+            <text x="407" y="313">MCP</text>
+            <text x="491" y="313">Public API</text>
+          </g>
+          <text x="350" y="344" font-size="7.5" fill="#a09080" text-anchor="middle"
+                font-weight="700" letter-spacing="0.06em">SURFACES</text>
+        </svg>
+        <div class="graph-vis__caption">
+          Providers and sources are connected once — AI is then available to
+          employees on every surface
+        </div>
+
+        <div class="benefits">
+          <div class="benefit">
+            <div class="benefit__title">Providers and models</div>
+            <div class="benefit__text">
+              Connect by API key, activate models from the catalog, and assign
+              them by function: chat, agents, embeddings.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Spend under control</div>
+            <div class="benefit__text">
+              Token accounting by employee and model, weekly agent limits, and
+              an alert when the monthly budget is exceeded.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Employee agents</div>
+            <div class="benefit__text">
+              Employees build agents in the interface, no code required: task,
+              model, schedule. The admin sees them all and can pause any one.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Tools, centralized</div>
+            <div class="benefit__text">
+              Web search, page fetching, knowledge-base search. Availability for
+              chat and agents is configured in one place; connecting MCP servers
+              is coming soon.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">AI behavior</div>
+            <div class="benefit__text">
+              The organization's system prompt — the company's tone, rules, and
+              context — is edited right in the admin panel.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Surfaces</div>
+            <div class="benefit__text">
+              Web interface out of the box, a Slack bot, MCP for external AI
+              assistants, and a Public API for your own surfaces — Telegram and
+              other messengers get added as you grow.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Access and security</div>
+            <div class="benefit__text">
+              Roles, email invitations, API keys, an audit log — user management
+              is built in, not bolted on the side.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Agent library — soon</div>
+            <div class="benefit__text">
+              Preset agents for common tasks: company analytics, digests,
+              monitoring — turn one on and use it.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="bridge">
+        <p>
+          The hub is useful from day one — employees get models and agents
+          without a single line of code. But the real depth appears once the
+          platform knows your company.
+        </p>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PILLAR 2: KNOWLEDGE                   -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section" id="knowledge">
+        <div class="section__label section__label--solution">
+          Pillar 2 · Knowledge
+        </div>
+        <h2 class="section__title">Answers grounded in company knowledge</h2>
+        <p class="section__text">
+          A company's context is scattered across Jira, Slack, Confluence, and
+          drives — for every answer, everyone goes to everyone, and the bigger
+          the team, the more this coordination costs. Achilles connects to your
+          sources and builds a single knowledge graph: people, projects, tasks,
+          and decisions linked in one place.
+        </p>
+
+        <!-- Knowledge graph visualization -->
+        <svg viewBox="0 0 480 240" class="graph-vis">
+          <!-- Edges -->
+          <g stroke="#d2c6b6" stroke-width="1.5">
+            <line x1="240" y1="44" x2="400" y2="106" />
+            <line x1="240" y1="44" x2="80" y2="106" />
+            <line x1="240" y1="44" x2="340" y2="196" />
+            <line x1="400" y1="106" x2="340" y2="196" />
+            <line x1="340" y1="196" x2="140" y2="196" />
+            <line x1="140" y1="196" x2="80" y2="106" />
+          </g>
+          <!-- Edge labels -->
+          <g font-size="8.5" fill="#a09080">
+            <text x="332" y="65" text-anchor="middle">owner</text>
+            <text x="148" y="65" text-anchor="middle">member</text>
+            <text x="300" y="116" text-anchor="middle">created</text>
+            <text x="382" y="156" text-anchor="middle">contains</text>
+            <text x="240" y="218" text-anchor="middle">decision</text>
+            <text x="98" y="156" text-anchor="middle">discussion</text>
+          </g>
+          <!-- Type labels -->
+          <g font-size="7.5" fill="#a09080" text-anchor="middle"
+             font-weight="700" letter-spacing="0.06em">
+            <text x="240" y="22">PERSON</text>
+            <text x="400" y="84">PROJECT</text>
+            <text x="340" y="178">TASK</text>
+            <text x="140" y="178">DOCUMENT</text>
+            <text x="80" y="84">CHANNEL</text>
+          </g>
+          <!-- Node pills -->
+          <rect x="202" y="30" width="76" height="28" rx="14" fill="#b84e30" />
+          <rect x="345" y="92" width="110" height="28" rx="14" fill="#886040" />
+          <rect x="296" y="182" width="88" height="28" rx="14" fill="#a05838" />
+          <rect x="100" y="182" width="80" height="28" rx="14" fill="#6a8048" />
+          <rect x="34" y="92" width="92" height="28" rx="14" fill="#baa898" />
+          <!-- Node labels -->
+          <g font-size="10.5" fill="#fff" text-anchor="middle" font-weight="600">
+            <text x="240" y="49">@alex</text>
+            <text x="400" y="111">Notifications</text>
+            <text x="340" y="201">INFRA-891</text>
+            <text x="140" y="201">ADR-015</text>
+            <text x="80" y="111">#backend</text>
+          </g>
+        </svg>
+        <div class="graph-vis__caption">
+          Example: how the graph links people, projects, tasks, and documents
+        </div>
+
+        <!-- Topology: full mesh → star -->
+        <div class="topology">
+          <div class="topology__side topology__side--problem">
+            <svg width="160" height="120" viewBox="0 0 160 120">
+              <g stroke="#b84e30" stroke-width="1.3" opacity="0.3">
+                <line x1="80" y1="11" x2="118" y2="33" />
+                <line x1="80" y1="11" x2="118" y2="77" />
+                <line x1="80" y1="11" x2="80" y2="99" />
+                <line x1="80" y1="11" x2="42" y2="77" />
+                <line x1="80" y1="11" x2="42" y2="33" />
+                <line x1="118" y1="33" x2="118" y2="77" />
+                <line x1="118" y1="33" x2="80" y2="99" />
+                <line x1="118" y1="33" x2="42" y2="77" />
+                <line x1="118" y1="33" x2="42" y2="33" />
+                <line x1="118" y1="77" x2="80" y2="99" />
+                <line x1="118" y1="77" x2="42" y2="77" />
+                <line x1="118" y1="77" x2="42" y2="33" />
+                <line x1="80" y1="99" x2="42" y2="77" />
+                <line x1="80" y1="99" x2="42" y2="33" />
+                <line x1="42" y1="77" x2="42" y2="33" />
+              </g>
+              <g fill="#b84e30">
+                <circle cx="80" cy="11" r="7" />
+                <circle cx="118" cy="33" r="7" />
+                <circle cx="118" cy="77" r="7" />
+                <circle cx="80" cy="99" r="7" />
+                <circle cx="42" cy="77" r="7" />
+                <circle cx="42" cy="33" r="7" />
+              </g>
+            </svg>
+            <div class="topology__label">
+              <div class="topology__formula">C = n(n &minus; 1) &divide; 2</div>
+              <div class="topology__count">
+                6 people = <strong>15</strong> links
+              </div>
+            </div>
+          </div>
+          <div class="topology__arrow">&rarr;</div>
+          <div class="topology__side topology__side--solution">
+            <svg width="160" height="120" viewBox="0 0 160 120">
+              <g stroke="#6a8048" stroke-width="1.5" opacity="0.5">
+                <line x1="80" y1="11" x2="80" y2="55" />
+                <line x1="118" y1="33" x2="80" y2="55" />
+                <line x1="118" y1="77" x2="80" y2="55" />
+                <line x1="80" y1="99" x2="80" y2="55" />
+                <line x1="42" y1="77" x2="80" y2="55" />
+                <line x1="42" y1="33" x2="80" y2="55" />
+              </g>
+              <rect x="55" y="44" width="50" height="22" rx="11" fill="#6a8048" />
+              <text x="80" y="58.5" text-anchor="middle" font-size="8.5" fill="#fff" font-weight="700">Achilles</text>
+              <g fill="#b84e30">
+                <circle cx="80" cy="11" r="7" />
+                <circle cx="118" cy="33" r="7" />
+                <circle cx="118" cy="77" r="7" />
+                <circle cx="80" cy="99" r="7" />
+                <circle cx="42" cy="77" r="7" />
+                <circle cx="42" cy="33" r="7" />
+              </g>
+            </svg>
+            <div class="topology__label">
+              <div class="topology__formula">C = n</div>
+              <div class="topology__count">
+                6 people = <strong>6</strong> links
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="graph-vis__caption">
+          500 people: 124,750 everyone-to-everyone links
+          → 500 queries to the platform
+        </div>
+
+        <div class="benefits">
+          <div class="benefit">
+            <div class="benefit__title">One query instead of ten conversations</div>
+            <div class="benefit__text">
+              Instead of quizzing colleagues and combing through Jira,
+              Confluence, and Slack — one question to the platform, with an
+              answer linked to the source.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Access rights are respected</div>
+            <div class="benefit__text">
+              The platform carries source permissions into the graph: an
+              employee's answer only contains what they have access to.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Knowledge stays with the company</div>
+            <div class="benefit__text">
+              The history of decisions is preserved in the graph — even after
+              key people leave.
+            </div>
+          </div>
+          <div class="benefit">
+            <div class="benefit__title">Onboarding in days, not months</div>
+            <div class="benefit__text">
+              A new hire gets the full picture from day one — without dozens of
+              intro meetings.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- USE CASE                              -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section">
+        <div class="section__label section__label--example">Example</div>
+        <h2 class="section__title">How it works in practice</h2>
+        <p class="section__text">
+          A new developer wants to understand why the notifications service was
+          built on PostgreSQL rather than MongoDB.
+        </p>
+
+        <div class="compare">
+          <div class="compare__item compare__item--old">
+            <div class="compare__tag">Without Achilles</div>
+            <div class="compare__title">4 days, 0 answers</div>
+            <div class="compare__steps">
+              <div class="step step--fail">
+                Search Confluence — nothing
+              </div>
+              <div class="step step--fail">
+                Ask in Slack — "don't remember, ask Alex"
+              </div>
+              <div class="step step--fail">
+                Alex is on vacation
+              </div>
+              <div class="step step--fail">
+                Decision lost, time wasted
+              </div>
+            </div>
+          </div>
+          <div class="compare__item compare__item--new">
+            <div class="compare__tag">With Achilles</div>
+            <div class="compare__title">1 query, full context</div>
+            <div class="compare__steps">
+              <div class="step step--ok">
+                Discussion in #backend (March 2024)
+              </div>
+              <div class="step step--ok">
+                Related ticket INFRA-891
+              </div>
+              <div class="step step--ok">
+                ADR: write load, ACID requirement
+              </div>
+              <div class="step step--ok">
+                Decision author: @alex, DBA: @john
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- PROGRESSIVE VALUE                     -->
+      <!-- Hub → hybrid → company memory as the  -->
+      <!-- base fills up. Removes the barrier to -->
+      <!-- entry: useful from day one.           -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section">
+        <div class="section__label section__label--evolution">Rollout</div>
+        <h2 class="section__title">
+          The platform grows with your knowledge base
+        </h2>
+        <p class="section__text">
+          Value doesn't require "connect everything first." Achilles is useful
+          from day one as an AI hub and matures into a grounded company memory
+          as the knowledge base fills up — with no mode switches and no
+          reinstall.
+        </p>
+
+        <div class="phases">
+          <div class="phase">
+            <div class="phase__tag">Base empty</div>
+            <div class="phase__title">AI hub</div>
+            <div class="phase__text">
+              Deploy, add people and messengers, pick a model. Chat and agents
+              answer from general knowledge — out of the box, with no
+              integrations and no code.
+            </div>
+          </div>
+          <div class="phase__arrow">→</div>
+          <div class="phase">
+            <div class="phase__tag">Base filling up</div>
+            <div class="phase__title">Hybrid</div>
+            <div class="phase__text">
+              First sources connected. A question about company matters gets a
+              grounded answer with a link to the source; everything else works
+              like a consultant.
+            </div>
+          </div>
+          <div class="phase__arrow">→</div>
+          <div class="phase phase--full">
+            <div class="phase__tag">Base full</div>
+            <div class="phase__title">Company memory</div>
+            <div class="phase__text">
+              A full knowledge graph under unified access. Every answer is
+              grounded in corporate data, and agents work across the company's
+              entire context.
+            </div>
+          </div>
+        </div>
+
+        <p class="section__text">
+          The transition is seamless because there's no mode to configure: with
+          an empty base, the model simply isn't given the search tool, and the
+          platform answers like an assistant; the first ingested chunk turns
+          grounding on by itself. No flag, no switch — the barrier to entry
+          drops from weeks to an hour.
+        </p>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- OPEN SOURCE                           -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section">
+        <div class="section__label section__label--oss">Open Source</div>
+        <h2 class="section__title">Open code, full control</h2>
+        <p class="section__text">
+          Achilles is an open-source platform: every line can be read and
+          verified. Deployment is flexible — in the cloud or inside your
+          company's own perimeter.
+        </p>
+
+        <div class="oss-points">
+          <div class="oss-point">
+            <div class="oss-point__title">Auditable code</div>
+            <div class="oss-point__text">
+              No black boxes. Security you can verify.
+            </div>
+          </div>
+          <div class="oss-point">
+            <div class="oss-point__title">Data under control</div>
+            <div class="oss-point__text">
+              When needed, the entire platform runs inside your perimeter — data
+              never leaves the company.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- SUMMARY                               -->
+      <!-- ══════════════════════════════════════ -->
+      <section class="section">
+        <div class="section__label section__label--summary">Summary</div>
+        <h2 class="section__title">
+          One platform instead of ten tools
+        </h2>
+        <p class="section__text">
+          Achilles is a single infrastructure for AI in a company: a hub of
+          models, agents, and spend that matures into company memory as sources
+          are connected.
+        </p>
+
+        <div class="features">
+          <div class="feature">
+            <div class="feature__title">AI governance hub</div>
+            <div class="feature__text">
+              Providers, models, tools, and spend — in a single registry.
+            </div>
+          </div>
+          <div class="feature">
+            <div class="feature__title">Company knowledge</div>
+            <div class="feature__text">
+              A knowledge graph from your sources, with answers that respect
+              access rights.
+            </div>
+          </div>
+          <div class="feature">
+            <div class="feature__title">Agents without code</div>
+            <div class="feature__text">
+              Employees create, the platform runs, the admin governs.
+            </div>
+          </div>
+          <div class="feature">
+            <div class="feature__title">Access wherever it's convenient</div>
+            <div class="feature__text">
+              Web interface, Slack, MCP, Public API — out of the box.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════ -->
+      <!-- CTA                                   -->
+      <!-- ══════════════════════════════════════ -->
+      <footer class="cta">
+        <h2 class="cta__title">Give it a try</h2>
+        <p class="cta__text">
+          From a bare server to a working platform — under an hour. The
+          step-by-step guide walks you through deployment and setup.
+        </p>
+        <div class="cta__actions">
+          <a href="../get-started/index.html" class="cta__btn cta__btn--primary">
+            Get Started →
+          </a>
+          <a href="../architecture/architecture-scheme.html" class="cta__btn cta__btn--secondary">
+            Architecture
+          </a>
+          <a href="vision.html" class="cta__btn cta__btn--secondary">
+            Vision
+          </a>
+          <a href="https://github.com/maestrokj/Achilles" class="cta__btn cta__btn--secondary">
+            GitHub
+          </a>
+        </div>
+      </footer>
+    </div>
+    <script defer src="../architecture/doc-nav.js"></script>
+  </body>
+</html>

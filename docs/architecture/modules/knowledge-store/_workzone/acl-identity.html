@@ -1,0 +1,758 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Knowledge Store: ACL and identities</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../knowledge-store.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="acl-identity.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Knowledge Store</a>
+        <h1 class="header__title">ACL and identities</h1>
+        <div class="header__sub">knowledge-store · workzone</div>
+      </div>
+
+      <p class="desc">
+        Knowledge Store is the home of the permissions and identities that
+        <a
+          href="../../harvester/_workzone/acl-identity.html#acl"
+          class="xref-module"
+          >Harvester</a
+        >
+        captures from sources and writes here, and that
+        <a
+          class="xref-badge"
+          href="../../query-engine/_workzone/retrieval.html#identity"
+          >→ Query Engine</a
+        >
+        applies at retrieval. This page holds the model: how the platform gets from a
+        signed-in user to
+        <a href="#resolution" class="xref-anchor">the entities they are allowed to see</a> —
+        through <a href="#identity" class="xref-anchor">identities</a> and
+        <a href="#acl" class="xref-anchor">source permissions</a> — and where the
+        <a href="#iteration" class="xref-anchor">v1/v2 boundary</a> runs. Permissions
+        are stored in the source's original terms, without interpretation into
+        platform-level tiers.
+      </p>
+
+      <!-- ════════════════ RESOLUTION JOIN ════════════════ -->
+      <div class="section" id="resolution">
+        <div class="section__title">
+          Resolution join: from user to allowed entities
+        </div>
+        <p class="desc">
+          Permissions apply at query time as a <strong>pre-filter</strong>: candidates
+          are narrowed by access <em>before</em> ranking. To answer “what is
+          available to this user,” the platform walks a chain — from the
+          platform account to its identities, their memberships in source
+          groups, and the grant on an entity. The application itself lives in
+          <a
+            class="xref-badge"
+            href="../../query-engine/_workzone/retrieval.html#identity"
+            >→ Query Engine</a
+          >; here are the links and how they are stored.
+        </p>
+
+        <div class="ks-chain">
+          <div class="ks-chain__hop">
+            <span class="ks-chain__node ks-chain__node--auth">users</span>
+            <span class="ks-chain__edge"
+              ><span class="ks-chain__key">identity.user_id</span></span
+            >
+            <span class="ks-chain__node">identity</span>
+          </div>
+          <div class="ks-chain__hop">
+            <span class="ks-chain__node">identity</span>
+            <span class="ks-chain__edge"
+              ><span class="ks-chain__key">source_principal.identity_id</span></span
+            >
+            <span class="ks-chain__node">source_principal</span>
+          </div>
+          <div class="ks-chain__hop">
+            <span class="ks-chain__node">source_principal</span>
+            <span class="ks-chain__edge"
+              ><span class="ks-chain__key">group_membership</span></span
+            >
+            <span class="ks-chain__node">source_group</span>
+          </div>
+          <div class="ks-chain__hop">
+            <span class="ks-chain__node">source_group</span>
+            <span class="ks-chain__edge"
+              ><span class="ks-chain__key">entity_acl</span></span
+            >
+            <span class="ks-chain__node ks-chain__node--goal">entity</span>
+          </div>
+        </div>
+
+        <p class="note">
+          A direct grant on an entity to a specific person short-circuits the chain
+          via <code>entity_acl.source_principal_id</code>, bypassing the group. A
+          <code>scope = 'public'</code> grant is visible to everyone — it is added to
+          the filter directly, bypassing the membership chain.
+        </p>
+
+        <div class="ks-roles">
+          <div class="ks-roles__col ks-roles__col--src">
+            <div class="ks-roles__who">Harvester</div>
+            <div class="ks-roles__act">writes</div>
+            <div class="ks-roles__d">
+              Captures permissions and people from the source, upserting them into
+              these tables in the same sync modes as the content.
+            </div>
+          </div>
+          <div class="ks-roles__col ks-roles__col--here">
+            <div class="ks-roles__who">Knowledge Store</div>
+            <div class="ks-roles__act">stores</div>
+            <div class="ks-roles__d">
+              The relational source of truth for permissions and identities; builds the
+              resolution join and runs the pre-filter next to the vectors — in one SQL
+              with semantic search.
+            </div>
+          </div>
+          <div class="ks-roles__col ks-roles__col--dst">
+            <div class="ks-roles__who">Query Engine</div>
+            <div class="ks-roles__act">applies</div>
+            <div class="ks-roles__d">
+              Passes the caller's identity at query time — KS runs the resolution join
+              and filter; Query Engine does not duplicate them.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ IDENTITIES ════════════════ -->
+      <div class="section">
+        <div class="section__title">Identities: source person → identity → account</div>
+        <p class="desc">
+          The same connector API that returns content also returns the source's people.
+          Each source person is a <code>source_principal</code>; those matching by
+          <code>email</code> are merged into one <code>identity</code>. If an identity
+          also signs into the platform, <code>identity</code> bridges to
+          <a
+            href="../../auth-security/_workzone/data-model.html#data-model"
+            class="xref-module"
+            >Auth · users</a
+          >.
+        </p>
+
+        <div class="stk-stack">
+          <!-- identity -->
+          <div class="stk-layer stk-layer--ks" id="identity">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Identity</span>
+              <span class="stk-layer__role">The canonical identity — the merge target.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">identity</span>
+                  <span class="dm-tbl__sub">merged identities</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (lower(email))</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE partial (user_id)</span>
+                    <span class="dm-badge dm-badge--fk">FK → users</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">email</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--uq" title="UNIQUE (lower(email))">UNIQUE</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">merge key · normalized <code>lower(email)</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">display_name</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">display name</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">user_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → auth.users, ON DELETE SET NULL">FK→users</span
+                        ><span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--uq" title="UNIQUE (user_id) WHERE user_id IS NOT NULL — pins the bridge 1:1; the partial index also serves resolution">UNIQUE</span>
+                      </td>
+                      <td class="dm-note">bridge to the platform account · 1:1 pinned by <code>UNIQUE partial</code> · <code>NULL</code> = identity with no platform sign-in</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">A bridge to Auth, not a duplicate</span>
+                </div>
+                <div class="stk-dec__d">
+                  A source “identity” and a “platform account” are different entities.
+                  <code>identity.user_id</code> is the only link between them:
+                  set when the identity also signs into the platform. The
+                  <b>sign-in</b> channels live in
+                  <a
+                    href="../../auth-security/_workzone/data-model.html#identity-mapping"
+                    class="xref-module"
+                    >Auth · identity_mapping</a
+                  >
+                  (Slack bot <code>source='slack'</code>, SSO Okta&nbsp;/&nbsp;Azure);
+                  here, Jira&nbsp;/&nbsp;Slack&nbsp;/&nbsp;Confluence act as
+                  <b>content</b> sources. The same Slack plays two roles — sign-in (Auth)
+                  and content (here); don't conflate them.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Populating the bridge — auto-link by email</span
+                  >
+                  <a class="xref-badge" href="../../auth-security/_workzone/authorization.html#identity"
+                    >→ Auth &amp; Security</a
+                  >
+                  <a class="xref-badge" href="../../harvester/_workzone/acl-identity.html#identity"
+                    >→ Harvester</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  <code>identity.user_id</code> is set automatically by exact
+                  <code>lower(email)</code> — a strict <b>1:1</b> link: pinned by
+                  <code>UNIQUE partial</code> on <code>user_id</code>, and both tables
+                  are also unique by email, so there are no collisions (unlike the
+                  <code>source_principal → identity</code> merge). It fires
+                  <b>synchronously</b> at two points: when a platform account is
+                  created (invite accepted, setup, admin creating / changing an email) —
+                  <a class="xref-module"
+                    href="../../auth-security/_workzone/authorization.html#identity"
+                    >Auth</a
+                  >
+                  asks to link an existing <code>identity</code> of the same email;
+                  and when
+                  <a class="xref-module"
+                    href="../../harvester/_workzone/acl-identity.html#identity"
+                    >Harvester</a
+                  >
+                  upserts an <code>identity</code> — linking it to an already
+                  existing <code>users</code> row. This way a signed-in user
+                  immediately sees all their source accounts, without waiting for a sync.
+                  The linking operation is owned by Knowledge Store — the owner of
+                  <code>identity</code>; Auth and Harvester call it. The operation is
+                  <b>idempotent and transactional</b>: a repeat call with the same
+                  email and account is a no-op (guarded by the <code>UNIQUE</code> keys and
+                  the upsert on <code>lower(email)</code>), and linking runs in one
+                  transaction in the shared database — with no window where the bridge is
+                  half-set. The outcome is explicit: either linked, or no match
+                  (no identity for this email yet, or sign-in address ≠ source
+                  address) — the unlinked goes to manual review, never lost
+                  silently.
+                </div>
+                <details>
+                  <summary>sign-in email ≠ source email</summary>
+                  <div>
+                    If a person appears in the source under a different address
+                    (<code>alice.smith@corp</code> vs. sign-in
+                    <code>alice@corp</code>), auto-link by exact email won't fire —
+                    the <code>identity</code> stays without a bridge
+                    (<code>user_id = NULL</code>). An administrator links such an
+                    identity to the right user manually on
+                    <a class="xref-module"
+                      href="../../admin-panel/_wireframes/users.html#identity-mapping"
+                      >Admin · Account linking</a
+                    >
+                    — the same path as unmerged <code>source_principal</code> rows.
+                    Auto-merge across <em>different</em> addresses (deep entity resolution)
+                    is <span class="iter v2">v2</span>, a Curation Pass step; see
+                    the <a href="#iteration" class="xref-anchor">iteration boundary</a>.
+                  </div>
+                </details>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- source_principal -->
+          <div class="stk-layer stk-layer--ks" id="source-principal">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Source person</span>
+              <span class="stk-layer__role">The account as the source returns it.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">source_principal</span>
+                  <span class="dm-tbl__sub">people from sources</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → sources</span>
+                    <span class="dm-badge dm-badge--fk">FK → identity</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (source_id, source_user_id)</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">source_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → Harvester.sources, ON DELETE CASCADE">FK→sources</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">source · CASCADE</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_user_id</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">native id at the source</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">email</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">for merging · absent from some sources</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">display_name</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">name as in the source</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">identity_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → identity, ON DELETE SET NULL">FK→identity</span
+                        ><span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note"><code>NULL</code> = unmatched, awaiting review in Admin</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Merge by email · unmatched go to review</span>
+                  <a class="xref-badge" href="../../admin-panel/_wireframes/users.html#identity-mapping"
+                    >→ Admin · Account linking</a
+                  >
+                </div>
+                <div class="stk-dec__d">
+                  Source people with the same exact <code>email</code> are merged into
+                  one <code>identity</code>. Those that couldn't be merged (no email,
+                  ambiguity) keep <code>identity_id</code> as
+                  <code>NULL</code>: the row goes to manual review in Admin, where it is
+                  linked to an existing identity or a new one is created. The fuzzy
+                  “different emails, same person” case is deep entity resolution:
+                  <span class="iter v2">v2</span> (a Curation Pass step).
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ ACL ════════════════ -->
+      <div class="section" id="acl">
+        <div class="section__title">Source permissions: groups, membership, entity grant</div>
+        <p class="desc">
+          Permissions are taken in the source's original terms (a Jira project, a
+          Confluence space, a Slack channel) — without interpretation into
+          platform-level tiers. Access rests on two facets: the <strong>tag</strong> —
+          which group an entity belongs to (<code>entity_acl</code>), and
+          <strong>membership</strong> — who belongs to the group
+          (<code>group_membership</code>); without both you can't answer who can
+          see the entity.
+        </p>
+
+        <div class="stk-stack">
+          <!-- source_group -->
+          <div class="stk-layer stk-layer--ks" id="source-group">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Source group</span>
+              <span class="stk-layer__role">A container in the original terms.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">source_group</span>
+                  <span class="dm-tbl__sub">source groups and containers</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → sources</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (source_id, source_group_id)</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">source_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → Harvester.sources, ON DELETE CASCADE">FK→sources</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">source · CASCADE</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">source_group_id</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">native container id</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">name</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">display name · “Backend project”</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">kind</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">container type · project · space · channel · set by the manifest</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- group_membership -->
+          <div class="stk-layer stk-layer--ks" id="group-membership">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">4</span>
+              <span class="stk-layer__name">Membership</span>
+              <span class="stk-layer__role">Who belongs to the group.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">group_membership</span>
+                  <span class="dm-tbl__sub">group membership</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → source_group</span>
+                    <span class="dm-badge dm-badge--fk">FK → source_principal</span>
+                    <span class="dm-badge dm-badge--flag">PK (group, principal)</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-fk">
+                      <td class="dm-f">source_group_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--pk">PK</span
+                        ><span class="dm-c dm-c--fk" title="FK → source_group, ON DELETE CASCADE">FK→group</span>
+                      </td>
+                      <td class="dm-note">leading column of the composite PK (the PK index covers group lookups) · CASCADE</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">source_principal_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--pk">PK</span
+                        ><span class="dm-c dm-c--fk" title="FK → source_principal, ON DELETE CASCADE">FK→principal</span
+                        ><span class="dm-c dm-c--idx" title="separate index: second PK column, not covered by the prefix">IDX</span>
+                      </td>
+                      <td class="dm-note">second PK column · separate IDX for the principal→groups resolution · CASCADE</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note">when the membership was observed</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">A snapshot of current membership</span>
+                </div>
+                <div class="stk-dec__d">
+                  One row per “group × person” pair. Reconciliation checks
+                  membership against the source and brings the snapshot into line:
+                  added to a project — the row appears; removed — it is deleted. It is a
+                  snapshot of the present, not a change feed. Membership is <b>flat</b> —
+                  direct pairs; expanding nested groups (group-in-group, transitive
+                  membership) is <span class="iter v2">v2</span>, see the
+                  <a href="#iteration" class="xref-anchor">iteration boundary</a>.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- entity_acl -->
+          <div class="stk-layer stk-layer--ks" id="entity-acl">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">5</span>
+              <span class="stk-layer__name">Entity grant</span>
+              <span class="stk-layer__role">The tag: who can see the entity.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">entity_acl</span>
+                  <span class="dm-tbl__sub">entity permissions</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → entities</span>
+                    <span class="dm-badge dm-badge--flag">grant: group · principal · public</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE partial (source_group_id, entity_id)</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE partial (source_principal_id, entity_id)</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE partial (entity_id) WHERE public</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">entity_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → entities (KS node), ON DELETE CASCADE">FK→entities</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">KS entity · CASCADE</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">scope</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK scope IN ('group','principal','public')">CHECK</span>
+                      </td>
+                      <td class="dm-note">grantee · <code>group</code> · <code>principal</code> · <code>public</code></td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">source_group_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → source_group, ON DELETE CASCADE">FK→group</span
+                        ><span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">grant to a group · set when <code>scope=group</code></td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">source_principal_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → source_principal, ON DELETE CASCADE">FK→principal</span
+                        ><span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">grant to a direct person · set when <code>scope=principal</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note">when the grant was observed · no <code>updated_at</code> — a snapshot with no payload</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">A grant — to a group, a direct person, or everyone (public)</span>
+                </div>
+                <div class="stk-dec__d">
+                  <code>scope</code> distinguishes three forms of grant, and CHECK keeps
+                  them consistent: <code>group</code> — <code>source_group_id</code> is
+                  set (access for a container/group),
+                  <code>principal</code> — <code>source_principal_id</code> (addressed
+                  to a person), <code>public</code> — both <code>NULL</code> (content
+                  open to everyone in the source: a public Slack channel, anonymous
+                  Confluence access). Public is a row-level wildcard grant, without
+                  bloating membership with a synthetic “everyone” group; at resolution
+                  it is added to the filter as <code>scope = 'public'</code>.
+                  The relational table is the source of truth for permissions; how this
+                  grant, in a single JOIN, covers both search and graph traversal across
+                  <a href="data-model.html#projections" class="xref-page"
+                    >the three projections</a
+                  >
+                  of one database is held by the data model. The entity node
+                  (<code>entities</code>) is designed with the rest of
+                  Knowledge Store — only the permissions facet is fixed here.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Indexes for the resolution direction · also the dedup key</span>
+                </div>
+                <div class="stk-dec__d">
+                  The hot path is “the user's set of groups → accessible entities,”
+                  so the grant carries <strong>unique partial</strong> indexes
+                  <code>(source_group_id, entity_id)&nbsp;WHERE&nbsp;source_group_id&nbsp;IS&nbsp;NOT&nbsp;NULL</code>
+                  and
+                  <code>(source_principal_id, entity_id)&nbsp;WHERE&nbsp;source_principal_id&nbsp;IS&nbsp;NOT&nbsp;NULL</code>
+                  (and for public — <code>(entity_id)&nbsp;WHERE&nbsp;scope&nbsp;=&nbsp;'public'</code>),
+                  not just single-column FKs: the lookup is index-only, without a heap
+                  visit for <code>entity_id</code>. The same pair of structures does
+                  double duty — the order <code>(grantee, entity_id)</code> matches the
+                  resolution direction, and uniqueness provides a
+                  <strong>conflict target</strong> for upsert reconciliation
+                  (the grant's natural key given a polymorphic grantee and a surrogate
+                  <code>id</code>): a repeat capture is <code>ON CONFLICT DO NOTHING</code>,
+                  duplicates excluded. The partiality (<code>WHERE …</code>) is
+                  because each grant form (<code>scope</code>) sets its own set of
+                  columns. When the set of accessible groups is already known (resolved
+                  at query time by
+                  <a
+                    class="xref-badge"
+                    href="../../query-engine/_workzone/retrieval.html#identity"
+                    >→ Query Engine</a
+                  >), the resolution join from <code>users</code> collapses into a filter
+                  over that set. Denormalizing permissions into an array on the entity is
+                  a separate heavy lever, deferred (open-questions).
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ v1/v2 BOUNDARY ════════════════ -->
+      <div class="section" id="iteration">
+        <div class="section__title">v1 / v2 boundary</div>
+        <p class="desc">
+          v1 is raw capture of permissions and identities, deterministic merge by exact
+          email with manual review of the unmerged, pre-filter application, and graph
+          curation by a background run (Curation Pass). v2 leaves the
+          <em>platform interpretation</em> of permissions on top of the source level,
+          fuzzy (machine-guess) identity merging, and hard guarantees at retrieval.
+        </p>
+        <div class="dm-split">
+          <div class="dm-split__col dm-split__col--keep">
+            <div class="dm-split__h">
+              <span class="dm-split__t">v1 — raw capture + pre-filter</span>
+            </div>
+            <p class="dm-split__d">
+              The five tables above · identity merge by exact <code>email</code> ·
+              the <code>identity ↔ users</code> bridge via auto-link by exact email
+              (synchronous, both sides) + manual linking of the unmerged in Admin
+              (no email, ambiguity, sign-in address ≠ source address) ·
+              grant to group / principal / public · membership and tag in the source's
+              original terms · pre-filter at retrieval (resolution join). Permissions are
+              eventually consistent: a revocation takes effect by the next sync.
+            </p>
+          </div>
+          <div class="dm-split__col dm-split__col--later">
+            <div class="dm-split__h">
+              <span class="dm-split__t">v2 — interpretation and inference</span>
+              <span class="iter v2">v2</span>
+            </div>
+            <p class="dm-split__d">
+              A platform ACL on top of source permissions (double filter, container-override,
+              <code>platform_acl_rules</code>, the
+              <a
+                class="xref-badge"
+                href="../../admin-panel/_wireframes/platform-acl.html#platform-acl"
+                >→ Admin · Platform ACL</a
+              > screen) · a live permission check at retrieval (late-binding security trim) ·
+              fuzzy cross-source identity merging and auto-linking of the bridge by
+              <em>different</em> emails (deep entity resolution — a Curation Pass step) ·
+              expansion of nested groups (group-in-group): transitive membership —
+              in v1 membership is flat, one row per “group × person.”
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

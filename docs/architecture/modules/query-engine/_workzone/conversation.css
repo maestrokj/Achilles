@@ -1,0 +1,263 @@
+/* Query Engine — conversation workzone diagrams.
+   Two page-bespoke pieces:
+   · cv-route — the per-turn fork: the chat model leads the turn holding the
+     search_knowledge tool, then splits into a conversational path (answer from
+     self) and a grounded path (call the tool). Home of "the model decides to
+     retrieve"; the per-mode contract lives in grounding, the agentic boundary
+     in rag-pipeline (the page only links there).
+   · cv-timeline — the session/turn timeline: a session frame holding two
+     stacked turns joined by a history seam, the second turn dependent and shown
+     as the model formulating a self-contained query for the tool itself (no
+     separate condense step). Illustrates "context carries between turns".
+   Static — no hover affordance for non-clickable blocks (README §Hover).
+   Loaded by _workzone/conversation.html on top of ../../module.css
+   + ../query-engine.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ════════════════ ROUTE FORK ════════════════ chat model holds the tool and
+   forks per turn: conversational (answer from self) vs grounded (call tool). */
+.cv-route {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0 0.6rem;
+}
+.cv-route__lead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  background: var(--tint-6);
+  border: 1.5px solid var(--accent-muted);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.8rem;
+}
+.cv-route__h {
+  font-weight: 700;
+  font-size: 0.84rem;
+  color: var(--text);
+}
+.cv-route__tool {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+.cv-route__split {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.cv-route__paths {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+  width: 100%;
+}
+.cv-route__path {
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--s2);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.7rem;
+}
+/* Conversational path — answered from the model itself, no retrieval. */
+.cv-route__path--talk {
+  border-top-color: var(--text-muted);
+}
+/* Grounded path — the model calls the tool and answers from the store. */
+.cv-route__path--ground {
+  border-top-color: var(--accent);
+}
+.cv-route__cond {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.cv-route__path--ground .cv-route__cond {
+  color: var(--accent);
+}
+.cv-route__out {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.cv-route__note {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+/* ════════════════ SESSION / TURN TIMELINE ════════════════ a session frame
+   wrapping turns; turn 2 is a dependent follow-up rewritten before retrieval. */
+.cv-timeline {
+  margin: 1rem 0 0.4rem;
+}
+.cv-session {
+  display: flex;
+  align-items: stretch;
+  gap: 0.7rem;
+  background: var(--tint-6);
+  border: 1.5px solid var(--accent-muted);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.8rem;
+}
+.cv-session__tag {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  border-left: 3px solid var(--accent-muted);
+  padding-left: 0.5rem;
+}
+.cv-turns {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.cv-turn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--s2);
+  border-radius: var(--radius-md);
+  padding: 0.55rem 0.7rem;
+}
+/* Dependent follow-up — the turn that needs condensing before retrieval. */
+.cv-turn--dep {
+  border-left-color: var(--accent);
+}
+.cv-turn__n {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.cv-turn__q {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.cv-turn__note {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+/* The query annotation — the self-contained query the model sends to the tool. */
+.cv-turn__note--rw {
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--accent);
+}
+.cv-turn__seam {
+  align-self: flex-start;
+  margin-left: 0.7rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--accent-muted);
+}
+.cv-timeline__cap {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+  margin-top: 0.45rem;
+}
+
+/* ════════════════ CONTEXT BUDGET ════════════════ the model's window as one
+   shared pool: stacked claimant bands. The two growth pushers — history (QE)
+   and retrieved context (augment) — carry an accent / s4 left edge; the answer's
+   room is a dashed reserve tail. */
+.cb-window {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 1rem 0 0.6rem;
+  border: 1.5px solid var(--accent-muted);
+  border-radius: var(--radius-md);
+  background: var(--tint-6);
+  padding: 0.6rem;
+}
+.cb-cap {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  margin-bottom: 0.1rem;
+}
+.cb-seg {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--text-muted);
+  border-radius: var(--radius-md);
+  padding: 0.45rem 0.6rem;
+}
+/* Growth pushers — history (QE) and retrieved context (augment). */
+.cb-seg--grow {
+  border-left-color: var(--accent);
+}
+.cb-seg--ctx {
+  border-left-color: var(--s4);
+}
+/* Reserved tail — the answer's protected room. */
+.cb-seg--reserve {
+  border-left-style: dashed;
+  border-left-color: var(--s2);
+  background: var(--surface);
+}
+.cb-seg__k {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.cb-seg__v {
+  flex: 1;
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+.cb-seg__tag {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.56rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .cv-session {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .cv-route__paths {
+    grid-template-columns: 1fr;
+  }
+}

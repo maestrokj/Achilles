@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: User card</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">User card</h1>
+        <div class="header__sub">
+          admin panel · wireframes · management
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="The screen renders inside the shell's content area">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Screen loading — a skeleton">
+              <span class="in-load__icon"></span>loading
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">One user's profile and the admin actions on it.</p>
+
+      <!-- ═══ Wireframe ═══ -->
+      <div class="section" id="user-card">
+        <div class="section__title">
+          Card and password reset
+          <a href="../../auth-security/_workzone/authentication.html#admin-reset" class="xref-badge">→ Auth &amp; Security</a>
+          <a href="../../auth-security/_features/password-recovery/index.html" class="xref-badge">→ Password recovery</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">card</div>
+              <div class="wf-screen">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/admin/users/42
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/admin/users/:id · Owner / Admin</span>
+                      </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack wf-stack--loose">
+                    <div class="wf-row">
+                      <span class="wf-avatar">DS</span>
+                      <span class="wf-title">Dmitry Sokolov</span>
+                      <span class="wf-chip wf-chip--ok">active</span>
+                    </div>
+
+                    <div class="wf-stack">
+                      <span class="wf-label">Profile</span>
+                      <div class="wf-field">
+                        <span class="wf-label">Email</span>
+                        <div class="wf-input">
+                          dmitry@company.com
+                          <span class="wf-input__action" title="Change email">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                          </span>
+                          <span class="wf-annot">1</span>
+                        </div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Role</span>
+                        <div class="wf-input">
+                          Admin
+                          <span class="wf-input__action">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                          </span>
+                          <span class="wf-annot">2</span>
+                        </div>
+                      </div>
+                      <div class="wf-row wf-spread">
+                        <span class="wf-hint">Created: 12.01.2026</span>
+                        <span class="wf-hint">Last sign-in: yesterday</span>
+                      </div>
+                    </div>
+
+                    <hr class="wf-divider" />
+
+                    <div class="wf-stack">
+                      <span class="wf-label">Account linking</span>
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-text">Jira <span class="wf-chip wf-chip--ok">dmitry@…</span></span>
+                        <span class="wf-guarded"
+                          ><a class="wf-a">Unlink</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action protected by a confirmation"><span class="wf-guard__icon"></span></a
+                        ></span>
+                      </div>
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-text">Slack <span class="wf-chip wf-chip--warn">unmatched</span></span>
+                        <span class="wf-row">
+                          <a class="wf-a">Link</a>
+                        <span class="wf-annot">3</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="wf-stack">
+                      <span class="wf-label">Access <span class="iter v2">v2</span></span>
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-text">Sources × platform restrictions</span>
+                        <span class="wf-annot">4</span>
+                      </div>
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-text">Per-user access configuration</span>
+                        <span class="wf-annot">5</span>
+                      </div>
+                    </div>
+
+                    <div class="wf-stack">
+                      <span class="wf-label">Sessions</span>
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-text">Active sessions: 3</span>
+                        <span class="wf-row">
+                          <span class="wf-guarded"
+                            ><a class="wf-a wf-a--danger">End all</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action protected by a confirmation"><span class="wf-guard__icon"></span></a
+                          ></span>
+                          <span class="wf-annot">6</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">API keys</span>
+                      <span class="wf-row">
+                        <span class="wf-hint">2 active</span>
+                        <span class="wf-input__action" title="Expand">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </span>
+                    </div>
+
+                    <hr class="wf-divider" />
+
+                    <div class="wf-stack">
+                      <span class="wf-label">Actions <span class="wf-annot">7</span></span>
+                      <button class="wf-btn wf-btn--block">
+                        Reset password <span class="wf-annot">8</span></button>
+                      <span class="wf-guarded wf-guarded--block"
+                        ><button class="wf-btn wf-btn--block">Deactivate</button><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Action protected by a confirmation"><span class="wf-guard__icon"></span></a
+                      ></span>
+                      <div class="wf-center">
+                        <span class="wf-guarded"
+                          ><a class="wf-a wf-a--danger">Delete user</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#type-to-confirm" title="Action protected by a confirmation"><span class="wf-guard__icon"></span></a
+                        ></span>
+                        <span class="wf-annot">9</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wf-frame">
+              <div class="wf-stage__caption">API keys — expanded</div>
+              <div class="wf-screen">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/admin/users/42
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/admin/users/:id · Owner / Admin</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-card wf-stack">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text">API keys</span>
+                      <span class="wf-row">
+                        <span class="wf-hint">Collapse</span>
+                        <span class="wf-input__action" title="Collapse">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15" /></svg>
+                        </span>
+                      </span>
+                    </div>
+
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">
+                        <span class="wf-code">ach_7f2k…</span>
+                        <span class="wf-chip">read-only</span>
+                        <span class="wf-chip">Jira</span><br />
+                        <span class="wf-hint">expires in 84 days</span>
+                      </span>
+                      <span class="wf-guarded"
+                        ><a class="wf-a wf-a--danger">Revoke</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#irreversible" title="Action protected by a confirmation"><span class="wf-guard__icon"></span></a
+                      ></span>
+                    </div>
+                    <div class="wf-card wf-row wf-spread">
+                      <span class="wf-text">
+                        <span class="wf-code">ach_k28p…</span>
+                        <span class="wf-chip">read-only</span>
+                        <span class="wf-chip">all sources</span><br />
+                        <span class="wf-hint">never expires</span>
+                      </span>
+                      <span class="wf-guarded"
+                        ><a class="wf-a wf-a--danger">Revoke</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#irreversible" title="Action protected by a confirmation"><span class="wf-guard__icon"></span></a
+                      ></span>
+                    </div>
+
+                    <a class="wf-btn wf-btn--block" href="../../auth-security/_features/api-keys/api-key-create-modal.html#api-key-create">
+                       Create key <span class="wf-annot">10</span></a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-backdrop">
+            <div class="wf-gallery">
+              <div class="wf-frame" id="reset-link">
+                <div class="wf-stage__caption">"send link" modal</div>
+                <div class="wf-screen wf-screen--modal">
+                  <div class="wf-body">
+                    <div class="wf-stack">
+                      <span class="wf-title">Reset password</span>
+                      <p class="wf-subtitle">
+                        A link to set a new password will be sent to <strong>dmitry@company.com</strong>.</p>
+                      <button class="wf-btn wf-btn--primary wf-btn--block">Send link</button>
+                      <button class="wf-btn wf-btn--ghost wf-btn--block">Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="wf-frame" id="temp-password">
+                <div class="wf-stage__caption">"temporary password" modal · fallback without SMTP</div>
+                <div class="wf-screen wf-screen--modal">
+                  <div class="wf-body">
+                    <div class="wf-stack">
+                      <span class="wf-title">Password reset</span>
+                      <div class="wf-alert">
+                        The temporary password is shown only once — copy it and
+                        share it with the user through a secure channel.
+                      </div>
+                      <div class="wf-card wf-row wf-spread">
+                        <span class="wf-code">fq2N-7xKp-Vd9w</span>
+                        <button class="wf-copybtn">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                          Copy
+                        </button>
+                      </div>
+                      <button class="wf-btn wf-btn--primary wf-btn--block">Done</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="wf-frame" id="change-email">
+                <div class="wf-stage__caption">"change email" modal</div>
+                <div class="wf-screen wf-screen--modal">
+                  <div class="wf-body">
+                    <div class="wf-stack">
+                      <span class="wf-title">Change email</span>
+                      <div class="wf-field">
+                        <span class="wf-label">New email</span>
+                        <div class="wf-input">dmitry.sokolov@company.com</div>
+                      </div>
+                      <p class="wf-subtitle">
+                        Active sessions will end; the user signs in again with
+                        the new address.
+                      </p>
+                      <button class="wf-btn wf-btn--primary wf-btn--block">Save</button>
+                      <button class="wf-btn wf-btn--ghost wf-btn--block">Cancel</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Email change — the admin sets a new address for the employee. The gate is a modal. Mechanics —
+              <a href="../../auth-security/_workzone/authentication.html#admin-email-change" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Role change — only an Owner can assign Owner, an Admin manages only Members; the sole Owner can't be demoted.
+              <a href="../../auth-security/_workzone/authentication.html#user-lifecycle" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Account linking — a manual link to source accounts where auto-matching fell short. Model —
+              <a href="../../knowledge-store/_workzone/acl-identity.html#source-principal" class="xref-module">Knowledge Store</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Access overview <span class="iter v2">v2</span> — what the user sees per source and which
+              <a href="platform-acl.html" class="xref-page">platform restrictions</a>
+              apply.
+              <a href="../../auth-security/_workzone/authorization.html#data-acl" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Per-user permissions <span class="iter v2">v2</span> — a targeted grant or removal of rights on top of the role. <a href="../../auth-security/_workzone/authorization.html#roles-permissions" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item" id="user-sessions">
+              <span class="wf-annot wf-legend__num">6</span>
+              Sessions — the admin sees the number of active sessions; no details (device, IP). The only action is "end all".
+              <a href="../../auth-security/_workzone/authentication.html#session-end" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              User actions are critical — from
+              <span class="iter v2">v2</span>, before running one the admin confirms their password through the <a href="../../auth-security/_wireframes/re-auth-modal.html" class="xref-module">re-auth</a> modal.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              Password reset — the admin sends the user's email a link to set a new password; without SMTP, a fallback to a temporary password. Flow —
+              <a href="../../auth-security/_features/password-recovery/index.html" class="xref-module">Password recovery</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">9</span>
+              Deactivation and deletion are two different actions. Deactivation reversibly closes sign-in; deletion irreversibly wipes the account and is available only to an Owner.
+              <a href="../../auth-security/_workzone/authentication.html#user-lifecycle" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">10</span>
+              API keys — this user's keys; "Create key" opens the shared <a href="../../auth-security/_features/api-keys/api-key-create-modal.html#api-key-create" class="xref-module">creation dialog</a>. A secondary path is the full company-wide list in <a href="api-keys.html#api-keys" class="xref-page">API Keys</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

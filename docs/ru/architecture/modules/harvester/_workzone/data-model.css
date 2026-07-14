@@ -1,0 +1,849 @@
+/* Harvester — data-model workzone diagrams (dm-*).
+   The data contracts and their life over time. Two contract cards
+   (RawItem → Entity) lead, then the storage fan-out (one Entity into
+   three paradigms) and four design decisions get their own primitives
+   the shared kit lacks: the three-verdict history ladder
+   (keep / later / drop), single- and split-decision panels for deletes
+   and attachments, and the two-column cross-source border that splits
+   work between Harvester and Knowledge Store. The content-plane
+   contracts use a domain concept list (dm-fieldlist); a named plane
+   boundary (dm-planes) then folds the page into its two halves —
+   what flows vs. what the module governs; the control-plane
+   layer (source config + sync runs) borrows the DB-table matrix
+   (dm-tbl · dm-fields · dm-c chips) the sibling data-model sheets share,
+   carried in an stk-* layered-stack band. Static — no hover affordance
+   (README §Hover).
+   Loaded by _workzone/data-model.html on top of ../../module.css
+   + ../../layered-stack.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* Shared inline arrow used by the intro and contract row. */
+.dm-arrow {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* ── Contracts — two cards joined by an arrow (RawItem → Entity) ── */
+.dm-contracts {
+  display: flex;
+  align-items: stretch;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.dm-contract {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1rem 1.1rem;
+  border-left: 3px solid var(--s2);
+}
+
+.dm-contract--entity {
+  border-left-color: var(--accent);
+}
+
+/* Landing highlight when a cross-link deep-links to a contract card — reuses
+   the .section:target keyframes (module.css). */
+.dm-contract[id] {
+  scroll-margin-top: 28vh;
+}
+
+.dm-contract[id]:target {
+  border-radius: var(--radius-md);
+  animation: target-highlight 2.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dm-contract[id]:target {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+}
+
+.dm-contract__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.dm-contract__name {
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.dm-contract__role {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.dm-contract__d {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* Field rows as a domain concept list (key · description), not a schema. */
+.dm-fieldlist {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+}
+
+.dm-fieldlist li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding-left: 0.7rem;
+  border-left: 2px solid var(--border);
+}
+
+.dm-fieldlist__k {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.dm-fieldlist__v {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+/* Arrow gutter between the two contract cards. */
+.dm-contract-arrow {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-left: 10px solid var(--dot);
+}
+
+/* ── History ladder — three verdicts: keep (v1) · later (v2) · drop ── */
+.dm-hist {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.dm-hist__row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--dot);
+  border-radius: var(--radius-md);
+}
+
+.dm-hist__row--keep {
+  border-left-color: var(--s3);
+}
+.dm-hist__row--later {
+  border-left-color: var(--s2);
+}
+.dm-hist__row--drop {
+  border-left-style: dashed;
+  border-left-color: var(--text-muted);
+  background: var(--paper);
+}
+
+.dm-hist__verdict {
+  flex: 0 0 7.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.3rem;
+}
+
+.dm-hist__mark {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.16rem 0.45rem;
+  border-radius: var(--tag-radius);
+  color: var(--s3);
+  background: var(--s3-pale);
+  border: 1px solid var(--tint-25);
+}
+
+.dm-hist__row--later .dm-hist__mark {
+  color: var(--s2);
+  background: var(--s2-pale);
+}
+
+.dm-hist__mark--no {
+  color: var(--text-muted);
+  background: transparent;
+  border-style: dashed;
+  border-color: var(--text-muted);
+}
+
+.dm-hist__t {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.2rem;
+}
+
+.dm-hist__d {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.dm-hist__row--drop .dm-hist__t {
+  color: var(--text-dim);
+}
+
+/* ── Single decision panel — deletes ── */
+.dm-decision {
+  padding: 0.9rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius-md);
+}
+
+.dm-decision--soft {
+  border-left-color: var(--s3);
+}
+
+.dm-decision__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.dm-decision__pick {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--s3);
+}
+
+.dm-decision__d {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ── Split decision — attachments: text now (v1) · parsing later (v2) ── */
+.dm-split {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.dm-split__col {
+  flex: 1;
+  padding: 0.9rem 1.05rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.dm-split__col--keep {
+  border-left: 4px solid var(--s3);
+}
+.dm-split__col--later {
+  border-left: 4px dashed var(--s2);
+  background: var(--paper);
+}
+
+.dm-split__h {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.dm-split__t {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.dm-split__d {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ── Cross-source border — who does what: Harvester | Knowledge Store ── */
+.dm-border {
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.dm-border__col {
+  flex: 1;
+  padding: 1rem 1.15rem;
+}
+
+/* Harvester side — accent (this module owns it). */
+.dm-border__col--here {
+  background: var(--tint-6);
+  border-right: 2px solid var(--accent);
+}
+
+/* Knowledge Store side — muted (handed off). */
+.dm-border__col--there {
+  background: var(--surface);
+}
+
+.dm-border__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.7rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.dm-border__who {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.dm-border__col--here .dm-border__who {
+  color: var(--accent);
+}
+
+.dm-border__tag {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.dm-border__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.dm-border__list li {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  padding-left: 0.85rem;
+  position: relative;
+}
+
+.dm-border__list li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.45rem;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--dot);
+}
+
+.dm-border__col--here .dm-border__list li::before {
+  background: var(--accent);
+}
+
+.dm-border__list strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* ── refs format — the shape of a cross-source mention before it becomes
+   an edge: a key·description field list under the cross-source border ── */
+.dm-refs {
+  margin-top: 0.85rem;
+  padding: 0.9rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius-md);
+  scroll-margin-top: 22vh;
+}
+
+.dm-refs:target {
+  animation: target-highlight 2.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dm-refs:target {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+}
+
+.dm-refs__h {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+}
+
+.dm-refs__t {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.dm-refs__loc {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.dm-refs__d {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-bottom: 0.6rem;
+}
+
+.dm-refs__fields {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.dm-refs__fields li {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding-left: 0.7rem;
+  border-left: 2px solid var(--border);
+}
+
+.dm-refs__k {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.dm-refs__v {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+/* ── Storage fan-out — one Entity projects into three paradigms (draft) ── */
+.dm-store {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+/* Source chip, centered, with a short stem down into the fan. */
+.dm-store__src {
+  align-self: center;
+  position: relative;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent);
+  padding: 0.3rem 0.85rem;
+  background: var(--tint-6);
+  border: 1px solid var(--tint-25);
+  border-radius: var(--tag-radius);
+}
+
+.dm-store__src::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -0.75rem;
+  width: 2px;
+  height: 0.75rem;
+  background: var(--border);
+  transform: translateX(-50%);
+}
+
+.dm-store__fan {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.dm-store__col {
+  flex: 1;
+  padding: 0.9rem 1.05rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--dot);
+  border-radius: var(--radius-md);
+}
+
+.dm-store__col--rel {
+  border-top-color: var(--s3);
+}
+.dm-store__col--vec {
+  border-top-color: var(--accent);
+}
+.dm-store__col--graph {
+  border-top-color: var(--s2);
+}
+
+.dm-store__h {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin-bottom: 0.4rem;
+}
+
+.dm-store__t {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.dm-store__para {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.dm-store__d {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ════ PLANE BOUNDARY ════ a deliberate fold between the content plane
+   (data that flows: contracts → storage → history …) and the control plane
+   (the operational tables the module owns, below). Names both zones and
+   points down, so the shift in subject — flow vs. governance — reads at a
+   glance. A solid hairline fading at both ends, distinct from the dashed
+   draft/soft seams elsewhere: this boundary is structural, not tentative. */
+.dm-planes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 3.25rem 0 1.85rem;
+  text-align: center;
+  scroll-margin-top: 22vh;
+}
+
+.dm-planes__zone {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.dm-planes__name {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+}
+
+.dm-planes__zone--ctrl .dm-planes__name {
+  color: var(--accent);
+}
+
+.dm-planes__sub {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+}
+
+.dm-planes__sub em {
+  font-style: normal;
+  font-weight: 700;
+  color: var(--text);
+}
+
+/* Hairline fading in from both ends, with a chevron node riding its centre. */
+.dm-planes__seam {
+  position: relative;
+  width: 100%;
+  height: 1px;
+  margin: 0.35rem 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--accent-muted) 15%,
+    var(--accent-muted) 85%,
+    transparent
+  );
+}
+
+.dm-planes__node {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  border-radius: 50%;
+  background: var(--paper);
+  border: 1px solid var(--tint-25);
+  /* surface-coloured halo masks the seam passing beneath the disc */
+  box-shadow: 0 0 0 4px var(--surface);
+}
+
+/* Down-chevron from two borders — points into the control plane below. */
+.dm-planes__node::after {
+  content: "";
+  width: 0.44rem;
+  height: 0.44rem;
+  margin-top: -0.16rem;
+  border-right: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+  transform: rotate(45deg);
+}
+
+/* Landing flash when the intro deep-links to the boundary (#operational). */
+.dm-planes:target .dm-planes__node {
+  animation: target-highlight 2.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dm-planes:target .dm-planes__node {
+    animation: none;
+    box-shadow:
+      0 0 0 4px var(--surface),
+      0 0 0 6px var(--accent-muted);
+  }
+}
+
+/* ════ CONTROL-PLANE SCHEMA ════ source config + sync-run journal as
+   DB-table matrices in an stk-* band — the operational data the module
+   persists, apart from the content contracts above. Primitives mirror the
+   sibling data-model sheets (auth · admin · email). ════ */
+
+/* Layer accent — the operational band carries the module accent. */
+.stk-layer--ops {
+  --stk-lc: var(--accent);
+  --stk-lc-pale: var(--tint-8);
+}
+
+/* ── Constraint chips ── */
+.dm-c {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 0.12rem 0.4rem;
+  border-radius: var(--pill-radius);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.dm-c--pk {
+  background: var(--s1);
+  color: #fff;
+}
+.dm-c--fk {
+  background: var(--s2);
+  color: #fff;
+}
+.dm-c--uq {
+  background: #5a6a8a;
+  color: #fff;
+}
+.dm-c--nn {
+  background: var(--s3);
+  color: #fff;
+}
+.dm-c--idx {
+  background: var(--s4);
+  color: #fff;
+}
+.dm-c--null {
+  background: var(--paper);
+  color: var(--text-muted);
+  border: 1px solid var(--accent-muted);
+}
+.dm-c--chk {
+  background: var(--tint-15);
+  color: var(--accent);
+  border: 1px solid var(--tint-25);
+}
+.dm-c--def {
+  background: var(--s2-pale);
+  color: var(--s2);
+  border: 1px solid var(--tint-15);
+}
+
+/* ── DB-table sub-block (lives inside a .stk-layer__body) ── */
+.dm-tbl {
+  flex: 1 1 100%;
+  min-width: 280px;
+  align-self: stretch;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  overflow: hidden;
+}
+.dm-tbl__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.75rem;
+  background: var(--tint-6);
+  border-bottom: 1px solid var(--border);
+}
+.dm-tbl__name {
+  font-family: var(--mono);
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.dm-tbl__sub {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.dm-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-left: auto;
+}
+.dm-badge {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.16rem 0.4rem;
+  border-radius: var(--tag-radius);
+  border: 1px solid var(--tint-25);
+  color: var(--text-dim);
+  background: var(--tint-6);
+  white-space: nowrap;
+}
+.dm-badge--fk {
+  color: var(--s2);
+  border-color: rgba(136, 96, 64, 0.4);
+  background: rgba(136, 96, 64, 0.08);
+}
+.dm-badge--fk::before {
+  content: "⛓ ";
+}
+.dm-badge--flag {
+  color: var(--s4);
+  border-color: rgba(160, 88, 56, 0.35);
+  background: var(--s4-pale);
+}
+.dm-badge--uniq {
+  color: var(--s3);
+  border-color: rgba(106, 128, 72, 0.4);
+  background: var(--s3-pale);
+}
+
+/* ── Matrix-style field rows: field · type · constraint chips · note ── */
+.dm-fields {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.dm-fields td {
+  padding: 0.32rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+.dm-fields tr:last-child td {
+  border-bottom: none;
+}
+.dm-fields .dm-f {
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+.dm-fields .dm-t {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.dm-fields .dm-cons {
+  white-space: nowrap;
+}
+.dm-fields .dm-cons .dm-c {
+  margin: 1px 2px 1px 0;
+}
+.dm-fields .dm-note {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+.dm-fields tr.is-pk td:first-child {
+  box-shadow: inset 3px 0 0 var(--s1);
+}
+.dm-fields tr.is-fk td:first-child {
+  box-shadow: inset 3px 0 0 var(--s2);
+}
+
+@media (max-width: 640px) {
+  .dm-contracts {
+    flex-direction: column;
+  }
+  .dm-contract-arrow {
+    align-self: center;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 10px solid var(--dot);
+    border-bottom: 0;
+  }
+  .dm-split,
+  .dm-border,
+  .dm-store__fan {
+    flex-direction: column;
+  }
+  .dm-border__col--here {
+    border-right: none;
+    border-bottom: 2px solid var(--accent);
+  }
+  .dm-hist__row {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .dm-hist__verdict {
+    flex-direction: row;
+    flex-basis: auto;
+    align-items: center;
+  }
+}

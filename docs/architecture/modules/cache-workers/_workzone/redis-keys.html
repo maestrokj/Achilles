@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Cache &amp; Workers: Redis instances and keys</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="redis-keys.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Cache &amp; Workers</a>
+        <h1 class="header__title">Redis: instances and keys</h1>
+        <div class="header__sub">cache-workers · workzone</div>
+      </div>
+
+      <p class="desc">
+        The Redis topology and a single key registry: which physical instances
+        the module runs, which keys live in them and how long. It rests on the
+        “system of record vs fast derivative” axis — the
+        <a href="#principle" class="xref-anchor">hard boundary below</a>.
+      </p>
+
+      <!-- ═══ Hard boundary ═══ The module's cross-cutting axis: system of record
+           (Postgres) vs fast derivative (Redis). The principle lives here; the
+           other workzone pages and the poster on the index link back to it. -->
+      <div class="section" id="principle">
+        <h2 class="section__title">Hard boundary: Redis ⟂ Postgres</h2>
+        <div class="decision-box">
+          <strong>The axis is system of record vs fast derivative.</strong>
+          Postgres holds the system of record and correctness-critical mutual
+          exclusion (run uniqueness — transactional, next to the journal). Redis
+          holds the fast / expiring / in-flight derivatives: the cache
+          (rebuildable), rate-limit counters (durable — losing them would open a
+          guessing window), dedup, queue payload (recoverable from the
+          journals). This is a deliberate choice across all modules, not an
+          accident. Hence too the
+          <a href="lifecycle.html#uniqueness" class="xref-page">rejection of Redlock</a>:
+          coarse, rare locks are held by Postgres, a distributed lock service
+          isn't needed and, without fencing tokens, is dangerous for
+          correctness. Instant access-token revocation via a jti blacklist in
+          Redis — <span class="iter v2">v2</span>: in v1 the access token is
+          stateless and expires on its own lifetime.
+        </div>
+        <div class="cw-axis">
+          <div class="cw-axis__col cw-axis__col--redis">
+            <div class="cw-axis__h">Redis — ephemeral</div>
+            <p class="cw-axis__d">loss is painful but recoverable over time</p>
+            <ul class="cw-axis__list">
+              <li>queue payload</li>
+              <li>rate-limit counters <span class="cw-axis__tag">durable</span></li>
+              <li>blacklist of revoked access tokens <span class="iter v2">v2</span></li>
+              <li>webhook / job dedup</li>
+              <li>search-candidate cache</li>
+            </ul>
+          </div>
+          <div class="cw-axis__col cw-axis__col--pg">
+            <div class="cw-axis__h">Postgres — durable</div>
+            <p class="cw-axis__d">source of truth, must not be lost</p>
+            <ul class="cw-axis__list">
+              <li>run uniqueness (partial UNIQUE + heartbeat)</li>
+              <li>run journals · DLQ of failed tasks</li>
+              <li>AI budgets (SQL aggregate, not a counter)</li>
+              <li>sessions · refresh tokens · conversation history</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Instances ═══ The roles are separated physically: memory eviction
+           is incompatible with durable, so two processes, not two namespaces. -->
+      <div class="section" id="instances">
+        <h2 class="section__title">Two instances</h2>
+        <div class="decision-box decision-box--warn">
+          <strong>Cache and durable — in separate instances.</strong>
+          They can't be kept in one instance with memory-based auto-eviction:
+          eviction doesn't distinguish disposable cache from data that must not
+          be lost — under pressure it might silently drop a task from the queue,
+          a rate-limit counter, or a
+          <a href="#blacklist" class="xref-anchor">revoked-token blacklist entry</a>
+          (a security hole). So the roles are separated <b>physically</b> — two
+          processes with different memory policies, not two namespaces in one.
+        </div>
+        <p class="note">
+          <strong>Access.</strong> Both instances are on the internal network
+          only, never exposed outward; entry is password-protected
+          (<code>requirepass</code>), and in prod the channel runs under TLS.
+          Redis holds rate-limit counters and the
+          <a href="#blacklist" class="xref-anchor">token blacklist</a>
+          <span class="iter v2">v2</span> — they must not be readable from
+          outside.
+        </p>
+        <div class="rk-pair">
+          <div class="rk-inst rk-inst--durable">
+            <div class="rk-inst__name">redis-durable</div>
+            <div class="rk-inst__pol"><code>maxmemory</code> + <code>noeviction</code> · AOF persistence · survives restart</div>
+            <ul class="rk-inst__list">
+              <li>SAQ queue</li>
+              <li>rate-limit counters</li>
+              <li>jti blacklist <span class="iter v2">v2</span></li>
+              <li>dedup keys</li>
+              <li>coordination lock — maintenance mode · KS restore</li>
+              <li><b>Must not be lost</b> — memory isn't evicted, state is on disk.</li>
+              <li><b>The cap is a write rejection, not eviction:</b> on reaching <code>maxmemory</code>, the <code>noeviction</code> policy rejects a new write with an error instead of dropping data. Producers hit the rejection and slow down (backpressure) — the instance doesn't grow unbounded and doesn't run into the OOM killer. We still keep queue depth under monitoring so it never reaches the cap.</li>
+            </ul>
+          </div>
+          <div class="rk-inst rk-inst--cache">
+            <div class="rk-inst__name">redis-cache</div>
+            <div class="rk-inst__pol"><code>maxmemory</code> + <code>allkeys-lru</code> · no persistence</div>
+            <ul class="rk-inst__list">
+              <li>search-candidate cache</li>
+              <li>pub/sub channel for push notifications</li>
+              <li><b>Grows unbounded</b> — eviction is mandatory.</li>
+              <li>Every key has a TTL; persistence isn't needed (everything rebuilds).</li>
+              <li>pub/sub is an ephemeral signal, not a key; a miss is cured by polling.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Ephemeral keys ═══ Keys whose correctness rests on a TTL: they live
+           exactly as long as the window in which they mean something. -->
+      <div class="section" id="blacklist">
+        <h2 class="section__title">Ephemeral keys (TTL)</h2>
+        <p class="note">
+          Some state lives exactly as long as the window in which it means
+          something — the TTL removes the key itself, no separate cleanup needed.
+        </p>
+        <div class="rk-eph">
+          <div class="rk-key">
+            <span class="rk-key__ns">jti-blacklist <span class="iter v2">v2</span></span>
+            <span class="rk-key__d">
+              <b>Instant access-token revocation — groundwork for v2.</b> The key
+              will live exactly the <b>token's lifetime</b>: past that it would
+              expire on its own, no reason to keep it. In v1 there's no early
+              revocation — the access token is stateless and fades on expiry. The
+              consumer is
+              <a href="../../auth-security/_workzone/authentication.html#parallel-sessions" class="xref-module">Auth &amp; Security</a>.
+            </span>
+          </div>
+          <div class="rk-key">
+            <span class="rk-key__ns">webhook dedup</span>
+            <span class="rk-key__d">
+              <b>One event — one delivery.</b> A receipt mark keeps the same
+              inbound delivery from being processed twice within the window.
+            </span>
+          </div>
+          <div class="rk-key">
+            <span class="rk-key__ns">idempotency window</span>
+            <span class="rk-key__d">
+              <b>One <code>job_id</code> enqueue — one run.</b> The window cuts
+              off a duplicate enqueue of the same task; the full mechanics are on
+              <a href="lifecycle.html#uniqueness" class="xref-page">uniqueness</a>.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Registry ═══ The single roster of namespaces — the naming
+           convention plus instance, TTL and owner of each prefix. -->
+      <div class="section" id="registry">
+        <h2 class="section__title">Key registry</h2>
+        <p class="note">
+          A single prefix convention: the colon-delimited namespace fixes the
+          instance, lifetime and owner. A new key is a new row here, not a
+          free-form name in code.
+        </p>
+        <table class="rk-tbl">
+          <thead>
+            <tr>
+              <th>Namespace</th>
+              <th>Purpose</th>
+              <th>Instance</th>
+              <th>TTL</th>
+              <th>Owner</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="rk-tbl__ns">q:</td>
+              <td>task queue — run payloads</td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>until completion</td>
+              <td><a href="queues.html#lanes" class="xref-page">queues</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">rl:</td>
+              <td>rate-limit counters (token-bucket · sliding window)</td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>limit window</td>
+              <td><a href="rate-limit.html#primitive" class="xref-page">rate-limit</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">brute:</td>
+              <td>brute-force barrier state — per-IP window, per-account counter and delay, binding-code attempts</td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>barrier window</td>
+              <td><a href="../../auth-security/_workzone/protection.html#brute-force" class="xref-module">Auth &amp; Security</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">grace:</td>
+              <td>refresh-rotation grace — old token → new pair for ~10&nbsp;s</td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>grace window</td>
+              <td><a href="../../auth-security/_workzone/authentication.html#refresh-rotation" class="xref-module">Auth &amp; Security</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">bl: <span class="iter v2">v2</span></td>
+              <td>blacklist of revoked <code>jti</code></td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>access-token lifetime</td>
+              <td><a href="../../auth-security/_workzone/authentication.html#parallel-sessions" class="xref-module">Auth &amp; Security</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">cache:</td>
+              <td>search-candidate cache</td>
+              <td class="rk-tbl__inst rk-tbl__inst--cache">cache</td>
+              <td>per-key (+ LRU)</td>
+              <td><a href="caching.html#policy" class="xref-page">cache</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">lock:</td>
+              <td>coordination lock for maintenance — one holder at a time (maintenance mode · KS restore)</td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>operation lease</td>
+              <td><a href="lifecycle.html#contract" class="xref-page">runs</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">dedup:webhook:</td>
+              <td>dedup of inbound webhook deliveries — one event, one processing</td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>receipt window</td>
+              <td><a href="../../harvester/_workzone/security.html#webhooks" class="xref-module">Harvester</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">dedup:slack-event:</td>
+              <td>dedup of inbound Slack-bot events — a repeat doesn't answer twice</td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>receipt window</td>
+              <td><a href="../../slack/index.html#delivery" class="xref-module">Slack</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">dedup:telegram-update:</td>
+              <td>idempotency of repeated Telegram updates (by <code>update_id</code>) — a repeat doesn't answer twice</td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>receipt window</td>
+              <td><a href="../../telegram/index.html#delivery" class="xref-module">Telegram</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">telegram:active-conv:<span class="reg__note">chat_id</span></td>
+              <td>pointer to the active conversation for a <code>chat_id</code> — replies continue it; <code>/new</code> resets it, and the next message opens a new one <span class="reg__note">(the conversation's home of truth is Postgres <code>conversations</code>)</span></td>
+              <td class="rk-tbl__inst rk-tbl__inst--cache">cache</td>
+              <td>sliding, for the conversation's duration</td>
+              <td><a href="../../telegram/index.html#conversation" class="xref-module">Telegram</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">cache:mattermost:listener</td>
+              <td>health flag of the Mattermost WebSocket listener — a heartbeat JSON; an expired key reads as “not running” <span class="reg__note">(derived state — safe to evict)</span></td>
+              <td class="rk-tbl__inst rk-tbl__inst--cache">cache</td>
+              <td>90 s</td>
+              <td><a href="../../mattermost/index.html#delivery" class="xref-module">Mattermost</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">dedup:job:</td>
+              <td>idempotency of a <code>job_id</code> enqueue — one run</td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>~24h (successful run)</td>
+              <td><a href="lifecycle.html#uniqueness" class="xref-page">lifecycle</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">push:</td>
+              <td>pub/sub channel — signal of a new row in the feed</td>
+              <td class="rk-tbl__inst rk-tbl__inst--cache">cache</td>
+              <td>ephemeral (pub/sub)</td>
+              <td><a href="../../notifications/_workzone/dispatcher.html#fanout" class="xref-module">Notifications</a></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note">
+          <strong>Cache memory.</strong> <code>maxmemory</code> — via env:
+          dev 256mb · prod 512mb, capped at ≤&nbsp;70&nbsp;% of the container's
+          memory. Tuned by runtime metrics (<code>keyspace_hits/misses</code>,
+          <code>evicted_keys</code>), not a fixed number — we fit the hot working
+          set, not every query. Metric-driven tuning is about
+          <code>redis-cache</code>; on <code>redis-durable</code> the same
+          <code>maxmemory</code> serves as a hard cap with write rejection
+          (<code>noeviction</code>) rather than eviction.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

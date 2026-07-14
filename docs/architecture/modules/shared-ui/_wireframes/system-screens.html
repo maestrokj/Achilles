@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Shared UI: System Screens</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Shared UI</a>
+        <h1 class="header__title">System Screens</h1>
+        <div class="header__sub">shared ui · wireframes · shared component</div>
+      </div>
+
+      <p class="desc">
+        One template of platform stubs for all status codes — separate from
+        <a href="../../auth-security/_wireframes/status-screen.html" class="xref-module">Auth · Status Screen</a>
+        (the dead ends of auth flows live in their own module).
+      </p>
+
+      <!-- Each state is its own section with an anchor; external links lead straight
+           to the right screen. -->
+
+      <!-- ── 404 ─────────────────────────────────────────────── -->
+      <div class="section" id="not-found">
+        <h2 class="section__title">404 · not found</h2>
+        <div class="wf-stage">
+          <div class="wf-screen wf-screen--narrow">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/unknown-path
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">any nonexistent path</span>
+                  <span class="wf-urltip__body">The address is mapped to no screen</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack wf-center">
+                <div class="wf-errcode">404</div>
+                <h2 class="wf-title">Page not found</h2>
+                <p class="wf-subtitle">
+                  The requested page does not exist or has been moved.
+                  Check that the address is correct.
+                </p>
+                <a class="wf-btn wf-btn--primary wf-btn--block">Go home</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 500 ─────────────────────────────────────────────── -->
+      <div class="section" id="server-error">
+        <h2 class="section__title">500 · server error</h2>
+        <div class="wf-stage">
+          <div class="wf-screen wf-screen--narrow">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/users
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">any route · a 5xx response</span>
+                  <span class="wf-urltip__body">The server returned an error</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack wf-center">
+                <div class="wf-errcode">500</div>
+                <h2 class="wf-title">Server error</h2>
+                <p class="wf-subtitle">
+                  An internal error occurred. We are already working on
+                  fixing it — please try again in a few minutes.
+                </p>
+                <a class="wf-btn wf-btn--primary wf-btn--block">Refresh</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── offline ─────────────────────────────────────────── -->
+      <div class="section" id="offline">
+        <h2 class="section__title">offline · no network</h2>
+        <div class="wf-stage">
+          <div class="wf-screen wf-screen--narrow">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">no connection to the server</span>
+                  <span class="wf-urltip__body">Requests are not getting through</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack wf-center">
+                <div class="wf-errcode">
+                  <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23" /><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55" /><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39" /><path d="M10.71 5.05A16 16 0 0 1 22.58 9" /><path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88" /><path d="M8.53 16.11a6 6 0 0 1 6.95 0" /><line x1="12" y1="20" x2="12.01" y2="20" /></svg>
+                </div>
+                <h2 class="wf-title">No connection</h2>
+                <p class="wf-subtitle">
+                  Cannot reach the server. Check your internet
+                  connection — the connection will restore automatically.
+                </p>
+                <a class="wf-btn wf-btn--primary wf-btn--block">Retry</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── 403 ─────────────────────────────────────────────── -->
+      <div class="section" id="forbidden">
+        <h2 class="section__title">403 · forbidden</h2>
+        <div class="wf-stage">
+          <div class="wf-screen wf-screen--narrow">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/settings
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">the route exists · the role does not allow it</span>
+                  <span class="wf-urltip__body">Signed in, no rights to the section</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack wf-center">
+                <div class="wf-errcode">403</div>
+                <h2 class="wf-title">Access denied</h2>
+                <p class="wf-subtitle">
+                  Your role does not have enough rights to access this section.
+                  If this is a mistake, contact your administrator.
+                </p>
+                <a class="wf-btn wf-btn--primary wf-btn--block">Go back</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── maintenance ─────────────────────────────────────── -->
+      <div class="section" id="maintenance">
+        <h2 class="section__title">maintenance</h2>
+        <div class="wf-stage">
+          <div class="wf-screen wf-screen--narrow">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">the platform is in maintenance mode</span>
+                  <span class="wf-urltip__body">Enabled in the <a href="../../admin-panel/_wireframes/platform-settings.html#integrations-maintenance" class="xref-module">platform settings</a></span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack wf-center">
+                <div class="wf-errcode">
+                  <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>
+                </div>
+                <h2 class="wf-title">Maintenance in progress</h2>
+                <p class="wf-subtitle">
+                  The platform is temporarily unavailable. Maintenance is under way —
+                  we apologize for the inconvenience.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

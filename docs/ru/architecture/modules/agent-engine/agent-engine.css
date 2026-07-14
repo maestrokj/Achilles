@@ -1,0 +1,556 @@
+/* Agent Engine — index.html diagram: vertical run timeline.
+   Bespoke diagram: a single spine down the page, dot-nodes for each event of
+   one run (trigger → prompt assembly → start gate → agentic loop → stop →
+   log), the agentic loop drawn as a taller node with a brace to read "this
+   repeats", and a side rail beside it for the weekly budget — a background
+   constraint, not a point in time, so it never sits on the spine itself.
+   Loaded by index.html on top of module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ═══════════════════════════════════════════
+   Timeline — sequence of one run
+   ═══════════════════════════════════════════ */
+.ae-tl {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding-left: 2.2rem;
+  margin-top: 0.5rem;
+}
+
+/* ── Spine — a soft gradient down the run, so the dots read as points along
+   one warm thread rather than beads on a flat grey line. ── */
+.ae-tl::before {
+  content: "";
+  position: absolute;
+  top: 0.6rem;
+  bottom: 0.6rem;
+  left: 0.6rem;
+  width: 2px;
+  border-radius: 2px;
+  background: linear-gradient(
+    to bottom,
+    var(--s1) 0%,
+    var(--s4) 34%,
+    var(--s2) 66%,
+    var(--s3) 100%
+  );
+  opacity: 0.5;
+}
+
+/* ── Event node ──
+   Each event carries a phase colour (--ph) that threads through its dot,
+   its timestamp badge and its card accent, so a row reads as one unit. ── */
+.ae-tl__ev {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 1.1rem;
+  --ph: var(--s1);
+  --ph-bg: var(--tint-8);
+}
+
+.ae-tl__ev--gate {
+  --ph: var(--s4);
+  --ph-bg: var(--s4-pale);
+}
+.ae-tl__ev--loop {
+  --ph: var(--s2);
+  --ph-bg: var(--s2-pale);
+}
+.ae-tl__ev--stop {
+  --ph: var(--s2);
+  --ph-bg: var(--s2-pale);
+}
+.ae-tl__ev--end {
+  --ph: var(--s3);
+  --ph-bg: var(--s3-pale);
+}
+
+/* Dot — filled core, cream gap, a ring of the phase colour: a target that
+   sits on the spine instead of a hollow bead floating beside it. */
+.ae-tl__ev-dot {
+  position: absolute;
+  left: -2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ph);
+  border: 3px solid var(--surface);
+  box-shadow:
+    0 0 0 2px var(--ph),
+    0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* the loop node is taller — a slightly larger dot marks it */
+.ae-tl__ev-dot--loop {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Segment connecting two nodes (plain spine filler, purely spacing) ── */
+.ae-tl__seg {
+  height: 1.4rem;
+}
+
+/* ── Card ── */
+.ae-tl__ev-card {
+  flex: 1;
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--ph);
+  border-radius: var(--radius);
+  padding: 0.85rem 1.05rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  box-shadow: var(--card-shadow);
+  transition:
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+
+.ae-tl__ev-card:hover {
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-1px);
+}
+
+/* short arm bridging the gap from the spine dot to its card */
+.ae-tl__ev-card::before {
+  content: "";
+  position: absolute;
+  left: -1.55rem;
+  top: 50%;
+  width: 1.55rem;
+  height: 2px;
+  background: var(--ph);
+  opacity: 0.4;
+  transform: translateY(-50%);
+}
+
+.ae-tl__ev-t {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.ae-tl__ev-ts {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ph);
+  background: var(--ph-bg);
+  border: 1px solid var(--ph);
+  border-radius: var(--tag-radius);
+  padding: 0.05rem 0.35rem;
+  margin-right: 0.4rem;
+}
+
+.ae-tl__ev-d {
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.ae-tl__ev-note {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.ae-tl__ev-link {
+  align-self: flex-start;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--link-page-fg);
+  text-decoration: underline;
+}
+
+/* ── Prompt layers (t0) — a numbered stack, priority read top-down.
+   Layer ① (platform) dominates: filled medallion + lock; ②③ stay outlined. ── */
+.ae-tl__layers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ae-tl__layer {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.8rem;
+  padding: 0.5rem 0.7rem;
+  border-radius: 9px;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  color: var(--text);
+  text-decoration: none;
+  transition:
+    border-color 0.2s,
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.ae-tl__layer:hover {
+  border-color: var(--accent-muted);
+  transform: translateX(2px);
+  box-shadow: var(--card-shadow);
+}
+
+/* numbered medallion */
+.ae-tl__layer-n {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--tint-8);
+  border: 1px solid var(--tint-15);
+}
+
+/* key + inline description */
+.ae-tl__layer-b {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.ae-tl__layer-b b {
+  font-weight: 700;
+}
+
+.ae-tl__layer-d {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.ae-tl__layer-d::before {
+  content: "— ";
+}
+
+/* platform layer — the locked base, visually heaviest */
+.ae-tl__layer--lock {
+  background: var(--tint-6);
+  border-color: var(--tint-25);
+}
+
+.ae-tl__layer--lock .ae-tl__layer-n {
+  color: var(--paper);
+  background: var(--s1);
+  border-color: var(--s1);
+}
+
+.ae-tl__layer-lk {
+  flex: 0 0 auto;
+  margin-left: auto;
+  width: 13px;
+  height: 13px;
+  color: var(--s1);
+  opacity: 0.85;
+}
+
+/* ── Gate (t1) ── stronger accent bar than the ordinary event card */
+.ae-tl__ev-card--gate {
+  border-left-width: var(--border-w);
+}
+
+.ae-tl__gate {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text);
+  text-decoration: none;
+  border-radius: var(--radius-md);
+  transition: background-color 0.2s;
+}
+
+.ae-tl__gate:hover {
+  background: var(--tint-6);
+}
+
+.ae-tl__cond {
+  font-family: var(--mono);
+  font-weight: 600;
+  font-size: 0.78rem;
+  background: var(--tint-8);
+  border: 1px solid var(--tint-15);
+  border-radius: var(--tag-radius);
+  padding: 0.15rem 0.45rem;
+}
+
+.ae-tl__and {
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.ae-tl__gate-arr {
+  font-weight: 700;
+  color: var(--s4);
+  margin-left: 0.2rem;
+}
+
+.ae-tl__guards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.ae-tl__guard {
+  font-size: 0.76rem;
+  color: var(--text-dim);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.ae-tl__guard:hover {
+  border-color: var(--text-dim);
+}
+
+/* ── Loop node (t2) — taller card, brace marks the repeating span ── */
+.ae-tl__ev--loop {
+  align-items: stretch;
+}
+
+.ae-tl__ev-card--loop {
+  border-left-width: var(--border-w);
+}
+
+.ae-tl__brace {
+  position: relative;
+  padding-left: 0.9rem;
+  border-left: 2px dashed var(--s2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.ae-tl__brace-label {
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--s2);
+}
+
+.ae-tl__cyc {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+}
+
+.ae-tl__cyc-step {
+  font-weight: 600;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--tag-radius);
+  padding: 0.15rem 0.55rem;
+}
+
+.ae-tl__cyc-step a {
+  color: inherit;
+  font: inherit;
+  text-decoration: none;
+}
+
+.ae-tl__cyc-step:has(a) {
+  transition: all 0.2s;
+}
+
+.ae-tl__cyc-step:has(a):hover {
+  border-color: var(--accent-muted);
+  transform: translateY(-1px);
+}
+
+.ae-tl__cyc-arr {
+  color: var(--text-muted);
+}
+
+.ae-tl__cyc-back {
+  margin-left: 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--s2);
+}
+
+.ae-tl__tools {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.ae-tl__tool {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 600;
+  background: var(--tint-8);
+  border: 1px solid var(--tint-15);
+  border-radius: var(--tag-radius);
+  padding: 0.1rem 0.42rem;
+  color: var(--accent);
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.ae-tl__tool:hover {
+  border-color: var(--accent-muted);
+  transform: translateY(-1px);
+}
+
+.ae-tl__ks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-top: 0.4rem;
+  border-top: 1px dashed var(--border);
+}
+
+.ae-tl__ks-h {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.ae-tl__ks-d {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+/* ── Side rail — the weekly budget, parallel to the loop node, never on
+   the spine (it's an ongoing constraint, not a moment in time). ── */
+.ae-tl__rail {
+  flex: 0 0 12rem;
+  display: flex;
+  align-items: stretch;
+}
+
+.ae-tl__rail-bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  justify-content: center;
+  background: var(--s4-pale);
+  border: 1px dashed var(--s4);
+  border-radius: var(--radius);
+  padding: 0.7rem 0.8rem;
+  color: var(--text);
+  text-decoration: none;
+  box-shadow: var(--card-shadow);
+  transition: all 0.2s;
+}
+
+.ae-tl__rail-bar:hover {
+  border-color: var(--s4);
+  border-style: solid;
+  transform: translateY(-1px);
+}
+
+.ae-tl__rail-t {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--s4);
+}
+
+.ae-tl__rail-d {
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--text-dim);
+}
+
+@media (max-width: 720px) {
+  .ae-tl__ev--loop {
+    flex-direction: column;
+  }
+  .ae-tl__rail {
+    flex: 1;
+  }
+}
+
+/* ── Footnotes ── */
+.ae-tl__foot {
+  margin-top: 1.4rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text-dim);
+}
+/* ═══════════════════════════════════════════
+   Presets
+   ═══════════════════════════════════════════ */
+.presets {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+}
+
+.preset {
+  background: var(--surface);
+  border: 1.5px dashed var(--s4);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.9rem;
+}
+
+.preset__name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.preset__desc {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+/* ═══════════════════════════════════════════
+   Horizon nav group — grey ground for the v2 teasers
+   ═══════════════════════════════════════════
+   A muted band in the workzone nav: neutral grey links (not the warm accent
+   tint of v1 topics) carrying a v2 pill, so the "next iteration" reads at a
+   glance against the live topics above. */
+.wz-nav__group--horizon {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.wz-nav__group--horizon::before {
+  content: "✦";
+  color: var(--text-muted);
+}
+.wz-link--horizon {
+  background: #f4f1ec;
+  border-color: #d9d3ca;
+  color: var(--text-dim);
+}
+.wz-link--horizon:hover {
+  border-color: var(--accent-muted);
+  background: #ece8e1;
+}
+.wz-link--horizon .iter {
+  margin-left: auto;
+}
+
+/* ═══════════════════════════════════════════
+   Responsive
+   ═══════════════════════════════════════════ */
+@media (max-width: 640px) {
+  .presets {
+    grid-template-columns: 1fr;
+  }
+}

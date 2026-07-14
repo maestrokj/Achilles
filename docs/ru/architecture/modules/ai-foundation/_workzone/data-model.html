@@ -1,0 +1,1174 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — AI Foundation: Модель данных</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="data-model.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← AI Foundation</a>
+        <h1 class="header__title">Модель данных</h1>
+        <div class="header__sub">ai-foundation · workzone</div>
+      </div>
+
+      <p class="desc">
+        Дом данных AI-домена — системный prompt нейросетей, реестр AI-моделей
+        (провайдеры · модели · назначение по функциям · списки чата и агентов ·
+        расходы) и каталог инструментов. Карта ниже — весь модуль одним взглядом, каждый узел ведёт
+        к своей таблице. ORM-модели живут в общем ядре (<code>core</code>), Admin
+        даёт CRUD и экраны; потребители — Harvester, Knowledge Store, Query
+        Engine, Agent Engine, Auth — читают из core, без циклов. Глобальная
+        конфигурация платформы (бюджеты AI) — в
+        <a href="../../admin-panel/_workzone/data-model.html#singleton" class="xref-module">Admin Panel</a>.
+      </p>
+
+      <!-- Schema overview — the three layers and the registry hub-and-spoke at a
+           glance; each node jumps to its table below. -->
+      <div class="dm-schema">
+        <div class="dm-schema__band dm-schema__band--config">
+          <div class="dm-schema__lyr">
+            <span class="dm-schema__n">1</span>Системный prompt
+          </div>
+          <a class="dm-node" href="#prompt-settings"
+            >prompt_settings<small>singleton · safety + org</small></a
+          >
+        </div>
+
+        <div class="dm-schema__band dm-schema__band--ai">
+          <div class="dm-schema__lyr">
+            <span class="dm-schema__n">2</span>Реестр AI-моделей
+          </div>
+          <div class="dm-schema__hub">
+            <a class="dm-node" href="#t-ai-providers"
+              >ai_providers<small>подключения</small></a
+            >
+            <span class="dm-schema__arr">→</span>
+            <a class="dm-node dm-node--hub" href="#t-ai-models"
+              >ai_models<small>каталог моделей</small></a
+            >
+            <span class="dm-schema__arr">→</span>
+            <div class="dm-schema__spokes">
+              <a class="dm-node dm-node--sm" href="#t-model-assignments"
+                >model_assignments<small>системные функции</small></a
+              >
+              <a class="dm-node dm-node--sm" href="#t-chat-models"
+                >chat_models<small>чат</small></a
+              >
+              <a class="dm-node dm-node--sm" href="#t-agent-models"
+                >agent_models<small>агенты</small></a
+              >
+              <a class="dm-node dm-node--sm" href="#t-model-usage"
+                >model_usage<small>расходы</small></a
+              >
+            </div>
+          </div>
+          <a class="dm-node dm-node--solo" href="#tools"
+            >tools<small>каталог инструментов · отдельно</small></a
+          >
+        </div>
+
+        <div class="dm-schema__band dm-schema__band--migration">
+          <div class="dm-schema__lyr">
+            <span class="dm-schema__n">3</span>Миграция
+          </div>
+          <span class="dm-schema__note"
+            >один логический шаг — создаёт реестр и засевает Platform-провайдера
+            со встроенными моделями</span
+          >
+        </div>
+      </div>
+
+      <div class="stk-stack">
+        <!-- ── L1 · Системный prompt ── ДОМ prompt-настроек: singleton в core,
+             БД хранит только override, дефолт — seed под локаль. Слойная
+             композиция собирает финальный prompt каждого AI-вызова. -->
+        <div class="stk-layer stk-layer--config" id="prompt-data">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">1</span>
+            <span class="stk-layer__name">Системный prompt</span>
+            <span class="stk-layer__role">Singleton. Override + слойная композиция.</span>
+            <a class="xref-badge" href="../../admin-panel/_wireframes/ai-behavior.html#composition"
+              >→ Экран Prompt AI</a
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="dm-tbl" id="prompt-settings">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">prompt_settings</span>
+                <span class="dm-tbl__sub">системный prompt нейросетей</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--flag">singleton · CHECK (id = 1)</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--pk">PK</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (id = 1)">CHECK</span>
+                    </td>
+                    <td class="dm-note">всегда <code>1</code> · singleton</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">safety_text</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      override prompt безопасности · <code>NULL</code> = встроенный
+                      дефолт · <a href="#prompt-defaults" class="xref-anchor">→ Дефолт в коде</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">org_text</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      override prompt организации · <code>NULL</code> = встроенный
+                      дефолт
+                    </td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">updated_by</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → users, ON DELETE SET NULL">FK→users</span
+                      ><span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">кто последним правил · SET NULL · след правки — в Audit Log</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>server_default=now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="prompt-layers">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Слойная композиция prompt</span>
+                <a class="xref-badge xref-badge--page" href="prompt-library.html#safety"
+                  >→ Тексты prompt</a
+                >
+                <a class="xref-badge" href="../../admin-panel/_wireframes/ai-behavior.html#composition"
+                  >→ Экран Prompt AI</a
+                >
+              </div>
+              <div class="dm-compose">
+                <div class="dm-compose__row dm-compose__row--admin">
+                  <span class="dm-compose__n">1</span>
+                  <span class="dm-compose__t">prompt безопасности</span>
+                  <span class="dm-compose__o">admin · safety_text</span>
+                </div>
+                <div class="dm-compose__row dm-compose__row--admin">
+                  <span class="dm-compose__n">2</span>
+                  <span class="dm-compose__t">prompt организации</span>
+                  <span class="dm-compose__o">admin · org_text</span>
+                </div>
+                <div class="dm-compose__row dm-compose__row--eng">
+                  <span class="dm-compose__n">3</span>
+                  <span class="dm-compose__t">инженерный function-prompt</span>
+                  <span class="dm-compose__o">поверхность · чат · агент</span>
+                </div>
+                <div class="dm-compose__row dm-compose__row--rt">
+                  <span class="dm-compose__n">4</span>
+                  <span class="dm-compose__t">рантайм-контекст</span>
+                  <span class="dm-compose__o">фрагменты · история</span>
+                </div>
+                <div class="dm-compose__sum">
+                  = системный prompt каждого
+                  <span class="ai-tag" title="Этап использует нейросеть — инференс модели"><span class="ai-tag__icon"></span>AI</span>
+                  вызова · собран сверху вниз
+                </div>
+              </div>
+              <div class="stk-dec__d">
+                Первые два слоя — единый платформенный слой: модель в пакете
+                <code>ai_foundation/models.py</code> (конвенция кода — пакет на модуль),
+                CRUD и экран — в Admin, а читают её потребители —
+                <a href="../../query-engine/_workzone/rag-pipeline.html#augment" class="xref-module">Query Engine</a>
+                на шаге сборки prompt и
+                <a href="../../agent-engine/_workzone/identity.html#agent-frame" class="xref-module">Agent Engine</a>
+                в рамке агента. Третий слой свой у каждой поверхности
+                (grounding-контракт чата, рамка задачи агента). Так общий тон и
+                правила задаются один раз, а специфика поверхности остаётся в её
+                инженерном prompt, который admin не правит — корректность RAG
+                защищена.
+              </div>
+            </div>
+
+            <div class="stk-dec" id="prompt-defaults">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Дефолт в коде, БД хранит только override</span>
+              </div>
+              <div class="stk-dec__d">
+                Встроенные тексты обоих блоков — seed-константы в коде, не строка в
+                базе. <code>NULL</code> = взять дефолт (улучшается деплоем);
+                непустой текст = правка админа, заморожённая под него. «Сбросить»
+                зануляет колонку — возврат к актуальному дефолту. Дефолт
+                локализован: seed-константы есть под каждую локаль платформы
+                (<code>platform_settings.locale</code>) — <code>locale=en</code>
+                даёт английский prompt, <code>ru</code> — русский; <code>NULL</code>
+                берёт дефолт под текущую локаль. Так кастомизация переживает
+                обновления платформы, а инсталляция из коробки несёт prompt
+                без ручной настройки.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="prompt-safety-split">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Безопасность и организация — раздельно; периметр не в prompt</span>
+              </div>
+              <div class="stk-dec__d">
+                Два независимых поля — само разделение делает правку защиты
+                осознанной: меняя тон в <code>org_text</code>, его не спутать с
+                <code>safety_text</code>. Сам текст — defense-in-depth поверх
+                архитектуры, не периметр доступа; настоящую границу держит
+                архитектура доступа, а не prompt — разбор и пометка
+                <span class="iter v2">v2</span> в
+                <a class="xref-page" href="prompt-library.html#safety-perimeter">Текстах prompt</a>.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="prompt-effective">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Ответ API — effective-текст плюс признак override</span>
+              </div>
+              <div class="stk-dec__d">
+                GET отдаёт по каждому блоку готовый к показу <em>effective</em>-текст
+                (override, иначе встроенный дефолт под локаль) и флаг
+                <code>is_default</code> — пуста ли колонка. По флагу экран
+                <a class="xref-badge" href="../../admin-panel/_wireframes/ai-behavior.html#composition">Prompt AI</a>
+                отличает дефолт от правки: помечает «на дефолте» и держит «Сбросить»
+                активной только при заданном override. Так фронт не угадывает
+                источник текста сравнением строк, а PATCH с <code>null</code> —
+                это сброс к дефолту.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mod-conn">
+          <div class="mod-conn__line"></div>
+          <div class="mod-conn__arrow"></div>
+        </div>
+
+        <!-- ── L2 · Реестр AI-моделей ── ДОМ AI-конфига: провайдеры, их
+             модели, назначение по функциям, разрешённый список для чата и
+             агрегат расходов. ORM в core (как PlatformSettings); экраны и CRUD
+             в Admin; потребители (Harvester · Query Engine · Agent Engine)
+             читают назначение из core. -->
+        <div class="stk-layer stk-layer--ai" id="ai-models">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">2</span>
+            <span class="stk-layer__name">Реестр AI-моделей</span>
+            <span class="stk-layer__role">Провайдеры → модели → назначение и расходы.</span>
+            <a class="xref-badge" href="../../admin-panel/_wireframes/ai-models.html#providers"
+              >→ Экран AI-моделей</a
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="dm-tbl" id="t-ai-providers">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">ai_providers</span>
+                <span class="dm-tbl__sub">подключения к моделям</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--flag">ключ at-rest</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">name</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                    <td class="dm-note">отображаемое имя · «OpenAI» · «Ollama (on-prem)»</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">kind</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'cloud'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (cloud | local)">CHECK</span>
+                    </td>
+                    <td class="dm-note">где крутится · cloud · local</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">adapter</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (openai | anthropic | google | ollama | openai_compatible)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      диалект API · решает SDK-клиент и discovery · openai ·
+                      anthropic · google · ollama · openai_compatible ·
+                      <a href="#ai-adapter" class="xref-anchor">→ Диалект API</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">base_url</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (kind = 'cloud' OR base_url IS NOT NULL)">CHECK</span>
+                    </td>
+                    <td class="dm-note">endpoint · у cloud опционален, у local обязателен (CHECK)</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">api_key_enc</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                    <td class="dm-note">write-only · AES-256-GCM · <code>NULL</code> у локальных · → ключи</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">is_system</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">встроенный рантайм, засеян миграцией · неудаляем, <code>base_url</code>/<code>adapter</code> под управлением · <a href="#ai-builtin" class="xref-anchor">→ Встроенный эмбеддер</a></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">status</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'unchecked'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (active | error | unchecked)">CHECK</span>
+                    </td>
+                    <td class="dm-note">итог последней проверки · active · error · unchecked</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">last_check_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                    <td class="dm-note"><code>NULL</code> = не проверяли</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                    <td class="dm-note"><code>server_default=now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="dm-tbl" id="t-ai-models">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">ai_models</span>
+                <span class="dm-tbl__sub">каталог моделей</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → ai_providers</span>
+                  <span class="dm-badge dm-badge--uniq">UNIQUE(provider_id, model_id)</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">provider_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → ai_providers, ON DELETE CASCADE">FK→ai_providers</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">CASCADE</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">model_id</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq" title="UNIQUE(provider_id, model_id)">UNIQUE*</span>
+                    </td>
+                    <td class="dm-note">идентификатор у провайдера · «gpt-4o»</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">display_name</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                    <td class="dm-note">отображаемое имя · дефолт = model_id</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">model_type</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (chat | embedding)">CHECK</span>
+                    </td>
+                    <td class="dm-note">что выдаёт · chat · embedding · → тип решает назначение</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">origin</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (discovered | manual | builtin)">CHECK</span>
+                    </td>
+                    <td class="dm-note">как попала в каталог · discovered · manual · builtin (засеяна со встроенным рантаймом)</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">is_enabled</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">включена в платформу · DEFAULT <code>false</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">price_input</td>
+                    <td class="dm-t">Numeric</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                    <td class="dm-note">
+                      цена за input-токен · <code>NULL</code> = не задана (локальные) ·
+                      <a href="#ai-pricing" class="xref-anchor">→ Цена вход/выход</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">price_output</td>
+                    <td class="dm-t">Numeric</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                    <td class="dm-note">цена за output-токен · <code>NULL</code> у embedding и локальных</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">meta</td>
+                    <td class="dm-t">JSONB</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                    <td class="dm-note">интринсики модели · у embedding: <code>embedding_dim</code> (задаёт <code>halfvec(N)</code> в KS), <code>max_input_tokens</code>, <code>instruction_prefix</code> · <a href="#ai-intrinsics" class="xref-anchor">→ Интринсики</a></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="dm-tbl" id="t-model-assignments">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">model_assignments</span>
+                <span class="dm-tbl__sub">системные функции</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → ai_models</span>
+                  <span class="dm-badge dm-badge--uniq">UNIQUE(function)</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">function</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq">UNIQUE</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (harvester_embedding | query_rag) — системная подмножина словаря функций">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      одна строка на функцию · системные: harvester_embedding ·
+                      query_rag ·
+                      <a href="#ai-functions" class="xref-anchor">→ Словарь функций</a>
+                    </td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">model_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → ai_models, ON DELETE RESTRICT">FK→ai_models</span
+                      ><span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">назначенная модель · <code>NULL</code> = ждёт модуль · RESTRICT</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="dm-tbl" id="t-chat-models">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">chat_models</span>
+                <span class="dm-tbl__sub">пользовательский чат</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → ai_models</span>
+                  <span class="dm-badge dm-badge--uniq">ровно один default</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">model_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → ai_models, ON DELETE RESTRICT">FK→ai_models</span
+                      ><span class="dm-c dm-c--uq">UNIQUE</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">разрешённая chat-модель · RESTRICT — в списке = занята</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">is_default</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">partial <code>UNIQUE WHERE is_default</code> — ровно один</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="dm-tbl" id="t-agent-models">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">agent_models</span>
+                <span class="dm-tbl__sub">модели агентов</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → ai_models</span>
+                  <span class="dm-badge dm-badge--uniq">ровно один default</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">— · <a href="../../agent-engine/_workzone/data-model.html#agents" class="xref-module">agents.model_id</a> ссылается сюда</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">model_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → ai_models, ON DELETE RESTRICT">FK→ai_models</span
+                      ><span class="dm-c dm-c--uq">UNIQUE</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">разрешённая модель агентов · chat-тип, с поддержкой инструментов · RESTRICT — в списке = занята</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">is_default</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">partial <code>UNIQUE WHERE is_default</code> — ровно один · преднабор в редакторе агента</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="dm-tbl" id="t-model-usage">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">model_usage</span>
+                <span class="dm-tbl__sub">расходы · агрегат по дню</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--fk">FK → ai_models</span>
+                  <span class="dm-badge dm-badge--uniq">UNIQUE(model_id, function, bucket_date)</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr class="is-fk">
+                    <td class="dm-f">model_id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--fk" title="FK → ai_models, ON DELETE SET NULL">FK→ai_models</span
+                      ><span class="dm-c dm-c--idx">IDX</span>
+                    </td>
+                    <td class="dm-note">SET NULL · расход переживает удаление модели</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">function</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (harvester_embedding | query_rag | agent_engine | chat)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      какая функция потребила · общий словарь ·
+                      <a href="#ai-functions" class="xref-anchor">→ Словарь функций</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">bucket_date</td>
+                    <td class="dm-t">Date</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq" title="UNIQUE(model_id, function, bucket_date)">UNIQUE*</span>
+                    </td>
+                    <td class="dm-note">день агрегации</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">request_count</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 0">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">DEFAULT <code>0</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">input_tokens</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 0">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">токены на входе · DEFAULT <code>0</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">output_tokens</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 0">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">токены на выходе · <code>0</code> у embedding</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">cost</td>
+                    <td class="dm-t">Numeric</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                    <td class="dm-note">input·price_input + output·price_output · <code>NULL</code> если цены не заданы</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code> + trigger · последний инкремент бакета</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="dm-tbl" id="tools">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">tools</span>
+                <span class="dm-tbl__sub">каталог инструментов AI</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--flag">секрет at-rest</span>
+                  <span class="dm-badge dm-badge--uniq">UNIQUE(name)</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                    <td class="dm-note">—</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">name</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--uq">UNIQUE</span>
+                    </td>
+                    <td class="dm-note">ключ инструмента = ключ связи с типом в реестре · <code>web_search</code> · <code>fetch_url</code> · имя/описание — через <code>t()</code>, не в БД</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">source</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'preset'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (preset | custom | mcp | openapi)">CHECK</span>
+                    </td>
+                    <td class="dm-note">откуда схема · preset · custom (v1) · mcp · openapi (<span class="iter v2">v2</span>) · <a href="tool-catalog.html#sources" class="xref-page">→ Источники</a></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">access</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'read_only'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (read_only | write)">CHECK</span>
+                    </td>
+                    <td class="dm-note">read_only (v1) · write (<span class="iter v2">v2</span>)</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">config</td>
+                    <td class="dm-t">JSONB</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                    <td class="dm-note">несекретная конфигурация · провайдер · base_url · опции · <strong>не секрет</strong></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">credential_enc</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                    <td class="dm-note">write-only secret · AES-256-GCM <a href="../../auth-security/_workzone/protection.html#crypto-core" class="xref-module">крипто-ядром Auth</a> · наружу лишь флаг <code>is_set</code> · <code>NULL</code> = ключ не нужен</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">chat_enabled</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">подан в чат · DEFAULT <code>false</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">agents_allowed</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">допуск в allowlist агентов · DEFAULT <code>false</code> · владелец выбирает в редакторе</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">status</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'unchecked'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (active | error | unchecked)">CHECK</span>
+                    </td>
+                    <td class="dm-note">итог проверки работоспособности · active · error · unchecked · как у <code>ai_providers</code> · <a href="tool-catalog.html#health" class="xref-page">→ Проверка</a></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">last_check_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                    <td class="dm-note"><code>NULL</code> = не проверяли</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="tools-catalog">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Инструмент — каталог в Admin, выбор агента — в Agent Engine</span>
+                <a class="xref-badge xref-badge--page" href="tool-catalog.html#governance">→ Каталог инструментов</a>
+                <a class="xref-badge" href="../../agent-engine/_workzone/data-model.html#agent-tools">→ Agent Engine</a>
+              </div>
+              <div class="stk-dec__d">
+                <strong>Инструмент</strong> — вызываемая функция, подаётся модели
+                как tool-schema (не промпт). Каталог открытый — реестр типов
+                (пресеты платформы + свой класс организации, зеркало коннекторов):
+                <a href="tool-catalog.html#discovery" class="xref-page">список — живой реестр</a>,
+                эта таблица хранит состояние по <code>name</code> (нет строки =
+                тип выключен, дефолты), строка заводится лениво. v1 засевает два
+                read-only пресета — <code>web_search</code> и
+                <code>fetch_url</code>, оба выключены. Допуск — две независимые
+                поверхности: <code>chat_enabled</code> (виден чату) и
+                <code>agents_allowed</code> (разрешён к выбору агентам); инструмент
+                активен, пока подан хоть одной. Сам выбор агента — связь
+                <a href="../../agent-engine/_workzone/data-model.html#agent-tools" class="xref-module"><code>agent_tools</code></a>
+                в Agent Engine; рантайм фильтрует её по текущему
+                <code>agents_allowed</code>, снятие → агент на ядре KS (мягкая
+                деградация). Несекретная настройка (провайдер
+                <code>web_search</code>, опции) — в <code>config</code>, правит
+                админ на экране, не конфиг-файлом; секрет — в
+                <code>credential_enc</code>, не в <code>config</code>: как ключи
+                <code>ai_providers</code> и SMTP, наружу лишь флаг
+                <code>is_set</code>. <code>status</code> / <code>last_check_at</code>
+                держат итог проверки работоспособности — тем же приёмом, что
+                <code>ai_providers</code>.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="ai-ownership">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Модели в ai_foundation, CRUD и экраны — в Admin</span>
+                <a class="xref-badge" href="../../admin-panel/_wireframes/ai-models.html#model-assignment"
+                  >→ Назначение по функциям</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                ORM-модели — в пакете <code>ai_foundation/models.py</code>
+                (конвенция кода — пакет на модуль), не в admin: назначенные модели
+                читают
+                <span class="ai-tag" title="Этап использует нейросеть — инференс модели"><span class="ai-tag__icon"></span>AI</span>
+                Harvester (embed), Knowledge Store (реэмбеддинг), Query Engine
+                (RAG) и Agent Engine — четыре потребителя, не только Admin. Admin
+                предоставляет CRUD и экраны;
+                зависимости идут к core — без циклов.
+              </div>
+            </div>
+
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Ключи — крипто-ядро Auth</span>
+                <a class="xref-badge" href="../../auth-security/_workzone/protection.html#crypto-core"
+                  >→ Крипто-ядро</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                <code>api_key_enc</code> — write-only secret, шифротекст
+                AES-256-GCM крипто-ядром Auth; наружу (API, экспорт) не
+                возвращается, UI получает лишь маску <code>••••xxxx</code>. У
+                локальных провайдеров ключа обычно нет.
+              </div>
+            </div>
+
+            <div class="stk-dec" id="ai-adapter">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Диалект API ≠ где крутится</span>
+                <a class="xref-badge" href="../../admin-panel/_wireframes/ai-models.html#providers"
+                  >→ Экран провайдеров</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Две ортогональные оси. <code>kind</code> (cloud / local) — где
+                модель крутится: от него зависит, нужен ли ключ и обязателен ли
+                <code>base_url</code>. <code>adapter</code> — на каком протоколе с
+                ней говорить: он выбирает SDK-клиент и эндпоинт discovery
+                (<code>openai</code> → <code>GET /v1/models</code>,
+                <code>ollama</code> → <code>GET /api/tags</code>).
+                <code>openai_compatible</code> покрывает vLLM · llama.cpp ·
+                прокси. Из <code>name</code> (отображаемое имя) протокол не
+                выводится — потому отдельным полем.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="ai-builtin">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Встроенный эмбеддер — из коробки, лениво, не по умолчанию</span>
+                <a class="xref-badge" href="../../admin-panel/_wireframes/ai-models.html#model-assignment"
+                  >→ Назначение по функциям</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Платформа везёт собственный локальный embeddings-рантайм —
+                отдельный сервис docker-compose (OpenAI-совместимый,
+                model-agnostic), поднимается на <code>make up</code> рядом с
+                backend; контейнер лёгкий, ML-зависимости в API-образ не тянет.
+                <strong>Веса при установке не качаются</strong>: рантайм тянет
+                их <strong>лениво</strong> — по назначению модели (и сразу
+                <a
+                  href="../../knowledge-store/_workzone/embedding-runtime.html#contention"
+                  class="xref-module"
+                  >прогревает</a
+                >
+                её, не ожидая первого запроса), в кеш-том. До выбора эмбеддер не занимает ни диска, ни
+                памяти, и потому не лимитирует деплой. Миграция засевает
+                <code>is_system</code>-провайдера <code>Platform</code>
+                (неудаляем, <code>base_url</code> на внутренний сервис, без
+                ключа) и каталог встроенных моделей — выбираемых
+                (<code>is_enabled=true</code>), но не загруженных. Набор задаёт
+                seed, не экраны (первая итерация — <code>bge-m3</code> и
+                <code>Qwen3-Embedding-0.6B</code>, обе 1024-мерные); макеты
+                ссылаются на них лишь примером. Назначения по умолчанию
+                <strong>нет</strong>: строки
+                <code>model_assignments.harvester_embedding</code> на старте не
+                существует, и Harvester без назначения приём не стартует —
+                Admin обязан назначить embedding-модель (встроенную
+                <em>или</em> свою) до первого приёма. Причина жёсткая: выбор
+                фиксирует размерность <code>N</code> колонки
+                <a href="../../knowledge-store/_workzone/data-model.html#chunks" class="xref-module"
+                  ><code>chunks.embedding</code></a
+                >, а поздняя смена — массовый
+                <a href="../../knowledge-store/_workzone/lifecycle.html#embedding-refresh" class="xref-module"
+                  >переэмбеддинг</a
+                >
+                (при иной <code>N</code> — миграция схемы). Дефолт намеренно
+                пуст: ни модель, ни её вес не навязываются инсталляцией. Как этот
+                сервис держит потоки нагрузки и масштабируется (v1 → v2) —
+                <a
+                  href="../../knowledge-store/_workzone/embedding-runtime.html#scaling"
+                  class="xref-module"
+                  >embeddings-рантайм</a
+                >.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="ai-intrinsics">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Интринсики модели — в реестре, не в коде потребителя</span>
+                <a class="xref-badge" href="../../harvester/_workzone/pipeline.html#param-homes"
+                  >→ Где живут параметры</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Параметры, заданные самой моделью — размерность вектора
+                (<code>embedding_dim</code>), потолок окна
+                (<code>max_input_tokens</code>), обязательный префикс
+                (<code>instruction_prefix</code>) — живут в <code>meta</code>
+                модели, не в конфиге потребителя (no hardcoding): чанкер
+                Harvester читает потолок оттуда, KS берёт
+                <code>embedding_dim</code> назначенной embedding-модели и
+                провизионит <code>halfvec(N)</code>. Встроенные модели
+                засеваются со своими интринсиками — <code>bge-m3</code>:
+                <code>{ embedding_dim: 1024, max_input_tokens: 8192 }</code>,
+                <code>Qwen3-Embedding-0.6B</code>:
+                <code>{ 1024, 32768 }</code>. Размерность облачной модели
+                (<code>embedding_dim</code>) discovery не возвращает, поэтому админ
+                задаёт её при добавлении модели; модель без заданной размерности —
+                или с размерностью, не совпадающей с выделенным
+                <code>halfvec(N)</code>, — отклоняется при
+                <a href="../../admin-panel/_wireframes/ai-models.html#model-assignment" class="xref-module">назначении</a>
+                (409), ещё до старта переэмбеддинга.
+              </div>
+            </div>
+
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Тип решает назначение</span>
+              </div>
+              <div class="stk-dec__d">
+                <code>model_type</code> (chat / embedding) ограничивает, на какие
+                функции модель можно назначить: embedding — только в
+                embedding-функции, chat — в чат, RAG, агентов. Смена типа и
+                выключение модели заблокированы, пока она назначена
+                какой-либо функции <em>или</em> состоит в списке чата либо агентов
+                (FK <code>RESTRICT</code> на всех трёх таблицах): иначе назначение
+                осталось бы с несовместимым или пустым типом, а список — без модели.
+              </div>
+            </div>
+
+            <div class="stk-dec">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Назначение: системное vs списки</span>
+                <a class="xref-badge" href="../../agent-engine/_workzone/data-model.html#agents"
+                  >→ Agent Engine</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Системная функция — одна строка <code>model_assignments</code>
+                (одна модель). Чат и агенты — два списка одной формы:
+                <code>chat_models</code> (сотрудник выбирает модель диалога) и
+                <code>agent_models</code> (владелец выбирает модель агента), в
+                каждом ровно один <code>is_default</code> и только модели типа
+                chat. Дефолт защищён симметрично системным функциям: пометку
+                <code>is_default</code> нельзя снять, не назначив другую, а
+                модель-дефолт держится в списке через <code>RESTRICT</code> —
+                список не остаётся без модели по умолчанию. Связь агента с
+                выбором — <a href="../../agent-engine/_workzone/data-model.html#agents" class="xref-module"><code>agents.model_id</code></a>
+                → <code>agent_models</code> (<code>ON DELETE SET NULL</code>):
+                сняли модель из списка — ссылка агента обнуляется, и агент встаёт.
+              </div>
+            </div>
+
+            <div class="stk-dec" id="ai-pricing">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Цена и расход — раздельно вход/выход</span>
+              </div>
+              <div class="stk-dec__d">
+                У cloud-чата output-токен дороже input в разы, поэтому цена —
+                два поля (<code>price_input</code> · <code>price_output</code>), а
+                расход копит <code>input_tokens</code> и <code>output_tokens</code>
+                раздельно. <code>cost</code> = input·price_input +
+                output·price_output. У embedding выхода нет — <code>price_output</code>
+                и <code>output_tokens</code> пусты / нули. Валюта пока единая
+                (доллары), без отдельного поля — мультивалютность отложена.
+              </div>
+            </div>
+
+            <div class="stk-dec" id="ai-functions">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Единый словарь функций</span>
+              </div>
+              <div class="stk-dec__d">
+                Набор AI-функций задан один раз (enum в <code>core</code>):
+                <code>harvester_embedding</code> · <code>query_rag</code> ·
+                <code>agent_engine</code> · <code>chat</code>.
+                <code>model_assignments.function</code> <code>CHECK</code>-ается
+                подмножеством системных двух (<code>harvester_embedding</code> ·
+                <code>query_rag</code>) — чат и агенты назначаются не здесь, а
+                списками <code>chat_models</code> / <code>agent_models</code>;
+                <code>model_usage.function</code> копит расход по полному набору,
+                включая <code>chat</code> и <code>agent_engine</code>. Один
+                источник правды — расхождение исключено.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="ai-spend">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Расходы — агрегат; бюджет — настройка инстанса в Admin</span>
+                <a class="xref-badge" href="../../admin-panel/_workzone/data-model.html#singleton"
+                  >→ platform_settings</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                <code>model_usage</code> копит requests / tokens / cost по
+                (модель · функция · день), не event-log на каждый запрос. Порог
+                бюджета — настройка инстанса (<code>ai_monthly_budget</code> +
+                <code>ai_budget_alert_enabled</code>) и живёт не здесь, а в
+                <a href="../../admin-panel/_workzone/data-model.html#singleton" class="xref-module">platform_settings</a>,
+                рядом с <code>maintenance_mode</code>: админ вводит сумму руками и
+                включает тумблером (CHECK не даёт включить оповещение без суммы) на
+                экране <a href="../../admin-panel/_wireframes/usage.html#limits" class="xref-module">Расходы AI</a>,
+                в общем доме лимитов. При достижении порога поднимается уведомление
+                типа Budget — канал держит модуль уведомлений. Панорама расхода за
+                неделю / месяц / год на том же экране — производная <code>SUM</code>
+                по периоду, без отдельной таблицы-счётчика. Как устроен учёт целиком —
+                <a href="cost-accounting.html" class="xref-page">бизнес-логика расходов</a>.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mod-conn">
+          <div class="mod-conn__line"></div>
+          <div class="mod-conn__arrow"></div>
+        </div>
+
+        <!-- ── L3 · Миграция ── -->
+        <div class="stk-layer stk-layer--migration" id="migration">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">3</span>
+            <span class="stk-layer__name">Миграция</span>
+            <span class="stk-layer__role"
+              >Создаёт реестр и заселяет встроенный рантайм.</span
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t"><code>alembic/versions/NNN_core_ai_models.py</code></span>
+              </div>
+              <div class="stk-dec__d">
+                Создаёт реестр AI одним логическим шагом в порядке зависимостей:
+                <code>ai_providers</code> → <code>ai_models</code> →
+                <code>model_assignments</code> · <code>chat_models</code> ·
+                <code>agent_models</code> · <code>model_usage</code> ·
+                <code>tools</code>, а также singleton
+                <code>prompt_settings</code>. Тем же шагом
+                <code>INSERT</code> платформенного провайдера
+                (<code>is_system</code>, <code>name='Platform'</code>) и каталога
+                встроенных моделей (<code>origin='builtin'</code>) — это
+                <em>строки</em> реестра, без весов и без назначений
+                (<a href="#ai-builtin" class="xref-anchor">встроенный эмбеддер</a>).
+                Остальной каталог наполняется при добавлении первого провайдера.
+                <code>downgrade()</code> сносит таблицы в обратном порядке.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

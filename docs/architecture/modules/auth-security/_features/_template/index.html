@@ -1,0 +1,121 @@
+<!doctype html>
+<!--
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  FEATURE TEMPLATE — copy the whole _template/ dir to                │
+  │  _features/<feature>/ per feature. A feature is a mini-module: this │
+  │  index.html is its home; its EXCLUSIVE screens live beside it as    │
+  │  <screen>.html (copy screen.html). Underscore-prefixed (_template)  │
+  │  so it isn't mistaken for a real feature.                           │
+  │                                                                     │
+  │  The feature home is a MAP. Up to three parts: (1) description —    │
+  │  what the feature is and the user journey, product prose only; (2)  │
+  │  OPTIONAL deps block — feature-level dependencies with no screen    │
+  │  home (SMTP, external service) and their consequence; (3) a flow    │
+  │  diagram (flow-* kit in module.css) — the screen storyboard with    │
+  │  transitions. NO edge-case / tech-req lists: each fact lives at its │
+  │  altitude, never copied up — screen-local on the screen legend, a   │
+  │  cross-screen branch in the flow, a mechanic in workzone (link). The│
+  │  map links/forks to them; a copy in two places drifts.              │
+  │                                                                     │
+  │  Screens: feature-local → flow-stop links to the sibling file;      │
+  │  reused → flow-stop--shared links into ../../_wireframes/ (and, if a│
+  │  whole topic is mirrored, an .xref to the screen). When a local     │
+  │  screen is needed by a 2nd feature, MOVE it to _wireframes          │
+  │  (proximity principle) and fix links — make docs-map catches the    │
+  │  breakage.                                                          │
+  │                                                                     │
+  │  Conventions: docs/architecture/README.md → "Features".             │
+  └─────────────────────────────────────────────────────────────────────┘
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Feature (template)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · feature-flow kit (no wireframe
+         kit — screens link out) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../feature-flow.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../index.html">← Auth / Security</a>
+        <!-- TODO: feature name + .iter status (v1 / v2) -->
+        <h1 class="header__title">Feature name</h1>
+        <div class="header__sub">auth / security · features</div>
+      </div>
+
+      <!-- ═══ Description ═══ Product only: what the feature is and the user
+           journey, in prose. Dependencies, fallbacks, links to mechanics — NOT
+           here; for those, the optional "Dependencies" block below. -->
+      <p class="desc">A brief statement of the feature's purpose and the user journey.</p>
+
+      <!-- ═══ Dependencies ═══ (OPTIONAL) only feature-level deps that have NO
+           screen home (SMTP, external service) + their consequence (fallback,
+           feature status). This isn't duplication — it's the only home for such a
+           dependency. Don't copy the mechanic (tokens, policy) — link to
+           _workzone. No such dependencies → delete the block entirely.
+      <div class="section">
+        <div class="section__title">Dependencies</div>
+        <p class="desc">
+          The dependency and its consequence — e.g.: requires SMTP, so the item
+          moves to the backlog; until it's connected — a fallback. The mechanic is
+          in <a href="../../_workzone/authentication.html" class="xref-page">workzone</a>.
+        </p>
+      </div>
+      -->
+
+      <!-- ═══ Flow ═══ Metro storyboard: screen stations (.flow-stop) on the
+           line, on the segments (.flow-seg) — the trigger/condition of the
+           transition. A station name links to the screen: a local sibling or a
+           shared one from _wireframes (.flow-stop--shared, double ring). An edge
+           case is a branch .flow-branch dropping down from the segment where the
+           fork happens (then add .flow--branch to .flow — it reserves space); a
+           template is commented out below. -->
+      <div class="section">
+        <div class="section__title">Flow</div>
+        <div class="flow">
+          <div class="flow-stop">
+            <a class="flow-stop__name" href="screen.html">Screen A</a>
+            <span class="flow-stop__role">local · start</span>
+          </div>
+          <div class="flow-seg">
+            <span class="flow-seg__label">action</span>
+            <!-- Edge-case branch (uncomment + .flow--branch above):
+            <div class="flow-branch">
+              <span class="flow-branch__label">condition</span>
+              <span class="flow-branch__elbow"></span>
+              <span class="flow-branch__stop"></span>
+              <a class="flow-branch__name" href="../../_wireframes/status-screen.html">Status Screen</a>
+              <span class="flow-branch__role">state · what's next</span>
+            </div>
+            -->
+          </div>
+          <div class="flow-stop flow-stop--shared">
+            <a class="flow-stop__name" href="../../_wireframes/login.html">Login</a>
+            <span class="flow-stop__role">shared · return</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTHING MORE. The feature home = map: description + (opt.) dependencies + flow.
+           Do NOT list edge cases and tech requirements here — each fact lives at
+           its own altitude and must not be duplicated:
+             · a single screen's edge case → in that screen's legend;
+             · a fork between screens → a .flow-branch in the flow above;
+             · a feature-level dependency with no screen (SMTP) → the "Dependencies" block;
+             · a mechanic (tokens, policy) → in _workzone, by link.
+           The map only links/forks to them. A copy in two places will inevitably
+           drift and demand double maintenance. -->
+    </div>
+  </body>
+</html>

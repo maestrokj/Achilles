@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Cache &amp; Workers: Stack and structure</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../swimlane.css" />
+    <link rel="stylesheet" href="stack.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Cache &amp; Workers</a>
+        <h1 class="header__title">Stack and structure</h1>
+        <div class="header__sub">cache-workers · workzone</div>
+      </div>
+
+      <!-- ── cross-cutting: draft notice ── -->
+      <!-- ════════════ LANE: BACKEND ════════════ -->
+      <div class="section" id="stack">
+        <div class="swl-lane swl-lane--be">
+          <div class="swl-lane__rail">
+            <span class="swl-lane__tag">Backend</span>
+          </div>
+          <div class="swl-lane__body">
+            <!-- col: stack -->
+            <div class="swl-col">
+              <div class="mod-label swl-col__head"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg> stack — libraries</div>
+
+              <div class="swl-grp">
+                <div class="swl-grp__head">
+                  <span class="swl-grp__label">Queue and workers</span>
+                  <a class="xref-badge xref-badge--page" href="queues.html#worker"
+                    >→ Worker topology</a
+                  >
+                </div>
+                <div class="swl-grp__pills">
+                  <span class="swl-pill" data-tip="enqueuing tasks on top of Redis">SAQ · queue</span>
+                  <span class="swl-pill" data-tip="a process pool split across three lanes — different concurrency per role">SAQ workers</span>
+                </div>
+              </div>
+
+              <div class="swl-grp">
+                <div class="swl-grp__head">
+                  <span class="swl-grp__label">Scheduler</span>
+                  <a class="xref-badge xref-badge--page" href="scheduling.html#cron"
+                    >→ Scheduler</a
+                  >
+                </div>
+                <div class="swl-grp__pills">
+                  <span class="swl-pill" data-tip="built-in SAQ cron — schedules live next to the queue, we don't run a separate scheduler">SAQ cron (CronJob)</span>
+                </div>
+              </div>
+
+              <div class="swl-grp">
+                <div class="swl-grp__head">
+                  <span class="swl-grp__label">Rate-limit</span>
+                  <a class="xref-badge xref-badge--page" href="rate-limit.html#primitive"
+                    >→ Shared primitive</a
+                  >
+                </div>
+                <div class="swl-grp__pills">
+                  <span class="swl-pill" data-tip="counter + window in one atomic operation on the Redis side — no races between workers">Lua script (atomic)</span>
+                </div>
+              </div>
+
+              <div class="swl-grp">
+                <div class="swl-grp__head">
+                  <span class="swl-grp__label">Storage / state</span>
+                </div>
+                <div class="swl-grp__pills">
+                  <span class="swl-pill" data-tip="two independent pools: durable (queues, task state) and cache (ephemeral cache)">redis-py · async pools</span>
+                  <a class="xref-badge xref-badge--page" href="redis-keys.html#instances"
+                    >→ Two instances</a
+                  >
+                </div>
+                <div class="swl-grp__pills">
+                  <span class="swl-pill swl-pill--std" data-tip="the partial-UNIQUE uniqueness lock and heartbeat live in the Postgres of the consumer modules, not in Redis">SQLAlchemy 2.0 · asyncpg</span>
+                  <a class="xref-badge xref-badge--page" href="lifecycle.html#uniqueness"
+                    >→ Uniqueness</a
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- col: structure -->
+            <div class="swl-col">
+              <div class="mod-label swl-col__head">
+                <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.55l-.42-.85a1 1 0 0 0-.92-.6H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M3 5a2 2 0 0 0 2 2h3" /><path d="M3 3v13a2 2 0 0 0 2 2h3" /></svg> structure — files · infrastructure layer
+              </div>
+<pre class="file-tree">
+infra/             <span class="dim">shared layer · not a domain with entities</span>
+├── *.py           <span class="dim">thin client, Redis pools (durable + cache)</span>
+├── worker/        <span class="dim">SAQ app, task registration by lane</span>
+├── scheduler/     <span class="dim">singleton cron service</span>
+├── rate_limit.py  <span class="dim">Lua window / counter primitive</span>
+└── lifecycle.py   <span class="dim">heartbeat · retry · reaping helpers</span>
+</pre>
+
+              <details class="swl-note">
+                <summary>A layer, not a domain module</summary>
+                <div class="swl-note__body">
+                  The layer has code, but it's <b>not modeled as a domain</b> with
+                  its own entities and migrations: it's a shared service plus a
+                  thin client that the other modules import. So the package lives
+                  in the shared <code>achilles/infra/</code> — where it's natural
+                  to import it from
+                  (<code>from achilles.infra.worker import …</code>).
+                </div>
+              </details>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════ CONTAINER ORCHESTRATION ════════════ -->
+      <div class="section" id="structure">
+        <h2 class="stk-h2">Container orchestration</h2>
+        <p class="stk-lead">
+          One <code>backend</code> image runs in different roles. The API scales
+          separately; workers are split across
+          <a href="queues.html#lanes" class="xref-page">three lanes</a> with
+          different concurrency, and the scheduler and cache are separate
+          services.
+        </p>
+        <table class="stk-svc">
+          <thead>
+            <tr>
+              <th>Service</th>
+              <th>Role</th>
+              <th>Lane / command</th>
+              <th>Replicas</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>api</code></td>
+              <td>HTTP · response streaming and the notification push channel (SSE)</td>
+              <td>uvicorn</td>
+              <td>≥ 1, scales separately</td>
+            </tr>
+            <tr>
+              <td><code>worker-interactive</code></td>
+              <td>background tasks on the live-request path</td>
+              <td>SAQ · interactive</td>
+              <td>≥ 1, moderate concurrency</td>
+            </tr>
+            <tr>
+              <td><code>worker-background</code></td>
+              <td>heavy deferred runs</td>
+              <td>SAQ · background</td>
+              <td>≥ 1, high concurrency</td>
+            </tr>
+            <tr>
+              <td><code>worker-agents</code></td>
+              <td>autonomous agent runs</td>
+              <td>SAQ · agents</td>
+              <td>≥ 1, bounded</td>
+            </tr>
+            <tr class="stk-svc--single">
+              <td><code>scheduler</code></td>
+              <td>
+                cron service ·
+                <a href="scheduling.html#cron" class="xref-page">singleton</a>
+              </td>
+              <td>SAQ cron</td>
+              <td>exactly 1</td>
+            </tr>
+            <tr>
+              <td><code>redis-durable</code></td>
+              <td>queues, task state, locks</td>
+              <td>Redis</td>
+              <td>1</td>
+            </tr>
+            <tr>
+              <td><code>redis-cache</code></td>
+              <td>ephemeral query cache</td>
+              <td>Redis</td>
+              <td>1</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="stk-foot">
+          Splitting queues and cache into
+          <a href="redis-keys.html#instances" class="xref-page"
+            >two Redis instances</a
+          >
+          — so that memory-based cache eviction doesn't touch the durable queues.
+        </p>
+      </div>
+
+      <!-- ════════════ LANE: FRONTEND ════════════ -->
+      <div class="swl-lane swl-lane--fe">
+        <div class="swl-lane__rail">
+          <span class="swl-lane__tag">Frontend</span>
+        </div>
+        <div class="swl-lane__body swl-lane__body--note">
+          <div class="swl-col">
+            <div class="swl-fe-note">
+              <span class="swl-fe-note__ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.67 19a2 2 0 0 0 1.416-.588l6.154-6.172a6 6 0 0 0-8.49-8.49L5.586 9.914A2 2 0 0 0 5 11.328V18a1 1 0 0 0 1 1z" /><path d="M16 8 2 22" /><path d="M17.5 15H9" /></svg></span>
+              <div>
+                <b>Cache &amp; Workers has no frontend of its own.</b>
+                The admin sees the state of queues, workers and Redis on the
+                monitoring dashboard
+                <a href="../../admin-panel/_wireframes/dashboard.html#system-health" class="xref-badge"
+                  >→ Admin Panel</a
+                >.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

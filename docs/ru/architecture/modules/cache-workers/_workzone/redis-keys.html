@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Cache &amp; Workers: Redis-инстансы и ключи</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="redis-keys.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Cache &amp; Workers</a>
+        <h1 class="header__title">Redis: инстансы и ключи</h1>
+        <div class="header__sub">cache-workers · workzone</div>
+      </div>
+
+      <p class="desc">
+        Топология Redis и единый реестр ключей: какие физические инстансы держит
+        модуль, какие ключи в них живут и сколько. Опирается на ось «система
+        записи vs быстрый производный» — <a href="#principle" class="xref-anchor">водораздел ниже</a>.
+      </p>
+
+      <!-- ═══ Водораздел ═══ Сквозная ось модуля: система записи (Postgres) vs
+           быстрый производный (Redis). Дом принципа — здесь; остальные
+           workzone-страницы и постер на главной ссылаются сюда. -->
+      <div class="section" id="principle">
+        <h2 class="section__title">Водораздел: Redis ⟂ Postgres</h2>
+        <div class="decision-box">
+          <strong>Ось — система записи vs быстрый производный.</strong>
+          Postgres держит систему записи и корректностно-критичное взаимное
+          исключение (единственность прогона — транзакционно, рядом с журналом).
+          Redis держит быстрые / истекающие / in-flight производные: кэш
+          (пересоберётся), счётчики rate-limit (durable — потеря открыла бы окно
+          перебора), дедуп, полезную нагрузку очереди (восстановима из журналов).
+          Это осознанный выбор всех модулей, не случайность. Отсюда же —
+          <a href="lifecycle.html#uniqueness" class="xref-page">отказ от Redlock</a>:
+          грубые редкие замки держит Postgres, распределённый лок-сервис не нужен
+          и без fencing-токенов опасен для корректности. Мгновенный отзыв
+          access-токена через jti-blacklist в Redis — <span class="iter v2">v2</span>:
+          в v1 access-токен stateless и гаснет сам по сроку жизни.
+        </div>
+        <div class="cw-axis">
+          <div class="cw-axis__col cw-axis__col--redis">
+            <div class="cw-axis__h">Redis — эфемерное</div>
+            <p class="cw-axis__d">потеря болезненна, но восстановима темпом</p>
+            <ul class="cw-axis__list">
+              <li>полезная нагрузка очереди</li>
+              <li>счётчики rate-limit <span class="cw-axis__tag">durable</span></li>
+              <li>blacklist отозванных access-токенов <span class="iter v2">v2</span></li>
+              <li>дедуп webhook / job</li>
+              <li>кэш кандидатов поиска</li>
+            </ul>
+          </div>
+          <div class="cw-axis__col cw-axis__col--pg">
+            <div class="cw-axis__h">Postgres — долговечное</div>
+            <p class="cw-axis__d">источник истины, терять нельзя</p>
+            <ul class="cw-axis__list">
+              <li>единственность прогона (партиал-UNIQUE + heartbeat)</li>
+              <li>журналы прогонов · DLQ сбойных задач</li>
+              <li>бюджеты AI (SQL-агрегат, не счётчик)</li>
+              <li>сессии · refresh-токены · история диалога</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Инстансы ═══ Роли разведены физически: вытеснение по памяти
+           несовместимо с долговечным, поэтому два процесса, не два namespace. -->
+      <div class="section" id="instances">
+        <h2 class="section__title">Два инстанса</h2>
+        <div class="decision-box decision-box--warn">
+          <strong>Кэш и долговечное — в разных инстансах.</strong>
+          В одном инстансе с авто-вытеснением по памяти их держать нельзя:
+          вытеснение не различает расходный кэш и данные, терять которые нельзя, —
+          под давлением оно может
+          молча выкинуть задачу из очереди, счётчик rate-limit или
+          <a href="#blacklist" class="xref-anchor">blacklist отозванного токена</a>
+          (дыра в безопасности). Поэтому роли разведены <b>физически</b> — два
+          процесса с разной политикой памяти, а не два namespace в одном.
+        </div>
+        <p class="note">
+          <strong>Доступ.</strong> Оба инстанса — только во внутренней сети,
+          наружу не публикуются; вход по паролю (<code>requirepass</code>), в
+          проде канал под TLS. В Redis лежат счётчики rate-limit и
+          <a href="#blacklist" class="xref-anchor">blacklist токенов</a>
+          <span class="iter v2">v2</span> — читать их извне нельзя.
+        </p>
+        <div class="rk-pair">
+          <div class="rk-inst rk-inst--durable">
+            <div class="rk-inst__name">redis-durable</div>
+            <div class="rk-inst__pol"><code>maxmemory</code> + <code>noeviction</code> · AOF-персист · переживает рестарт</div>
+            <ul class="rk-inst__list">
+              <li>очередь SAQ</li>
+              <li>счётчики rate-limit</li>
+              <li>jti-blacklist <span class="iter v2">v2</span></li>
+              <li>дедуп-ключи</li>
+              <li>координационный замок — maintenance-режим · restore KS</li>
+              <li><b>Терять нельзя</b> — память не вытесняется, состояние на диске.</li>
+              <li><b>Потолок — отказ записи, не вытеснение:</b> при достижении <code>maxmemory</code> политика <code>noeviction</code> отклоняет новую запись с ошибкой, а не выкидывает данные. Продьюсеры упираются в отказ и тормозят (backpressure) — инстанс не растёт без предела и не уходит под OOM-killer. Глубину очереди всё равно держим под мониторингом, чтобы до потолка не доходить.</li>
+            </ul>
+          </div>
+          <div class="rk-inst rk-inst--cache">
+            <div class="rk-inst__name">redis-cache</div>
+            <div class="rk-inst__pol"><code>maxmemory</code> + <code>allkeys-lru</code> · без персиста</div>
+            <ul class="rk-inst__list">
+              <li>кэш кандидатов поиска</li>
+              <li>pub/sub-канал push-уведомлений</li>
+              <li><b>Растёт без предела</b> — вытеснение обязательно.</li>
+              <li>Каждый ключ с TTL; персист не нужен (всё пересоберётся).</li>
+              <li>pub/sub — эфемерный сигнал, не ключ; пропажа лечится опросом.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Эфемерные ключи ═══ Ключи, чья корректность держится на TTL:
+           живут ровно столько, сколько окно, в которое они что-то значат. -->
+      <div class="section" id="blacklist">
+        <h2 class="section__title">Эфемерные ключи (TTL)</h2>
+        <p class="note">
+          Часть состояния живёт ровно столько, сколько окно, в которое оно
+          что-то значит — TTL сам убирает ключ, отдельной уборки не нужно.
+        </p>
+        <div class="rk-eph">
+          <div class="rk-key">
+            <span class="rk-key__ns">jti-blacklist <span class="iter v2">v2</span></span>
+            <span class="rk-key__d">
+              <b>Мгновенный отзыв access-токена — задел на v2.</b> Ключ будет жить
+              ровно <b>время жизни токена</b>: позже он истёк бы сам, держать незачем.
+              В v1 досрочного отзыва нет — access-токен stateless, гаснет по сроку.
+              Потребитель —
+              <a href="../../auth-security/_workzone/authentication.html#parallel-sessions" class="xref-module">Auth &amp; Security</a>.
+            </span>
+          </div>
+          <div class="rk-key">
+            <span class="rk-key__ns">дедуп webhook</span>
+            <span class="rk-key__d">
+              <b>Одно событие — одна доставка.</b> Отметка приёма не даёт
+              повторно обработать ту же входящую доставку в окне.
+            </span>
+          </div>
+          <div class="rk-key">
+            <span class="rk-key__ns">окно идемпотентности</span>
+            <span class="rk-key__d">
+              <b>Одна постановка <code>job_id</code> — один прогон.</b> Окно
+              отсекает дубль-постановку той же задачи; полная механика —
+              на <a href="lifecycle.html#uniqueness" class="xref-page">единственности</a>.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Реестр ═══ Единый свод namespace'ов — конвенция именования плюс
+           инстанс, TTL и владелец каждого префикса. -->
+      <div class="section" id="registry">
+        <h2 class="section__title">Реестр ключей</h2>
+        <p class="note">
+          Единая конвенция префиксов: namespace по двоеточию задаёт инстанс,
+          срок жизни и владельца. Новый ключ — новая строка здесь, не свободное
+          имя в коде.
+        </p>
+        <table class="rk-tbl">
+          <thead>
+            <tr>
+              <th>Namespace</th>
+              <th>Назначение</th>
+              <th>Инстанс</th>
+              <th>TTL</th>
+              <th>Владелец</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="rk-tbl__ns">q:</td>
+              <td>очередь задач — полезная нагрузка прогонов</td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>до завершения</td>
+              <td><a href="queues.html#lanes" class="xref-page">очереди</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">rl:</td>
+              <td>счётчики rate-limit (token-bucket · скользящее окно)</td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>окно лимита</td>
+              <td><a href="rate-limit.html#primitive" class="xref-page">rate-limit</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">brute:</td>
+              <td>состояние brute-force барьера — окно по IP, счётчик и задержка по аккаунту, попытки кода привязки</td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>окно барьера</td>
+              <td><a href="../../auth-security/_workzone/protection.html#brute-force" class="xref-module">Auth &amp; Security</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">grace:</td>
+              <td>грация ротации refresh — старый токен → новая пара на ~10&nbsp;с</td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>окно грации</td>
+              <td><a href="../../auth-security/_workzone/authentication.html#refresh-rotation" class="xref-module">Auth &amp; Security</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">bl: <span class="iter v2">v2</span></td>
+              <td>blacklist отозванных <code>jti</code></td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>lifetime access-токена</td>
+              <td><a href="../../auth-security/_workzone/authentication.html#parallel-sessions" class="xref-module">Auth &amp; Security</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">cache:</td>
+              <td>кэш кандидатов поиска</td>
+              <td class="rk-tbl__inst rk-tbl__inst--cache">cache</td>
+              <td>per-key (+ LRU)</td>
+              <td><a href="caching.html#policy" class="xref-page">кэш</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">lock:</td>
+              <td>координационный замок для обслуживания — один держатель одновременно (maintenance-режим · restore KS)</td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>на время операции</td>
+              <td><a href="lifecycle.html#contract" class="xref-page">прогоны</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">dedup:webhook:</td>
+              <td>дедуп входящих webhook-доставок — одно событие, одна обработка</td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>окно приёма</td>
+              <td><a href="../../harvester/_workzone/security.html#webhooks" class="xref-module">Harvester</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">dedup:slack-event:</td>
+              <td>дедуп входящих событий Slack-бота — повтор не отвечает дважды</td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>окно приёма</td>
+              <td><a href="../../slack/index.html#delivery" class="xref-module">Slack</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">dedup:telegram-update:</td>
+              <td>идемпотентность повторов апдейтов Telegram (по <code>update_id</code>) — повтор не отвечает дважды</td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>окно приёма</td>
+              <td><a href="../../telegram/index.html#delivery" class="xref-module">Telegram</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">telegram:active-conv:<span class="reg__note">chat_id</span></td>
+              <td>указатель активной беседы для <code>chat_id</code> — реплики продолжают её; <code>/new</code> его сбрасывает, следующее сообщение откроет новую <span class="reg__note">(дом истины беседы — Postgres <code>conversations</code>)</span></td>
+              <td class="rk-tbl__inst rk-tbl__inst--cache">cache</td>
+              <td>скользящий, на время беседы</td>
+              <td><a href="../../telegram/index.html#conversation" class="xref-module">Telegram</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">cache:mattermost:listener</td>
+              <td>флаг здоровья WebSocket-слушателя Mattermost — heartbeat-JSON; истёкший ключ читается как «не запущен» <span class="reg__note">(производное состояние — терять безопасно)</span></td>
+              <td class="rk-tbl__inst rk-tbl__inst--cache">cache</td>
+              <td>90 с</td>
+              <td><a href="../../mattermost/index.html#delivery" class="xref-module">Mattermost</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">dedup:job:</td>
+              <td>идемпотентность постановки <code>job_id</code> — один прогон</td>
+              <td class="rk-tbl__inst rk-tbl__inst--durable">durable</td>
+              <td>~24ч (успешный прогон)</td>
+              <td><a href="lifecycle.html#uniqueness" class="xref-page">жизненный цикл</a></td>
+            </tr>
+            <tr>
+              <td class="rk-tbl__ns">push:</td>
+              <td>pub/sub-канал — сигнал новой строки в ленте</td>
+              <td class="rk-tbl__inst rk-tbl__inst--cache">cache</td>
+              <td>эфемерный (pub/sub)</td>
+              <td><a href="../../notifications/_workzone/dispatcher.html#fanout" class="xref-module">Notifications</a></td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="note">
+          <strong>Память кэша.</strong> <code>maxmemory</code> — через env:
+          dev 256mb · prod 512mb, потолок ≤&nbsp;70&nbsp;% памяти контейнера.
+          Подбор по метрикам в работе (<code>keyspace_hits/misses</code>,
+          <code>evicted_keys</code>), не фиксированным числом — вмещаем горячее
+          рабочее множество, не все запросы. Тюнинг по метрикам — про
+          <code>redis-cache</code>; у <code>redis-durable</code> тот же
+          <code>maxmemory</code> служит жёстким потолком с отказом записи
+          (<code>noeviction</code>), а не вытеснением.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

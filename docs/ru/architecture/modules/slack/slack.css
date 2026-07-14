@@ -1,0 +1,792 @@
+/* Slack — bespoke visuals for the single-page surface doc.
+   Slack is an INCOMING surface: an employee asks the bot in a DM, Query Engine
+   answers under their ACL. The page opens with that flow (DM → door → engine,
+   with the answer returning to the thread), states the concept in one thesis,
+   then unfolds the four edges (connect · identity · conversation · delivery) as
+   numbered cards, a literal DM mockup, and the data it touches.
+   Loaded by modules/slack/index.html on top of module.css.
+   Placement convention: a module's bespoke visuals live beside its index. §Styling */
+
+/* ══════════════════════════════════════════
+   HERO — display headline · lede
+   ══════════════════════════════════════════ */
+.sl-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.55rem;
+  padding: 1.6rem 0 2rem;
+  background:
+    radial-gradient(58% 70% at 50% 0%, var(--tint-15), transparent 68%),
+    radial-gradient(36% 50% at 84% 14%, var(--tint-8), transparent 70%);
+}
+.sl-title {
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-size: clamp(1.9rem, 4.6vw, 2.9rem);
+  line-height: 1.1;
+  letter-spacing: -0.015em;
+  color: var(--text);
+  max-width: 19ch;
+  margin: 0.1rem 0 0;
+  text-wrap: balance;
+}
+.sl-lede {
+  font-size: 1.02rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+  max-width: 52ch;
+  margin: 0;
+}
+
+/* ══════════════════════════════════════════
+   FLOW — three stations joined by labelled rails
+   DM (dashed origin) → Achilles door (accent heart) → engine (knowledge graph).
+   First link carries a return rail (the answer posts back to the thread);
+   second link is a single forward rail (search under ACL).
+   ══════════════════════════════════════════ */
+.sl-flow {
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+  margin: 0.6rem 0 1.4rem;
+}
+.sl-station {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.35rem;
+  padding: 1.1rem 0.9rem 1.2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+.sl-station--user {
+  border-style: dashed;
+  border-color: var(--accent-muted);
+}
+.sl-station--door {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 8px 24px -10px var(--accent);
+}
+.sl-station--engine {
+  background: var(--tint-6);
+  border-color: var(--tint-25);
+}
+
+.sl-station__tag {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--pill-radius);
+  padding: 0.08rem 0.45rem;
+}
+.sl-station__tag--on {
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.sl-station__glyph {
+  font-size: 1.7rem;
+  line-height: 1;
+  margin-top: 0.1rem;
+}
+.sl-station__glyph--graph {
+  width: 40px;
+  height: 40px;
+}
+.sl-station__glyph--graph svg {
+  width: 100%;
+  height: 100%;
+}
+.sl-station__glyph--graph line {
+  stroke: var(--accent);
+  stroke-width: 1.4;
+  opacity: 0.4;
+}
+.sl-station__glyph--graph circle {
+  fill: var(--paper);
+  stroke: var(--accent);
+  stroke-width: 1.8;
+}
+.sl-graph__hub {
+  fill: var(--accent) !important;
+}
+
+.sl-station__name {
+  font-weight: 700;
+  font-size: 0.96rem;
+  color: var(--text);
+}
+.sl-station--door .sl-station__name {
+  color: #fff;
+}
+.sl-station__desc {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+.sl-station--door .sl-station__desc {
+  color: rgba(255, 255, 255, 0.82);
+}
+.sl-station__desc code {
+  font-size: 0.72rem;
+}
+.sl-station--door .sl-station__desc code {
+  color: #fff;
+}
+
+/* ── Rail — forward + return wires between stations ── */
+.sl-link {
+  flex: 0 1 8.5rem;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0 0.1rem;
+}
+.sl-link__rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+.sl-link__lbl {
+  font-size: 0.66rem;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--text-dim);
+}
+.sl-link__lbl code {
+  font-size: 0.64rem;
+  color: var(--accent);
+}
+.sl-link__wire {
+  position: relative;
+  width: 100%;
+  height: 2px;
+  background-image: linear-gradient(
+    to right,
+    var(--accent) 0 6px,
+    transparent 6px 12px
+  );
+  background-size: 12px 2px;
+  background-repeat: repeat-x;
+  animation: sl-march 0.9s linear infinite;
+}
+.sl-link__wire::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -1px;
+  width: 0;
+  height: 0;
+  transform: translateY(-50%);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid var(--accent);
+}
+.sl-link__rail--back .sl-link__wire {
+  background-image: linear-gradient(
+    to right,
+    var(--accent-muted) 0 6px,
+    transparent 6px 12px
+  );
+  animation-direction: reverse;
+}
+.sl-link__rail--back .sl-link__wire::after {
+  right: auto;
+  left: -1px;
+  border-left: none;
+  border-right: 6px solid var(--accent-muted);
+}
+
+/* ══════════════════════════════════════════
+   THESIS — the concept's heart, one accented line
+   ══════════════════════════════════════════ */
+.sl-thesis {
+  margin: 0 0 1.8rem;
+  padding: 1rem 1.2rem;
+  font-size: 0.95rem;
+  line-height: 1.65;
+  color: var(--text-dim);
+  background: var(--surface);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+}
+.sl-thesis strong {
+  color: var(--text);
+}
+.sl-thesis .xref-module {
+  display: inline-block;
+  margin-top: 0.2rem;
+  font-size: 0.82rem;
+}
+
+/* ══════════════════════════════════════════
+   TRIO — three Slacks, disambiguated by verb
+   The middle cell (this page) is the accent one; the siblings are quiet links.
+   ══════════════════════════════════════════ */
+.sl-trio {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+.sl-trio__cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.8rem 0.9rem 0.9rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.sl-trio__cell--here {
+  background: var(--tint-8);
+  border-color: var(--accent);
+}
+.sl-trio__dir {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.sl-trio__verb {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+.sl-trio__desc {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--text-dim);
+  margin-bottom: 0.15rem;
+}
+.sl-trio__self {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+/* ══════════════════════════════════════════
+   CARDS — connect · identity · conversation · delivery (numbered)
+   ══════════════════════════════════════════ */
+.sl-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.9rem;
+  margin-bottom: 2rem;
+}
+.sl-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 1.25rem 1.2rem 1.3rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.sl-card__num {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+}
+.sl-card__title {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+  font-size: 1.16rem;
+  line-height: 1.15;
+  color: var(--text);
+  margin: 0;
+}
+.sl-card__sub {
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--text-dim);
+  margin: 0;
+}
+.sl-card__foot {
+  margin: auto 0 0;
+  padding-top: 0.35rem;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+/* ══════════════════════════════════════════
+   CHAT — literal DM mockup (the payoff visual)
+   A Slack-flavoured direct message: user question, bot answer with a source
+   citation, a thread affordance. Honest UI strings only.
+   ══════════════════════════════════════════ */
+.sl-chat {
+  padding: 0.4rem 0 0.6rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.sl-chat__bar {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.6rem 1rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+}
+.sl-chat__dm {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.sl-chat__hint {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+.sl-msg {
+  display: flex;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem 0.2rem;
+}
+.sl-msg__av {
+  flex: none;
+  width: 2.1rem;
+  height: 2.1rem;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #fff;
+  background: var(--s3);
+}
+.sl-msg__av--bot {
+  background: var(--accent);
+}
+.sl-msg__body {
+  min-width: 0;
+}
+.sl-msg__who {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+.sl-msg__app {
+  font-family: var(--mono);
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 0.02rem 0.22rem;
+  vertical-align: 0.08rem;
+}
+.sl-msg__t {
+  font-weight: 400;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  margin-left: 0.3rem;
+}
+.sl-msg__text {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+/* citation superscript chip — the [n] grounding marker */
+.sl-cite {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
+  height: 1rem;
+  margin-left: 0.15rem;
+  padding: 0 0.2rem;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  vertical-align: 0.32rem;
+  color: var(--accent);
+  background: var(--tint-15);
+  border-radius: 4px;
+}
+.sl-src {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  padding: 0.3rem 0.55rem;
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--accent);
+  border-radius: 0 7px 7px 0;
+}
+.sl-src .sl-cite {
+  margin: 0;
+  vertical-align: 0;
+}
+.sl-thread {
+  margin-top: 0.45rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+.sl-thread__arr {
+  margin-right: 0.2rem;
+}
+.sl-chat__note {
+  margin: 0.7rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+/* caption above a second chat sample — own top margin for vertical rhythm */
+.sl-chat__lead {
+  margin: 1.5rem 0 0.6rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+/* inline monospace token inside a message — link or linking code */
+.sl-code {
+  padding: 0.05rem 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--accent);
+  background: var(--tint-15);
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+/* ══════════════════════════════════════════
+   DATA — what the surface touches (table · home · role)
+   ══════════════════════════════════════════ */
+.sl-data {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.sl-data__row {
+  display: grid;
+  grid-template-columns: 11rem 8rem 1fr;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.5rem 0.7rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.sl-data__tbl {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+.sl-data__home {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+.sl-data__home--new {
+  color: var(--accent);
+}
+.sl-data__role {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+.sl-data__role code {
+  font-size: 0.7rem;
+}
+
+/* ── slack_settings — the one owned table, expanded (field · type · constraint · note) ── */
+.sl-tbl {
+  margin-top: 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.sl-tbl__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.5rem 0.7rem;
+  background: var(--tint-4);
+  border-bottom: 1px solid var(--border);
+}
+.sl-tbl__name {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.sl-tbl__sub {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+.sl-tbl__badge {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+  background: var(--tint-15);
+  border: 1px solid var(--tint-25);
+  border-radius: var(--pill-radius);
+  padding: 0.12rem 0.45rem;
+}
+.sl-fields {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+.sl-fields td {
+  padding: 0.32rem 0.7rem;
+  border-top: 1px solid var(--border);
+  vertical-align: baseline;
+}
+.sl-fields tr:first-child td {
+  border-top: none;
+}
+.sl-f {
+  font-family: var(--mono);
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+}
+.sl-t {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.sl-cons {
+  white-space: nowrap;
+}
+.sl-n {
+  width: 100%;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+.sl-n code {
+  font-size: 0.7rem;
+}
+.sl-c {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 0.1rem 0.38rem;
+  margin-right: 0.2rem;
+  border-radius: var(--pill-radius);
+  line-height: 1.4;
+}
+.sl-c--pk {
+  background: var(--s1);
+  color: #fff;
+}
+.sl-c--nn {
+  background: var(--s3);
+  color: #fff;
+}
+.sl-c--null {
+  background: var(--paper);
+  color: var(--text-muted);
+  border: 1px solid var(--accent-muted);
+}
+.sl-c--chk {
+  background: var(--tint-15);
+  color: var(--accent);
+  border: 1px solid var(--tint-25);
+}
+.sl-c--def {
+  background: var(--s2-pale);
+  color: var(--s2);
+  border: 1px solid var(--tint-15);
+}
+.sl-tbl__derived {
+  margin: 0;
+  padding: 0.45rem 0.7rem;
+  border-top: 1px solid var(--border);
+  background: var(--tint-4);
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+.sl-tbl__derived code {
+  font-size: 0.7rem;
+}
+
+/* ── Tests — a chip row ── */
+.sl-tests {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.9rem 0 0;
+}
+.sl-tests__lbl {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-right: 0.15rem;
+}
+.sl-chip {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  padding: 0.16rem 0.5rem;
+  background: var(--tint-4);
+  border: 1px solid var(--border);
+  border-radius: var(--tag-radius);
+}
+
+/* ══════════════════════════════════════════
+   Responsive — flow + cards + trio stack on narrow widths
+   ══════════════════════════════════════════ */
+@media (max-width: 680px) {
+  .sl-flow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.3rem;
+  }
+  .sl-link {
+    flex-basis: auto;
+    flex-direction: row;
+    justify-content: center;
+    gap: 1.4rem;
+    padding: 0.35rem 0;
+  }
+  .sl-link__rail {
+    flex-direction: row;
+    gap: 0.4rem;
+  }
+  .sl-link__wire {
+    width: 2px;
+    height: 24px;
+    background-image: linear-gradient(
+      to bottom,
+      var(--accent) 0 6px,
+      transparent 6px 12px
+    );
+    background-size: 2px 12px;
+    background-repeat: repeat-y;
+  }
+  .sl-link__wire::after {
+    top: auto;
+    bottom: -1px;
+    right: 50%;
+    transform: translateX(50%);
+    border: none;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 6px solid var(--accent);
+  }
+  .sl-link__rail--back .sl-link__wire {
+    background-image: linear-gradient(
+      to bottom,
+      var(--accent-muted) 0 6px,
+      transparent 6px 12px
+    );
+  }
+  .sl-link__rail--back .sl-link__wire::after {
+    top: -1px;
+    bottom: auto;
+    border-top: none;
+    border-bottom: 6px solid var(--accent-muted);
+  }
+  .sl-cards,
+  .sl-trio {
+    grid-template-columns: 1fr;
+  }
+  .sl-data__row {
+    grid-template-columns: 1fr;
+    gap: 0.2rem;
+  }
+}
+
+/* ══════════════════════════════════════════
+   Entrance — staggered rise on load
+   ══════════════════════════════════════════ */
+.sl-hero > *,
+.sl-flow,
+.sl-thesis,
+.sl-card,
+.sl-trio,
+.sl-chat {
+  animation: sl-rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.sl-title {
+  animation-delay: 0.12s;
+}
+.sl-lede {
+  animation-delay: 0.22s;
+}
+.sl-flow {
+  animation-delay: 0.38s;
+}
+.sl-thesis {
+  animation-delay: 0.5s;
+}
+
+@keyframes sl-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes sl-march {
+  to {
+    background-position: 12px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sl-hero > *,
+  .sl-flow,
+  .sl-thesis,
+  .sl-card,
+  .sl-trio,
+  .sl-chat,
+  .sl-link__wire {
+    animation: none;
+  }
+}
+
+/* ── Deep-link landing flash — cross-module links land on the thesis / a card / a section ── */
+.sl-thesis:target,
+.sl-card:target {
+  border-radius: var(--radius-md);
+  animation: target-highlight 2.6s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sl-thesis:target,
+  .sl-card:target {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+}

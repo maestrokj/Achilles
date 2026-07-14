@@ -1,0 +1,207 @@
+/* ── Vision-specific section label colors ── */
+.section__label--today {
+  color: var(--s2);
+}
+
+.section__label--evolution {
+  color: var(--s4);
+}
+
+.section__label--next {
+  color: var(--s3);
+}
+
+.section__label--perspective {
+  color: var(--accent);
+}
+
+.section__label--path {
+  color: var(--s2);
+}
+
+/* ── Insight callout ── */
+.insight {
+  text-align: center;
+  padding: 1.3rem 2rem;
+  background: var(--surface);
+  border: 2px solid var(--s3);
+  border-radius: var(--radius);
+  margin: 1.5rem auto;
+  max-width: 520px;
+}
+
+.insight__text {
+  font-size: 1rem;
+  color: var(--text);
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.insight__sub {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  margin-top: 0.4rem;
+  line-height: 1.5;
+}
+
+/* ── Level modifiers ── */
+.level--muted .level__icon {
+  background: var(--accent-muted);
+}
+
+.level--current .level__icon {
+  background: var(--s1);
+  box-shadow: 0 0 0 3px rgba(184, 78, 48, 0.2);
+}
+
+.level--future .level__icon {
+  background: var(--s3);
+}
+
+/* ── Agent example cards ── */
+.agent-examples {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1.5rem 0;
+}
+
+.agent-example {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  border-left: 3px solid var(--s3);
+}
+
+.agent-example__icon {
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--s3);
+  font-weight: 700;
+}
+
+.agent-example__text {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.55;
+  font-style: italic;
+}
+
+.agent-example__text strong {
+  color: var(--text);
+  font-weight: 600;
+  font-style: normal;
+}
+
+/* ── Roadmap timeline ── */
+.roadmap {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  margin: 2rem 0;
+  position: relative;
+}
+
+.roadmap::before {
+  content: "";
+  position: absolute;
+  top: 25px;
+  left: 12.5%;
+  right: 12.5%;
+  height: 2px;
+  background: var(--border);
+}
+
+.roadmap__phase {
+  text-align: center;
+  position: relative;
+  padding: 0 0.5rem;
+}
+
+.roadmap__tag {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: inline-block;
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  margin-bottom: 0.35rem;
+  color: #fff;
+}
+
+.roadmap__phase--active .roadmap__tag {
+  background: var(--s1);
+}
+
+.roadmap__phase--future .roadmap__tag {
+  background: var(--accent-muted);
+}
+
+.roadmap__dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  margin: 0 auto 0.75rem;
+  position: relative;
+  z-index: 1;
+}
+
+.roadmap__phase--active .roadmap__dot {
+  background: var(--s1);
+  box-shadow: 0 0 0 4px rgba(184, 78, 48, 0.2);
+}
+
+.roadmap__phase--future .roadmap__dot {
+  background: var(--accent-muted);
+}
+
+.roadmap__title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 0.2rem;
+}
+
+.roadmap__phase--future .roadmap__title {
+  color: var(--text-dim);
+}
+
+.roadmap__desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* ── Vision closing note ── */
+.vision-note {
+  text-align: center;
+  padding: 1.5rem 2rem;
+  margin: 0.5rem 0;
+}
+
+.vision-note p {
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  line-height: 1.7;
+  max-width: 480px;
+  margin: 0 auto;
+  font-style: italic;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .roadmap {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem 0;
+  }
+
+  .roadmap::before {
+    display: none;
+  }
+}

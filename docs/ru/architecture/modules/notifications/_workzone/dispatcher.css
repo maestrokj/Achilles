@@ -1,0 +1,309 @@
+/* Notifications — dispatcher workzone diagram (dsp-* pipeline + cat-* catalog
+   + pay-* payload + addr-* addressing fork).
+   The dispatch mechanics ride the shared stk-* layered-stack bands + .stk-dec
+   notes; this sheet adds what the kit lacks: the source→delivery pipeline strip
+   (dsp-flow) + delivery-mode split (dsp-mode) that open the layer at a glance,
+   the rule-list lead-ins (dsp-rules) that break dense notes into scannable
+   lines, the event-catalog table (cat-*) with severity chips (sev-*), the
+   webhook payload code block (pay-*), and the two-lane addressing fork (addr-*)
+   that splits broadcast vs targeted routing.
+   Static — no hover affordance (README §Hover).
+   Loaded by _workzone/dispatcher.html on top of ../../module.css
+   + ../../layered-stack.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Layer accent presets ── */
+.stk-layer--config {
+  --stk-lc: var(--accent);
+  --stk-lc-pale: var(--tint-8);
+}
+.stk-layer--ai {
+  --stk-lc: var(--s3-glow);
+  --stk-lc-pale: var(--s3-pale);
+}
+
+/* ══════════════════════════════════════════ */
+/* Pipeline strip + scannable rule lists       */
+/* ══════════════════════════════════════════ */
+/* The whole tract in one row — источник → событие → адресация → веер →
+   доставка — so the layer reads before its notes are read. */
+.dsp-flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+  margin-bottom: 0.2rem;
+}
+.dsp-flow__step {
+  position: relative;
+  flex: 1 1 130px;
+  min-width: 122px;
+  padding: 0.5rem 0.6rem 0.55rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-top: 2px solid var(--stk-lc, var(--accent));
+  border-radius: var(--radius-md);
+}
+/* Chevron bridging consecutive steps; sits in the flex gap, hidden on wrap */
+.dsp-flow__step:not(:last-child)::after {
+  content: "›";
+  position: absolute;
+  right: -0.46rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-muted);
+}
+.dsp-flow__n {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--stk-lc, var(--accent));
+}
+.dsp-flow__t {
+  display: block;
+  margin: 0.08rem 0 0.12rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.dsp-flow__d {
+  display: block;
+  font-size: 0.66rem;
+  line-height: 1.35;
+  color: var(--text-dim);
+}
+
+/* Rule list — bold lead-in + one decision per line, on the .stk-dec__list base */
+.dsp-rules {
+  margin-top: 0.5rem;
+  gap: 0.32rem;
+}
+.dsp-rules b {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Delivery-mode split — instant in-app vs queued email/webhook */
+.dsp-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-top: 0.55rem;
+}
+.dsp-mode {
+  padding: 0.35rem 0.55rem;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--text-dim);
+  background: var(--tint-6);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+}
+.dsp-mode__k {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+  margin-right: 0.4rem;
+}
+.dsp-mode--queue {
+  border-left-color: var(--s4);
+}
+.dsp-mode--queue .dsp-mode__k {
+  color: var(--s4);
+}
+
+/* ══════════════════════════════════════════ */
+/* Addressing fork — broadcast vs targeted     */
+/* ══════════════════════════════════════════ */
+.addr {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 0.6rem;
+}
+.addr__lane {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  padding: 0.7rem 0.85rem;
+}
+.addr__lane--broadcast {
+  border-left: 3px solid var(--s2);
+}
+.addr__lane--targeted {
+  border-left: 3px solid var(--s3);
+}
+.addr__head {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  margin-bottom: 0.2rem;
+}
+.addr__cond {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--accent);
+  margin-bottom: 0.4rem;
+}
+.addr__d {
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+.addr__tags {
+  margin-top: 0.4rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.addr__tag {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.14rem 0.4rem;
+  border-radius: var(--tag-radius);
+  border: 1px solid var(--tint-25);
+  color: var(--text-dim);
+  background: var(--tint-6);
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .addr {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ══════════════════════════════════════════ */
+/* Event catalog table                         */
+/* ══════════════════════════════════════════ */
+.cat {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.cat th {
+  text-align: left;
+  font-size: 0.64rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 700;
+  padding: 0.3rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+}
+.cat td {
+  padding: 0.36rem 0.6rem;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+.cat tr:last-child td {
+  border-bottom: none;
+}
+.cat__ev {
+  font-weight: 600;
+  color: var(--text);
+}
+.cat__src {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+/* Caption above each catalog table — audience split (admin vs general) */
+.cat-cap {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 1.2rem 0 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.cat-cap--first {
+  margin-top: 0.4rem;
+}
+.cat-cap__aud {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+.cat-cap--user .cat-cap__aud {
+  color: var(--s3);
+}
+
+/* Category band — a header row grouping events of one type */
+.cat__group td {
+  background: var(--tint-6);
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
+}
+/* Audience tint on the category band — broadcast (admin) vs targeted (user) */
+.cat__group--targeted td {
+  color: var(--s3);
+  background: var(--s3-pale);
+}
+
+/* ── Severity chips ── */
+.sev {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.12rem 0.4rem;
+  border-radius: var(--pill-radius);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.sev--info {
+  background: var(--tint-15);
+  color: var(--text-dim);
+  border: 1px solid var(--tint-25);
+}
+.sev--warn {
+  background: var(--s4-pale);
+  color: var(--s4);
+  border: 1px solid rgba(160, 88, 56, 0.35);
+}
+.sev--crit {
+  background: rgba(184, 78, 48, 0.12);
+  color: var(--s1);
+  border: 1px solid rgba(184, 78, 48, 0.35);
+}
+
+/* ── Webhook payload code block ── */
+.pay {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--tint-6);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.9rem;
+  white-space: pre;
+  overflow-x: auto;
+}
+.pay__c {
+  color: var(--text-muted);
+}

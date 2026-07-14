@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Web App: Agent editor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Web App</a>
+        <h1 class="header__title">Agent editor</h1>
+        <div class="header__sub">
+          web app · wireframes · agents
+          <a class="in-shell" href="layout.html"><span class="in-shell__frame"></span>shell</a>
+          <a class="in-load in-load--skeleton" href="../../shared-ui/_wireframes/loading-states.html#skeleton" title="Agent configuration of a known shape — skeleton">
+            <span class="in-load__icon"></span>loading
+          </a>
+        </div>
+      </div>
+
+      <p class="desc">Create and edit a single agent: prompt, tools, schedule — plus a manual run right here with a run log. One screen for both creation (<code>/agents/new</code>) and editing an existing agent.</p>
+
+      <!-- ═══ Wireframe ═══ -->
+      <div class="section" id="editor">
+        <div class="section__title">
+          Configuration and runs
+          <a href="../../agent-engine/_workzone/runtime.html#prompt-composition" class="xref-badge">→ Agent Engine</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/agents/12
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/agents/:id · agent owner</span>
+                  <span class="wf-urltip__body">Creation — /agents/new.</span>
+                </span>
+              </div>
+            </div>
+
+            <div class="wf-appbar">
+              <span class="wf-brand"><span class="wf-brand__mark">A</span>Achilles</span>
+              <span class="wf-appbar__spacer"></span>
+              <span class="wf-avatar">DS</span>
+            </div>
+
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <!-- ── Agent header: identity + master controls ── -->
+                <div class="wf-row wf-spread">
+                  <span class="wf-row">
+                    <span class="wf-title">Release digest</span>
+                    <span class="wf-chip wf-chip--ok">active</span>
+                  </span>
+                  <span class="wf-row">
+                    <span class="wf-row">
+                      <span class="wf-toggle wf-toggle--on"></span>
+                      <span class="wf-text">Enabled</span>
+                      <span class="wf-annot">1</span>
+                    </span>
+                    <button class="wf-btn wf-btn--primary">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                      Run now <span class="wf-annot wf-annot--on-accent">2</span></button>
+                  </span>
+                </div>
+
+                <!-- ── Basics: name · description · prompt ── -->
+                <div class="wf-stack">
+                  <span class="wf-label wf-grouphead">Basics</span>
+                  <div class="wf-field">
+                    <span class="wf-label">Name</span>
+                    <div class="wf-input">Release digest</div>
+                  </div>
+                  <div class="wf-field">
+                    <span class="wf-label">Description</span>
+                    <div class="wf-input">A summary of Ajax project task statuses and open blockers.</div>
+                    <span class="wf-hint">optional</span>
+                  </div>
+                  <div class="wf-field">
+                    <span class="wf-label">Prompt <span class="wf-annot">3</span></span>
+                    <div class="wf-input wf-input--area">On every run, put together a short digest of the Ajax project: what closed in the period, which tasks are in progress and which blockers are open. Answer as a list, with a source link for each item.</div>
+                  </div>
+                </div>
+
+                <!-- ── Run settings: model · tools · schedule ── -->
+                <div class="wf-stack">
+                  <span class="wf-label wf-grouphead">Run settings</span>
+                  <div class="wf-field">
+                    <span class="wf-label">Model</span>
+                    <div class="wf-input wf-input--sm">
+                      Claude Sonnet
+                      <span class="wf-input__action">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                      </span>
+                    </div>
+                    <span class="wf-hint">from the list allowed by the administrator</span>
+                  </div>
+
+                  <!-- ── Internal tools: fixed KS core ── -->
+                  <div class="wf-field">
+                    <span class="wf-label">Internal tools <span class="wf-annot">4</span></span>
+                    <div class="wf-route">
+                      <span class="wf-pill wf-pill--locked"><span class="wf-lock"></span>search</span>
+                      <span class="wf-pill wf-pill--locked"><span class="wf-lock"></span>graph</span>
+                      <span class="wf-pill wf-pill--locked"><span class="wf-lock"></span>sql</span>
+                    </div>
+                    <span class="wf-hint">core · under your permissions · read-only</span>
+                  </div>
+
+                  <!-- ── External tools: toggle pills from what the admin allowed ── -->
+                  <div class="wf-field">
+                    <span class="wf-label">External tools <span class="wf-annot">10</span></span>
+                    <div class="wf-route">
+                      <span class="wf-pill wf-pill--on">web_search</span>
+                      <span class="wf-pill wf-pill--off">fetch_url</span>
+                    </div>
+                    <span class="wf-hint">from what the administrator allowed · read-only · click to toggle; unchecking doesn't block the run</span>
+                  </div>
+
+                  <!-- ── MCP — grayed-out inactive v2 stub ── -->
+                  <div class="wf-card wf-row wf-spread" style="opacity: 0.5">
+                    <span class="wf-row">
+                      <span class="wf-checkbox"></span>
+                      <span class="wf-text">Connect an MCP server</span>
+                    </span>
+                    <span class="iter v2">v2</span>
+                  </div>
+
+                  <div class="wf-field">
+                    <span class="wf-label">Schedule <span class="wf-annot">5</span></span>
+                    <div class="wf-row">
+                      <div class="wf-input wf-input--sm">
+                        Interval
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                      <div class="wf-input wf-input--sm">
+                        every 6 hours
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                    </div>
+                    <span class="wf-hint">mode + parameter; the parameter adapts to the mode — preview below. Manual · interval · calendar.</span>
+                  </div>
+
+                  <div class="wf-alert">
+                    Narrowing data scope — <span class="iter v2">v2</span>; for now the agent sees your full access.
+                  </div>
+                </div>
+
+                <div class="wf-row">
+                  <button class="wf-btn wf-btn--primary">Save</button>
+                  <button class="wf-btn wf-btn--ghost">Cancel</button>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <!-- ── Run log ── -->
+                <div class="wf-stack">
+                  <span class="wf-label wf-grouphead">Run log <span class="wf-annot">6</span></span>
+
+                  <div class="wf-fold" id="run-output">
+                    <button class="wf-fold__head">
+                      <span class="wf-runcell">
+                        <span>Today 14:00</span>
+                        <span class="wf-runcell__meta">scheduled · succeeded · 14 s · 38k tokens</span>
+                      </span>
+                      <span class="wf-fold__caret">Output
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                      </span>
+                    </button>
+                    <div class="wf-fold__body">
+                      <span class="wf-text">7 tasks closed in the period; 3 in progress (AJX-218, AJX-224, AJX-231). Open blocker: the architecture review for AJX-218 is waiting on the release manager. Deadline pushed to June 30.</span>
+                    </div>
+                  </div>
+
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-runcell">
+                      <span>Yesterday 14:00</span>
+                      <span class="wf-runcell__meta">scheduled · succeeded · 11 s · 31k tokens</span>
+                    </span>
+                    <span class="wf-fold__caret">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                    </span>
+                  </div>
+
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-runcell">
+                      <span>2 days ago</span>
+                      <span class="wf-runcell__meta wf-runcell__meta--err">failed · iteration cap <span class="wf-annot">7</span></span>
+                    </span>
+                    <span class="wf-fold__caret">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                    </span>
+                  </div>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <div class="wf-center">
+                  <span class="wf-guarded"
+                    ><a class="wf-a wf-a--danger">Delete agent</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#irreversible" title="Action guarded by confirmation"><span class="wf-guard__icon"></span></a
+                  ></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Schedule modes: how the field changes under the selected mode ── -->
+          <div class="wf-gallery">
+            <!-- manual -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">schedule · manual</div>
+              <div class="wf-screen">
+                <div class="wf-body">
+                  <div class="wf-field">
+                    <span class="wf-label">Schedule</span>
+                    <div class="wf-row">
+                      <div class="wf-input wf-input--sm">
+                        Manual
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                    </div>
+                    <span class="wf-hint">no parameters — the agent runs only via the "Run now" button</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- interval · list open -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">schedule · interval · list open</div>
+              <div class="wf-screen">
+                <div class="wf-body">
+                  <div class="wf-field">
+                    <span class="wf-label">Schedule</span>
+                    <div class="wf-row">
+                      <div class="wf-input wf-input--sm">
+                        Interval
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                      <div class="wf-input wf-input--sm">
+                        every 6 hours
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                    </div>
+                    <!-- open mode dropdown -->
+                    <div class="wf-menu" style="margin-top: 0.5rem">
+                      <span class="wf-menu__item">Manual</span>
+                      <span class="wf-menu__item wf-menu__item--on">
+                        Interval
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                      </span>
+                      <span class="wf-menu__item">Calendar</span>
+                    </div>
+                    <span class="wf-hint">presets: every 1 / 2 / 3 / 6 / 12 / 24 h <span class="wf-annot">5</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- calendar -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">schedule · calendar</div>
+              <div class="wf-screen">
+                <div class="wf-body">
+                  <div class="wf-field">
+                    <span class="wf-label">Schedule</span>
+                    <div class="wf-row">
+                      <div class="wf-input wf-input--sm">
+                        Calendar
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                      <div class="wf-input wf-input--sm">
+                        weekly
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                      <div class="wf-input wf-input--sm">
+                        Mon
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                      <div class="wf-input wf-input--sm">09:00</div>
+                    </div>
+                    <span class="wf-hint">"daily" removes the day picker; time is in the owner's timezone</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── States: admin pause · model removed ── -->
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">state · admin pause</div>
+              <div class="wf-screen">
+                <div class="wf-body">
+                  <div class="wf-stack wf-stack--loose">
+                    <div class="wf-alert wf-alert--error">
+                      The agent has been paused by an administrator. No runs will start — neither scheduled nor manual. Only an administrator can lift the pause. <span class="wf-annot">8</span>
+                    </div>
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-title">Documentation gaps</span>
+                        <span class="wf-chip wf-chip--warn">paused · admin</span>
+                      </span>
+                      <span class="wf-row">
+                        <span class="wf-toggle wf-toggle--locked"></span>
+                        <button class="wf-btn wf-btn--disabled">Run now</button>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="wf-frame">
+              <div class="wf-stage__caption">state · model removed</div>
+              <div class="wf-screen">
+                <div class="wf-body">
+                  <div class="wf-stack wf-stack--loose">
+                    <div class="wf-alert wf-alert--error">
+                      The agent's model is no longer supported — an administrator removed it from the list. No runs will start until another model is selected. <span class="wf-annot">9</span>
+                    </div>
+                    <div class="wf-row wf-spread">
+                      <span class="wf-row">
+                        <span class="wf-title">Release digest</span>
+                        <span class="wf-chip wf-chip--warn">model removed</span>
+                      </span>
+                      <span class="wf-row">
+                        <span class="wf-toggle wf-toggle--locked"></span>
+                        <button class="wf-btn wf-btn--disabled">Run now</button>
+                      </span>
+                    </div>
+                    <div class="wf-field">
+                      <span class="wf-label">Model</span>
+                      <div class="wf-input wf-input--sm wf-input--empty">
+                        Select a model
+                        <span class="wf-input__action">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Owner switch — "enabled" keeps the agent on its schedule and available for manual runs, "disabled" stops it entirely. The summary status sits in the header.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              "Run now" — an ad-hoc run with the current settings; respects the switch, the admin lock and the budget. One active run per agent: another on top of a running one is skipped.
+              <a href="../../agent-engine/_workzone/execution.html#schedule" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              The owner's prompt — the task, output format, constraints. It layers on top of the platform layer (safety + organization rules) and can't override it.
+              <a href="../../agent-engine/_workzone/runtime.html#prompt-composition" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              The core of three internal tools — search, graph, SQL — is fixed and always runs under the owner's identity: what's closed to the employee is closed to the agent, and writing to the graph is unavailable.
+              <a href="../../agent-engine/_workzone/identity.html#ks-boundary" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Schedule — a mode plus a parameter for it (modes previewed above): "manual" — no parameter, interval — an "every N hours" preset, calendar — a "daily / weekly at HH:MM" slot, resolved against the owner's timezone. Raw cron and event triggers — <span class="iter v2">v2</span>.
+              <a href="../../agent-engine/_workzone/execution.html#schedule" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              Run log — time, trigger, outcome, duration and token spend; a row expands into the agent's full output.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              Run outcome: succeeded · failed (error / iteration cap) · skipped (weekly limit / already running). The state machine —
+              <a href="../../agent-engine/_workzone/data-model.html#agent-runs" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              The admin lock is sticky: while it's set, the switch and runs are unavailable to the owner.
+              <a href="../../agent-engine/_workzone/governance.html#admin-pause" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">9</span>
+              The model was removed from the list by an administrator — the agent is stopped until the owner selects another from the current list. The previous choice doesn't fall back to the default.
+              <a href="../../agent-engine/_workzone/governance.html#model" class="xref-module">Agent Engine</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">10</span>
+              External tools — a choice from the read-only presets the administrator allowed (web_search, fetch_url); unchecking one doesn't block the run, the agent carries on with the KS core. Connecting MCP servers — <span class="iter v2">v2</span>.
+              <a href="../../admin-panel/_wireframes/tools.html" class="xref-module">Admin Panel</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin Panel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="admin.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← Back to architecture</a>
+        <h1 class="header__title">Admin Panel</h1>
+        <div class="header__sub">configuration · monitoring · management</div>
+      </div>
+
+      <p class="desc">
+        The platform's control center. Configure data sources, manage users
+        and roles, monitor system health, and set up agents.
+      </p>
+
+      <!-- ═══ Architecture ═══ The section is the console itself: appbar +
+           grouped sidebar of sections + legend area. Each section carries the
+           badge of the domain it fronts; the lock marks Owner-only zones. The
+           module is a thin aggregator facade: the truth lives in the domain
+           modules, and Admin configures and monitors them. The section is wider
+           than the page column (.adm-arch — center full-bleed). -->
+      <div class="section">
+        <div class="section__title">Architecture</div>
+        <div class="adm-arch">
+          <div class="adm-shell">
+            <!-- ═══ Appbar ═══ -->
+            <div class="adm-bar">
+              <span class="adm-bar__logo" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="7" height="9" rx="1" />
+                  <rect x="14" y="3" width="7" height="5" rx="1" />
+                  <rect x="14" y="12" width="7" height="9" rx="1" />
+                  <rect x="3" y="16" width="7" height="5" rx="1" />
+                </svg>
+              </span>
+              <span class="adm-bar__title">Achilles <span>· Admin</span></span>
+              <span class="adm-bar__spacer"></span>
+              <span class="adm-bar__profile">
+                <span class="adm-bar__avatar" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
+                  </svg>
+                </span>
+                <span>Owner</span>
+              </span>
+            </div>
+
+            <!-- ═══ Body: sidebar | content ═══ -->
+            <div class="adm-body">
+              <!-- ── Sidebar: grouped catalogue ── -->
+              <nav class="adm-side" aria-label="Admin sections">
+                <!-- Overview / Shell -->
+                <div class="adm-group">
+                  <div class="adm-group__head">Overview</div>
+                  <div class="adm-item adm-item--active">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 10.5 12 3l9 7.5" />
+                        <path d="M5 9.5V21h14V9.5" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">Dashboard</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-mod adm-mod--core">home</span>
+                  </div>
+                  <div class="adm-item">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <path d="M3 9h18M9 21V9" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">Layout</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-mod adm-mod--core">shell</span>
+                  </div>
+                  <div class="adm-item">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">Notifications — feed</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-mod adm-mod--core">shell</span>
+                  </div>
+                </div>
+
+                <!-- Management -->
+                <div class="adm-group">
+                  <div class="adm-group__head">Management</div>
+                  <div class="adm-item">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">Users</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-mod">Auth</span>
+                  </div>
+                  <div class="adm-item">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="16" rx="2" />
+                        <circle cx="9" cy="10" r="2.5" />
+                        <path d="M5.5 17c0-2 1.6-3 3.5-3s3.5 1 3.5 3M15 9h4M15 13h4" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">User detail</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-mod">Auth</span>
+                  </div>
+                </div>
+
+                <!-- Security — Owner only -->
+                <div class="adm-group">
+                  <div class="adm-group__head">
+                    Security
+                    <span class="adm-group__lock" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="10" width="16" height="10" rx="2" />
+                        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                      </svg>
+                    </span>
+                  </div>
+                  <div class="adm-item">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="7.5" cy="15.5" r="4.5" />
+                        <path d="M10.7 12.3 21 2m-4 0 3 3m-6 3 3 3" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">API Keys</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-item__lock" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="10" width="16" height="10" rx="2" />
+                        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                      </svg>
+                    </span>
+                    <span class="adm-mod">Auth</span>
+                  </div>
+                  <div class="adm-item">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14 3v5h5" />
+                        <path d="M18 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <path d="M8 13h8M8 17h5" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">Audit Log</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-item__lock" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="10" width="16" height="10" rx="2" />
+                        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                      </svg>
+                    </span>
+                    <span class="adm-mod">Auth</span>
+                  </div>
+                  <div class="adm-item">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5z" />
+                        <path d="m9 12 2 2 4-4" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">Platform ACL</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-item__lock" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="10" width="16" height="10" rx="2" />
+                        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                      </svg>
+                    </span>
+                    <span class="adm-mod">Auth</span>
+                  </div>
+                </div>
+
+                <!-- Data -->
+                <div class="adm-group">
+                  <div class="adm-group__head">Data</div>
+                  <div class="adm-item">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <ellipse cx="12" cy="5" rx="8" ry="3" />
+                        <path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5" />
+                        <path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">Harvester</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-mod">Harvester</span>
+                  </div>
+                  <div class="adm-item">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 7c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3" />
+                        <path d="M4 7v10c0 1.7 3.6 3 8 3M20 7v5" />
+                        <circle cx="18" cy="17" r="3" />
+                        <path d="m20.5 19.5 1.5 1.5" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">Source detail</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-mod">Harvester</span>
+                  </div>
+                  <div class="adm-item">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="6" cy="6" r="2.5" />
+                        <circle cx="18" cy="7" r="2.5" />
+                        <circle cx="9" cy="18" r="2.5" />
+                        <path d="M8 7.5 15.5 8M8 8 8.5 15.5M11 17l5-8" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">Knowledge Store</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-mod">KS</span>
+                  </div>
+                </div>
+
+                <!-- AI -->
+                <div class="adm-group">
+                  <div class="adm-group__head">AI</div>
+                  <div class="adm-item">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="7" y="7" width="10" height="10" rx="2" />
+                        <path d="M9 3v4M15 3v4M9 17v4M15 17v4M3 9h4M3 15h4M17 9h4M17 15h4" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">AI models</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-mod">AI Foundation</span>
+                  </div>
+                  <div class="adm-item">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="5" y="8" width="14" height="11" rx="2" />
+                        <path d="M12 8V4M12 4h-1.5M9 13v1M15 13v1M2 12v3M22 12v3" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">Agents</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-mod">Agent Engine</span>
+                  </div>
+                  <div class="adm-item">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="5" y="8" width="14" height="11" rx="2" />
+                        <path d="M12 8V4M9 13v1M15 13v1" />
+                        <path d="M8.5 16.5c1 .8 6 .8 7 0" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">Agent profile</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-mod">Agent Engine</span>
+                  </div>
+                  <div class="adm-item">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">AI usage</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-mod">AI Foundation</span>
+                  </div>
+                  <div class="adm-item">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3" />
+                        <path d="M8 8h8M8 12h8M8 16h4" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">AI prompt</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-mod">AI Foundation</span>
+                  </div>
+                  <div class="adm-item">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-2.4z" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">AI tools</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-mod">AI Foundation</span>
+                  </div>
+                </div>
+
+                <!-- Settings — Platform: Owner edits -->
+                <div class="adm-group">
+                  <div class="adm-group__head">
+                    Settings
+                    <span class="adm-group__lock" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="10" width="16" height="10" rx="2" />
+                        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                      </svg>
+                    </span>
+                  </div>
+                  <div class="adm-item">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 7 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 2.6 14H2.5a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8.6l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 10 4.6V4.5a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 2.82 1.17l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 21.4 10h.1a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">Platform</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-item__lock" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="10" width="16" height="10" rx="2" />
+                        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                      </svg>
+                    </span>
+                    <span class="adm-mod adm-mod--core">core</span>
+                  </div>
+                  <div class="adm-item">
+                    <span class="adm-item__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+                        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+                      </svg>
+                    </span>
+                    <span class="adm-item__name">Notifications</span>
+                    <span class="adm-item__spacer"></span>
+                    <span class="adm-mod">Notifications</span>
+                  </div>
+                </div>
+              </nav>
+
+              <!-- ── Content pane: console legend ── -->
+              <div class="adm-content">
+                <div class="adm-content__crumb">Overview · Dashboard</div>
+                <div class="adm-content__title">One console for the whole platform</div>
+
+                <div class="adm-legend">
+                  <div class="adm-fact">
+                    <span class="adm-fact__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4" width="18" height="12" rx="2" />
+                        <path d="M8 20h8M12 16v4" />
+                      </svg>
+                    </span>
+                    <span class="adm-fact__txt">
+                      <strong>Thin facade.</strong> A React shell plus a backend that
+                      owns no domain logic — it brings together and configures the
+                      contracts of other modules.
+                    </span>
+                  </div>
+                  <div class="adm-fact">
+                    <span class="adm-fact__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <ellipse cx="12" cy="5" rx="8" ry="3" />
+                        <path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5" />
+                        <path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" />
+                      </svg>
+                    </span>
+                    <span class="adm-fact__txt">
+                      <strong>The source of truth lives in the domain modules.</strong> Each
+                      sidebar section is a window into its module (badge on the right); Admin
+                      configures and monitors, while the domain owns the data.
+                    </span>
+                  </div>
+                  <div class="adm-fact">
+                    <span class="adm-fact__ico" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="10" width="16" height="10" rx="2" />
+                        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                      </svg>
+                    </span>
+                    <span class="adm-fact__txt">
+                      <strong>Role decides access.</strong> A regular Admin sees almost everything;
+                      the lock marks Owner-only zones — Security and Platform settings.
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Dashboard metric tiles — a hint of the start screen -->
+                <div class="adm-metrics">
+                  <div class="adm-tile">
+                    <div class="adm-tile__label">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <ellipse cx="12" cy="5" rx="8" ry="3" />
+                        <path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5" />
+                      </svg>
+                      Sources
+                    </div>
+                    <div class="adm-tile__value">14<span>/16</span></div>
+                  </div>
+                  <div class="adm-tile">
+                    <div class="adm-tile__label">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                      </svg>
+                      Users
+                    </div>
+                    <div class="adm-tile__value">248</div>
+                  </div>
+                  <div class="adm-tile">
+                    <div class="adm-tile__label">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="5" y="8" width="14" height="11" rx="2" />
+                        <path d="M12 8V4M9 13v1M15 13v1" />
+                      </svg>
+                      Agents
+                    </div>
+                    <div class="adm-tile__value">7</div>
+                  </div>
+                  <div class="adm-tile">
+                    <div class="adm-tile__label">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+                      </svg>
+                      Tokens / mo.
+                    </div>
+                    <div class="adm-tile__value">1.2<span>M</span></div>
+                  </div>
+                </div>
+
+                <!-- Access key -->
+                <div class="adm-key">
+                  <span class="adm-key__item">
+                    <span class="adm-key__swatch" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="8" r="4" />
+                        <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
+                      </svg>
+                    </span>
+                    <span><strong>Admin</strong> — almost all sections</span>
+                  </span>
+                  <span class="adm-key__item">
+                    <span class="adm-key__lock" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="4" y="10" width="16" height="10" rx="2" />
+                        <path d="M8 10V7a4 4 0 0 1 8 0v3" />
+                      </svg>
+                    </span>
+                    <span><strong>Owner only</strong> — Security and Platform settings</span>
+                  </span>
+                  <span class="adm-key__item">
+                    <span class="adm-mod">Auth</span>
+                    <span>— the domain this section fronts</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ API ═══ Full paths of the config facade under the version. -->
+      <section class="section" id="api">
+        <div class="section__title">API</div>
+        <ul class="api-list">
+          <li><span class="api-list__m">GET · PATCH</span><span class="api-list__p">/api/v1/admin/settings</span></li>
+          <li><span class="api-list__m">GET · PATCH</span><span class="api-list__p">/api/v1/admin/ai-prompt</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/admin/usage · /{user}</span></li>
+          <li><span class="api-list__m">GET · POST · DELETE</span><span class="api-list__p">/api/v1/admin/notification-channels</span></li>
+          <li><span class="api-list__m">PATCH</span><span class="api-list__p">/api/v1/admin/notification-routes</span></li>
+        </ul>
+      </section>
+
+      <!-- ═══ Workzone ═══ -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Design</span>
+        </div>
+        <p class="workzone-hint">
+          Detailed design decisions for the module.
+        </p>
+
+        <div class="wz-nav">
+          <a class="wz-link" href="_workzone/stack.html">
+            <span>Stack &amp; structure</span>
+          </a>
+          <a class="wz-link" href="_workzone/data-model.html">
+            <span>Data model</span>
+          </a>
+          <a class="wz-link" href="_workzone/list-controls.html">
+            <span>Lists — search, filters, pagination</span>
+          </a>
+          <a class="wz-link" href="_workzone/locale.html">
+            <span>Language &amp; region</span>
+          </a>
+          <a class="wz-link" href="_workzone/maintenance.html">
+            <span>Maintenance mode</span>
+          </a>
+          <a class="wz-link" href="_workzone/tests.html">
+            <span>Test cases</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ═══ Wireframes ═══
+           Catalogue of the module's screens — one file per screen in _wireframes/.
+           Each page: a screen description + a schematic wireframe (no precise
+           design). Template for a new screen — _wireframes/_template.html.
+           As screens are added — a new <a class="wz-link" …>. -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Wireframes</span>
+          <span class="workzone-title">Screens</span>
+        </div>
+        <p class="workzone-hint">
+          Screens — a description and wireframe of each.
+        </p>
+
+        <div class="wz-nav">
+          <div class="wz-nav__group">Shell &amp; overview</div>
+          <a class="wz-link" href="_wireframes/layout.html">
+            <span>layout</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+          <a class="wz-link" href="_wireframes/dashboard.html">
+            <span>Dashboard</span>
+            <span class="wz-tag wz-tag--home" title="Admin home screen"
+              >⌂ home</span
+            >
+          </a>
+          <a class="wz-link" href="_wireframes/notification-feed.html">
+            <span>Notifications — feed</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+          <div class="wz-nav__group">Management</div>
+          <a class="wz-link" href="_wireframes/users.html">
+            <span>Users</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+          <a class="wz-link" href="_wireframes/user-card.html">
+            <span>User detail</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+          <div class="wz-nav__group">Security · Audit Log — Owner only</div>
+          <a class="wz-link" href="_wireframes/api-keys.html">
+            <span>API Keys</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+          <a class="wz-link" href="_wireframes/audit-log.html">
+            <span>Audit Log</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+          <a class="wz-link" href="_wireframes/platform-acl.html">
+            <span>Platform ACL</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+          <div class="wz-nav__group">Data</div>
+          <a class="wz-link" href="_wireframes/harvester.html">
+            <span>Harvester</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+          <a class="wz-link" href="_wireframes/data-sources.html">
+            <span>Source detail</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+          <a class="wz-link" href="_wireframes/knowledge-store.html">
+            <span>Knowledge Store</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+          <div class="wz-nav__group">AI</div>
+          <a class="wz-link" href="_wireframes/ai-models.html">
+            <span>AI models</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+          <a class="wz-link" href="_wireframes/agents.html">
+            <span>Agents</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+          <a class="wz-link" href="_wireframes/agent-card.html">
+            <span>Agent profile</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+          <a class="wz-link" href="_wireframes/usage.html">
+            <span>AI usage</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+          <a class="wz-link" href="_wireframes/usage-detail.html">
+            <span>AI usage — detail</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+          <a class="wz-link" href="_wireframes/ai-behavior.html">
+            <span>AI prompt</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+          <a class="wz-link" href="_wireframes/tools.html">
+            <span>AI tools</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+          <div class="wz-nav__group">Settings — Platform: Owner edits</div>
+          <a class="wz-link" href="_wireframes/platform-settings.html">
+            <span>Platform</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+          <a class="wz-link" href="_wireframes/notifications.html">
+            <span>Notifications</span>
+            <span class="wz-tag wz-tag--screen">wireframe</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Harvester</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Harvester</h1>
+        <div class="header__sub">
+          admin panel · макеты · данные
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Экран рендерится в контентной области каркаса">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--keep" href="../../shared-ui/_wireframes/loading-states.html#keep-previous" title="Смена страницы или сортировки — прежние строки остаются (keep-previous)">
+              <span class="in-load__icon"></span>загрузка
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">
+        Хаб сбора данных: все источники, их состояние и ход синхронизации — модель источника в
+        <a href="../../harvester/_workzone/sources.html#lifecycle" class="xref-module">Harvester</a>.
+      </p>
+
+      <!-- ═══ Глобальные настройки Harvester ═══ -->
+      <div class="section" id="global-settings">
+        <div class="section__title">Глобальные настройки сбора</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">embedding-модель · расписание</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-body">
+              <div class="wf-stack wf-stack--loose">
+                <div class="wf-stack">
+                  <span class="wf-label">Обработка</span>
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-text">
+                      Embedding-модель<br />
+                      <span class="wf-hint">наследуется из реестра AI-моделей — там же и меняется</span>
+                    </span>
+                    <span class="wf-row">
+                      <a class="wf-chip" href="ai-models.html#model-assignment">text-embedding-3-large <span class="wf-chip__edit">↗</span></a>
+                      <span class="wf-annot">1</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div class="wf-stack" id="sync-schedule">
+                  <span class="wf-label">Расписание incremental sync</span>
+                  <div class="wf-card wf-row wf-spread">
+                    <span class="wf-text">
+                      Интервал по умолчанию<br />
+                      <span class="wf-hint">свежесть данных · источник переопределяет в своей карточке</span>
+                    </span>
+                    <span class="wf-row">
+                      <div class="wf-input wf-input--sm">Каждые 6 ч ▾</div>
+                      <span class="wf-annot">2</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div class="wf-stack" id="reconcile-schedule">
+                  <span class="wf-label">Расписание reconciliation</span>
+                  <div class="wf-card wf-stack wf-stack--tight">
+                    <div class="wf-row wf-spread">
+                      <span class="wf-text">
+                        Окно сверки по умолчанию
+                        <span class="wf-hint">полная гигиена источника · источник переопределяет в карточке</span>
+                      </span>
+                      <span class="wf-annot">2</span>
+                    </div>
+                    <hr class="wf-divider" />
+                    <div class="wf-row">
+                      <div class="wf-field">
+                        <span class="wf-label">Частота</span>
+                        <div class="wf-input wf-input--sm">Раз в неделю ▾</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">День</span>
+                        <div class="wf-input wf-input--sm">Воскресенье ▾</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Время</span>
+                        <div class="wf-input wf-input--sm">03:00 ▾</div>
+                      </div>
+                    </div>
+                    <span class="wf-hint">↳ каждое воскресенье в 03:00 · время организации (Europe/Moscow)</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Чип embedding-модели — только для чтения; берётся из реестра
+              <a href="ai-models.html#model-assignment" class="xref-page">AI-моделей</a>, клик ведёт на её выбор там же.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Глобальные default-каденсы сбора, источник переопределяет в своей карточке: incremental — интервал свежести; reconciliation — частота полной сверки (для недельной — день и час). Режимы —
+              <a href="../../harvester/_workzone/sync-modes.html" class="xref-module">Harvester · sync-modes</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Обзор источников ═══ -->
+      <div class="section" id="sync-overview">
+        <div class="section__title">Источники</div>
+        <p class="note">
+          Подключение источников <strong>опционально на старте</strong>. Без них
+          база знаний пуста
+          (<a href="../../knowledge-store/_workzone/hybrid-search.html#emptiness" class="xref-module"><code>is_empty</code></a>),
+          и платформа работает как чистый AI-консультант — чат и агенты отвечают
+          на общих знаниях модели. Достаточно назначенной chat-модели; источники
+          добавляют заземление на корпоративных данных, когда компания к нему
+          готова. Первый принятый фрагмент включает заземление сам.
+        </p>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">список источников</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/harvester
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/harvester · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-row wf-spread">
+                  <span class="wf-title">Источники</span>
+                  <span class="wf-row">
+                    <a class="wf-btn" href="../../harvester/_workzone/sync-modes.html#per-source">
+                       ⟳ Синхронизировать всё <span class="wf-annot">3</span></a>
+                    <a class="wf-btn wf-btn--primary" href="data-sources.html#source-wizard">
+
+                      Добавить источник
+                      <span class="wf-annot wf-annot--on-accent">4</span></a>
+                  </span>
+                </div>
+
+                <table class="wf-table">
+                  <thead>
+                    <tr>
+                      <th class="wf-th--sort">Источник <span class="wf-th__caret">↕</span></th>
+                      <th class="wf-th--sort">Состояние <span class="wf-th__caret">↕</span></th>
+                      <th class="wf-th--sort">Здоровье <span class="wf-th__caret">↕</span></th>
+                      <th class="wf-th--sort wf-th--sorted">Последняя синхронизация <span class="wf-th__caret">↓</span> <span class="wf-annot">5</span></th>
+                      <th class="wf-th--sort">Сущностей <span class="wf-th__caret">↕</span></th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="wf-rowlink">
+                      <td><a href="data-sources.html" class="wf-userlink">Jira · Acme</a> <span class="wf-annot">6</span></td>
+                      <td><span class="wf-chip wf-chip--ok">Active</span></td>
+                      <td>
+                        <span class="wf-row">
+                          <span class="wf-spinner"></span>
+                          <span class="wf-chip wf-chip--warn">syncing · 62%</span>
+                        </span>
+                      </td>
+                      <td>
+                        <div class="wf-runcell">
+                          <span class="wf-runcell__when wf-runcell__when--live">идёт сейчас</span>
+                          <span class="wf-runcell__meta">8.2k из 13.1k</span>
+                        </div>
+                      </td>
+                      <td>48.1k</td>
+                      <td>⋯ <span class="wf-annot">7</span></td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><a href="data-sources.html" class="wf-userlink">Confluence · Acme</a></td>
+                      <td><span class="wf-chip wf-chip--ok">Active</span></td>
+                      <td><span class="wf-chip">idle</span></td>
+                      <td>
+                        <div class="wf-runcell">
+                          <span class="wf-runcell__when">2 ч назад</span>
+                          <span class="wf-runcell__meta">
+                            за 4 мин · +1.2k
+                            <span class="wf-chip wf-chip--warn">3 в DLQ</span>
+                            <span class="wf-annot">8</span>
+                          </span>
+                        </div>
+                      </td>
+                      <td>61.3k</td>
+                      <td>⋯</td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><a href="data-sources.html" class="wf-userlink">Slack · acme.slack.com</a></td>
+                      <td><span class="wf-chip">Paused</span> <span class="wf-annot">9</span></td>
+                      <td><span class="wf-chip">idle</span></td>
+                      <td>
+                        <div class="wf-runcell">
+                          <span class="wf-runcell__when">вчера</span>
+                          <span class="wf-runcell__meta">за 11 мин · +3.4k</span>
+                        </div>
+                      </td>
+                      <td>33.2k</td>
+                      <td>⋯</td>
+                    </tr>
+                    <tr class="wf-rowlink wf-table__row--muted">
+                      <td><a href="data-sources.html" class="wf-userlink">GitLab · git.acme.dev</a></td>
+                      <td><span class="wf-chip wf-chip--err">Disconnected</span></td>
+                      <td><span class="wf-chip wf-chip--err">error</span> <span class="wf-annot">10</span></td>
+                      <td>
+                        <div class="wf-runcell">
+                          <span class="wf-runcell__when">3 дня назад</span>
+                          <span class="wf-runcell__meta wf-runcell__meta--err">ошибка учётных данных</span>
+                        </div>
+                      </td>
+                      <td>8.4k</td>
+                      <td>⋯ <span class="wf-annot">11</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">⋯ источник · idle</div>
+              <div class="wf-pop">
+                <button class="wf-btn">⋯</button>
+                <div class="wf-menu">
+                  <span class="wf-menu__item">Синхронизировать</span>
+                  <span class="wf-menu__item">Поставить на паузу</span>
+                  <span class="wf-menu__item">Открыть карточку</span>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">⋯ источник · syncing</div>
+              <div class="wf-pop">
+                <button class="wf-btn">⋯</button>
+                <div class="wf-menu">
+                  <span class="wf-menu__item wf-menu__item--disabled">Синхронизировать <span class="wf-menu__why">идёт прогон</span></span>
+                  <span class="wf-menu__item wf-menu__item--disabled">Поставить на паузу <span class="wf-menu__why">идёт прогон</span></span>
+                  <hr class="wf-menu__sep" />
+                  <span class="wf-menu__item">Отменить прогон</span>
+                  <span class="wf-menu__item">Открыть карточку</span>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">⋯ источник · disconnected</div>
+              <div class="wf-pop">
+                <button class="wf-btn">⋯</button>
+                <div class="wf-menu">
+                  <span class="wf-menu__item">Переподключить</span>
+                  <span class="wf-menu__item">Открыть карточку</span>
+                  <hr class="wf-menu__sep" />
+                  <span class="wf-menu__item wf-menu__item--danger"
+                    ><span class="wf-guarded"
+                      >Очистить данные<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#type-to-confirm" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a></span
+                  ></span>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame" id="sync-errors">
+              <div class="wf-stage__caption">3 в DLQ · разбор</div>
+              <div class="wf-pop">
+                <span class="wf-chip wf-chip--warn">3 в DLQ</span>
+                <div class="wf-menu">
+                  <span class="wf-menu__item">Нет прав <span class="wf-menu__why">2</span></span>
+                  <span class="wf-menu__item">Битый объект <span class="wf-menu__why">1</span></span>
+                  <hr class="wf-menu__sep" />
+                  <span class="wf-menu__item">↻ Повторить сбойные</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              «Синхронизировать всё» — incremental по всем Active-источникам разом; Paused и Disconnected пропускаются, нечего запускать — кнопка неактивна. Механика —
+              <a href="../../harvester/_workzone/sync-modes.html#per-source" class="xref-module">Harvester</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              «Добавить источник» открывает
+              <a href="data-sources.html#source-wizard" class="xref-page">мастер подключения</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Сортировка — клик по заголовку; повторный клик меняет направление, активная колонка подсвечена.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              Клик по строке открывает
+              <a href="data-sources.html" class="xref-page">карточку источника</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              ⋯-меню строки: состав зависит от состояния. Во время прогона доступна только «Отменить прогон», прочее заблокировано с причиной в подсказке.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              Прогон завершился с ошибками: часть items не загрузилась и ушла в
+              <a href="../../harvester/_workzone/reliability.html#dlq" class="xref-module">DLQ</a>. Чип открывает разбор по причине; «Повторить сбойные» прогоняет только их.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">9</span>
+              Две оси на источник. <b>Состояние</b> — решение админа: Active · Paused · Disconnected. <b>Здоровье</b> — наблюдение платформы: idle · syncing · error. Полные оси — <a href="../../harvester/_workzone/sources.html#lifecycle" class="xref-module">Harvester</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">10</span>
+              error относится к последнему прогону, конфигурацию не блокирует — чинится повтором; провал поднимает
+              <a href="notifications.html" class="xref-page">уведомление</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">11</span>
+              Данные Disconnected-источника осиротевают, но остаются в
+              <a href="../../knowledge-store/_workzone/data-model.html#projections" class="xref-module">Knowledge Store</a>. «Очистить данные» необратимо сносит весь вклад источника за type-to-confirm.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

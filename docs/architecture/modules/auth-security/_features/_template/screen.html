@@ -1,0 +1,79 @@
+<!doctype html>
+<!--
+  ┌─────────────────────────────────────────────────────────────────────┐
+  │  FEATURE-LOCAL SCREEN — copy to _features/<feature>/<screen>.html for │
+  │  a screen seen ONLY inside this feature. Same wf-* kit as a normal    │
+  │  wireframe; only the CSS paths differ (one level deeper). The         │
+  │  feature's flow diagram (index.html) links here via .flow-stop.       │
+  │                                                                       │
+  │  If a 2nd feature ever needs this screen, MOVE it to _wireframes/     │
+  │  (shared catalog) and relink — make docs-map flags the broken links.  │
+  │  Conventions: docs/architecture/README.md → "Features" + "Wireframes".│
+  └─────────────────────────────────────────────────────────────────────┘
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Feature screen (template)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit (one level deeper
+         than _wireframes/ — feature screens sit in _features/<feature>/) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../wireframe.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="index.html">← Feature name</a>
+        <!-- TODO: screen name + .iter status (v1 / v2) -->
+        <h1 class="header__title">Screen name</h1>
+        <div class="header__sub">
+          auth / security · features · screen
+          <!-- load marker: default skeleton — replace the mechanism when the screen is designed -->
+          <a class="in-load in-load--skeleton" href="../../../shared-ui/_wireframes/loading-states.html#skeleton" title="Screen loading — skeleton">
+            <span class="in-load__icon"></span>loading
+          </a>
+        </div>
+      </div>
+
+      <!-- ═══ Screen description ═══
+           Purpose — in prose. Route and access — in the wireframe's address bar. -->
+      <p class="desc">A brief statement of the screen's purpose within the feature.</p>
+
+      <!-- ═══ Wireframe ═══ Assemble from wf-* primitives (modules/wireframe.css). -->
+      <div class="section">
+        <div class="section__title">Wireframe</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">screen name</div>
+          <div class="wf-screen wf-screen--narrow">
+            <!--
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url">achilles.local/route</div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-center wf-stack wf-stack--tight">
+                  <h2 class="wf-title">Title</h2>
+                  <p class="wf-subtitle">Explanatory subtitle</p>
+                </div>
+                <button class="wf-btn wf-btn--primary wf-btn--block">Action</button>
+              </div>
+            </div>
+            -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,252 @@
+/* Admin Panel — prompt-library workzone (pl-*).
+   The canonical text source of truth for the platform system prompt: the four
+   composition layers as stk-* bands, each carrying the verbatim default text
+   (.pl-text) plus meta tags (.pl-tag) and stk-dec design notes. The wireframe
+   (_wireframes/ai-behavior.html) stays illustrative — this page holds the full
+   battle-ready strings. Layers 1–2 are admin-editable (safety · org); layer 3
+   is our engineered per-surface function-prompt (chat grounding + the
+   search_knowledge tool contract, agent frame); layer 4 is runtime context.
+   Loaded by _workzone/prompt-library.html on top of ../../module.css
+   + ../../layered-stack.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Layer accent presets (descend = final-prompt order) ── */
+.stk-layer--safety {
+  --stk-lc: var(--s1-glow);
+  --stk-lc-pale: var(--tint-6);
+}
+.stk-layer--org {
+  --stk-lc: var(--accent);
+  --stk-lc-pale: var(--tint-8);
+}
+.stk-layer--eng {
+  --stk-lc: var(--s3-glow);
+  --stk-lc-pale: var(--s3-pale);
+}
+.stk-layer--runtime {
+  --stk-lc: var(--s2-glow);
+  --stk-lc-pale: var(--s2-pale);
+}
+
+/* ── Verbatim prompt-text block — the literal default string, framed in the
+   layer accent so the eye reads it as "this is the actual text". ── */
+.pl-text {
+  flex: 1 1 100%;
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--stk-lc, var(--accent));
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--text);
+}
+
+/* A placeholder token / inline code inside the verbatim text — quiet mono chip
+   in the layer accent, not the loud page-default code chip. */
+.pl-text code {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 5px;
+  color: var(--stk-lc, var(--accent));
+  background: var(--stk-lc-pale, var(--tint-8));
+}
+
+/* Second voice inside a text block — the agent-surface variant, set apart from
+   the chat grounding text above it. */
+.pl-text--alt {
+  background: var(--surface);
+  font-style: italic;
+  color: var(--text-dim);
+}
+
+/* ── Meta tag row — token estimate, owner, NULL behaviour ── */
+.pl-meta {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.pl-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 0.14rem 0.45rem;
+  border-radius: var(--pill-radius);
+  line-height: 1.4;
+  white-space: nowrap;
+  color: var(--stk-lc, var(--accent));
+  background: var(--stk-lc-pale, var(--tint-8));
+  border: 1px solid var(--stk-lc, var(--accent));
+}
+
+/* Neutral tag — facts that aren't owned by the layer accent (e.g. "engine"). */
+.pl-tag--muted {
+  color: var(--text-muted);
+  background: var(--paper);
+  border-color: var(--accent-muted);
+}
+
+/* ════════════════════════════════════════════ */
+/* Composition key — at-a-glance map of the page */
+/* ════════════════════════════════════════════ */
+/* The four layers grouped by who owns them (admin · engine · runtime),
+   left→right in descend order, summed by +/= into one prompt per call. Sits
+   above the full stack so the page reads structure-first, before any text —
+   the layer chips link down to their bands. */
+.pl-key {
+  margin: 0 0 1.6rem;
+  padding: 0.9rem 1.05rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+}
+
+.pl-key__intro {
+  margin: 0 0 0.8rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.pl-key__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.55rem;
+}
+
+/* The +/= connectives that read the layers as an equation. */
+.pl-key__op {
+  display: flex;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.pl-key__col {
+  flex: 1 1 0;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.pl-key__owner {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+/* One layer chip — colored in its own band accent, a link down to that band. */
+.pl-key__layer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  text-decoration: none;
+  background: var(--stk-lc-pale, var(--tint-8));
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--stk-lc, var(--accent));
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text);
+  transition:
+    border-color 0.15s,
+    transform 0.15s;
+}
+
+.pl-key__layer:hover {
+  border-color: var(--stk-lc, var(--accent));
+  transform: translateX(2px);
+}
+
+/* The chip block centers vertically between the owner header and the note:
+   a single-layer column (engine · runtime) sits mid-height instead of glued
+   to the top, balanced against the two-chip admin column. */
+.pl-key__layer:first-of-type {
+  margin-top: auto;
+}
+
+.pl-key__n {
+  flex: 0 0 auto;
+  width: 1.3rem;
+  height: 1.3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--stk-lc, var(--accent));
+  background: var(--paper);
+  border: 1.5px solid var(--stk-lc, var(--accent));
+  border-radius: 50%;
+}
+
+.pl-key__note {
+  margin-top: auto;
+  font-size: 0.7rem;
+  font-style: italic;
+  line-height: 1.35;
+  color: var(--text-dim);
+}
+
+/* Result chip — the single prompt the layers sum into. */
+.pl-key__result {
+  flex: 1 1 0;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.45rem 0.7rem;
+  background: var(--tint-8);
+  border: 1.5px solid var(--accent);
+  border-radius: var(--radius-md);
+}
+
+.pl-key__result b {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.pl-key__result span {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+/* Per-layer accent on the key chips — mirror the stack band presets above. */
+.pl-key__layer--safety {
+  --stk-lc: var(--s1-glow);
+  --stk-lc-pale: var(--tint-6);
+}
+.pl-key__layer--org {
+  --stk-lc: var(--accent);
+  --stk-lc-pale: var(--tint-8);
+}
+.pl-key__layer--eng {
+  --stk-lc: var(--s3-glow);
+  --stk-lc-pale: var(--s3-pale);
+}
+.pl-key__layer--runtime {
+  --stk-lc: var(--s2-glow);
+  --stk-lc-pale: var(--s2-pale);
+}

@@ -1,0 +1,190 @@
+/* Admin Panel — data-model workzone diagram (dm-*).
+   A trimmed subset of auth-security/_workzone/data-model.css: the same
+   stk-* layered-stack bands carry one DB-table sub-block (field · type ·
+   constraint chips · note) plus .stk-dec design notes. Admin carries the
+   platform_settings config singleton (incl. the AI budget) and the migration
+   band; the AI-models registry, the tool catalog and the system prompt now
+   live in AI Foundation, and the API-error contract panel (dm-env / dm-codes
+   / dm-http) is dropped — only the table primitives and layer accents are
+   kept. Static — no hover affordance (README §Hover).
+   Loaded by _workzone/data-model.html on top of ../../module.css
+   + ../../layered-stack.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Layer accent presets ── */
+.stk-layer--config {
+  --stk-lc: var(--accent);
+  --stk-lc-pale: var(--tint-8);
+}
+.stk-layer--migration {
+  --stk-lc: var(--s2-glow);
+  --stk-lc-pale: var(--s2-pale);
+}
+
+/* ── Constraint chips ── */
+.dm-c {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 0.12rem 0.4rem;
+  border-radius: var(--pill-radius);
+  line-height: 1.4;
+  white-space: nowrap;
+}
+.dm-c--pk {
+  background: var(--s1);
+  color: #fff;
+}
+.dm-c--fk {
+  background: var(--s2);
+  color: #fff;
+}
+.dm-c--uq {
+  background: #5a6a8a;
+  color: #fff;
+}
+.dm-c--idx {
+  background: var(--s4);
+  color: #fff;
+}
+.dm-c--nn {
+  background: var(--s3);
+  color: #fff;
+}
+.dm-c--null {
+  background: var(--paper);
+  color: var(--text-muted);
+  border: 1px solid var(--accent-muted);
+}
+.dm-c--chk {
+  background: var(--tint-15);
+  color: var(--accent);
+  border: 1px solid var(--tint-25);
+}
+.dm-c--def {
+  background: var(--s2-pale);
+  color: var(--s2);
+  border: 1px solid var(--tint-15);
+}
+
+/* ── DB-table sub-block (lives inside a .stk-layer__body) ── */
+.dm-tbl {
+  flex: 1 1 320px;
+  min-width: 280px;
+  align-self: flex-start;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  overflow: hidden;
+}
+/* The lone config singleton spans the full layer width; notes wrap below. */
+.stk-layer--config .dm-tbl {
+  flex-basis: 100%;
+}
+.dm-tbl__head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.5rem 0.75rem;
+  background: var(--tint-6);
+  border-bottom: 1px solid var(--border);
+}
+.dm-tbl__name {
+  font-family: var(--mono);
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.dm-tbl__sub {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.dm-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin-left: auto;
+}
+.dm-badge {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.16rem 0.4rem;
+  border-radius: var(--tag-radius);
+  border: 1px solid var(--tint-25);
+  color: var(--text-dim);
+  background: var(--tint-6);
+  white-space: nowrap;
+}
+.dm-badge--flag {
+  color: var(--s4);
+  border-color: rgba(160, 88, 56, 0.35);
+  background: var(--s4-pale);
+}
+.dm-badge--fk {
+  color: var(--s2);
+  border-color: rgba(136, 96, 64, 0.4);
+  background: rgba(136, 96, 64, 0.08);
+}
+.dm-badge--fk::before {
+  content: "⛓ ";
+}
+.dm-badge--uniq {
+  color: var(--s3);
+  border-color: rgba(106, 128, 72, 0.4);
+  background: var(--s3-pale);
+}
+
+/* ── Matrix-style field rows: field · type · constraint chips · note ── */
+.dm-fields {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.dm-fields td {
+  padding: 0.32rem 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+.dm-fields tr:last-child td {
+  border-bottom: none;
+}
+.dm-fields .dm-f {
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+.dm-fields .dm-t {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.dm-fields .dm-cons {
+  white-space: nowrap;
+}
+.dm-fields .dm-cons .dm-c {
+  margin: 1px 2px 1px 0;
+}
+.dm-fields .dm-note {
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+.dm-fields tr.is-pk td:first-child {
+  box-shadow: inset 3px 0 0 var(--s1);
+}
+.dm-fields tr.is-fk td:first-child {
+  box-shadow: inset 3px 0 0 var(--s2);
+}

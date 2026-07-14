@@ -1,0 +1,54 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+        exclude: ^frontend/tsconfig\..*\.json$
+      - id: check-toml
+      - id: check-ast
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: ["--maxkb=200"]
+        exclude: (^|/)package-lock\.json$
+      - id: no-commit-to-branch
+        args: ["--branch=main"]
+
+  - repo: local
+    hooks:
+      - id: docs-map
+        name: docs-map (architecture link validator)
+        entry: python3 docs/architecture/_tools/docs_map.py --strict --human
+        language: system
+        files: ^docs/architecture/.*\.(html|py)$
+        pass_filenames: false
+
+      - id: ruff-check
+        name: ruff check
+        entry: backend/.venv/bin/ruff check --fix
+        language: system
+        types: [python]
+        files: ^backend/
+
+      - id: ruff-format
+        name: ruff format
+        entry: backend/.venv/bin/ruff format
+        language: system
+        types: [python]
+        files: ^backend/
+
+      - id: eslint
+        name: eslint
+        entry: bash -c 'cd frontend && node_modules/.bin/eslint --cache --cache-location node_modules/.cache/eslint --no-warn-ignored --fix "${@/#frontend\//}"' --
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
+
+      - id: prettier
+        name: prettier
+        entry: bash -c 'cd frontend && node_modules/.bin/prettier --write "${@/#frontend\//}"' --
+        language: system
+        files: ^frontend/.*\.(ts|tsx|css|json)$

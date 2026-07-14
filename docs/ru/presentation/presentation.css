@@ -1,0 +1,722 @@
+/* ── Layout ── */
+.page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 5rem 2rem 4rem;
+}
+
+/* ── Hero ── */
+.hero {
+  text-align: center;
+  padding: 0 0 2.5rem;
+}
+
+.hero__title {
+  font-size: 3.2rem;
+  font-weight: var(--heading-weight);
+  letter-spacing: var(--heading-spacing);
+  line-height: 1.1;
+  background: linear-gradient(
+    135deg,
+    var(--s1) 0%,
+    var(--s4) 50%,
+    var(--s2) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+}
+
+.hero__subtitle {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-dim);
+  margin-bottom: 1.5rem;
+}
+
+.hero__desc {
+  max-width: 580px;
+  margin: 0 auto;
+  font-size: 1rem;
+  color: var(--text-dim);
+  line-height: 1.7;
+}
+
+/* ── Divider ── */
+.divider {
+  height: 1.5rem;
+}
+
+/* ── Section ── */
+.section {
+  padding: 0.5rem 0;
+}
+
+.section__label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.5rem;
+}
+
+.section__label--problem {
+  color: var(--s1);
+}
+
+.section__label--solution {
+  color: var(--s3);
+}
+
+.section__label--summary {
+  color: var(--s2);
+}
+
+.section__label--evolution {
+  color: var(--s4);
+}
+
+/* Прогрессия развёртывания: хаб → гибрид → мозг */
+.phases {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1.75rem 0;
+}
+.phase {
+  flex: 1 1 0;
+  min-width: 180px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+}
+.phase--full {
+  border-color: var(--s3);
+}
+.phase__tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+.phase__title {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+.phase__text {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+}
+.phase__arrow {
+  align-self: center;
+  color: var(--s4);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.section__title {
+  font-size: 1.5rem;
+  font-weight: var(--heading-weight);
+  letter-spacing: var(--heading-spacing);
+  line-height: 1.25;
+  margin-bottom: 1rem;
+}
+
+.section__text {
+  color: var(--text-dim);
+  line-height: 1.7;
+  margin-bottom: 1.5rem;
+  max-width: 640px;
+}
+
+/* ── Brooks Law visualization ── */
+.brooks {
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.brooks__group {
+  text-align: center;
+  flex: 0 0 auto;
+}
+
+.brooks__group svg {
+  display: block;
+  margin: 0 auto 0.6rem;
+}
+
+.brooks__label {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.brooks__label strong {
+  color: var(--s1);
+  font-size: 0.95rem;
+}
+
+/* ── Formula ── */
+.formula {
+  text-align: center;
+  padding: 1.1rem 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 1.5rem auto;
+  max-width: 360px;
+}
+
+.formula__expr {
+  font-family: var(--mono);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+
+.formula__legend {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+}
+
+/* ── Stats ── */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.stat {
+  text-align: center;
+  padding: 0.9rem 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.stat__people {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-bottom: 0.25rem;
+}
+
+.stat__connections {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--s1);
+}
+
+.stat__unit {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+/* ── Note ── */
+.note {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  border-left: 3px solid var(--border);
+  padding-left: 1rem;
+  margin-top: 1.5rem;
+}
+
+/* ── Pain points ── */
+.pains {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1.5rem 0;
+}
+
+.pain {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.pain__icon {
+  font-size: 1.1rem;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.pain__text {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.pain__text strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ── Benefits ── */
+.benefits {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.benefit {
+  padding: 1rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.benefit__icon {
+  font-size: 1.15rem;
+  margin-bottom: 0.35rem;
+}
+
+.benefit__title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.benefit__text {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ── Comparison ── */
+.compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.compare__item {
+  padding: 1rem 1.1rem;
+  border-radius: var(--radius);
+}
+
+.compare__item--old {
+  background: var(--bg);
+  border: 1.5px dashed var(--border);
+}
+
+.compare__item--new {
+  background: var(--surface);
+  border: 1.5px solid var(--s3);
+}
+
+.compare__tag {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: inline-block;
+  padding: 0.18rem 0.45rem;
+  border-radius: 4px;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.compare__item--old .compare__tag {
+  background: var(--accent-muted);
+}
+
+.compare__item--new .compare__tag {
+  background: var(--s3);
+}
+
+.compare__title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.compare__text {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ── Agent levels ── */
+.levels {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1.5rem 0;
+}
+
+.level {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  align-items: flex-start;
+}
+
+.level__icon {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--s3);
+  flex-shrink: 0;
+  margin-top: 0.45rem;
+  font-size: 0;
+}
+
+.level__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.level__title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.level__text {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ── Advantages list ── */
+.advantages {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1.5rem 0;
+}
+
+.advantage {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.advantage__marker {
+  color: var(--s3);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.advantage strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* ── Summary features ── */
+.features {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.feature {
+  padding: 1rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.feature__title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin-bottom: 0.15rem;
+}
+
+.feature__text {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ── Section label variants ── */
+.section__label--example {
+  color: var(--s2);
+}
+
+.section__label--oss {
+  color: var(--s4);
+}
+
+/* ── Use case steps ── */
+.compare__steps {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+}
+
+.step {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  padding: 0.4rem 0.65rem;
+  border-radius: 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.step::before {
+  flex-shrink: 0;
+  font-weight: 700;
+  font-size: 0.72rem;
+}
+
+.step--fail {
+  color: var(--text-dim);
+  background: rgba(184, 78, 48, 0.06);
+}
+
+.step--fail::before {
+  content: "✗";
+  color: var(--s1);
+}
+
+.step--ok {
+  color: var(--text-dim);
+  background: rgba(106, 128, 72, 0.08);
+}
+
+.step--ok::before {
+  content: "✓";
+  color: var(--s3);
+}
+
+/* ── Open Source points ── */
+.oss-points {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.oss-point {
+  padding: 1rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.oss-point__title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
+}
+
+.oss-point__text {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+/* ── CTA footer ── */
+.cta {
+  text-align: center;
+  padding: 2.5rem 1.5rem;
+  margin-top: 1.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.cta__title {
+  font-size: 1.3rem;
+  font-weight: var(--heading-weight);
+  letter-spacing: var(--heading-spacing);
+  margin-bottom: 0.5rem;
+}
+
+.cta__text {
+  font-size: 0.88rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+  max-width: 400px;
+  margin: 0 auto 1.5rem;
+}
+
+.cta__actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.cta__btn {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 8px;
+  transition:
+    transform 0.15s,
+    box-shadow 0.15s;
+}
+
+.cta__btn:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.cta__btn--primary {
+  background: var(--s3);
+  color: #fff;
+}
+
+.cta__btn--secondary {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1.5px solid var(--border);
+}
+
+.cta__btn--secondary:hover {
+  border-color: var(--text-muted);
+}
+
+/* ── Bridge ── */
+.bridge {
+  text-align: center;
+  padding: 1.5rem 2rem;
+  margin: 0.5rem 0;
+}
+
+.bridge p {
+  font-size: 0.95rem;
+  color: var(--text-dim);
+  line-height: 1.8;
+  max-width: 520px;
+  margin: 0 auto;
+  font-style: italic;
+}
+
+/* ── Graph visualization ── */
+.graph-vis {
+  display: block;
+  max-width: 440px;
+  margin: 1.5rem auto 0.5rem;
+}
+
+.graph-vis__caption {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: 0.3rem 0 2rem;
+  font-style: italic;
+}
+
+/* ── Topology comparison ── */
+.topology {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin: 2rem 0 0.5rem;
+}
+
+.topology__side {
+  text-align: center;
+  flex: 0 0 auto;
+}
+
+.topology__side svg {
+  display: block;
+  margin: 0 auto 0.5rem;
+}
+
+.topology__arrow {
+  font-size: 1.5rem;
+  color: var(--text-muted);
+  font-weight: 300;
+  flex-shrink: 0;
+}
+
+.topology__label {
+  font-family: var(--mono);
+}
+
+.topology__formula {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  margin-bottom: 0.1rem;
+}
+
+.topology__count {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+.topology__side--problem .topology__count strong {
+  color: var(--s1);
+  font-size: 0.95rem;
+}
+
+.topology__side--solution .topology__count strong {
+  color: var(--s3);
+  font-size: 0.95rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .page {
+    padding: 2rem 1rem 3rem;
+  }
+
+  .hero__title {
+    font-size: 2.2rem;
+  }
+
+  .stats,
+  .benefits,
+  .compare,
+  .features,
+  .oss-points {
+    grid-template-columns: 1fr;
+  }
+
+  .brooks {
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .topology {
+    gap: 0.75rem;
+  }
+
+  .cta {
+    padding: 2rem 1rem;
+  }
+}

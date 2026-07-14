@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — AI Foundation: Test cases</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← AI Foundation</a>
+        <h1 class="header__title">Test cases</h1>
+        <div class="header__sub">ai-foundation · workzone</div>
+      </div>
+
+      <!-- ── Overview band: decisions + stack ── DB layer only: constraints,
+           cascades, upsert, seed. Module logic (connectivity check, model
+           discovery) is out of scope — a separate iteration. -->
+      <div class="test-overview">
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Decisions made</div>
+          <div class="decision-box">
+            <strong>Registry in core, readers only read</strong>
+            Rows are created by Admin (providers / models) and the runtime
+            (usage); the consumers — Harvester, Query Engine, Agent Engine — only
+            read from the registry, they create no rows. Constraints are exercised
+            through the ORM straight against the test DB: testcontainers
+            PostgreSQL, the real schema from the migration, per-test rollback.
+          </div>
+          <div class="decision-box">
+            <strong>RESTRICT — the source of truth for assignment integrity</strong>
+            A model in use can't be deleted or reassigned while it is referenced
+            by <code>model_assignments</code> / <code>chat_models</code> /
+            <code>agent_models</code>. The lock is held by the DB
+            (<code>FK RESTRICT</code>), not just a code check — the test bypasses
+            the service layer and hits the database directly.
+          </div>
+          <div class="decision-box">
+            <strong>Scope boundaries — DB only</strong>
+            This is the control layer: constraints, cascades, the upsert
+            aggregate, seed, and reversibility. The provider connectivity check
+            and model discovery are module logic, covered by a separate
+            iteration; not touched here.
+          </div>
+        </div>
+
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Stack and infrastructure</div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Available <span class="iter done">done</span></span>
+            <span>pytest, pytest-asyncio</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Test DB</span>
+            <span
+              >testcontainers (PostgreSQL) — the real schema, per-test rollback;
+              constraints are checked against a live database, not mocks</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Seed</span>
+            <span
+              >verified by running the migration itself — the <code>Platform</code>
+              provider, built-in models, tool presets; not a hardcoded
+              fixture</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Markers</span>
+            <span
+              ><code>@pytest.mark.integration</code> — the whole layer needs a DB;
+              priority (<code>p0</code> / <code>p1</code>) is orthogonal to
+              type</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P0 ═══ The heart of integrity — the RESTRICT lock. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p0">Integration · P0</span>
+        <span class="test-sec__title">Lock on a model in use — RESTRICT</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span><span class="name">test_model_lifecycle_lock.py</span></div>
+            <div class="test-card__sub">Model in use — deletion / reassignment rejected by the DB</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#t-model-assignments">→ Assignments</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">in use by an assignment</span><span class="test-case__e">model in <code>model_assignments</code> → DELETE of <code>ai_models</code> rejected (<code>FK RESTRICT</code> → IntegrityError)</span></div>
+              <div class="test-case"><span class="test-case__k">in use by chat</span><span class="test-case__e">model in <code>chat_models</code> → deletion / disabling rejected by RESTRICT</span></div>
+              <div class="test-case"><span class="test-case__k">in use by agents</span><span class="test-case__e">model in <code>agent_models</code> → rejected by the same RESTRICT</span></div>
+              <div class="test-case"><span class="test-case__k">free model deletes</span><span class="test-case__e">referenced nowhere → DELETE goes through as normal</span></div>
+              <div class="test-case"><span class="test-case__k">lock in the DB</span><span class="test-case__e">bypassing the service layer — a direct DELETE against the database is rejected too; not just a code check</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P1 ═══ Default, cascades, usage upsert, catalog, seed. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">Integration · P1</span>
+        <span class="test-sec__title">Default, cascades, usage upsert, catalog, seed</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11.525 2.295a.53.53 0 0 1 .95 0l2.31 4.679a2.123 2.123 0 0 0 1.595 1.16l5.166.756a.53.53 0 0 1 .294.904l-3.736 3.638a2.123 2.123 0 0 0-.611 1.878l.882 5.14a.53.53 0 0 1-.771.56l-4.618-2.428a2.122 2.122 0 0 0-1.973 0L6.396 21.01a.53.53 0 0 1-.77-.56l.881-5.139a2.122 2.122 0 0 0-.611-1.879L2.16 9.795a.53.53 0 0 1 .294-.906l5.165-.755a2.122 2.122 0 0 0 1.597-1.16z" /></svg></span><span class="name">test_default_model.py</span></div>
+            <div class="test-card__sub">Exactly one default — partial UNIQUE WHERE is_default</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#t-chat-models">→ chat_models / agent_models</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">two defaults → rejected</span><span class="test-case__e">a second <code>is_default=true</code> in <code>chat_models</code> rejected by the partial unique</span></div>
+              <div class="test-case"><span class="test-case__k">default switch is atomic</span><span class="test-case__e">setting a new default in one transaction clears the old one</span></div>
+              <div class="test-case"><span class="test-case__k">can't be left without a default</span><span class="test-case__e">clearing the only <code>is_default</code> without setting a new one → forbidden (the "exactly one" invariant is enforced by the application)</span></div>
+              <div class="test-case"><span class="test-case__k">same for agents</span><span class="test-case__e">the same three cases on <code>agent_models</code> — the list shape is shared</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M3 5V19A9 3 0 0 0 21 19V5" /><path d="M3 12A9 3 0 0 0 21 12" /></svg></span><span class="name">test_provider_cascade.py</span></div>
+            <div class="test-card__sub">Provider / model: cascade, CHECK, duplicate, key mask</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#t-ai-providers">→ ai_providers / ai_models</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">provider cascade</span><span class="test-case__e">DELETE of <code>ai_providers</code> → its <code>ai_models</code> go with it via <code>ON DELETE CASCADE</code></span></div>
+              <div class="test-case"><span class="test-case__k">local without base_url → rejected</span><span class="test-case__e"><code>CHECK (kind='cloud' OR base_url IS NOT NULL)</code> — a local without an endpoint is rejected by the DB</span></div>
+              <div class="test-case"><span class="test-case__k">duplicate model → rejected</span><span class="test-case__e"><code>UNIQUE(provider_id, model_id)</code> — the same <code>model_id</code> twice under a provider is rejected</span></div>
+              <div class="test-case"><span class="test-case__k">key is write-only</span><span class="test-case__e">what leaves outward (serialization / API) is the mask <code>••••xxxx</code>, not <code>api_key_enc</code> and not the plaintext key</span></div>
+              <div class="test-case"><span class="test-case__k">assignment CHECK — system subset</span><span class="test-case__e"><code>model_assignments.function</code> is CHECKed against the vocabulary {<code>harvester_embedding</code> · <code>query_rag</code>}; INSERT with <code>function='chat'</code> / <code>'agent_engine'</code> → rejected by the DB (assignment is possible only to system functions)</span></div>
+              <div class="test-case"><span class="test-case__k">usage — full function vocabulary</span><span class="test-case__e"><code>model_usage.function='chat'</code> goes through: usage is recorded across all four functions, including <code>chat</code> / <code>agent_engine</code>; two different vocabularies on one column <a class="xref-badge xref-badge--page" href="data-model.html#ai-functions">→ Function vocabulary</a></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" x2="12" y1="2" y2="22" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg></span><span class="name">test_model_usage_upsert.py</span></div>
+            <div class="test-card__sub">Usage: upsert by bucket, SET NULL, cost derivation</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#t-model-usage">→ model_usage</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">upsert into the same bucket</span><span class="test-case__e">a repeat on <code>UNIQUE(model_id, function, bucket_date)</code> → one row, counters (<code>request_count</code> · <code>input_tokens</code> · <code>output_tokens</code>) grow</span></div>
+              <div class="test-case"><span class="test-case__k">a different slice → its own row</span><span class="test-case__e">a different <code>function</code> / <code>bucket_date</code> → a separate aggregate row</span></div>
+              <div class="test-case"><span class="test-case__k">model deletion → SET NULL</span><span class="test-case__e"><code>model_id</code> is nulled via <code>ON DELETE SET NULL</code>, the usage row survives — <code>cost</code> outlives it</span></div>
+              <div class="test-case"><span class="test-case__k">cost derivation</span><span class="test-case__e"><code>cost</code> = input·price_input + output·price_output; any one price <code>NULL</code> → <code>cost</code> <code>NULL</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.39 4.39a1 1 0 0 0 1.68-.474 2.5 2.5 0 1 1 3.014 3.015 1 1 0 0 0-.474 1.68l1.683 1.682a2.414 2.414 0 0 1 0 3.414L19.61 15.39a1 1 0 0 1-1.68-.474 2.5 2.5 0 1 0-3.014 3.015 1 1 0 0 1 .474 1.68l-1.683 1.682a2.414 2.414 0 0 1-3.414 0L8.61 19.61a1 1 0 0 0-1.68.474 2.5 2.5 0 1 1-3.014-3.015 1 1 0 0 0 .474-1.68l-1.683-1.682a2.414 2.414 0 0 1 0-3.414L4.39 8.61a1 1 0 0 1 1.68.474 2.5 2.5 0 1 0 3.014-3.015 1 1 0 0 1-.474-1.68l1.683-1.682a2.414 2.414 0 0 1 3.414 0z" /></svg></span><span class="name">test_tools_registry.py</span></div>
+            <div class="test-card__sub">Tool catalog: UNIQUE, secret, CHECKs</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#tools">→ tools</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">name is unique</span><span class="test-case__e"><code>UNIQUE(name)</code> — a duplicate tool key is rejected</span></div>
+              <div class="test-case"><span class="test-case__k">secret is write-only</span><span class="test-case__e"><code>credential_enc</code> never leaves outward — only the <code>is_set</code> flag; <code>config</code> (JSONB) is non-secret and returned as is</span></div>
+              <div class="test-case"><span class="test-case__k">CHECK source</span><span class="test-case__e"><code>source</code> ∈ (<code>preset</code> · <code>custom</code> · <code>mcp</code> · <code>openapi</code>) — anything else is rejected by the DB</span></div>
+              <div class="test-case"><span class="test-case__k">CHECK access</span><span class="test-case__e"><code>access</code> ∈ (<code>read_only</code> · <code>write</code>) — anything else is rejected</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14" /><path d="M5 2h14" /><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" /><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" /></svg></span><span class="name">test_seed_migration.py</span></div>
+            <div class="test-card__sub">Seeding Platform + built-ins, downgrade reversibility</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#migration">→ Migration</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">Platform provider</span><span class="test-case__e">the migration seeds the <code>is_system</code> provider <code>Platform</code> — non-deletable</span></div>
+              <div class="test-case"><span class="test-case__k">direct DELETE rejected</span><span class="test-case__e">deleting the <code>is_system</code> provider <code>Platform</code> bypassing the service layer — a direct DELETE against the database is rejected by the DB lock, not just a code check</span></div>
+              <div class="test-case"><span class="test-case__k">built-ins + intrinsics</span><span class="test-case__e">embedding models seeded with <code>meta</code>: <code>bge-m3</code> <code>{embedding_dim:1024, max_input_tokens:8192}</code>, <code>Qwen3-Embedding-0.6B</code> <code>{1024, 32768}</code></span></div>
+              <div class="test-case"><span class="test-case__k">tool presets disabled</span><span class="test-case__e">two presets (<code>web_search</code> · <code>fetch_url</code>), both <code>chat_enabled=false</code> and <code>agents_allowed=false</code></span></div>
+              <div class="test-case"><span class="test-case__k">downgrade mirrors</span><span class="test-case__e">DROP in reverse order; after the rollback the tables are gone</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ API P1 ═══ The HTTP wrapper over the registry. DB integrity (CHECK,
+           cascades, key mask) is covered by the Integration tests above; here it's
+           the HTTP contract: CRUD codes, function assignment, discovery, access.
+           Summary — HTTP API. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">API · P1</span>
+        <span class="test-sec__title">Registry — the HTTP contract</span>
+        <span class="test-sec__meta">httpx · ASGI app · <a href="../../api/index.html#conventions" class="xref-badge">→ HTTP API</a> <a class="xref-badge" href="../../api/_workzone/tests.html#conformance">→ Conformance</a></span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M3 9h18" /><path d="M9 21V9" /></svg></span><span class="name">test_api_registry.py</span></div>
+            <div class="test-card__sub">CRUD of providers / models / tools and assignments</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#t-ai-providers">→ ai_providers / ai_models</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">registry CRUD</span><span class="test-case__e">create / edit / delete of a provider, model, tool over HTTP → codes; the response carries the mask <code>••••xxxx</code> / the <code>is_set</code> flag, not the secret</span></div>
+              <div class="test-case"><span class="test-case__k">function assignment</span><span class="test-case__e">switching the chat / agent / embedding default via an assignment → <code>200</code>, the old one cleared atomically</span></div>
+              <div class="test-case"><span class="test-case__k">in-use under RESTRICT → 409</span><span class="test-case__e">deleting a provider / model assigned to a function → <code>409</code>, not <code>500</code> (the lock on a model in use)</span></div>
+              <div class="test-case"><span class="test-case__k">CHECK surfaced as 422</span><span class="test-case__e">local without <code>base_url</code>, duplicate <code>model_id</code>, a bad tool <code>source</code>/<code>access</code> → <code>422</code>, not <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">type governs assignment → 422</span><span class="test-case__e"><code>model_type</code> gates it: an embedding model in <code>chat_models</code>/<code>agent_models</code> or on <code>query_rag</code> → <code>422</code>; a chat model on an embedding function → <code>422</code> — assignment across the wrong type is rejected, not <code>500</code> <a class="xref-badge xref-badge--page" href="data-model.html#t-ai-models">→ Type governs assignment</a></span></div>
+              <div class="test-case"><span class="test-case__k">unknown {id} → 404</span><span class="test-case__e"><code>GET</code>/<code>PATCH</code>/<code>DELETE</code> of a provider / model / tool by a nonexistent <code>{id}</code> → <code>404</code>, not <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">CRUD — Owner/Admin only</span><span class="test-case__e"><code>Member</code> on <code>POST</code>/<code>PATCH</code>/<code>DELETE</code> of the registry (providers · models · tools · assignments) → <code>403</code>; anonymous → <code>401</code>; parametrized over all write routes, not just discovery</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></svg></span><span class="name">test_api_discovery.py</span></div>
+            <div class="test-card__sub">Polling a provider's model catalog · access</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#t-ai-providers">→ provider adapter</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">discovery by adapter</span><span class="test-case__e">a catalog request → the list of models from a cloud (OpenAI-compatible <code>/v1/models</code>) or local (Ollama <code>/api/tags</code>) provider; discovery is config, not inference</span></div>
+              <div class="test-case"><span class="test-case__k">provider unreachable</span><span class="test-case__e">a bad key / unreachable endpoint → a clean upstream error surfaced outward, not <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">Owner/Admin only</span><span class="test-case__e">CRUD and discovery — Owner/Admin → <code>200</code>; Member → <code>403</code>; anonymous → <code>401</code> (parametrized over the registry routes)</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Out of scope ═══ The prompt_settings singleton is checked from the
+           Admin side — not duplicated here. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Out of scope</span>
+        <span class="test-sec__title">Where it's covered nearby</span>
+      </div>
+      <div class="test-struct">
+        <div class="test-stack-row">
+          <span class="test-stack-row__lbl">prompt_settings</span>
+          <span
+            >the singleton and its <code>CHECK (id = 1)</code>, override / reset /
+            token cap — covered from the Admin side
+            (<a class="xref-module" href="../../admin-panel/_workzone/tests.html"><code>test_prompt_settings.py</code></a>);
+            not duplicated here</span
+          >
+        </div>
+      </div>
+
+      <!-- ═══ Structure ═══ Module directory: the whole layer needs a DB,
+           priority is set by markers, not folders. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Structure</span>
+        <span class="test-sec__title">Test file structure</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          The whole layer is integration with a DB. Priority (P0–P1) is
+          orthogonal to the directories and is set by markers
+          (<code>pytest -m p0</code>), not by separate folders.
+        </p>
+        <div class="test-tree">
+          <ul>
+            <li>
+              <span class="test-tree__row"><code>tests/ai_foundation/</code><span class="d">module directory</span></span>
+              <ul>
+                <li><span class="test-tree__row"><code>conftest.py</code><span class="d">testcontainers PG, provider / model factories</span></span></li>
+                <li>
+                  <span class="test-tree__row"><code>integration/</code><span class="d">with a DB, per-test rollback</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>model-lifecycle-lock</code><span class="d">RESTRICT lock on a model in use</span></span></li>
+                    <li><span class="test-tree__row"><code>default-model · provider-cascade</code><span class="d">exactly one default, cascade / CHECK / mask</span></span></li>
+                    <li><span class="test-tree__row"><code>model-usage-upsert · tools-registry</code><span class="d">usage upsert, tool catalog</span></span></li>
+                    <li><span class="test-tree__row"><code>seed-migration</code><span class="d">seed + downgrade reversibility</span></span></li>
+                  </ul>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,197 @@
+/* Scheduling — bespoke diagrams for the cache-workers scheduler workzone page:
+   the singleton-vs-pool topology figure and the schedule registry table.
+   Loaded by scheduling.html on top of module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ═══════════════════════════════════════════
+   Topology — singleton scheduler vs horizontal worker pool
+   One cron tick on the left publishes into a lane; the right pool scales out.
+   The visual contrast (one node vs three) carries the why-singleton point.
+   ═══════════════════════════════════════════ */
+.sch-topo {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1rem;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+.sch-topo__col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.sch-topo__cap {
+  margin-bottom: 0;
+  font-size: 0.62rem;
+}
+
+.sch-topo__note {
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+/* Nodes — a card per service; cron is the lone singleton, workers tile out. */
+.sch-node {
+  padding: 0.6rem 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.sch-node--cron {
+  border-left: 3px solid var(--accent);
+}
+
+.sch-node__t {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sch-node__d {
+  margin-top: 0.15rem;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
+
+.sch-node--worker {
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-align: center;
+  border-style: dashed;
+}
+
+.sch-pool {
+  display: flex;
+  gap: 0.4rem;
+}
+
+/* Arrow channel — the publish edge between the two columns. */
+.sch-topo__arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.sch-topo__arrow-l {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+}
+
+.sch-topo__arrow-g {
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+@media (max-width: 720px) {
+  .sch-topo {
+    grid-template-columns: 1fr;
+  }
+  .sch-topo__arrow {
+    flex-direction: row;
+    gap: 0.4rem;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   Trigger kinds — what the scheduler emits into a lane.
+   Fixed cron fires one job per tick; the next_run_at scan publishes every
+   due agent run at once. Two cards, accent rule echoes the cron node above.
+   ═══════════════════════════════════════════ */
+.sch-trig {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin: 1rem 0;
+}
+
+.sch-trig__item {
+  padding: 0.7rem 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+}
+
+.sch-trig__h {
+  font-family: var(--mono);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.sch-trig__d {
+  margin-top: 0.3rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+@media (max-width: 720px) {
+  .sch-trig {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   Registry table — schedule → cadence → lane → consumer
+   ═══════════════════════════════════════════ */
+.sch-reg {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.sch-reg th {
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  padding: 0.4rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.sch-reg td {
+  padding: 0.5rem 0.7rem;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  vertical-align: baseline;
+}
+
+.sch-reg tr:last-child td {
+  border-bottom: none;
+}
+
+.sch-reg__name {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sch-reg__cons {
+  color: var(--text-dim);
+}
+
+/* Lane pill — names the queue the schedule publishes into. */
+.sch-lane {
+  display: inline-flex;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.15rem 0.45rem;
+  border-radius: var(--tag-radius);
+  color: var(--text-dim);
+  background: var(--tint-8);
+  border: 1px solid var(--tint-15);
+}

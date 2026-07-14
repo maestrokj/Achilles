@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Web App: Состояния ответа</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Web App</a>
+        <h1 class="header__title">Состояния ответа</h1>
+        <div class="header__sub">
+          web app · макеты
+          <a class="in-shell" href="layout.html"><span class="in-shell__frame"></span>shell</a>
+        </div>
+      </div>
+
+      <p class="desc">
+        Тот же тред, тот же каркас сообщения — но не каждый ответ заземлён.
+        Модель отвечает <strong>своими словами</strong>, а наш слой подшивает под
+        её ответ короткую плашку: был поиск по базе знаний и чем он кончился —
+        пусто, нет прав или часть скрыта. Плашка несёт безопасные координаты:
+        систему-источник и к кому идти за доступом (автор записи, в виде email).
+        Никакого красного — пользователь ответ получил; а на разговорный запрос
+        Achilles отвечает как обычный ассистент, без плашки вовсе. Четыре
+        состояния — каждое со своим адресом.
+      </p>
+
+      <p class="wf-subtitle wf-legend__lead">
+        Оболочка везде одна — тред и каркас сообщения от
+        <strong>assistant-ui</strong>
+        (<a href="../_workzone/stack.html#shell" class="xref-page">чат-оболочка</a>);
+        меняется наш слой — содержимое сообщения ассистента.
+      </p>
+
+      <!-- ═══ Макет ═══ Каждое состояние — отдельный адресуемый блок .wf-state
+           (экран слева, пояснение справа): ссылка ведёт прямо к нужному
+           варианту, а не в общий блок. Содержимое встроено в сообщение
+           ассистента. -->
+      <div class="section">
+        <div class="section__title">Четыре состояния</div>
+        <div class="wf-stage">
+          <div class="wf-statelist">
+            <!-- ── Состояние 1: «не нашёл» ── -->
+            <div class="wf-state" id="not-found">
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/chat
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/chat · авторизованный пользователь</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-card"><span class="wf-text">Какой SLA на возврат средств по договору с Acme?</span></div>
+                    <div class="wf-row">
+                      <span class="wf-avatar">A</span>
+                      <span class="wf-label">Achilles</span>
+                    </div>
+                    <div class="wf-card wf-stack wf-stack--tight">
+                      <span class="wf-text">
+                        Я искал, но по вашему запросу в базе знаний ничего не
+                        нашлось. Попробуйте переформулировать или проверьте,
+                        заведён ли нужный источник.
+                      </span>
+                      <div class="wf-kbnote">
+                        <span class="wf-kbnote__icon" aria-hidden="true"></span>
+                        <div class="wf-kbnote__body">
+                          <span class="wf-kbnote__head">Поиск по базе знаний — ничего не найдено</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="wf-state__doc">
+                <span class="wf-state__name">не нашёл</span>
+                <p class="wf-text">
+                  Контекста для ответа не нашлось — модель честно говорит об
+                  этом вместо догадки из общих знаний, а плашка подтверждает: по
+                  базе искали, релевантного нет. Координат нет — называть нечего.
+                </p>
+              </div>
+            </div>
+
+            <!-- ── Состояние 2: «нет доступа» ── -->
+            <div class="wf-state" id="no-access">
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/chat
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/chat · авторизованный пользователь</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-card"><span class="wf-text">Покажи зарплатную сетку по отделу продаж за Q2.</span></div>
+                    <div class="wf-row">
+                      <span class="wf-avatar">A</span>
+                      <span class="wf-label">Achilles</span>
+                    </div>
+                    <div class="wf-card wf-stack wf-stack--tight">
+                      <span class="wf-text">
+                        Такие данные в базе есть, но они закрыты правами доступа —
+                        показать содержимое я не могу. За доступом стоит обратиться
+                        к владельцу записи.
+                      </span>
+                      <div class="wf-kbnote">
+                        <span class="wf-kbnote__icon" aria-hidden="true"></span>
+                        <div class="wf-kbnote__body">
+                          <span class="wf-kbnote__head">Поиск по базе знаний — нет доступа</span>
+                          <div class="wf-kbnote__coords">
+                            <span class="wf-chip">Confluence</span>
+                            <span class="wf-kbnote__ask">спросить</span>
+                            <span class="wf-kbnote__contact">anna.petrova@acme.com</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="wf-state__doc">
+                <span class="wf-state__name">нет доступа</span>
+                <p class="wf-text">
+                  Релевантное есть, но скрыто правами доступа целиком — ни строки
+                  содержимого. Плашка несёт безопасные координаты: систему-источник
+                  и к кому идти за доступом — автор записи в виде email.
+                </p>
+                <a href="../../query-engine/_workzone/retrieval.html#identity" class="xref-module">→ Query Engine</a>
+              </div>
+            </div>
+
+            <!-- ── Состояние 3: access-hint ── -->
+            <div class="wf-state" id="access-hint">
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/chat
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/chat · авторизованный пользователь</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-card"><span class="wf-text">Когда подписан контракт с Acme и кто согласовал условия?</span></div>
+                    <div class="wf-row">
+                      <span class="wf-avatar">A</span>
+                      <span class="wf-label">Achilles</span>
+                    </div>
+                    <div class="wf-card wf-stack wf-stack--tight">
+                      <span class="wf-text">
+                        Контракт с Acme подписан 14 марта 2026 года. По согласованию
+                        условий данные есть, но закрыты правами — их я показать
+                        не могу.
+                      </span>
+                      <div class="wf-kbnote">
+                        <span class="wf-kbnote__icon" aria-hidden="true"></span>
+                        <div class="wf-kbnote__body">
+                          <span class="wf-kbnote__head">Часть данных скрыта правами</span>
+                          <div class="wf-kbnote__coords">
+                            <span class="wf-chip">Confluence</span>
+                            <span class="wf-kbnote__ask">спросить</span>
+                            <span class="wf-kbnote__contact">r.kuznetsov@acme.com</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="wf-state__doc">
+                <span class="wf-state__name">access-hint</span>
+                <p class="wf-text">
+                  Ответ собран из доступного, а под ним та же плашка о скрытой
+                  части: факт, система-источник и автор-контакт — без заголовка и
+                  содержимого. Автоматическая кнопка «Запросить доступ» —
+                  <span class="iter v2">v2</span>.
+                </p>
+                <a href="../../query-engine/_workzone/grounding.html#access-hints" class="xref-module">→ Query Engine</a>
+              </div>
+            </div>
+
+            <!-- ── Состояние 4: разговорный ответ ── -->
+            <div class="wf-state" id="conversational">
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/chat
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/chat · авторизованный пользователь</span>
+                    </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-card"><span class="wf-text">Помоги сформулировать письмо клиенту о переносе сроков.</span></div>
+                    <div class="wf-row">
+                      <span class="wf-avatar">A</span>
+                      <span class="wf-label">Achilles</span>
+                    </div>
+                    <div class="wf-card">
+                      <span class="wf-text">
+                        Конечно. Вот короткий вариант: «Здравствуйте! Сообщаем, что
+                        сроки по проекту сдвигаются на неделю; новая дата — …»
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="wf-state__doc">
+                <span class="wf-state__name">разговорный</span>
+                <p class="wf-text">
+                  Модель не обращалась к базе — обычный ассистент, без источников
+                  и цитат. Grounding-контракт к нему не применяется.
+                </p>
+                <a href="../../query-engine/_workzone/grounding.html#modes" class="xref-module">→ Query Engine</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

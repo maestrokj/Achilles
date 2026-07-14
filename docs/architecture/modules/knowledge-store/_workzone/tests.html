@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Knowledge Store: tests</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Knowledge Store</a>
+        <h1 class="header__title">Tests</h1>
+        <div class="header__sub">knowledge-store · workzone</div>
+      </div>
+
+      <!-- ── Overview band: decisions + stack ── -->
+      <div class="test-overview">
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Decisions made</div>
+          <div class="decision-box">
+            <strong>One database — tested with one SQL, not projection mocks</strong>
+            The load-bearing pillar of the design is body, vectors, and graph in one
+            Postgres, with rights enforced by a single JOIN. So the core of coverage is
+            integration against a real Postgres with <code>pgvector</code>: ACL
+            pre-filter, graph traversal, and upsert are verified on a live database, not
+            on a substituted store. Mocks cover only pure logic without a database
+            (chunking, fusion, decay).
+          </div>
+          <div class="decision-box">
+            <strong>Type sets the level, priority is set by markers</strong>
+            Unit — deterministic logic without a database, on every PR. Integration
+            and API — against a test Postgres+pgvector in Docker, as a separate step.
+            P0 holds the load-bearing invariants (ACL never leaks, upsert is idempotent),
+            P1 — curation and modes; priority is orthogonal to type
+            (<code>pytest -m p0</code>).
+          </div>
+          <div class="decision-box">
+            <strong>The coverage boundary matches the module boundary</strong>
+            KS is responsible for retrieval and storage: primitives, fusion, ACL filter,
+            lifecycle. RAG on top (rerank, packing, the LLM call) belongs to Query
+            Engine and is not tested here. Rights capture and the Entity contract belong
+            to Harvester; at the seam we only verify that what arrives is persisted
+            correctly and read back under rights.
+          </div>
+        </div>
+
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Stack and infrastructure</div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">In place <span class="iter done">done</span></span>
+            <span>pytest, pytest-asyncio, pytest-cov, httpx</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Database</span>
+            <span
+              >testcontainers — a test Postgres with the
+              <code>pgvector</code> extension (vectors + recursive SQL in one database);
+              Alembic migrations are applied when the container starts</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Factories</span>
+            <span
+              >factory_boy for <code>Entity</code> / <code>chunks</code> /
+              <code>entity_edge</code> and the ACL five-tuple — building the graph and
+              scene rights without going through Harvester</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Embedding</span>
+            <span
+              >a fake embedding model (deterministic vector from text) — so that
+              similarity search is reproducible, without real inference in the automated
+              run</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Other</span>
+            <span
+              >time-machine (age for staleness decay), Curation Pass steps invoked
+              directly — without spinning up the scheduler</span
+            >
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Markers</span>
+            <span
+              ><code>@pytest.mark.unit</code> / <code>@pytest.mark.integration</code> /
+              <code>@pytest.mark.api</code> — by type;
+              <code>@pytest.mark.p0</code> / <code>p1</code> — by priority,
+              orthogonal to type</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Unit ═══ Pure logic without a database — deterministic, every PR. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--unit">Unit</span>
+        <span class="test-sec__title">Pure logic without a database</span>
+        <span class="test-sec__meta">deterministic · every PR</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3" /><path d="M8.12 8.12 12 12" /><path d="M20 4 8.12 15.88" /><circle cx="6" cy="18" r="3" /><path d="M14.8 14.8 20 20" /></svg></span><span class="name">test_chunking.py</span></div>
+            <div class="test-card__sub">Slicing the body into chunks, ordinal, content hash</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#chunks">→ chunks</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">body → chunks</span><span class="test-case__e">a long <code>body</code> is sliced into pieces; a short one — a single chunk; an empty one — none</span></div>
+              <div class="test-case"><span class="test-case__k">ordinal in order</span><span class="test-case__e">chunks are numbered consecutively from the start of the text — <code>UNIQUE (entity_id, ordinal)</code> holds</span></div>
+              <div class="test-case"><span class="test-case__k">content_hash per chunk</span><span class="test-case__e">the hash is computed over the piece's text; the same text → the same hash</span></div>
+              <div class="test-case"><span class="test-case__k">re-embedding only on text change</span><span class="test-case__e">editing one chunk → its hash changes, the neighbors keep theirs; only the changed one is re-embedded</span></div>
+              <div class="test-case"><span class="test-case__k">token_count</span><span class="test-case__e">the piece's length in tokens is set; the routine respects the token budget per chunk</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m18 14 4 4-4 4" /><path d="m18 2 4 4-4 4" /><path d="M2 18h1.973a4 4 0 0 0 3.3-1.7l5.454-8.6a4 4 0 0 1 3.3-1.7H22" /><path d="M2 6h1.972a4 4 0 0 1 3.6 2.2" /><path d="M22 18h-6.041a4 4 0 0 1-3.3-1.8l-.359-.45" /></svg></span><span class="name">test_fusion.py</span></div>
+            <div class="test-card__sub">Fusing four ranked lists into one</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="hybrid-search.html#fusion">→ List fusion</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">four lists → one</span><span class="test-case__e">vector / lexical / graph / sql merge into a single ranked result over constructed lists</span></div>
+              <div class="test-case"><span class="test-case__k">common key — the entity</span><span class="test-case__e">chunk hits (vector / lexical) collapse to the parent by <code>entity_id</code>, the best chunk stays with the entity; one entity appearing in several lists is deduplicated</span></div>
+              <div class="test-case"><span class="test-case__k">RRF by reciprocal rank</span><span class="test-case__e">weight comes from position, not the raw score (incomparable across paradigms); a candidate shared by several lists rises</span></div>
+              <div class="test-case"><span class="test-case__k">weighted fusion</span><span class="test-case__e">primitive weights shift the final order predictably</span></div>
+              <div class="test-case"><span class="test-case__k">determinism</span><span class="test-case__e">the same inputs → the same output bit-for-bit; the tie-break is stable</span></div>
+              <div class="test-case"><span class="test-case__k">partial inputs</span><span class="test-case__e">one primitive is empty / returned fewer — fusion does not fail, the rest are counted</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico">∅</span><span class="name">test_emptiness.py</span></div>
+            <div class="test-card__sub">The derived is_empty property — whether there is anything to search</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="hybrid-search.html#emptiness">→ Empty index</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">no chunks → is_empty</span><span class="test-case__e">not a single row in <code>chunks</code> → <code>is_empty</code> is true; the source of truth is the presence of chunks to search, not the count of sources or entities</span></div>
+              <div class="test-case"><span class="test-case__k">first chunk → toggle</span><span class="test-case__e">the first <code>chunk</code> accepted → <code>is_empty</code> is false; the property changes by itself, without a separate command or flag</span></div>
+              <div class="test-case"><span class="test-case__k">embedder assigned, no chunks → still empty</span><span class="test-case__e">an assigned <code>harvester_embedding</code> with zero <code>chunks</code> does not make the base non-empty — emptiness is defined by chunks, not by ingestion readiness</span></div>
+              <div class="test-case"><span class="test-case__k">derived, not a stored flag</span><span class="test-case__e">there is no separate state column; <code>is_empty</code> is computed from the presence of <code>chunks</code> (the implementation may cache), never set by hand — like <code>is_available()</code> on SMTP</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 17h6v-6" /><path d="m22 17-8.5-8.5-5 5L2 7" /></svg></span><span class="name">test_staleness_decay.py</span></div>
+            <div class="test-card__sub">The decay function that lowers trust_score</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="lifecycle.html#staleness">→ Staleness &amp; trust decay</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">authority — the baseline</span><span class="test-case__e">at equal age and demand, a source with a higher <code>authority_tier</code> (<code>high</code> &gt; <code>normal</code> &gt; <code>low</code>) yields a higher <code>trust_score</code>; the tier is read by a JOIN on <code>source_id</code></span></div>
+              <div class="test-case"><span class="test-case__k">age → lower</span><span class="test-case__e">an old <code>source_updated_at</code> yields a lower <code>trust_score</code>, a fresh one — higher (time-machine)</span></div>
+              <div class="test-case"><span class="test-case__k">access frequency</span><span class="test-case__e">the unrequested drops; what is queried holds its weight; demand is read by a JOIN from <code>access_counter</code> (<code>hits</code> · <code>last_accessed_at</code>), long-unqueried decays toward neutral</span></div>
+              <div class="test-case"><span class="test-case__k">monotonicity</span><span class="test-case__e">the function does not grow with aging; no jumps or negative values</span></div>
+              <div class="test-case"><span class="test-case__k">weight only, not access</span><span class="test-case__e">decay changes <code>trust_score</code>, does not touch <code>status</code> / <code>is_deleted</code> — the stale stays visible</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--unit">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="16" y="16" width="6" height="6" rx="1" /><rect x="2" y="16" width="6" height="6" rx="1" /><rect x="9" y="2" width="6" height="6" rx="1" /><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3" /><path d="M12 12V8" /></svg></span><span class="name">test_traversal_builder.py</span></div>
+            <div class="test-card__sub">The recursive-CTE builder for graph traversal</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Unit</span>
+              <a class="xref-badge xref-badge--page" href="hybrid-search.html#primitives">→ graph primitive</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">depth 1–3</span><span class="test-case__e">the assembled recursive-CTE limits the traversal to the given depth of steps</span></div>
+              <div class="test-case"><span class="test-case__k">cycle protection</span><span class="test-case__e">a cycle in the edges does not loop the traversal — visited nodes are not repeated</span></div>
+              <div class="test-case"><span class="test-case__k">direction and rel_type</span><span class="test-case__e">traversal along <code>src→dst</code> with a filter on relation type is built correctly</span></div>
+              <div class="test-case"><span class="test-case__k">slot for the ACL JOIN</span><span class="test-case__e">the template leaves room for a JOIN of <code>entity_acl</code> on visited ids — rights land in the same query</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P0 ═══ Load-bearing invariants against Postgres+pgvector. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p0">Integration · P0</span>
+        <span class="test-sec__title">Load-bearing invariants against Postgres + pgvector</span>
+        <span class="test-sec__meta">testcontainers · separate CI step</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" /></svg></span><span class="name">test_acl_prefilter.py</span></div>
+            <div class="test-card__sub">ACL pre-filter in one SQL — the disallowed never arrives</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="hybrid-search.html#acl-prefilter">→ ACL is applied once</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">vector under rights</span><span class="test-case__e">similarity search over <code>chunks</code> returns only chunks of allowed entities — the selection by the same SQL, before ranking</span></div>
+              <div class="test-case"><span class="test-case__k">lexical under rights</span><span class="test-case__e">full-text search (<code>text_tsv</code> + GIN) is filtered by the same ACL JOIN — an exact word from a disallowed entity does not leak</span></div>
+              <div class="test-case"><span class="test-case__k">chunk inherits ACL</span><span class="test-case__e">a chunk has no ACL of its own; access is resolved through <code>entity_id</code> → <code>entity_acl</code></span></div>
+              <div class="test-case"><span class="test-case__k">group grant vs direct</span><span class="test-case__e">visible via membership (<code>group_membership</code>) OR a direct grant (<code>entity_acl.source_principal_id</code>); the resolution chain from <code>users</code></span></div>
+              <div class="test-case"><span class="test-case__k">public — a wildcard on the row</span><span class="test-case__e">a grant with <code>scope='public'</code> (both principal/group <code>NULL</code>) is visible to all — to a user with no memberships and to an anonymous caller under the source's rules; it goes into the filter as <code>scope='public'</code>, without a synthetic group</span></div>
+              <div class="test-case"><span class="test-case__k">scope ↔ fields consistent</span><span class="test-case__e">CHECK <code>scope IN (group/principal/public)</code> plus consistency: <code>group</code> → <code>source_group_id</code> filled, <code>principal</code> → <code>source_principal_id</code>, <code>public</code> → both <code>NULL</code>; a malformed combination is rejected by the DB</span></div>
+              <div class="test-case"><span class="test-case__k">revoked does not leak</span><span class="test-case__e">removed from the group / grant withdrawn → the entity disappears from results without a separate post-filter</span></div>
+              <div class="test-case"><span class="test-case__k">empty access</span><span class="test-case__e">a user with no identities / memberships → empty results, not an error and not a leak</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="16" y="16" width="6" height="6" rx="1" /><rect x="2" y="16" width="6" height="6" rx="1" /><rect x="9" y="2" width="6" height="6" rx="1" /><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3" /><path d="M12 12V8" /></svg></span><span class="name">test_graph_traversal.py</span></div>
+            <div class="test-card__sub">entity_edge traversal under the same ACL JOIN</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#graph">→ entity_edge</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">1–3 step traversal</span><span class="test-case__e">recursive SQL from the start nodes brings nearby context: the thread, hierarchy, mentions</span></div>
+              <div class="test-case"><span class="test-case__k">single ACL on the traversal</span><span class="test-case__e">the traversal is covered by the same JOIN of <code>entity_acl</code> — nodes without access do not enter the result, without a separate rights projection</span></div>
+              <div class="test-case"><span class="test-case__k">an inaccessible node breaks the path</span><span class="test-case__e">a path through a disallowed entity does not "jump over" it and does not leak further</span></div>
+              <div class="test-case"><span class="test-case__k">cycle in the graph</span><span class="test-case__e">a real edge cycle on a live DB does not loop the CTE</span></div>
+              <div class="test-case"><span class="test-case__k">fanout cap per step</span><span class="test-case__e">a hub node with thousands of edges: the fanout cap limits the number of children expanded from one node per step — the traversal does not blow up into tens of thousands of edges; the cutoff fires <em>before</em> the ACL JOIN, not after</span></div>
+              <div class="test-case"><span class="test-case__k">filtering by weight</span><span class="test-case__e">edges below the <code>weight</code> threshold are dropped from the traversal — weak links are not pulled into context; the filter applies <em>before</em> ACL, holding back inflation from a hub node alongside the fanout cap</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 19H4.815a1.83 1.83 0 0 1-1.57-.881 1.785 1.785 0 0 1-.004-1.784L7.196 9.5" /><path d="M11 19h8.203a1.83 1.83 0 0 0 1.556-.89 1.784 1.784 0 0 0 0-1.775l-1.226-2.12" /><path d="m14 16-3 3 3 3" /><path d="M8.293 13.596 7.196 9.5 3.1 10.598" /><path d="m9.344 5.811 1.093-1.892A1.83 1.83 0 0 1 11.985 3a1.784 1.784 0 0 1 1.546.888l3.943 6.843" /><path d="m13.378 9.633 4.096 1.098 1.097-4.096" /></svg></span><span class="name">test_entity_upsert.py</span></div>
+            <div class="test-card__sub">Idempotent upsert by the source key</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#entities">→ entities</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">one key — one row</span><span class="test-case__e">by <code>UNIQUE (source_id, source_type, source_entity_id)</code> a repeated upsert updates, does not spawn duplicates</span></div>
+              <div class="test-case"><span class="test-case__k">projections in order</span><span class="test-case__e">body → <code>chunks</code> → <code>entity_edge</code> in one transaction; FKs hold</span></div>
+              <div class="test-case"><span class="test-case__k">content_hash change</span><span class="test-case__e">editing <code>body</code> → re-embedding of the affected chunks; unchanged ones are not re-embedded</span></div>
+              <div class="test-case"><span class="test-case__k">chunk set sync</span><span class="test-case__e">the text was shortened → surplus <code>chunks</code> are deleted, none orphaned (CASCADE on <code>entity_id</code>)</span></div>
+              <div class="test-case"><span class="test-case__k">author → SET NULL</span><span class="test-case__e">deleting a <code>source_principal</code> nulls <code>entities.author_principal_id</code> (ON DELETE SET NULL) — the entity survives; deleting a <code>source</code> carries away all its content via CASCADE</span></div>
+              <div class="test-case"><span class="test-case__k">status — from the dictionary only</span><span class="test-case__e">a non-empty <code>status</code> value outside (<code>draft</code>/<code>final</code>/<code>archived</code>) is rejected by CHECK; <code>NULL</code> is allowed — until the classify step</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 11v6" /><path d="M14 11v6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg></span><span class="name">test_soft_delete.py</span></div>
+            <div class="test-card__sub">is_deleted hides from results, does not delete physically</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#entities">→ entities</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">hidden from results</span><span class="test-case__e"><code>is_deleted = true</code> → the record and its chunks drop out of all four primitives, the row is physically alive</span></div>
+              <div class="test-case"><span class="test-case__k">chunks carry a mirror of the flag</span><span class="test-case__e">the denormalized <code>chunks.is_deleted</code> is set in the same transaction; partial HNSW/GIN (<code>WHERE NOT is_deleted</code>) exclude the deleted from the index traversal</span></div>
+              <div class="test-case"><span class="test-case__k">a separate axis from status</span><span class="test-case__e">soft-delete does not touch <code>status</code> (<code>draft</code>/<code>final</code>/<code>archived</code>) — the axes are independent</span></div>
+              <div class="test-case"><span class="test-case__k">restore</span><span class="test-case__e">clearing the marker returns the record to results with its previous status</span></div>
+              <div class="test-case"><span class="test-case__k">deleted_at set by reconciliation</span><span class="test-case__e">the moment of disappearance is stamped when it vanishes from the source, not on the increment</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p0">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="18" r="3" /><circle cx="6" cy="6" r="3" /><path d="M6 21V9a9 9 0 0 0 9 9" /></svg></span><span class="name">test_identity_bridge.py</span></div>
+            <div class="test-card__sub">Auto-linking identity↔users by exact email</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p0">P0</span>
+              <a class="xref-badge xref-badge--page" href="acl-identity.html#identity">→ identity ↔ users</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">link from both sides</span><span class="test-case__e">Auth creates <code>users</code> → KS sets <code>identity.user_id</code> by exact <code>lower(email)</code>; Harvester upserts <code>identity</code> → KS backfills the link via <code>users</code>; KS holds both points</span></div>
+              <div class="test-case"><span class="test-case__k">case normalization</span><span class="test-case__e"><code>ALICE@CORP</code> ↔ <code>alice@corp</code> link up — reconciled by <code>UNIQUE (lower(email))</code>, no case collisions</span></div>
+              <div class="test-case"><span class="test-case__k">1:1 bridge</span><span class="test-case__e">partial unique <code>(user_id) WHERE user_id IS NOT NULL</code> — one <code>identity</code> per <code>users</code>; a repeated link is idempotent, does not spawn a second binding</span></div>
+              <div class="test-case"><span class="test-case__k">no match → NULL</span><span class="test-case__e">the email was not found (a different address / absent) → <code>user_id = NULL</code>, the identity stays unmatched for manual linking in Admin, not an error</span></div>
+              <div class="test-case"><span class="test-case__k">link is synchronous</span><span class="test-case__e">the bridge is set at the moment of creation/upsert, does not wait for the next sync wave — on the very first request access resolves through <code>user_id</code></span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Integration P1 ═══ Curation Pass, refresh, journal, recall, backup. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">Integration · P1</span>
+        <span class="test-sec__title">Curation Pass, refresh, journal, recall, backup</span>
+        <span class="test-sec__meta">testcontainers · separate CI step</span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 12-9.373 9.373a1 1 0 0 1-3.001-3L12 9" /><path d="m18 15 4-4" /><path d="m21.5 11.5-1.914-1.914A2 2 0 0 1 19 8.172v-.344a2 2 0 0 0-.586-1.414l-1.657-1.657A6 6 0 0 0 12.516 3H9l1.243 1.243A6 6 0 0 1 12 8.485V10l2 2h1.172a2 2 0 0 1 1.414.586L18.5 14.5" /></svg></span><span class="name">test_curation_pass.py</span></div>
+            <div class="test-card__sub">Graph curation steps over the already-assembled base</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="lifecycle.html#curation-pass">→ Curation Pass</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">cross-source edge</span><span class="test-case__e">a mention materializes into <code>entity_edge</code> with <code>origin = curation</code> once both nodes are already in the graph; an <code>entity_ref</code> request until then, and after materialization the row is deleted</span></div>
+              <div class="test-case"><span class="test-case__k">forward reference within a source</span><span class="test-case__e">a deferred reference to a not-yet-loaded target of the same source waits as an <code>entity_ref</code> request; the run materializes the edge (<code>origin = curation</code>) after the target arrives in the next increment — the request is cleared</span></div>
+              <div class="test-case"><span class="test-case__k">a user target resolves into the body</span><span class="test-case__e">a request with <code>target_kind = user</code> (e.g. author → identity) is settled by writing <code>author_principal_id</code> into the entity body; no <code>entity_edge</code> is created — not every request becomes an edge</span></div>
+              <div class="test-case"><span class="test-case__k">node merge</span><span class="test-case__e">two entities recognized as one object collapse: edges are moved over, the duplicate is marked <code>duplicate_of</code></span></div>
+              <div class="test-case"><span class="test-case__k">fuzzy identity reconciliation</span><span class="test-case__e">unreconciled <code>source_principal</code> under different emails are matched, <code>identity_id</code> is set; the bridge to <code>users</code> is backfilled across different emails</span></div>
+              <div class="test-case"><span class="test-case__k">decay writes trust_score</span><span class="test-case__e">the staleness step records the lowered <code>entities.trust_score</code> into the DB</span></div>
+              <div class="test-case"><span class="test-case__k">retention <span class="iter v2">v2</span></span><span class="test-case__e">by policy: archival hides from hot results, deletion purges physically together with <code>chunks</code> via CASCADE</span></div>
+              <div class="test-case"><span class="test-case__k">steps are idempotent</span><span class="test-case__e">a repeated run does no harm; a partial failure of one step does not break the rest</span></div>
+              <div class="test-case"><span class="test-case__k">the unreconciled — for review</span><span class="test-case__e">what could not be fuzzily linked stays unmatched (<code>identity_id = NULL</code>) for manual review, not discarded</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m17 2 4 4-4 4" /><path d="M3 11v-1a4 4 0 0 1 4-4h14" /><path d="m7 22-4-4 4-4" /><path d="M21 13v1a4 4 0 0 1-4 4H3" /></svg></span><span class="name">test_embedding_refresh.py</span></div>
+            <div class="test-card__sub">Re-embedding on a model-change event</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="lifecycle.html#embedding-refresh">→ Embedding refresh</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">model change → regeneration</span><span class="test-case__e">a mismatch of <code>chunks.embedding_model</code> with the current model → a bulk run recomputes <code>chunks.embedding</code></span></div>
+              <div class="test-case"><span class="test-case__k">embedding_model update</span><span class="test-case__e">after the run, the chunks' <code>embedding_model</code> = the platform's current model</span></div>
+              <div class="test-case"><span class="test-case__k">unchanged model — nothing</span><span class="test-case__e">the model did not change → the run recomputes nothing (the index is already consistent)</span></div>
+              <div class="test-case"><span class="test-case__k">outside the schedule chain</span><span class="test-case__e">triggered by an event, not a timer; ordinary ingestion embeds only changed text by <code>content_hash</code></span></div>
+              <div class="test-case"><span class="test-case__k">dimension change — not this path</span><span class="test-case__e">this run covers a model change at the same dimension N (row-by-row recompute); changing N itself (<code>halfvec(N)</code>) is a migration (new column → <code>CREATE INDEX CONCURRENTLY</code> → atomic swap), not an in-place refresh, and is out of scope here</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M12 11h4" /><path d="M12 16h4" /><path d="M8 11h.01" /><path d="M8 16h.01" /></svg></span><span class="name">test_curation_runs.py</span></div>
+            <div class="test-card__sub">Control plane: run visibility</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="lifecycle.html#curation-runs">→ curation_runs</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">one row per run</span><span class="test-case__e">the start writes <code>running</code> + <code>started_at</code>; the finish — <code>succeeded</code> / <code>failed</code> + <code>finished_at</code></span></div>
+              <div class="test-case"><span class="test-case__k">statistics in steps</span><span class="test-case__e">which steps ran and with what values — in a flexible <code>JSONB</code>: edges materialized, duplicates reconciled, entities lowered</span></div>
+              <div class="test-case"><span class="test-case__k">failure in error</span><span class="test-case__e">a failure → <code>state = failed</code> + a brief reason in <code>error</code>; steps already run are reflected in <code>steps</code></span></div>
+              <div class="test-case"><span class="test-case__k">CHECK on state</span><span class="test-case__e">a value outside (<code>queued</code>/<code>running</code>/<code>succeeded</code>/<code>failed</code>/<code>cancelled</code>) is rejected by the DB</span></div>
+              <div class="test-case"><span class="test-case__k">one active run</span><span class="test-case__e">a second unfinished run is rejected by the singleton partial unique index — at most one <code>queued</code>/<code>running</code> on the platform</span></div>
+              <div class="test-case"><span class="test-case__k">cancel → cancelled</span><span class="test-case__e">canceling a running run (UI "Cancel") terminalizes it into <code>cancelled</code> + <code>finished_at</code>, releases the singleton lock; the next run starts fresh</span></div>
+              <div class="test-case"><span class="test-case__k">CHECK on trigger</span><span class="test-case__e">a value outside (<code>schedule</code>/<code>model_change</code>/<code>manual</code>) is rejected by the DB; event-driven re-embedding is written as a row with <code>trigger = model_change</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span><span class="name">test_coordination.py</span></div>
+            <div class="test-card__sub">Mutual exclusion of lanes: ingestion ∥ curation</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="lifecycle.html#coordination">→ Lane coordination</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">destructive step → sync queued</span><span class="test-case__e">while a merge/retention holds the lock, a run of the affected source goes to <code>queued</code>, does not fail, and starts when the step finishes</span></div>
+              <div class="test-case"><span class="test-case__k">additive runs in parallel</span><span class="test-case__e">edge materialization / decay / refresh do not block a Harvester upsert — concurrent writing is survived, edges are not orphaned (<code>ON CONFLICT DO NOTHING</code>)</span></div>
+              <div class="test-case"><span class="test-case__k">merge under contention</span><span class="test-case__e">an upsert of the merged entity during a merge leaves no orphaned edges — they are reconciled by the next run, <code>duplicate_of</code> is consistent</span></div>
+              <div class="test-case"><span class="test-case__k">a stale heartbeat releases the lock</span><span class="test-case__e">the holder died without closing the run → on <code>heartbeat_at</code> going stale the lock is taken away, a new run starts; fencing rejects a late write</span></div>
+              <div class="test-case"><span class="test-case__k">refresh without the lane lock</span><span class="test-case__e">during an active re-embedding, new <code>chunks</code> are written with the current model; mixed <code>embedding_model</code> generations converge, ingestion does not stall</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21 21-4.34-4.34" /><circle cx="11" cy="11" r="8" /></svg></span><span class="name">test_hnsw_recall.py</span></div>
+            <div class="test-card__sub">HNSW under-recall: <code>is_deleted</code> lifts off the partial index, the ACL-JOIN — for a manual measurement</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="data-model.html#chunks">→ chunks</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">is_deleted — out of the traversal</span><span class="test-case__e">the denormalized <code>chunks.is_deleted</code> + a partial HNSW (<code>WHERE NOT is_deleted</code>) keeps the deleted out of the index — this predicate causes no under-recall, it is not a post-filter</span></div>
+              <div class="test-case"><span class="test-case__k">the ACL-JOIN under-recalls</span><span class="test-case__e">a hard ACL comes as a JOIN on <code>entities</code> → the top-K of the approximate HNSW is partly cut off already after the scan: fewer allowed candidates than requested, without an error</span></div>
+              <div class="test-case"><span class="test-case__k">iterative_scan does not cure ACL</span><span class="test-case__e"><code>hnsw.iterative_scan</code> (pgvector 0.8.0+) only tops up by conditions on <code>chunks</code> itself; a predicate via a JOIN on <code>entities</code> is not compensated by it — hence ACL-recall does not close automatically</span></div>
+              <div class="test-case"><span class="test-case__k">metric — cosine</span><span class="test-case__e">on constructed normalized vectors the proximity order goes by cosine (operator class <code>vector_cosine_ops</code>), not by pgvector's L2 default — the metric is fixed as a contract, not inherited by accident from the index</span></div>
+              <div class="test-case"><span class="test-case__k">the exact value — by hand</span><span class="test-case__e">the test catches the fact of under-recall under ACL and the boundary of the cure; the absolute recall on real data is left to the manual measurement below</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 16h.01" /><path d="M2.212 11.577a2 2 0 0 0-.212.896V18a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5.527a2 2 0 0 0-.212-.896L18.55 5.11A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" /><path d="M21.946 12.013H2.054" /><path d="M6 16h.01" /></svg></span><span class="name">test_backup_restore.py</span></div>
+            <div class="test-card__sub">The backup and restore cycle</div>
+            <div class="test-card__badges">
+              <span class="test-tag">Integration</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="lifecycle.html#backup">→ Backup &amp; restore</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">snapshot is consistent</span><span class="test-case__e">one database → body, vectors, graph, and rights in the backup as a single consistent point</span></div>
+              <div class="test-case"><span class="test-case__k">restore brings everything back</span><span class="test-case__e">after restore the three projections and the ACL match the originals; search and traversal work</span></div>
+              <div class="test-case"><span class="test-case__k">vectors survive the cycle</span><span class="test-case__e"><code>chunks.embedding</code> and the HNSW index are restored — proximity computes as before the backup</span></div>
+              <div class="test-case"><span class="test-case__k">snapshot journal</span><span class="test-case__e">taking a snapshot writes a <code>backup_snapshots</code> row: <code>running</code> + <code>started_at</code> → <code>succeeded</code> + <code>finished_at</code> + <code>size_bytes</code> + <code>location</code>; the CHECK on <code>state</code> rejects a foreign value</span></div>
+              <div class="test-case"><span class="test-case__k">rotation by retention_count</span><span class="test-case__e">snapshots beyond <code>backup_settings.retention_count</code> → the oldest is removed both from the journal and from storage</span></div>
+              <div class="test-case"><span class="test-case__k">a stuck snapshot does not lock the schedule</span><span class="test-case__e">the worker died leaving a snapshot in <code>running</code> → on <code>heartbeat_at</code> going stale (~90s) the watchdog reaps it into <code>failed</code>, the single-flight lock releases, the next scheduled one starts</span></div>
+              <div class="test-case"><span class="test-case__k">one active snapshot</span><span class="test-case__e">partial unique <code>WHERE state = 'running'</code>: a second backup on top of an unclosed one is rejected, no parallel dump</span></div>
+              <div class="test-case"><span class="test-case__k">write-only credentials</span><span class="test-case__e"><code>destination_creds_enc</code> is stored encrypted, not returned in the API response or data export (like <code>api_key_enc</code>)</span></div>
+              <div class="test-case"><span class="test-case__k">settings — singleton</span><span class="test-case__e"><code>backup_settings</code> CHECK (<code>id = 1</code>): a second row is rejected; the application reads/updates, does not create</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ API P1 ═══ Retrieval endpoints and access control. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">API · P1</span>
+        <span class="test-sec__title">Retrieval endpoints — the HTTP contract</span>
+        <span class="test-sec__meta">httpx · ASGI app · Postgres+pgvector · <a href="../../api/index.html#conventions" class="xref-badge">→ HTTP API</a> <a class="xref-badge" href="../../api/_workzone/tests.html#conformance">→ Conformance</a></span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" /><path d="M2 12h20" /></svg></span><span class="name">test_api_retrieval.py</span></div>
+            <div class="test-card__sub">The four primitives individually and the assembled hybrid</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="hybrid-search.html#primitives">→ The four primitives</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">primitives as tools</span><span class="test-case__e">vector / lexical / graph / sql are called individually → a ranked list of their own paradigm</span></div>
+              <div class="test-case"><span class="test-case__k">assembled hybrid</span><span class="test-case__e">one call → a fused result (fusion inside KS), ready for RAG retrieval</span></div>
+              <div class="test-case"><span class="test-case__k">request shape and validation</span><span class="test-case__e">a malformed parameter (traversal depth outside 1–3, an unknown filter) → <code>422</code>, not <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">RAG does not happen here</span><span class="test-case__e">the endpoint returns candidates; rerank / packing / the LLM call belong to Query Engine, not exposed outward</span></div>
+              <div class="test-case"><span class="test-case__k">top-K limit</span><span class="test-case__e">a primitive returns no more than <code>K</code> hits; <code>K</code> is bounded by a server cap — a request over the cap is truncated to it, not unbounded</span></div>
+              <div class="test-case"><span class="test-case__k">retrieval response shape</span><span class="test-case__e">a list of hits with a <code>score</code> and chunk/entity ids, ordered by descending relevance; an empty result → <code>200</code> with an empty list, not <code>404</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span><span class="name">test_api_access.py</span></div>
+            <div class="test-card__sub">Results are always ACL-filtered</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="acl-identity.html#resolution">→ Resolution join</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">filtered by the caller</span><span class="test-case__e">retrieval is always narrowed by the caller's rights; two users see different things for the same query</span></div>
+              <div class="test-case"><span class="test-case__k">the disallowed does not leak</span><span class="test-case__e">an inaccessible entity does not come back in any primitive, nor in the fused result, nor in the graph traversal</span></div>
+              <div class="test-case"><span class="test-case__k">anonymous</span><span class="test-case__e">without a token → <code>401</code> (parametrized across all retrieval routes)</span></div>
+              <div class="test-case"><span class="test-case__k">no "bare" routes</span><span class="test-case__e">every retrieval endpoint is genuinely behind a guard and an ACL filter — a parametrized coverage audit</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ API P1 ═══ The HTTP wrapper over KS maintenance runs. The domain
+           logic is covered by the Integration tests above (curation / refresh / backup);
+           here — only the HTTP contract: async launch, codes, access, the lock
+           on destructive operations. The overview it answers to is HTTP API. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--p1">API · P1</span>
+        <span class="test-sec__title">KS-admin — the HTTP contract of runs</span>
+        <span class="test-sec__meta">httpx · ASGI app · <a href="../../api/index.html#conventions" class="xref-badge">→ HTTP API</a> <a class="xref-badge" href="../../api/_workzone/tests.html#conformance">→ Conformance</a></span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M8 16H3v5" /></svg></span><span class="name">test_api_admin_ops.py</span></div>
+            <div class="test-card__sub">Launching maintenance and source status over HTTP</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="lifecycle.html#staleness">→ Curation and refresh</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">launch a run → 202</span><span class="test-case__e">reindex / re-embed / backup "now" → <code>202</code> + run id; a <code>curation_runs</code> / <code>backup_snapshots</code> row in <code>queued</code>, a task in SAQ</span></div>
+              <div class="test-case"><span class="test-case__k">source status</span><span class="test-case__e">GET → a per-source view: state, entity/chunk counters, the last-run timestamp</span></div>
+              <div class="test-case"><span class="test-case__k">restore from a snapshot</span><span class="test-case__e">restore from <code>backup_snapshots</code> → <code>202</code>; an unknown snapshot → <code>404</code></span></div>
+              <div class="test-case"><span class="test-case__k">lock on destructive ops</span><span class="test-case__e">merge/retention under the target-lane lock — a concurrent launch → <code>409</code>, not data corruption</span></div>
+              <div class="test-case"><span class="test-case__k">repeated launch under the lock → 409</span><span class="test-case__e">a second <code>POST</code> reindex / re-embed / backup while a run is already <code>queued</code>/<code>running</code> → <code>409 CONFLICT</code> (single-flight over <code>curation_runs</code> / <code>backup_snapshots</code>) — not a second run and not <code>500</code></span></div>
+              <div class="test-case"><span class="test-case__k">validation as 422</span><span class="test-case__e">a malformed run / schedule parameter → <code>422</code>, not <code>500</code></span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg></span><span class="name">test_api_admin_access.py</span></div>
+            <div class="test-card__sub">Maintenance runs — under a role only</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">Owner/Admin only</span><span class="test-case__e">Owner/Admin launches a run / reads status → <code>200</code>/<code>202</code>; Member → <code>403</code></span></div>
+              <div class="test-case"><span class="test-case__k">anonymous</span><span class="test-case__e">without a token → <code>401</code> (parametrized across all KS admin routes)</span></div>
+              <div class="test-case"><span class="test-case__k">no "bare" routes</span><span class="test-case__e">every admin endpoint is genuinely behind a role guard — a parametrized coverage audit</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <!-- ═══ Manual ═══ Recall measurement on real data — outside the automated test. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Manual</span>
+        <span class="test-sec__title">Recall measurement on real data — outside CI</span>
+        <span class="test-sec__meta">manual measurement · cannot be closed in an automated test</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          The absolute recall of the approximate HNSW index under a hard
+          <a href="acl-identity.html#resolution" class="xref-page">ACL filter</a>
+          depends on the distribution of real data and the shape of rights — general
+          benchmark estimates cannot be trusted, and synthetics do not reproduce it. The
+          automated test catches only the <em>fact</em> of under-recall and the
+          <em>boundary</em> of the cure: <code>hnsw.iterative_scan</code> tops up by
+          conditions on <code>chunks</code> itself, but the ACL comes as a JOIN on
+          <code>entities</code> and is not compensated by the iterative scan — so the
+          value itself, that the ACL filter does not drop completeness below acceptable,
+          is taken by hand on a representative corpus. The purpose is to raise recall
+          under the actual load via index parameters (<code>m</code>,
+          <code>ef_search</code>), since iterative_scan does not close the JOIN
+          predicate — not in the automated run.
+        </p>
+      </div>
+
+      <!-- ═══ Structure ═══ Test catalog: the level is set by the folder, priority
+           — by markers. -->
+      <div class="test-sec">
+        <span class="test-sec__badge test-sec__badge--struct">Structure</span>
+        <span class="test-sec__title">Test file structure</span>
+      </div>
+      <div class="test-struct">
+        <p class="test-struct__lead">
+          Split by type: <code>unit/</code> — pure logic without a database, runs
+          on every PR. <code>integration/</code> and <code>api/</code> — against a
+          test Postgres with <code>pgvector</code> in Docker, as a separate, rarer
+          step. Priority (P0–P1) is orthogonal to the folders and set by
+          markers (<code>pytest -m p0</code>). The live recall measurement stays a
+          manual tool and does not enter the automated run.
+        </p>
+        <div class="test-tree">
+          <ul>
+            <li>
+              <span class="test-tree__row"><code>tests/knowledge_store/</code><span class="d">module directory</span></span>
+              <ul>
+                <li><span class="test-tree__row"><code>conftest.py</code><span class="d">testcontainers Postgres+pgvector · Entity/chunks/edge factories + the ACL five-tuple · fake embedding model · Curation Pass steps directly</span></span></li>
+                <li>
+                  <span class="test-tree__row"><code>unit/</code><span class="d">pure logic without a database</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_chunking · test_fusion · test_staleness_decay · test_traversal_builder</code><span class="d">slicing, fusion, decay, traversal builder</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>integration/</code><span class="d">against Postgres+pgvector</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_acl_prefilter · test_identity_bridge · test_graph_traversal · test_entity_upsert · test_soft_delete</code><span class="d">P0 — load-bearing invariants: ACL, identity bridge, traversal, upsert, soft-delete</span></span></li>
+                    <li><span class="test-tree__row"><code>test_curation_pass · test_embedding_refresh · test_curation_runs · test_coordination · test_hnsw_recall · test_backup_restore</code><span class="d">P1 — curation, refresh, journal, lane coordination, recall, backup</span></span></li>
+                  </ul>
+                </li>
+                <li>
+                  <span class="test-tree__row"><code>api/</code><span class="d">HTTP contract — httpx + ASGI + Postgres+pgvector</span></span>
+                  <ul>
+                    <li><span class="test-tree__row"><code>test_api_retrieval.py</code><span class="d">primitives as tools + the assembled hybrid</span></span></li>
+                    <li><span class="test-tree__row"><code>test_api_access.py</code><span class="d">results are always ACL-filtered</span></span></li>
+                  </ul>
+                </li>
+                <li><span class="test-tree__row"><code>manual/</code><span class="d">outside CI — a live recall measurement on real data</span></span></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

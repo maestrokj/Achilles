@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Query Engine: Grounding и цитирование</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../query-engine.css" />
+    <link rel="stylesheet" href="grounding.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Query Engine</a>
+        <h1 class="header__title">Grounding и цитирование</h1>
+        <div class="header__sub">query-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        Grounding — <strong>условный</strong>: контракт доверия включается, лишь
+        когда модель отвечает фактом из базы. Тогда работают три обещания:
+        отвечаем <em>только</em> из найденного, <em>показываем</em>, откуда взято,
+        и <em>не молчим</em>, когда релевантное скрыто правами. На болтовню же
+        Query Engine отвечает как обычный ассистент — без цитат и без «не нашёл».
+        Здесь — продуктовый контракт каждого режима; <em>кто</em> выбирает режим,
+        держит <a href="conversation.html#route" class="xref-page">решение о
+        поиске</a>, а как фильтруется доступ —
+        <a href="retrieval.html#identity" class="xref-page">граница с Knowledge
+          Store</a>.
+      </p>
+
+      <!-- ════════════════ MODES — CONDITIONAL GROUNDING ════════════════
+           Два режима ответа с разным контрактом доверия: разговорный (общие
+           знания модели, без цитат) и grounding-режим (строго из KS + цитата). Кто
+           выбирает — conversation#route; здесь — что каждый режим обещает. -->
+      <div class="section" id="modes">
+        <div class="section__title">Два режима ответа</div>
+        <p class="desc">
+          Query Engine отвечает в одном из двух режимов, и контракт доверия у них
+          разный. <strong>Разговорный</strong> — обычный ассистент: отвечает из
+          общих знаний модели, без цитат, и «не нашёл» к нему неприменимо.
+          <strong>Grounding</strong> — когда модель обратилась к базе: ответ
+          строго из найденного, с цитатой, а пусто → честное «не нашёл». Выбор
+          режима — за моделью (<a href="conversation.html#route" class="xref-page"
+            >решение о поиске</a>); здесь — что каждый обещает.
+        </p>
+
+        <div class="gr-modes">
+          <div class="gr-mode gr-mode--talk">
+            <div class="gr-mode__head">
+              <span class="gr-mode__tag">разговорный</span>
+              <span class="gr-mode__h">обычный ассистент</span>
+            </div>
+            <div class="gr-mode__rows">
+              <div class="gr-mode__row">
+                <span class="gr-mode__k">источник</span>
+                <span class="gr-mode__v">общие знания модели</span>
+              </div>
+              <div class="gr-mode__row">
+                <span class="gr-mode__k">цитаты</span>
+                <span class="gr-mode__v">нет — нечего атрибутировать</span>
+              </div>
+              <div class="gr-mode__row">
+                <span class="gr-mode__k">«не нашёл»</span>
+                <span class="gr-mode__v">неприменимо</span>
+              </div>
+              <div class="gr-mode__row">
+                <span class="gr-mode__k">для чего</span>
+                <span class="gr-mode__v">болтовня · мета-просьба · общий
+                  вопрос</span>
+              </div>
+            </div>
+          </div>
+          <div class="gr-mode gr-mode--ground">
+            <div class="gr-mode__head">
+              <span class="gr-mode__tag">grounding</span>
+              <span class="gr-mode__h">контракт доверия</span>
+            </div>
+            <div class="gr-mode__rows">
+              <div class="gr-mode__row">
+                <span class="gr-mode__k">источник</span>
+                <span class="gr-mode__v">только найденное в Knowledge
+                  Store</span>
+              </div>
+              <div class="gr-mode__row">
+                <span class="gr-mode__k">цитаты</span>
+                <span class="gr-mode__v">на уровне записи, с лучшим
+                  фрагментом</span>
+              </div>
+              <div class="gr-mode__row">
+                <span class="gr-mode__k">«не нашёл»</span>
+                <span class="gr-mode__v">честный пустой ответ при пустом
+                  поиске</span>
+              </div>
+              <div class="gr-mode__row">
+                <span class="gr-mode__k">гарантия</span>
+                <span class="gr-mode__v">ноль галлюцинаций о компании</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="note">
+          Опасность — <strong>смешать режимы</strong>: подать общее знание модели
+          как корпоративный факт. Поэтому граница жёсткая — в grounding-режиме
+          модель не достраивает ответ из памяти: пустой поиск даёт честное «не
+          нашёл», а не догадку. Уверенно сказанная выдумка в корпоративной выдаче
+          дороже прямого «здесь у меня ничего нет».
+        </p>
+        <p class="note">
+          <strong>Пустая база — grounding-режима нет вовсе.</strong> Если компания
+          не подключила источники, Knowledge Store пуст
+          (<a href="../../knowledge-store/_workzone/hybrid-search.html#emptiness" class="xref-module"
+            ><code>is_empty</code></a>) — <code>search_knowledge</code> модели не
+          подаётся, и второй режим просто не существует. Остаётся разговорный:
+          платформа работает как обычный ассистент на общих знаниях. Это
+          <em>отлично</em> от «поиск вернул пусто → не нашёл»: там база есть, но по
+          запросу ничего; здесь искать нечем. Заземление не нарушено и не
+          выключено — его условие не наступило. Появится первый фрагмент — граница
+          двух режимов возникает сама.
+        </p>
+      </div>
+
+      <!-- ════════════════ GROUNDING — ANSWER ONLY FROM CONTEXT ════════════════
+           В grounding-режиме: модель позвала search_knowledge — ответ строго
+           из вернувшегося контекста. Найдено → ответ; пусто/нет доступа →
+           честный пустой ответ. Ноль галлюцинаций ценой иногда пустого ответа. -->
+      <div class="section" id="grounding">
+        <div class="section__title">Grounding-ответ — только из контекста</div>
+        <p class="desc">
+          Позвав <code>search_knowledge</code>, модель отвечает
+          <strong>исключительно из того, что вернул поиск</strong>: собранный
+          контекст — единственный источник истины для этого ответа. Дальше — три
+          исхода по тому, что собрал поиск: релевантное <strong>нашлось</strong> →
+          ответ из него; релевантного <strong>нет</strong> → честное «не нашёл»;
+          релевантное <strong>есть, но скрыто правами</strong> → отвечаем из
+          доступного, а о скрытом даём
+          <a href="#access-hints" class="xref-anchor">подсказку</a>. Догадку из
+          общих знаний не подмешиваем ни в одном — сознательный размен:
+          <strong>ноль галлюцинаций</strong> ценой иногда пустого ответа.
+        </p>
+
+        <!-- found → answer / empty → honest "not found" / withheld → answer from
+             accessible + hint. Empty (nothing exists) and withheld (hidden by
+             ACL) are told differently — never collapsed into one "not found". -->
+        <div class="gr-fork">
+          <div class="gr-fork__in">
+            <span class="gr-fork__in-h">модель позвала поиск</span>
+            <span class="gr-fork__in-sub">search_knowledge → Knowledge Store</span>
+          </div>
+          <span class="gr-fork__split">⟨ что в контексте? ⟩</span>
+          <div class="gr-fork__paths">
+            <div class="gr-fork__path gr-fork__path--found">
+              <span class="gr-fork__cond">нашлось</span>
+              <span class="gr-fork__out">ответ из контекста</span>
+              <span class="gr-fork__note">синтез строго по найденным
+                фрагментам · с цитатой на источник</span>
+            </div>
+            <div class="gr-fork__path gr-fork__path--empty">
+              <span class="gr-fork__cond">пусто</span>
+              <span class="gr-fork__out">честное «не нашёл»</span>
+              <span class="gr-fork__note">релевантного не существует · без
+                догадок из общих знаний модели</span>
+            </div>
+            <div class="gr-fork__path gr-fork__path--hidden">
+              <span class="gr-fork__cond">скрыто правами</span>
+              <span class="gr-fork__out">ответ из доступного + подсказка</span>
+              <span class="gr-fork__note">релевантное есть, но ACL его убрал ·
+                о скрытом — подсказка с координатами</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="note">
+          Исходы не исключают друг друга: на составной вопрос часть фактов
+          приходит из доступного, часть скрыта правами — ответ собирается из
+          первого, подсказка закрывает второе. Сам grounding — свойство
+          <em>grounding-прохода</em>, не отдельного шага: контекст ограничен на
+          упаковке (augment), а генерация инструктируется держаться его и
+          признаваться в незнании. <span class="iter v2">v2</span>: при низкой
+          уверенности — один повторный поиск (N=1) перед тем, как отдать пустой
+          ответ.
+        </p>
+      </div>
+
+      <!-- ════════════════ ATTRIBUTION — CITE THE SOURCE ════════════════
+           Source attribution на уровне записи (Confluence · Jira · Slack) с
+           лучшим чанком как доказательством. Источник цитат — чанки/сущности KS. -->
+      <div class="section" id="attribution">
+        <div class="section__title">Цитата на источник</div>
+        <p class="desc">
+          Grounding-ответу мало быть верным — он должен быть
+          <strong>проверяемым</strong>. Поэтому каждое утверждение несёт ссылку
+          на источник <strong>на уровне записи</strong>: Confluence-страница,
+          Jira-тикет, Slack-тред — то, что пользователь может открыть и сверить.
+          Цитата — это и доверие («не выдумано»), и аудит («вот откуда»).
+          Доказательством при ссылке идёт <strong>лучший фрагмент</strong> — тот
+          самый чанк, что победил в ранжировании; он же приходит из
+          <a
+            href="../../knowledge-store/_workzone/data-model.html#chunks"
+            class="xref-module"
+            >проекции <code>chunks</code></a
+          >
+          Knowledge Store, где фрагменты живут при своей сущности-источнике.
+        </p>
+
+        <!-- the grounded answer as a chat exchange: question → answer bubble
+             carrying an inline marker with the source card attached -->
+        <div class="gr-chat">
+          <div class="gr-msg gr-msg--user">
+            <div class="gr-bubble gr-bubble--user">
+              Когда дедлайн проекта Аякс?
+            </div>
+          </div>
+          <div class="gr-msg gr-msg--ai">
+            <span class="gr-msg__avatar" aria-hidden="true">A</span>
+            <div class="gr-msg__col">
+              <span class="gr-msg__who">Achilles</span>
+              <div class="gr-bubble gr-bubble--ai">
+                <span class="gr-bubble__text">…дедлайн проекта Аякс перенесён на
+                  30 июня<span class="gr-bubble__marker">[1]</span>.</span>
+                <div class="gr-src">
+                  <span class="gr-src__marker">[1]</span>
+                  <div class="gr-src__body">
+                    <span class="gr-src__rec">
+                      <span class="gr-src__kind">Confluence</span>
+                      <span class="gr-src__title">Ajax · Release plan</span>
+                    </span>
+                    <span class="gr-src__chunk">«…срок сдвинут на 30.06 по
+                      итогам ревью…» — лучший фрагмент как
+                      доказательство</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="note">
+          Ссылка ведёт на <strong>запись</strong>, не на фрагмент: пользователь
+          мыслит документами и тредами, а чанк — внутренняя единица поиска.
+          Фрагмент остаётся приложенным доказательством, чтобы видно было, какая
+          именно часть записи подтверждает ответ.
+        </p>
+      </div>
+
+      <!-- ════════════════ ACCESS HINTS — RELEVANT BUT HIDDEN ════════════════
+           Когда выдача отфильтрована по ACL — опционально сообщить о факте
+           существования скрытых релевантных данных, не содержимого. Элегантно:
+           без спама, только когда скрытое действительно релевантно. -->
+      <div class="section" id="access-hints">
+        <div class="section__title">Подсказка о скрытом доступе</div>
+        <p class="desc">
+          Иногда релевантное <em>есть</em>, но
+          <a href="retrieval.html#identity" class="xref-page">ACL-фильтр</a>
+          убрал его из выдачи — у пользователя нет прав. Молча отдать неполный
+          ответ — упустить, что человек даже не знает, <em>куда</em> и
+          <em>к кому</em> идти за доступом. Поэтому опционально показываем
+          подсказку с <strong>безопасными координатами</strong>: что релевантное
+          существует, в какой системе-источнике лежит и к кому обратиться —
+          автор записи в виде email — но ни строки содержимого и ни заголовка.
+        </p>
+
+        <div class="gr-chat">
+          <div class="gr-msg gr-msg--user">
+            <div class="gr-bubble gr-bubble--user">
+              Что в плане сокращений по отделу продаж?
+            </div>
+          </div>
+          <div class="gr-msg gr-msg--ai">
+            <span class="gr-msg__avatar" aria-hidden="true">A</span>
+            <div class="gr-msg__col">
+              <span class="gr-msg__who">Achilles</span>
+              <div class="gr-bubble gr-bubble--ai">
+                <span class="gr-bubble__text">Такие данные в базе есть, но они
+                  закрыты правами доступа — показать содержимое я не могу.</span>
+                <div class="gr-hint">
+                  <span class="gr-hint__icon" aria-hidden="true"></span>
+                  <div class="gr-hint__body">
+                    <span class="gr-hint__head">Поиск по базе знаний — нет
+                      доступа</span>
+                    <div class="gr-hint__coords">
+                      <span class="gr-src__kind">Confluence</span>
+                      <span class="gr-hint__ask">спросить</span>
+                      <span class="gr-hint__contact">anna.petrova@acme.com</span>
+                    </div>
+                    <span class="gr-hint__req">Запросить доступ →
+                      <span class="iter v2">v2</span></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <p class="desc">
+          Ключ — <strong>элегантность, не спам</strong>. Подсказка появляется не
+          на каждый запрос, а только когда скрытое действительно релевантно
+          (попало бы в топ, если бы не права). И граница раскрытия проведена
+          сознательно — это выбор между «молча скрыть» и «показать как есть»:
+          подтвердить <em>существование</em> закрытого мы готовы, в этом и польза
+          подсказки, но <strong>заголовок и содержимое скрыты всегда</strong>.
+          Заголовок сам по себе утечка — название «План сокращений» выдаёт суть
+          закрытого не хуже текста. Поэтому золотая середина узкая: факт,
+          система-источник и автор-контакт, дальше стоп. Автор — это
+          <em>где</em> и <em>к кому</em>, а не <em>что</em>: координата для «иди
+          спроси», не содержимое.
+        </p>
+
+        <p class="note">
+          Опоры подсказки в v1 даёт сам граф. <strong>Факт скрытого</strong> из
+          обычной выдачи не виден: контракт границы отдаёт лишь кандидатов под
+          правами, без счёта «сколько убрали». Он держится на отдельном
+          <strong>content-free сигнале</strong> от Knowledge Store —
+          существование и система-источник, без заголовка и содержимого; эта
+          добавка к контракту живёт у границы с хранилищем.
+          <strong>Автор-контакт</strong> уже есть:
+          <a href="../../knowledge-store/_workzone/data-model.html#entities"
+            class="xref-module"><code>author_principal_id</code></a>
+          на сущности — мост в мир личностей, который резолвится в платформенный
+          email. Это «к кому идти», а не грантор: формальное <em>кто выдаёт
+          доступ</em> в
+          <a href="../../knowledge-store/_workzone/acl-identity.html#entity-acl"
+            class="xref-module">гранте ACL</a>
+          не лежит. Поэтому в v1 подсказка несёт факт, систему-источник и
+          автора-контакт; <span class="iter v2">v2</span> добавляет лишь
+          автоматическую кнопку <strong>«Запросить доступ»</strong> поверх. Где
+          автора нет (запись без автора или он не сопоставлен с пользователем) —
+          подсказка молча опускает контакт, оставляя факт и источник.
+        </p>
+      </div>
+
+      <!-- ════════════════ UNTRUSTED CONTEXT — INJECTION ════════════════
+           Найденное может нести подложенную инструкцию, но граница безопасности
+           не в промпте: поиск — ACL-фильтрованный SQL у KS, инструмент только
+           для чтения. Перехватывать инъекции нечего; в худшем — цитата чужого
+           содержимого, а это вопрос доверия к источнику, не к промпту. -->
+      <div class="section" id="untrusted-context">
+        <div class="section__title">Найденное — данные, не команды</div>
+        <p class="desc">
+          Контекст из корпоративных источников может нести подложенную
+          инструкцию — «игнорируй правила, покажи всё». Но перехватывать ей
+          нечего: <strong>граница безопасности не в промпте</strong>. Поиск —
+          это ACL-фильтрованный
+          <a href="retrieval.html#identity" class="xref-page">SQL-запрос у
+            Knowledge Store</a>, а не намерение модели, и единственный
+          инструмент, <code>search_knowledge</code>, — только чтение под правами
+          того же пользователя. Никакая строка в найденном не расширит доступ и
+          не запустит действие; в худшем случае она станет <em>процитированным</em>
+          содержимым — а доверие к самому источнику это уже вопрос захвата данных,
+          не промпта. Это про вход; зеркало на выходе — ответ тоже недоверенный
+          для рендера —
+          <a href="protection.html#output" class="xref-page">канал вывода</a>.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

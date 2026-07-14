@@ -1,0 +1,116 @@
+<!doctype html>
+<!-- mfa · feature-local screen — MFA включена, управление -->
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: MFA Management</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit (feature-local screen,
+         one level deeper than _wireframes/ — see README → Styling) -->
+    <link rel="stylesheet" href="../../../../../shared.css" />
+    <link rel="stylesheet" href="../../../module.css" />
+    <link rel="stylesheet" href="../../../wireframe.css" />
+    <script src="../../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="index.html">← Двухфакторная аутентификация</a>
+        <h1 class="header__title">MFA Management <span class="iter v2">v2</span></h1>
+        <div class="header__sub">
+          auth / security · фичи · двухфакторная аутентификация
+          <a class="in-load in-load--skeleton" href="../../../shared-ui/_wireframes/loading-states.html#skeleton" title="Загрузка экрана — каркас (skeleton)">
+            <span class="in-load__icon"></span>загрузка
+          </a>
+        </div>
+      </div>
+
+      <p class="desc">
+        Управление включённой двухфакторной аутентификацией. Подключение — в
+        <a href="mfa-setup.html" class="xref-page">мастере</a>.
+      </p>
+
+      <div class="section">
+        <div class="section__title">Макет</div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">включено · управление</div>
+          <div class="wf-screen wf-screen--narrow">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/account/security/mfa
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/account/security/mfa · после входа</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-appbar">
+              <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+              <span class="wf-appbar__spacer"></span>
+              <span class="wf-chip">Member</span>
+              <span class="wf-avatar">ДС</span>
+            </div>
+
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-center wf-stack wf-stack--tight">
+                  <h2 class="wf-title">Двухфакторная аутентификация</h2>
+                </div>
+
+                <div class="wf-alert wf-alert--ok wf-row">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+                  Двухфакторная аутентификация включена — при входе
+                  запрашивается код из приложения.
+                </div>
+
+                <div class="wf-card wf-row wf-spread">
+                  <span class="wf-text">
+                    Приложение-аутентификатор<br />
+                    <span class="wf-hint">TOTP · подключено</span>
+                  </span>
+                  <span class="wf-chip">Активно</span>
+                </div>
+
+                <hr class="wf-divider" />
+
+                <div class="wf-stack wf-stack--tight">
+                  <div class="wf-row wf-spread">
+                    <span class="wf-guarded"
+                      ><a class="wf-a" href="#">Сгенерировать новые коды восстановления</a><a class="wf-guard" href="../../../shared-ui/_wireframes/confirm-dialog.html#irreversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                    ></span>
+                    <span class="wf-annot">1</span>
+                  </div>
+                  <div class="wf-row wf-spread">
+                    <span class="wf-guarded"
+                      ><a class="wf-a wf-a--danger" href="#">Отключить двухфакторную аутентификацию</a><a class="wf-guard" href="../../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                    ></span>
+                    <span class="wf-annot">2</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Аннулирует прежний набор кодов и показывает новый.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Отключает MFA. Кнопка скрыта для Owner и Admin — для них MFA обязателен.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

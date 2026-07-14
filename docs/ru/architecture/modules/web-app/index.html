@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Web App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="web-app.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <!-- ═══ Header ═══ -->
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← К схеме</a>
+        <h1 class="header__title">Web App</h1>
+        <div class="header__sub">user shell · диалог · тонкий клиент</div>
+      </div>
+
+      <!-- ═══ Описание ═══ Web App — оболочка конечного пользователя. Своей
+           доменной логики почти не держит: диалог и ответ ведёт Query Engine
+           через единый API, вход и личность — Auth. Её работа — собрать surface:
+           каркас (layout), готовую чат-оболочку (assistant-ui) и наш слой внутри
+           сообщения (заземление, источники, фидбэк). -->
+      <p class="desc">
+        Оболочка конечного пользователя — запросы к знаниям и чат с агентами в
+        браузере. Тонкий клиент: <strong>диалог и ответ</strong> ведёт
+        <a href="../query-engine/index.html" class="xref-module">Query Engine</a>
+        через единый API, <strong>вход и личность</strong> —
+        <a href="../auth-security/index.html" class="xref-module">Auth / Security</a>.
+        Своя работа Web App — собрать surface: каркас, готовую чат-оболочку и наш
+        доменный слой внутри неё.
+      </p>
+
+      <!-- ═══ Архитектура ═══ Тезис модуля — композиция владения: внешний каркас
+           наш, тред/композер берёт библиотека, ядро (ответ с заземлением) снова
+           наше. Постер рисует это вложенными полосами. -->
+      <div class="section">
+        <h2 class="section__title">Композиция surface'а</h2>
+        <p class="desc">Экран собран из трёх слоёв владения — снаружи внутрь:</p>
+        <div class="wa-comp">
+          <div class="wa-band wa-band--shell">
+            <div class="wa-band__head">
+              <span class="wa-band__name">Каркас Web App</span>
+              <span class="wa-band__owner">наш · layout</span>
+            </div>
+            <div class="wa-band__parts">
+              <span class="wa-part">аппбар</span>
+              <span class="wa-part">бренд</span>
+              <span class="wa-part">тема · язык</span>
+              <span class="wa-part">профиль</span>
+              <span class="wa-part">роут /chat</span>
+            </div>
+
+            <div class="wa-band wa-band--lib">
+              <div class="wa-band__head">
+                <span class="wa-band__name">Чат-оболочка</span>
+                <span class="wa-band__owner">библиотека · assistant-ui</span>
+              </div>
+              <div class="wa-band__parts">
+                <span class="wa-part">тред</span>
+                <span class="wa-part">композер</span>
+                <span class="wa-part">история</span>
+                <span class="wa-part">стриминг</span>
+                <span class="wa-part">авто-скролл</span>
+              </div>
+
+              <div class="wa-band wa-band--ours">
+                <div class="wa-band__head">
+                  <span class="wa-band__name">Наш слой — внутри сообщения</span>
+                  <span class="wa-band__owner">наш · домен</span>
+                </div>
+                <div class="wa-band__parts">
+                  <span class="wa-part">ответ с заземлением</span>
+                  <span class="wa-part">источники [n]</span>
+                  <span class="wa-part">состояния</span>
+                  <span class="wa-part">фидбэк <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2a3.13 3.13 0 0 1 3 3.88Z" /><path d="M7 10v12" /></svg>/<svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z" /><path d="M17 14V2" /></svg></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Workzone ═══ -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Проектирование</span>
+        </div>
+        <p class="workzone-hint">Детальные решения по проектированию модуля.</p>
+
+        <div class="wz-nav">
+          <a class="wz-link" href="_workzone/stack.html">
+            <span>Стек и чат-оболочка</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ═══ Макеты (wireframes) ═══ Каталог экранов модуля. Чат-экраны
+           рендерят слой Query Engine внутри оболочки; общие экраны личности
+           (вход, профиль) живут в Auth и сюда лишь линкуются с каркаса. -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Макеты</span>
+          <span class="workzone-title">Wireframes</span>
+        </div>
+        <p class="workzone-hint">Экраны — описание и макет каждого.</p>
+
+        <div class="wz-nav">
+          <div class="wz-nav__group">Каркас</div>
+          <a class="wz-link" href="_wireframes/layout.html">
+            <span>layout</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <a class="wz-link" href="_wireframes/notification-feed.html">
+            <span>Уведомления — лента</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <div class="wz-nav__group">Чат</div>
+          <a class="wz-link" href="_wireframes/grounded-answer.html">
+            <span>Ответ с заземлением</span>
+            <span class="wz-tag wz-tag--home" title="Стартовый экран — роут /chat"
+              >⌂ home</span
+            >
+          </a>
+          <a class="wz-link" href="_wireframes/answer-states.html">
+            <span>Состояния ответа</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <div class="wz-nav__group">Агенты</div>
+          <a class="wz-link" href="_wireframes/my-agents.html">
+            <span>Мои агенты</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+          <a class="wz-link" href="_wireframes/agent-editor.html">
+            <span>Редактор агента</span>
+            <span class="wz-tag wz-tag--screen">макет</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

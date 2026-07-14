@@ -1,0 +1,81 @@
+/* Query Engine — protection workzone diagram.
+   One page-bespoke piece: the responsibility map (prot-map — a two-column split
+   of what the QE dialogue layer owns as its own security invariants vs what it
+   leans on in neighbouring modules). The owned column links down to this page's
+   sections; the leaned-on column only names the home module, the actual
+   cross-links living in the sections' prose. Everything else on the page is
+   built from module.css primitives (sections · notes · decision boxes).
+   Static — no hover affordance for non-clickable blocks (README §Hover).
+   Loaded by _workzone/protection.html on top of ../../module.css
+   + ../query-engine.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+.prot-map {
+  display: flex;
+  gap: 0.7rem;
+  margin: 1.1rem 0 0.4rem;
+}
+.prot-map__col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.7rem 0.8rem;
+}
+/* Owned — the QE layer's own invariants; accent-green, like the grounded path. */
+.prot-map__col--own {
+  border-top: 3px solid var(--s3);
+  background: var(--tint-6);
+}
+/* Leaned-on — held by a neighbour; muted, no claim of ownership. */
+.prot-map__col--lean {
+  border-top: 3px solid var(--text-muted);
+}
+.prot-map__head {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
+}
+.prot-map__col--own .prot-map__head {
+  color: var(--s3);
+}
+/* Owned items link down to their section; leaned items are plain labels. */
+.prot-map__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.3rem 0.45rem;
+  border-radius: var(--tag-radius);
+  border-left: 3px solid var(--border);
+}
+.prot-map__col--own a.prot-map__item {
+  text-decoration: none;
+  border-left-color: var(--s3);
+}
+.prot-map__col--own a.prot-map__item:hover {
+  background: var(--surface);
+}
+.prot-map__k {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.prot-map__v {
+  font-size: 0.71rem;
+  color: var(--text-dim);
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  .prot-map {
+    flex-direction: column;
+  }
+}

@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Query Engine: RAG-маршрут</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="rag-pipeline.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Query Engine</a>
+        <h1 class="header__title">RAG-маршрут</h1>
+        <div class="header__sub">query-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        Ядро <strong>grounding-режима</strong>: как вопрос превращается в
+        обоснованный ответ, когда модель решает искать. RAG здесь —
+        <strong>маршрут</strong>: вызвав <code>search_knowledge</code>,
+        модель спускает запрос через пять шагов —
+        <a href="#route" class="xref-anchor">Embed → Retrieve → Rerank → Augment →
+        Generate</a>. Решение позвать инструмент и сам самостоятельный запрос — за
+        моделью (<a href="conversation.html#route" class="xref-page">решение о
+        поиске</a>); зона ответственности маршрута — переранжирование, упаковка
+        контекста и grounding-генерация; эмбеддинг запроса и сам поиск
+        принадлежат
+        <a href="../../knowledge-store/_workzone/hybrid-search.html#boundary" class="xref-module"
+          >Knowledge Store</a
+        >. Кто какой моделью работает — на
+        <a href="#models" class="xref-anchor">карте моделей</a>; где один раунд
+        инструментов кончается и начинается агентный цикл — на
+        <a href="#agent-boundary" class="xref-anchor">границе</a>.
+      </p>
+
+      <!-- ════════════════ МАРШРУТ ════════════════ embed → retrieve → rerank
+           → augment → generate. Маршрут — тело инструмента search_knowledge:
+           модель уже решила искать и сформулировала самостоятельный запрос. -->
+      <div class="section" id="route">
+        <div class="section__title">Маршрут поиска: запрос спускается через пять слоёв</div>
+        <p class="desc">
+          Маршрут — <strong>тело инструмента <code>search_knowledge</code></strong>:
+          он запускается, когда модель решила искать и передала
+          <a href="conversation.html#multi-turn" class="xref-page">самостоятельный
+          запрос</a>. Один проход сверху вниз: шаги 1–2 (embed · retrieve)
+          исполняет Knowledge Store, шаги 3–5 (rerank · augment · generate) —
+          Query Engine. На входе — кэш-гейт: повторный идентичный поиск той же
+          личности отдаёт кандидатов из кэша, минуя дорогой embed/retrieve.
+          Граница между сторонами проходит по слою, а не между секциями: тот же
+          стек показывает, где storage отдаёт кандидатов, а RAG их доводит.
+        </p>
+
+        <div class="stk-stage stk-stage--solo">
+          <div class="stk-stack">
+            <!-- ════════ КЭШ-ГЕЙТ ════════ на входе инструмента: hit отдаёт
+                 кэшированных кандидатов, miss падает в дорогой embed/retrieve. -->
+            <div class="rp-cache" id="cache">
+              <div class="rp-cache__gate">
+                <span class="rp-cache__d">◇</span>
+                <span class="rp-cache__q">Точный кэш?</span>
+                <span class="rp-cache__key"
+                  >ключ = самостоятельный запрос + identity</span
+                >
+              </div>
+              <div class="rp-cache__branches">
+                <div class="rp-cache__branch rp-cache__branch--hit">
+                  <span class="rp-cache__cond">hit</span>
+                  <span class="rp-cache__arr">──▶</span>
+                  <span class="rp-cache__res">кандидаты из кэша · минуя embed +
+                    retrieve</span>
+                </div>
+                <div class="rp-cache__branch rp-cache__branch--miss">
+                  <span class="rp-cache__cond">miss</span>
+                  <span class="rp-cache__arr">▼</span>
+                  <span class="rp-cache__res">маршрут идёт дальше</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mod-conn">
+              <div class="mod-conn__line"></div>
+              <div class="mod-conn__arrow"></div>
+            </div>
+
+            <!-- ════════ 1 · EMBED ════════ -->
+            <div class="stk-layer stk-layer--ks" id="embed">
+              <div class="stk-layer__bar">
+                <span class="stk-layer__n">1</span>
+                <span class="stk-layer__name">Embed</span>
+                <span class="rp-side">Knowledge Store</span>
+                <span class="stk-layer__role">Запрос → вектор.</span>
+              </div>
+              <div class="stk-layer__body">
+                <div class="stk-dec stk-dec--full">
+                  <div class="stk-dec__h">
+                    <span class="stk-dec__t">Эмбеддинг запроса</span>
+                  </div>
+                  <div class="stk-dec__d">
+                    Самостоятельный запрос превращается в вектор той же моделью
+                    эмбеддинга, что строила индекс —
+                    <a
+                      href="../../knowledge-store/_workzone/embedding-runtime.html#contention"
+                      class="xref-module"
+                      >общий платформенный эмбеддер</a
+                    >
+                    (Harvester / KS), не настройка Query Engine. Шаг исполняет
+                    Knowledge Store; Query Engine лишь передаёт текст и identity
+                    пользователя. Механику поиска держит
+                    <a href="retrieval.html#boundary" class="xref-page"
+                      >retrieval · граница</a
+                    >.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mod-conn">
+              <div class="mod-conn__line"></div>
+              <div class="mod-conn__arrow"></div>
+            </div>
+
+            <!-- ════════ 2 · RETRIEVE ════════ -->
+            <div class="stk-layer stk-layer--ks" id="retrieve">
+              <div class="stk-layer__bar">
+                <span class="stk-layer__n">2</span>
+                <span class="stk-layer__name">Retrieve</span>
+                <span class="rp-side">Knowledge Store</span>
+                <span class="stk-layer__role"
+                  >Собранный hybrid-результат под правами.</span
+                >
+              </div>
+              <div class="stk-layer__body">
+                <div class="stk-dec stk-dec--full">
+                  <div class="stk-dec__h">
+                    <span class="stk-dec__t">Один вызов — слитые кандидаты</span>
+                  </div>
+                  <div class="stk-dec__d">
+                    Query Engine берёт готовый
+                    <a href="../../knowledge-store/_workzone/hybrid-search.html#boundary" class="xref-module"
+                      >hybrid-результат</a
+                    >
+                    из Knowledge Store одним запросом: четыре примитива поиска,
+                    их слияние (fusion / RRF) и ACL pre-filter — всё внутри KS,
+                    под identity пользователя. Query Engine схему прав не строит
+                    и не видит — identity это вход, кандидаты под правами это выход.
+                    Маппинг личности на source-аккаунты держит
+                    <a href="retrieval.html#identity" class="xref-page"
+                      >retrieval · личность</a
+                    >.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mod-conn">
+              <div class="mod-conn__line"></div>
+              <div class="mod-conn__arrow"></div>
+            </div>
+
+            <!-- ════════ 3 · RERANK ════════ -->
+            <div class="stk-layer stk-layer--qe" id="rerank-step">
+              <div class="stk-layer__bar">
+                <span class="stk-layer__n">3</span>
+                <span class="stk-layer__name">Rerank</span>
+                <span class="rp-side rp-side--qe">Query Engine</span>
+                <span class="stk-layer__role"
+                  >Переупорядочить кандидатов под вопрос.</span
+                >
+              </div>
+              <div class="stk-layer__body">
+                <div class="stk-dec stk-dec--full">
+                  <div class="stk-dec__h">
+                    <span class="stk-dec__t">Порядок из KS, без модели</span>
+                  </div>
+                  <div class="stk-dec__d">
+                    В v1 переранжирование опирается на RRF-порядок, уже собранный
+                    Knowledge Store, — отдельной модели нет. Cross-encoder reranker,
+                    переоценивающий top-N парами «запрос × кандидат», — отдельный
+                    шаг <span class="iter v2">v2</span>; разобран на
+                    <a href="#rerank" class="xref-anchor">карте rerank</a>.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mod-conn">
+              <div class="mod-conn__line"></div>
+              <div class="mod-conn__arrow"></div>
+            </div>
+
+            <!-- ════════ 4 · AUGMENT ════════ -->
+            <div class="stk-layer stk-layer--qe" id="augment">
+              <div class="stk-layer__bar">
+                <span class="stk-layer__n">4</span>
+                <span class="stk-layer__name">Augment</span>
+                <span class="rp-side rp-side--qe">Query Engine</span>
+                <span class="stk-layer__role">Упаковка контекста под модель.</span>
+              </div>
+              <div class="stk-layer__body">
+                <div class="stk-dec stk-dec--full">
+                  <div class="stk-dec__h">
+                    <span class="stk-dec__t">Сборка промпта</span>
+                  </div>
+                  <div class="stk-dec__d">
+                    Отобранные кандидаты упаковываются в контекст модели:
+                    <ul class="stk-dec__list">
+                      <li>
+                        <strong>Лучший фрагмент как доказательство</strong> — при
+                        каждой сущности один самый показательный фрагмент, не весь
+                        её материал: размен полноты на разнообразие источников.
+                      </li>
+                      <li>
+                        <strong>Отсечка под общий бюджет окна</strong> — фрагменты
+                        укладываются от важного к менее важному и обрезаются не по
+                        всему окну, а под остаток, что оставила история: место делит
+                        <a href="conversation.html#context-budget" class="xref-page"
+                          >бюджет контекстного окна</a>, удерживая резерв под ответ.
+                      </li>
+                      <li>
+                        <strong>Разметка источников для цитирования</strong> — у
+                        каждого фрагмента метка происхождения, чтобы ответ мог на
+                        него сослаться.
+                      </li>
+                      <li>
+                        <strong>Историю augment не дублирует</strong> — модель уже
+                        держит её в окне как ведущий ход, поэтому в упаковку идут
+                        только найденные фрагменты, а не вторая копия истории.
+                        Связность follow-up («разверни прошлый пункт») даёт та же
+                        история в окне; доказательная база ответа — лишь найденное.
+                      </li>
+                    </ul>
+                    Сверху всего ложится
+                    <a href="../../admin-panel/_wireframes/ai-behavior.html#composition" class="xref-module">платформенный prompt</a> —
+                    общий слой безопасности и правил организации, который Admin
+                    задаёт раз на инстанс; дальше идут найденные фрагменты.
+                    Здесь же закрепляется правило grounding — отвечать только из
+                    вложенного контекста; формулировку честного «не нашёл» держит
+                    <a href="grounding.html#grounding" class="xref-page"
+                      >grounding</a
+                    >. Найденный контент — недоверенный вход: фрагменты подаются
+                    как данные, не как инструкции модели; усиленная защита от
+                    prompt injection — <span class="iter v2">v2</span>.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mod-conn">
+              <div class="mod-conn__line"></div>
+              <div class="mod-conn__arrow"></div>
+            </div>
+
+            <!-- ════════ 5 · GENERATE ════════ -->
+            <div class="stk-layer stk-layer--qe" id="generate">
+              <div class="stk-layer__bar">
+                <span class="stk-layer__n">5</span>
+                <span class="stk-layer__name">Generate</span>
+                <span class="ai-tag" title="Этап использует нейросеть — инференс модели"
+                  ><span class="ai-tag__icon"></span>AI</span
+                >
+                <span class="rp-side rp-side--qe">Query Engine</span>
+                <span class="stk-layer__role">Строит ответ на найденном — та же chat-модель.</span>
+              </div>
+              <div class="stk-layer__body">
+                <div class="stk-dec stk-dec--full">
+                  <div class="stk-dec__h">
+                    <span class="stk-dec__t">Grounding-генерация</span>
+                  </div>
+                  <div class="stk-dec__d">
+                    Упакованный контекст возвращается <em>той же chat-модели, что
+                    позвала инструмент</em> — той, что пользователь выбрал в чате и
+                    ведёт диалог, не отдельной платформенной. Она строит ответ
+                    строго на найденном и стримит его синхронно, с цитированием
+                    источников. Раскладку моделей по шагам держит
+                    <a href="#models" class="xref-anchor">карта моделей</a>.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rp-seam">
+          <div class="rp-seam__col rp-seam__col--ks">
+            <span class="rp-seam__who">Knowledge Store</span>
+            <span class="rp-seam__act">шаги 1–2 · embed + retrieve</span>
+          </div>
+          <div class="rp-seam__arrow">▸</div>
+          <div class="rp-seam__col rp-seam__col--qe">
+            <span class="rp-seam__who">Query Engine</span>
+            <span class="rp-seam__act">шаги 3–5 · rerank + augment + generate</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ════════════════ МОДЕЛИ ════════════════ кто какой моделью: chat
+           (ведёт ход + generate) · embedding · reranker. -->
+      <div class="section" id="models">
+        <div class="section__title">Карта моделей: кто чем работает</div>
+
+        <div class="rp-models">
+          <div class="rp-model rp-model--chat" id="admin-row">
+            <div class="rp-model__h">
+              <span class="rp-model__step">ведёт ход + generate</span>
+              <span class="ai-tag" title="Этап использует нейросеть — инференс модели"
+                ><span class="ai-tag__icon"></span>AI</span
+              >
+            </div>
+            <div class="rp-model__name">Выбранная chat-модель</div>
+            <p class="rp-model__d">
+              <strong>Та модель, что пользователь выбрал в чате</strong>, ведёт
+              весь ход: решает, звать ли <code>search_knowledge</code>,
+              формулирует самостоятельный запрос и строит ответ на найденном. Не отдельная
+              платформенная «модель RAG» и не служебный роутер. Назначается в
+              <a href="../../admin-panel/_wireframes/ai-models.html#model-assignment" class="xref-module"
+                >admin · AI-модели</a
+              >.
+            </p>
+          </div>
+          <div class="rp-model rp-model--embed">
+            <div class="rp-model__h">
+              <span class="rp-model__step">embed</span>
+              <span class="ai-tag" title="Этап использует нейросеть — инференс модели"
+                ><span class="ai-tag__icon"></span>AI</span
+              >
+            </div>
+            <div class="rp-model__name">Общий эмбеддер</div>
+            <p class="rp-model__d">
+              Эмбеддинг запроса — тем же платформенным эмбеддером, что строил
+              индекс (Harvester / KS). Иначе вектор запроса и вектор чанков
+              несравнимы.
+            </p>
+          </div>
+          <div class="rp-model rp-model--rerank">
+            <div class="rp-model__h">
+              <span class="rp-model__step">rerank</span>
+              <span class="iter v2">v2</span>
+            </div>
+            <div class="rp-model__name">v1 — без модели</div>
+            <p class="rp-model__d">
+              В v1 переранжирование — RRF-порядок из Knowledge Store, без
+              инференса. Cross-encoder reranker как модель —
+              <span class="iter v2">v2</span>.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ RERANK ════════════════ v1 RRF · v2 cross-encoder. -->
+      <div class="section" id="rerank">
+        <div class="section__title">Rerank: RRF сейчас, cross-encoder потом</div>
+        <p class="desc">
+          Переранжирование решает, что из кандидатов попадёт в контекст и в каком
+          порядке. Развилка по итерациям, не по альтернативам — v2 надстраивается
+          над v1, а не заменяет.
+        </p>
+        <div class="rp-rerank">
+          <div class="rp-rerank__col rp-rerank__col--v1">
+            <div class="rp-rerank__h">
+              <span class="rp-rerank__t">RRF из KS</span>
+            </div>
+            <p class="rp-rerank__d">
+              Порядок берётся прямо из собранного hybrid-результата: Knowledge
+              Store уже слил списки примитивов по reciprocal rank fusion. Query
+              Engine упаковывает кандидатов в том
+              порядке, что пришёл.
+            </p>
+          </div>
+          <div class="rp-rerank__col rp-rerank__col--v2">
+            <div class="rp-rerank__h">
+              <span class="rp-rerank__t">Cross-encoder reranker</span>
+              <span class="iter v2">v2</span>
+            </div>
+            <p class="rp-rerank__d">
+              Отдельная модель переоценивает top-N кандидатов парами
+              «запрос × кандидат» — точнее RRF, потому что видит запрос и текст
+              вместе, а не складывает позиции.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ ГРАНИЦА С AGENT ENGINE ════════════════ один
+           опциональный вызов поиска без цикла vs агентный цикл с планированием. -->
+      <div class="section" id="agent-boundary">
+        <div class="section__title">Граница: один раунд инструментов, агенты — дальше</div>
+        <p class="desc">
+          Граница не в том, есть ли у модели инструменты, а в том, <strong>есть
+          ли цикл</strong>. У chat-модели Query Engine — <strong>один раунд
+          инструментов за ход</strong>: она может позвать несколько параллельно
+          (например <code>search_knowledge</code> + <code>web_search</code>),
+          получить результаты и обязана ответить. Петли нет — за раундом не
+          следует второй раунд по итогам первого. Это держит ответ предсказуемым
+          и отделяет диалоговый ход от полноценного агента. Сам tool-calling под
+          обоими — общий
+          <a href="../../agent-engine/_workzone/harness.html" class="xref-module"
+            >харнесс</a>: граница ниже — это его параметризация, один раунд против
+          петли.
+        </p>
+
+        <div class="rp-bound">
+          <div class="rp-bound__col rp-bound__col--here">
+            <div class="rp-bound__head">
+              <span class="rp-bound__who">Query Engine</span>
+              <span class="rp-bound__act">один раунд инструментов</span>
+            </div>
+            <p class="rp-bound__d">
+              За ход модель делает один раунд: зовёт ноль, один или несколько
+              инструментов разом (KB + веб-поиск), получает результаты и строит
+              ответ. Без планирования и без второго раунда по итогам первого.
+            </p>
+          </div>
+          <div class="rp-bound__seam">▸</div>
+          <div class="rp-bound__col rp-bound__col--there">
+            <div class="rp-bound__head">
+              <span class="rp-bound__who">Agent Engine</span>
+              <span class="rp-bound__act">агентный цикл</span>
+            </div>
+            <p class="rp-bound__d">
+              Многошаговый и инструментальный reasoning — циклы поиска, выбор
+              инструмента из набора, планирование — у
+              <a class="xref-badge" href="../../agent-engine/_workzone/runtime.html#loop"
+                >→ Agent Engine</a
+              >, который вызывает примитивы Knowledge Store
+              <strong>напрямую</strong>, минуя Query Engine.
+            </p>
+          </div>
+        </div>
+
+        <p class="note">
+          <span class="iter v2">v2</span> — <strong>многораундовый агентный
+          чат</strong>: модель планирует и идёт несколькими раундами в самом
+          диалоге, дочитывая по итогам предыдущего. Надстройка над одним раундом,
+          а не граница доступа.
+        </p>
+
+        <p class="note">
+          <span class="iter v2">v2</span>-исключение к одному вызову: при низкой
+          уверенности в кандидатах Query Engine делает ограниченный
+          (<strong>N=1</strong>) повторный поиск перед тем, как ответить «не нашёл», —
+          одна попытка переформулировать и переспросить, не полноценный агентный
+          цикл. Сам ответ «не нашёл» и его честность держит
+          <a href="grounding.html#grounding" class="xref-page">grounding</a>.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

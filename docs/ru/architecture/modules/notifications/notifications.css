@@ -1,0 +1,400 @@
+/* Notifications — module poster diagram (nf-*): a metro-map of an event's
+   journey. The main line (accent) runs Sources → Dispatcher → Addressing,
+   where it forks into a broadcast branch (s2) and a targeted branch (s3);
+   each branch runs straight down through its channel stations to its own
+   terminus — the feed, which lives in a surface (the module has no UI of its
+   own). SVG draws the rails and station circles; the text labels are HTML
+   overlaid on top (absolute %, mapped 1:1 onto the 640×945 viewBox via
+   `preserveAspectRatio="xMidYMid meet"` + a matched-aspect canvas) so the
+   type stays sharp and editable. Per-label coordinates live in nf-pos--*
+   modifiers (no inline styles).
+   Loaded by index.html on top of ../module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+.nf-map {
+  position: relative;
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.6rem 1.4rem 1.4rem;
+  margin: 0.4rem 0 0;
+}
+
+/* ── Legend — one swatch per rail hue ── */
+.nf-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.1rem;
+  margin: 0 0 1.2rem;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+.nf-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+.nf-legend i {
+  width: 22px;
+  height: 6px;
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+.nf-leg-main i {
+  background: var(--accent);
+}
+.nf-leg-bc i {
+  background: var(--s2);
+}
+.nf-leg-tg i {
+  background: var(--s3);
+}
+
+/* ── Canvas — SVG sits behind, labels overlay in front; the canvas keeps the
+   viewBox aspect ratio so % label coords line up with the drawn stations. ── */
+.nf-canvas {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 640 / 945;
+}
+.nf-canvas svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* ── Rails ── */
+.nf-rail {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 9;
+}
+.nf-rail--main {
+  stroke: var(--accent);
+}
+.nf-rail--bc {
+  stroke: var(--s2);
+}
+.nf-rail--tg {
+  stroke: var(--s3);
+}
+/* Feeder lines from sources into the trunk — thinner, the trunk hue, faded,
+   so they read as tributaries joining the main line. */
+.nf-rail--feed {
+  stroke: var(--accent);
+  stroke-width: 5;
+  opacity: 0.55;
+}
+
+/* ── Stations ── */
+.nf-stop {
+  fill: var(--paper);
+  stroke-width: 6;
+}
+.nf-stop--main {
+  stroke: var(--accent);
+}
+.nf-stop--bc {
+  stroke: var(--s2);
+}
+.nf-stop--tg {
+  stroke: var(--s3);
+}
+/* Source feeder dots — small solid pins. */
+.nf-pin {
+  fill: var(--accent);
+  opacity: 0.55;
+}
+/* Interchange stations (Dispatcher, termini) — bigger ring. */
+.nf-hub {
+  fill: var(--paper);
+  stroke: var(--accent);
+  stroke-width: 7;
+}
+
+/* ═══════════════════════════════════════════
+   Label overlay
+   ═══════════════════════════════════════════ */
+.nf-lbl {
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+/* Clickable labels (dispatcher · addressing · termini) carry a link; only the
+   anchor reacts on hover (per the hover=clickable convention). */
+a.nf-lbl {
+  text-decoration: none;
+  color: inherit;
+}
+a.nf-lbl:hover .nf-station__name,
+a.nf-lbl:hover .nf-hubcard__name,
+a.nf-lbl:hover .nf-surf__h {
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+/* ── Source chips — anchored at their left edge, just right of the feeder pin ── */
+.nf-src {
+  left: 16%;
+  transform: translate(0, -50%);
+  white-space: nowrap;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.22rem 0.6rem;
+  box-shadow: 0 1px 2px rgba(46, 34, 24, 0.05);
+}
+.nf-src--1 {
+  top: 5.82%;
+}
+.nf-src--2 {
+  top: 10.05%;
+}
+.nf-src--3 {
+  top: 14.29%;
+}
+.nf-src--4 {
+  top: 18.52%;
+}
+.nf-src--5 {
+  top: 22.75%;
+}
+
+/* Structural label rows stack vertically (the markup uses <span> wrappers, so
+   force block — an inline span would let the name and sub run together). */
+.nf-station__name,
+.nf-station__sub,
+.nf-hubcard__cap,
+.nf-hubcard__name,
+.nf-hubcard__sub,
+.nf-branch__h,
+.nf-branch__cond,
+.nf-surf__h,
+.nf-surf__d {
+  display: block;
+}
+
+/* ── Station name + sub, floated beside its dot ── */
+.nf-station__name {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.2px;
+}
+.nf-station__sub {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+.nf-tag {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+/* ── Dispatcher interchange caption ── */
+.nf-hubcard {
+  text-align: center;
+  white-space: nowrap;
+}
+.nf-hubcard__cap {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent);
+  font-weight: 700;
+}
+.nf-hubcard__name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 1px;
+}
+.nf-hubcard__sub {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ── Branch captions + type pills ── */
+.nf-branch {
+  text-align: center;
+  white-space: nowrap;
+}
+.nf-branch__h {
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+.nf-branch--bc .nf-branch__h {
+  color: var(--s2);
+}
+.nf-branch--tg .nf-branch__h {
+  color: var(--s3);
+}
+.nf-branch__cond {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--text-dim);
+  margin-top: 1px;
+}
+.nf-types {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.22rem;
+  margin-top: 0.32rem;
+  max-width: 150px;
+}
+.nf-branch--bc .nf-types {
+  justify-content: flex-end;
+  max-width: 170px;
+  margin-left: auto;
+}
+.nf-branch--tg .nf-types {
+  justify-content: flex-start;
+}
+.nf-type {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.08rem 0.4rem;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
+/* ── Channel station chips (in_app / email / webhook) ── */
+.nf-chan {
+  white-space: nowrap;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--tint-6);
+  border: 1px solid var(--tint-25);
+  border-radius: 6px;
+  padding: 0.18rem 0.5rem;
+}
+.nf-chan small {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+.nf-lock {
+  color: var(--s1);
+}
+
+/* ── Terminus showcase (the feed, in a surface) ── */
+.nf-surf {
+  white-space: nowrap;
+  text-align: center;
+}
+.nf-surf__h {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.nf-surf__d {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* ── Pinned footnotes along the route ── */
+.nf-note {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-style: italic;
+  white-space: nowrap;
+}
+
+/* ── Per-label coordinates (no inline styles) ── */
+.nf-note--sources {
+  left: 13%;
+  top: 29.1%;
+  text-align: center;
+}
+.nf-pos--inflow {
+  left: 53%;
+  top: 12.7%;
+  transform: translate(0, -50%);
+  text-align: left;
+}
+.nf-pos--dispatch {
+  left: 55.5%;
+  top: 27.51%;
+  transform: translate(0, -50%);
+  text-align: left;
+  max-width: 40%;
+  white-space: normal;
+}
+.nf-pos--addr {
+  left: 53%;
+  top: 44.44%;
+  transform: translate(0, -50%);
+  text-align: left;
+}
+.nf-pos--bc {
+  left: 27%;
+  top: 58.73%;
+  transform: translate(-100%, -50%);
+  text-align: right;
+}
+.nf-pos--tg {
+  left: 73%;
+  top: 58.73%;
+  transform: translate(0, -50%);
+  text-align: left;
+}
+.nf-pos--bc-ch1 {
+  left: 31.5%;
+  top: 68.78%;
+  transform: translate(0, -50%);
+}
+.nf-pos--bc-ch2 {
+  left: 31.5%;
+  top: 75.66%;
+  transform: translate(0, -50%);
+}
+.nf-pos--bc-ch3 {
+  left: 31.5%;
+  top: 82.54%;
+  transform: translate(0, -50%);
+}
+.nf-pos--tg-ch1 {
+  left: 68.5%;
+  top: 68.78%;
+  transform: translate(-100%, -50%);
+}
+.nf-pos--tg-ch2 {
+  left: 68.5%;
+  top: 75.66%;
+  transform: translate(-100%, -50%);
+}
+.nf-note--channels {
+  left: 50%;
+  top: 68.78%;
+  text-align: center;
+  max-width: 96px;
+  white-space: normal;
+}
+.nf-note--lock {
+  left: 50%;
+  top: 86.24%;
+  text-align: center;
+  max-width: 200px;
+  white-space: normal;
+  color: var(--s1);
+}
+.nf-pos--surf-admin {
+  left: 28.9%;
+  top: 91.01%;
+}
+.nf-pos--surf-web {
+  left: 71.1%;
+  top: 91.01%;
+}

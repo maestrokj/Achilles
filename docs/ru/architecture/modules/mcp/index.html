@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — MCP</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="mcp.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <!-- ═══ Header ═══ -->
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← К схеме</a>
+        <h1 class="header__title">MCP</h1>
+        <div class="header__sub">Model Context Protocol · знания внутри чужого AI</div>
+      </div>
+
+      <!-- ════════════════ HERO ════════════════
+           Главная мысль — инверсия: думает чужая модель, мы лишь дверь
+           с одним инструментом. Поэтому hero несёт смысл, а не украшение:
+           поток слева-направо показывает, кто думает и что мы отдаём. -->
+      <header class="mcp-hero">
+        <p class="mcp-title">Знания компании — внутри&nbsp;Claude&nbsp;Code</p>
+        <p class="mcp-lede">
+          Чужой AI-ассистент сам спрашивает вашу базу и вплетает ответ в работу —
+          не выходя из редактора.
+        </p>
+      </header>
+
+      <!-- ── Поток: client → порт → база, с встречными дорожками ── -->
+      <div class="mcp-flow" role="img"
+        aria-label="Поток: Claude Code зовёт инструмент search_knowledge у сервера Achilles MCP, тот ищет в базе под ACL владельца и возвращает находки">
+        <div class="mcp-station mcp-station--client">
+          <span class="mcp-station__tag">чужой AI</span>
+          <span class="mcp-station__glyph">▍</span>
+          <span class="mcp-station__name">Claude Code</span>
+          <span class="mcp-station__desc">думает · зовёт инструмент</span>
+        </div>
+
+        <div class="mcp-link">
+          <span class="mcp-link__rail mcp-link__rail--fwd">
+            <span class="mcp-link__lbl"><code>search_knowledge</code></span>
+            <span class="mcp-link__wire"></span>
+          </span>
+          <span class="mcp-link__rail mcp-link__rail--back">
+            <span class="mcp-link__wire"></span>
+            <span class="mcp-link__lbl">находки + источники</span>
+          </span>
+        </div>
+
+        <div class="mcp-station mcp-station--port">
+          <span class="mcp-station__tag mcp-station__tag--on">дверь</span>
+          <span class="mcp-station__glyph"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22v-5" /><path d="M15 8V2" /><path d="M17 8a1 1 0 0 1 1 1v4a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1z" /><path d="M9 8V2" /></svg></span>
+          <span class="mcp-station__name">Achilles MCP</span>
+          <span class="mcp-station__desc"><code>/mcp</code> · ключ → user_id → ACL</span>
+        </div>
+
+        <div class="mcp-link mcp-link--single">
+          <span class="mcp-link__rail mcp-link__rail--fwd">
+            <span class="mcp-link__lbl">поиск под ACL</span>
+            <span class="mcp-link__wire"></span>
+          </span>
+        </div>
+
+        <div class="mcp-station mcp-station--data">
+          <span class="ai-tag" title="Этап использует нейросеть — инференс модели"
+            ><span class="ai-tag__icon"></span>AI</span
+          >
+          <span class="mcp-station__glyph mcp-station__glyph--graph" aria-hidden="true">
+            <svg viewBox="0 0 40 40" fill="none">
+              <line x1="11" y1="14" x2="24" y2="9" /><line x1="11" y1="14" x2="13" y2="28" />
+              <line x1="24" y1="9" x2="30" y2="22" /><line x1="13" y1="28" x2="30" y2="22" />
+              <circle cx="11" cy="14" r="3.4" /><circle cx="24" cy="9" r="2.8" />
+              <circle class="mcp-graph__hub" cx="30" cy="22" r="4" /><circle cx="13" cy="28" r="3" />
+            </svg>
+          </span>
+          <span class="mcp-station__name">База знаний</span>
+          <span class="mcp-station__desc">гибридный поиск, ACL pre-filter</span>
+        </div>
+      </div>
+
+      <!-- ── Сердце концепта одной строкой ── -->
+      <p class="mcp-thesis" id="model">
+        Думает <strong>модель клиента</strong>, не наша. MCP отдаёт ей
+        <strong>один инструмент</strong> — <code>search_knowledge</code> возвращает
+        <strong>находки, не готовый ответ</strong>; синтез делает сам ассистент.
+        <a href="../query-engine/_workzone/retrieval.html#identity" class="xref-module"
+          >Поиск идёт под личностью владельца →</a
+        >
+      </p>
+
+      <!-- ════════════════ КАРТОЧКИ ════════════════ -->
+      <div class="mcp-cards">
+        <!-- Установка -->
+        <section class="mcp-card">
+          <span class="mcp-card__num">01</span>
+          <h2 class="mcp-card__title">Установка</h2>
+          <p class="mcp-card__sub">Сервер сетевой — клиент лишь запоминает адрес и ключ. Одна команда.</p>
+          <pre class="mcp-cmd"><span class="mcp-cmd__cmd">claude mcp add</span> --transport http achilles <span class="mcp-cmd__url">https://achilles.local/mcp</span> \
+  --header <span class="mcp-cmd__str">"Authorization: Bearer ach_…"</span></pre>
+          <p class="mcp-card__foot">С OAuth (<span class="iter v2">v2</span>) ключ отпадёт — команда станет одношаговой.
+            MCP — референс-поверхность <a href="../public-api/index.html#reference" class="xref-module">Public API</a> для AI-клиентов;
+            путь <code>/mcp</code> — на общей <a href="../api/index.html#surface-map" class="xref-module">карте HTTP API</a>.</p>
+        </section>
+
+        <!-- Авторизация -->
+        <section class="mcp-card" id="auth">
+          <span class="mcp-card__num">02</span>
+          <h2 class="mcp-card__title">Авторизация</h2>
+          <p class="mcp-card__sub">Своего входа нет — клиент сводится к <code>user_id</code>, дальше роль и ACL владельца.</p>
+          <ol class="mcp-steps">
+            <li class="mcp-steps__item mcp-steps__item--now">
+              <a href="../auth-security/_workzone/authentication.html#api-keys" class="mcp-steps__link"
+                >API-ключ <code>ach_…</code></a
+              >
+              <span class="mcp-steps__note">в заголовке · headless · только чтение</span>
+            </li>
+            <li class="mcp-steps__item">
+              <span class="iter v2">v2</span>
+              <a href="../auth-security/_workzone/authentication.html#oauth" class="mcp-steps__link"
+                >OAuth 2.1</a
+              >
+              <span class="mcp-steps__note">браузерное согласие, без переноса ключа</span>
+            </li>
+          </ol>
+          <p class="mcp-card__foot">ACL — <strong>поверх</strong>: область ключа лишь сужает права.</p>
+        </section>
+
+        <!-- Управление -->
+        <section class="mcp-card" id="governance">
+          <span class="mcp-card__num">03</span>
+          <h2 class="mcp-card__title">Управление дверью</h2>
+          <p class="mcp-card__sub">Вход снаружи внутрь — контроль на двух уровнях.</p>
+          <ul class="mcp-gov">
+            <li class="mcp-gov__item">
+              <span class="mcp-gov__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <path d="M12 3v9" /><path d="M7.5 6.5a7 7 0 1 0 9 0" />
+                </svg>
+              </span>
+              <span
+                ><strong>Рубильник платформы.</strong> Один тумблер в
+                <a href="../admin-panel/_wireframes/platform-settings.html#integrations-maintenance" class="xref-module"
+                  >настройках платформы</a
+                >
+                закрывает MCP разом для всех — дверь заперта, ключи живут.</span
+              >
+            </li>
+            <li class="mcp-gov__item">
+              <span class="mcp-gov__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="8" cy="8" r="4" /><path d="M11 11l8 8" /><path d="M16 16l2-2" /><path d="M19 19l2-2" />
+                </svg>
+              </span>
+              <span
+                ><strong>Ключи — самообслуживание.</strong> Сотрудник заводит свои сам — в
+                <a href="../auth-security/_wireframes/profile-account.html#api-keys" class="xref-module">профиле</a>;
+                надзор Owner/Admin на
+                <a href="../admin-panel/_wireframes/api-keys.html#api-keys" class="xref-module">экране ключей</a>.
+                Деактивация — ключи гаснут.</span
+              >
+            </li>
+          </ul>
+          <p class="mcp-card__foot">Каждый вызов под лимитом частоты и метится на ключ — на
+            <a href="../admin-panel/_wireframes/api-keys.html#api-keys" class="xref-module">экране ключей</a>
+            видно использование; текст запроса не логируется.</p>
+        </section>
+      </div>
+    </div>
+  </body>
+</html>

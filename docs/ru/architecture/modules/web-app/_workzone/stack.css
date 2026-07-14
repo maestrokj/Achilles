@@ -1,0 +1,53 @@
+/* Web App — stack & structure page deltas, on top of the swl-* kit.
+   Web App carries a real Frontend stack (two columns) plus the chat-shell
+   decision: the dialog UI is a ready-made library (assistant-ui), our domain
+   (citations · grounding · feedback) composed inside it. The shell block is a
+   full-width card below the lane; two pill clusters split library-provided vs
+   ours. Everything else (lanes, columns, groups, pills, notes) comes from
+   modules/swimlane.css.
+   Loaded by _workzone/stack.html on top of ../../swimlane.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Shared chat shell — ready-made library, not hand-rolled ── */
+.swl-grp--shell:target {
+  animation: target-highlight 2.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swl-grp--shell:target {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--accent-muted);
+  }
+}
+
+.swl-shell__lead {
+  margin: 0 0 0.65rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.swl-shell__split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+}
+
+.swl-shell__half {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.swl-shell__cap {
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+
+/* «наше» pills — accent-emphasized against library (default) pills */
+.swl-pill--ours {
+  background: var(--paper);
+  border-color: var(--tint-25);
+  color: var(--accent);
+}

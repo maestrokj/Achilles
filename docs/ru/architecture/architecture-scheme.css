@@ -1,0 +1,674 @@
+/* Architecture scheme — bespoke styles of the hub page.
+   Loaded by architecture-scheme.html on top of shared.css
+   (module.css does not apply to the hub).
+   Placement convention: docs/architecture/README.md §Styling. */
+
+:root {
+  /* ── Cross-cutting rail band ──
+     The dashed services (Auth, Notifications, Email, the AI cluster) run as a
+     row of quiet vertical rails down the right edge of the diagram. Their total
+     width derives from --rail-count — bump it when you add a rail and the band,
+     the left mirror that keeps the diagram centred, and the reflow threshold all
+     follow. The band is a flex sibling of the diagram, not a fixed gutter: the
+     diagram column shrinks on its own under pressure instead of being starved,
+     and below --bp-rails the whole band reflows into a horizontal chip row so no
+     service is ever hidden (see §Responsive). */
+  --rail-icon-w: 38px; /* .crosscut icon column (vertical label sits in it) */
+  --rail-pad: 0.6rem; /* line → icon padding */
+  --rail-border: 2px; /* dashed line width */
+  --rail-gap: 0.6rem; /* space between rails */
+  --rail-count: 6; /* rails in the band (incl. the 3-rail AI cluster) — the knob */
+  --rail-clear: 1.5rem; /* gap between diagram and band (and mirror and diagram) */
+
+  --rail-w: calc(var(--rail-icon-w) + var(--rail-pad) + var(--rail-border));
+  --rail-band: calc(
+    var(--rail-w) * var(--rail-count) + var(--rail-gap) *
+      (var(--rail-count) - 1)
+  );
+
+  --diagram-w: 600px; /* the centred column: two 280px blocks side by side, plus margin */
+}
+
+body {
+  overflow-x: clip;
+}
+
+/* ── Page shell ──
+   Capped at the symmetric desktop footprint: mirror + diagram + band, plus the
+   two clearances and the page's own 2rem×2 padding. On anything wider the whole
+   thing centres; on anything narrower the canvas flexes down (see §Responsive). */
+.page {
+  max-width: calc(
+    var(--rail-band) * 2 + var(--diagram-w) + var(--rail-clear) * 2 + 4rem
+  );
+  margin: 0 auto;
+  padding: 5rem 2rem 4rem;
+}
+
+/* ── Header ── */
+.header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.header__title {
+  font-size: 3.2rem;
+  font-weight: var(--heading-weight);
+  letter-spacing: var(--heading-spacing);
+  line-height: 1.1;
+  background: linear-gradient(
+    135deg,
+    var(--s1) 0%,
+    var(--s4) 50%,
+    var(--s2) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.4rem;
+}
+
+/* ── Canvas: [ left mirror | diagram | rail band ] ──
+   A centred flex row. The mirror and band reserve symmetric side space so the
+   diagram sits dead-centre on wide screens; both can shrink under pressure (the
+   mirror first) so the diagram is never starved the way a fixed gutter starved
+   it. Below --bp-rails this collapses to a single centred column. */
+.canvas {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  gap: var(--rail-clear);
+}
+
+.canvas__spacer {
+  flex: 0 1 var(--rail-band);
+  min-width: 0;
+}
+
+.diagram {
+  flex: 0 1 var(--diagram-w);
+  min-width: 0;
+}
+
+/* ── Layer ── */
+.layer__label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+/* ── Blocks grid ──
+   minmax(0, …) columns shrink gracefully below the block width instead of
+   overflowing the centred container, so cards never collide as the page narrows.
+   The single Harvester card centres on its own. */
+.blocks {
+  display: grid;
+  gap: var(--grid-gap);
+  justify-content: center;
+}
+
+.blocks--2 {
+  grid-template-columns: repeat(2, minmax(0, var(--block-w)));
+}
+.blocks--solo {
+  grid-template-columns: minmax(0, var(--block-w));
+}
+
+/* ── Block card ── */
+.block {
+  background: var(--surface);
+  border: var(--border-w) solid var(--accent-muted);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--card-shadow);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.block__accent {
+  display: none;
+}
+
+.block--done {
+  border-color: var(--accent);
+}
+
+.block__body {
+  padding: var(--card-pad-y) var(--card-pad-x);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.block__status {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  padding: 0.22rem 0.45rem;
+  border-radius: var(--pill-radius);
+  background: var(--accent-muted);
+  color: #fff;
+}
+
+.block--done .block__status {
+  background: var(--accent);
+}
+
+.block__name {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.block__divider {
+  height: 1px;
+  background: var(--border);
+  margin: 0.5rem 0;
+}
+
+.block__desc {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+  margin-top: 0.3rem;
+  flex: 1;
+}
+
+.block__stack {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.block__stack-tag {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.15rem 0.42rem;
+  border-radius: var(--tag-radius);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  background: var(--bg);
+}
+
+.block__stack-tag--ext {
+  border: 1.5px dashed var(--s4);
+  color: var(--s4);
+  background: var(--bg);
+}
+
+/* ── Preset section (inside block) ── */
+.block__preset {
+  background: var(--bg);
+  border: 1.5px dashed var(--s4);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  margin-top: 0.6rem;
+  align-self: flex-start;
+}
+
+.block__preset-title {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--s4);
+}
+
+/* ── Badges ── */
+.badges {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.badge {
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: var(--badge-pad-y) var(--badge-pad-x);
+  border-radius: var(--badge-radius);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--card-shadow);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.badge__icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* ── Connector ── */
+.connector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.3rem 0;
+}
+
+.connector__line {
+  width: 2px;
+  height: var(--connector-h);
+  position: relative;
+  overflow: hidden;
+  border-radius: 1px;
+}
+
+.connector__line::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--text-muted) 0,
+    var(--text-muted) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  opacity: 0.35;
+}
+
+.connector__line::after {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 12px;
+  background: var(--s1);
+  opacity: 0.4;
+  border-radius: 1px;
+  animation: flowPulse 2s ease-in-out infinite;
+}
+
+@keyframes flowPulse {
+  0% {
+    top: -12px;
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.5;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
+}
+
+.connector__arrow {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid var(--text-muted);
+  opacity: 0.4;
+  margin-top: 0.15rem;
+}
+
+.connector__arrow-up {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 6px solid var(--text-muted);
+  opacity: 0.4;
+  margin-bottom: 0.15rem;
+}
+
+.connector__arrow-down {
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid var(--text-muted);
+  opacity: 0.4;
+  margin-top: 0.15rem;
+}
+
+/* ── Lower section ── */
+.lower-section {
+  position: relative;
+}
+
+/* ── Foundation slab ──
+   The shared UI layer (toasts, confirm dialogs, system screens) is the
+   presentation foundation the whole stack rests on: a full-width plinth at the
+   base of the diagram, not a runtime system node. The dashed border (like
+   .crosscut) marks it as a cross-cutting concern rather than a module. */
+.foundation {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  margin: 1rem auto 0;
+  padding: 0.9rem 1.15rem;
+  border: 1.5px dashed var(--accent-muted);
+  border-radius: var(--radius);
+  background: var(--tint-6);
+  text-decoration: none;
+  transition:
+    border-color 0.2s,
+    transform 0.15s;
+}
+.foundation:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.foundation__icon {
+  font-size: 1.05rem;
+  line-height: 1;
+  flex: none;
+  color: var(
+    --text
+  ); /* neutral — without it the SVG inherits the link's default blue */
+}
+.foundation__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  flex: none;
+}
+.foundation__title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+.foundation__sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* ── Bedrock slab ──
+   Infrastructure is the physical view the whole system rests on — not a node
+   in the data flow and not a runtime service like the rail band, but the
+   foundation beneath everything: a plinth at the very base, below the diagram
+   and its bands. A door to the separate deployment view; the detail lives there,
+   the hub stays logical. Centred under the diagram, matching its width. */
+.bedrock {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: var(--diagram-w);
+  margin: 0.6rem auto 0;
+  padding: 0.9rem 1.15rem;
+  border: 1.5px dashed var(--accent-muted);
+  border-radius: var(--radius);
+  background: var(--tint-8);
+  text-decoration: none;
+  transition:
+    border-color 0.2s,
+    transform 0.15s;
+}
+.bedrock:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.bedrock__icon {
+  font-size: 1.05rem;
+  line-height: 1;
+  flex: none;
+  color: var(
+    --text
+  ); /* neutral — without it the SVG inherits the link's default blue */
+}
+.bedrock__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  flex: none;
+}
+.bedrock__title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+.bedrock__sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* ── Plinth facets ──
+   Both slabs carry a row of facet pills pushed to the right edge — a horizontal
+   echo of the module cards' tag pills. They name what lives inside (Shared UI's
+   component families, Infrastructure's deployment concerns) so the plinths read
+   as intentional foundation courses rather than empty bars. The left identity
+   block and right facet row split the full width between them. */
+.foundation__facets,
+.bedrock__facets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.32rem;
+  margin-left: auto;
+  justify-content: flex-end;
+}
+.foundation__pill,
+.bedrock__pill {
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--paper);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.2rem 0.45rem;
+  white-space: nowrap;
+}
+
+/* ── Cross-cutting rail band ──
+   A flex sibling of the diagram, fixed at the derived band width and stretched
+   to the diagram's height. Each rail is a quiet dashed vertical line with an
+   icon + vertical label. Auth innermost, outward from there. */
+.crosscut-band {
+  flex: none;
+  width: var(--rail-band);
+  display: flex;
+  gap: var(--rail-gap);
+  align-items: stretch;
+}
+
+/* Group label — only shown in the reflowed (horizontal) form below. */
+.crosscut-band__label {
+  display: none;
+}
+
+.crosscut {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  border-left: var(--rail-border) dashed var(--accent-muted);
+  padding-left: var(--rail-pad);
+  text-decoration: none;
+  transition: border-color 0.2s;
+}
+
+.crosscut:hover {
+  border-color: var(--s1);
+}
+
+.crosscut__icon {
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--s1); /* match the rail title so icon + label read as one unit */
+}
+
+/* Inline SVG icons (Lucide line-art + monochrome brand glyphs) inherit
+   currentColor and sit flush via display:block — no baseline descender gap. */
+.badge__icon svg,
+.crosscut__icon svg,
+.foundation__icon svg,
+.bedrock__icon svg {
+  display: block;
+}
+
+.crosscut__title {
+  writing-mode: vertical-rl;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--s1);
+  white-space: nowrap;
+}
+
+/* ── AI cluster ──
+   AI Foundation (registry) + the two runtimes (executors) read as one family by
+   a shared "AI" name prefix on all three rails — no bracket or caption. They are
+   plain .crosscut rails sitting next to each other in the band, so the standard
+   rail gap separates them like any other neighbours. */
+
+/* ── Responsive ──
+   One reflow threshold (the page can no longer host the diagram + symmetric rail
+   band): below it the canvas becomes a single centred column and the rail band
+   turns into a horizontal row of dashed chips under the diagram, so every
+   service stays reachable instead of being hidden. */
+@media (max-width: 1410px) {
+  .canvas {
+    flex-direction: column;
+    align-items: center;
+  }
+  .canvas__spacer {
+    display: none;
+  }
+  .diagram {
+    flex: none;
+    width: 100%;
+    max-width: var(--diagram-w);
+  }
+
+  /* Rail band → horizontal chip row */
+  .crosscut-band {
+    flex: none;
+    width: 100%;
+    max-width: var(--diagram-w);
+    margin: 1.75rem auto 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .crosscut-band__label {
+    display: block;
+    flex-basis: 100%;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    margin-bottom: 0.25rem;
+  }
+  .crosscut {
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px dashed var(--accent-muted);
+    border-radius: var(--badge-radius);
+    padding: 0.4rem 0.7rem;
+    background: var(--surface);
+    box-shadow: var(--card-shadow);
+  }
+  .crosscut:hover {
+    border-color: var(--s1);
+  }
+  .crosscut__title {
+    writing-mode: horizontal-tb;
+  }
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: 2rem 1rem 3rem;
+  }
+  .header__title {
+    font-size: 2.2rem;
+  }
+  .blocks--2 {
+    grid-template-columns: minmax(0, var(--block-w));
+  }
+  .badges {
+    gap: 0.35rem;
+  }
+  .badge {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.65rem;
+  }
+  /* Plinths: let the facet row drop below the identity and align left when the
+     slab is too narrow to hold both side by side. */
+  .foundation,
+  .bedrock {
+    flex-wrap: wrap;
+  }
+  .foundation__facets,
+  .bedrock__facets {
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+}
+
+/* ── Clickable module links ── */
+.block-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.block-link .block {
+  cursor: pointer;
+  transition:
+    box-shadow 0.2s,
+    transform 0.15s;
+}
+
+.block-link:hover .block {
+  box-shadow: var(--link-shadow-hover);
+  transform: translateY(var(--link-hover-lift));
+}
+
+/* Clickable badge — the anchor carries .badge; only it reacts on hover */
+a.badge {
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    transform 0.15s;
+}
+
+a.badge:hover {
+  transform: translateY(-1px);
+}
+
+a.badge--s1:hover {
+  border-color: var(--s1);
+}
+
+a.badge--s2:hover {
+  border-color: var(--s2);
+}

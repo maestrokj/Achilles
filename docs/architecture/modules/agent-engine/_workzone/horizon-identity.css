@@ -1,0 +1,102 @@
+/* Agent Engine — horizon-identity.html signature diagram: scope rings + ACL fork.
+   Concentric scopes (personal → team → company) growing out from the lit v1
+   core, plus the fork "whose ACL applies" — owner identity vs service account.
+   Loaded by horizon-identity.html on top of module.css + horizon.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Concentric scope rings ── nested framed blocks (solid hairline, like a
+   workzone container), the inner team ring recessed onto a cooler ground. ── */
+.hzi-rings {
+  position: relative;
+  border: 1.5px solid var(--hz-line);
+  border-radius: var(--radius);
+  padding: 2.1rem 1.3rem 1.3rem;
+}
+.hzi-rings--team {
+  background: var(--hz-panel);
+}
+.hzi-ring__tag {
+  position: absolute;
+  top: 0.6rem;
+  left: 1.3rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--hz-dim);
+}
+
+/* Innermost — the lit personal core that exists today. */
+.hzi-core {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.2rem;
+  padding: 1rem 1.1rem;
+  background: var(--paper);
+  border: 2px solid var(--hz-spark);
+  border-radius: var(--radius-md);
+  box-shadow: 0 0 0 5px var(--hz-spark-pale);
+}
+.hzi-core__g {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+.hzi-core__t {
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+.hzi-core__s {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--hz-spark);
+}
+
+/* Team-lead aside — who runs the middle ring. */
+.hzi-aside {
+  margin-top: 0.7rem;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--hz-ink);
+}
+
+/* ── ACL fork — whose rights the agent reads under ── */
+.hzi-fork {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+  margin-top: 1rem;
+}
+.hzi-opt {
+  padding: 0.75rem 0.9rem;
+  background: var(--surface);
+  border: 1.5px solid var(--hz-line);
+  border-left: 3px solid var(--hz-dim);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow);
+}
+.hzi-opt__h {
+  font-weight: 700;
+  font-size: 0.84rem;
+  color: var(--text);
+  margin-bottom: 0.2rem;
+}
+.hzi-opt__d {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--hz-ink);
+}
+
+@media (max-width: 640px) {
+  .hzi-fork {
+    grid-template-columns: 1fr;
+  }
+}

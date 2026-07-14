@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Knowledge Store: hybrid search</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../knowledge-store.css" />
+    <link rel="stylesheet" href="hybrid-search.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Knowledge Store</a>
+        <h1 class="header__title">Hybrid search</h1>
+        <div class="header__sub">knowledge-store · workzone</div>
+      </div>
+
+      <p class="desc">
+        Knowledge Store владеет <strong>retrieval-слоем</strong> — отбором
+        кандидатов из хранилища; RAG поверх (rerank моделью, упаковка контекста,
+        вызов LLM) делает Query Engine. Поиск стоит на
+        <a href="#primitives" class="xref-anchor">четырёх примитивах</a> над
+        <a href="data-model.html#projections" class="xref-page"
+          >тремя проекциями</a
+        >
+        одной базы: текст ищут двумя дополняющими парадигмами сразу — плотным
+        вектором и разреженной лексикой, — а граф и реляционку по их природе. KS
+        отдаёт примитивы двояко: по отдельности (как tools) и
+        <a href="#fusion" class="xref-anchor">слитыми в один результат</a>
+        (RRF / взвешенно). Права применяются
+        <a href="#acl-prefilter" class="xref-anchor">один раз</a> — в хранилище,
+        как pre-filter, до ранжирования. Где
+        кончается KS и начинаются Query / Agent Engine — на
+        <a href="#boundary" class="xref-anchor">границе</a>.
+      </p>
+
+      <!-- ════════════════ ЧЕТЫРЕ ПРИМИТИВА ════════════════ -->
+      <div class="section" id="primitives">
+        <div class="section__title">Четыре примитива поиска</div>
+        <p class="desc">
+          Не один способ искать, а четыре дополняющих друг друга. Проекций
+          <a href="data-model.html#projections" class="xref-page">три</a>, но
+          текст заслуживает двух парадигм сразу: плотный вектор ловит смысл,
+          разреженная лексика — точную форму слов, которую эмбеддинг сглаживает;
+          плюс обход связей по графу и точные фильтры по телу. Каждый — это
+          самостоятельный SQL над своей таблицей; их можно слить в один результат
+          либо отдать наружу как инструменты по намерению (ниже).
+        </p>
+
+        <div class="hs-prim">
+          <div class="hs-prim__col hs-prim__col--vec">
+            <div class="hs-prim__h">
+              <span class="hs-prim__t">vector</span>
+              <span class="ai-tag" title="Этап использует нейросеть — инференс модели"
+                ><span class="ai-tag__icon"></span>AI</span
+              >
+            </div>
+            <div class="hs-prim__op">поиск по близости · ANN</div>
+            <div class="hs-prim__tbl">chunks · pgvector / HNSW</div>
+            <p class="hs-prim__d">
+              Запрос пользователя сперва <strong>эмбеддится</strong> моделью
+              (инференс), затем по вектору ищутся ближайшие
+              <a href="data-model.html#chunks" class="xref-page">фрагменты</a> —
+              близость по смыслу, а не совпадение слов. Возвращает фрагменты,
+              ранжированные по расстоянию.
+            </p>
+          </div>
+          <div class="hs-prim__col hs-prim__col--lexical">
+            <div class="hs-prim__h">
+              <span class="hs-prim__t">lexical</span>
+            </div>
+            <div class="hs-prim__op">поиск по словам · full-text</div>
+            <div class="hs-prim__tbl">chunks · tsvector / GIN</div>
+            <p class="hs-prim__d">
+              Те же фрагменты, но поиск по форме слова, не по смыслу: точные
+              термины, аббревиатуры, коды, имена — то, что вектор сглаживает.
+              Postgres full-text (<code>tsvector</code> + GIN), ранг
+              <code>ts_rank</code>. Разреженный сигнал рядом с плотным: вместе
+              добирают то, что каждый поодиночке упускает.
+            </p>
+          </div>
+          <div class="hs-prim__col hs-prim__col--graph">
+            <div class="hs-prim__h">
+              <span class="hs-prim__t">graph</span>
+            </div>
+            <div class="hs-prim__op">обход связей · 1–3 шага</div>
+            <div class="hs-prim__tbl">entity_edge · recursive SQL (CTE)</div>
+            <p class="hs-prim__d">
+              Рекурсивный обход
+              <a href="data-model.html#graph" class="xref-page">рёбер</a> от
+              стартовых узлов на ближний контекст (1–3 шага): тред, иерархия,
+              упоминания. Приносит связанное, что соседствует в графе, но не
+              похоже по тексту. Стартовые узлы даёт вызывающий: как tool —
+              переданные сущности, в слитом режиме — топ-хиты текстовых
+              примитивов и sql.
+            </p>
+          </div>
+          <div class="hs-prim__col hs-prim__col--sql">
+            <div class="hs-prim__h">
+              <span class="hs-prim__t">sql</span>
+            </div>
+            <div class="hs-prim__op">точные фильтры · агрегаты</div>
+            <div class="hs-prim__tbl">entities · реляционные предикаты</div>
+            <p class="hs-prim__d">
+              Точечный отбор по
+              <a href="data-model.html#entities" class="xref-page">телу записи</a>:
+              тип, источник, статус, даты. Детерминированный фильтр — то, что
+              нужно знать заведомо, без догадки о смысле. Поверх отбора —
+              агрегаты (счёт, группировка, тренд) закрытым набором: числа считает
+              Postgres детерминированно, не модель в уме.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ FUSION ════════════════ -->
+      <div class="section" id="fusion">
+        <div class="section__title">Слияние списков: четыре парадигмы в один результат</div>
+        <p class="desc">
+          Каждый примитив отдаёт свой ранжированный список; fusion сводит четыре
+          в один — через RRF (reciprocal rank fusion, слияние по обратному рангу:
+          вес позиции, а не сырого балла, который у разных парадигм несравним) или
+          взвешенно. Слияние идёт по рангу, не по баллу, — потому и не
+          «score-level»: сравнивать сырые скоры вектора, лексики и обхода нечем.
+          Слияние четырёх парадигм <strong>под едиными правами</strong> —
+          отличительная черта KS: «Query Engine собирает результаты» читается на
+          RAG-слое, а не как сырое кросс-сторовое слияние из нескольких СУБД.
+        </p>
+        <p class="note">
+          Списки разной зернистости: vector и lexical ранжируют
+          <a href="data-model.html#chunks" class="xref-page">фрагменты</a>, sql и
+          graph — сущности. Общий ключ слияния — сущность: фрагментные хиты
+          сворачиваются к родителю по <code>entity_id</code>, лучший фрагмент
+          остаётся при ней доказательством для упаковки контекста; сущность,
+          пришедшую несколькими примитивами, RRF дедуплицирует и складывает её
+          ранги из разных списков.
+        </p>
+
+        <div class="hs-fuse">
+          <div class="hs-fuse__lists">
+            <div class="hs-fuse__list hs-fuse__list--vec">
+              <span class="hs-fuse__tag">vector</span>
+              <span class="hs-fuse__rank">
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+              </span>
+            </div>
+            <div class="hs-fuse__list hs-fuse__list--lexical">
+              <span class="hs-fuse__tag">lexical</span>
+              <span class="hs-fuse__rank">
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+              </span>
+            </div>
+            <div class="hs-fuse__list hs-fuse__list--graph">
+              <span class="hs-fuse__tag">graph</span>
+              <span class="hs-fuse__rank">
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+              </span>
+            </div>
+            <div class="hs-fuse__list hs-fuse__list--sql">
+              <span class="hs-fuse__tag">sql</span>
+              <span class="hs-fuse__rank">
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+                <span class="hs-fuse__cell"></span>
+              </span>
+            </div>
+          </div>
+          <div class="hs-fuse__op">
+            <span class="hs-fuse__op-arrow">▸</span>
+            <span>weighted / RRF</span>
+          </div>
+          <div class="hs-fuse__out">
+            <span class="hs-fuse__out-h">fused</span>
+            <span class="hs-fuse__out-cell"></span>
+            <span class="hs-fuse__out-cell"></span>
+            <span class="hs-fuse__out-cell"></span>
+          </div>
+        </div>
+
+        <div class="hs-modes">
+          <div class="hs-modes__col hs-modes__col--tools">
+            <div class="hs-modes__h">
+              <span class="hs-modes__t">Инструменты по намерению</span>
+              <span class="hs-modes__for">tools · агент</span>
+            </div>
+            <p class="hs-modes__d">
+              Агенту даются три инструмента по намерению: <code>search</code>
+              (текстовый retrieval — <code>vector</code>+<code>lexical</code>,
+              слитые RRF в коде, модель не сводит dense+sparse руками),
+              <code>graph</code> и <code>sql</code>. Качественно разные операции
+              разведены, текстовое слияние не свалено на LLM — агент комбинирует
+              осознанно.
+            </p>
+          </div>
+          <div class="hs-modes__col hs-modes__col--fused">
+            <div class="hs-modes__h">
+              <span class="hs-modes__t">Собранный hybrid-результат</span>
+              <span class="hs-modes__for">RAG retrieval</span>
+            </div>
+            <p class="hs-modes__d">
+              Готовый слитый список — один вызов, fusion внутри KS. Опора
+              RAG-retrieval: дальше его остаётся переранжировать и упаковать в
+              контекст.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ ACL PRE-FILTER ════════════════ -->
+      <div class="section" id="acl-prefilter">
+        <div class="section__title">ACL применяется один раз — в хранилище</div>
+        <p class="desc">
+          Права — это не отдельный шаг после поиска, а условие самого запроса.
+          Вектора, граф и реляционка живут в одной базе, поэтому
+          <a href="acl-identity.html#resolution" class="xref-page"
+            >ACL pre-filter</a
+          >
+          — тот же SQL: кандидаты сужаются по доступу <em>до</em> ранжирования,
+          одним JOIN, без второй СУБД и кросс-базовой сверки прав. Один проход
+          покрывает все четыре примитива и их слияние — отозванное не доходит до
+          fusion, а не отсеивается постфактум.
+        </p>
+        <p class="note">
+          Личность вызывающего — <strong>вход</strong> retrieval: потребитель
+          передаёт identity, а KS разворачивает её в резолв-джойн и применяет
+          фильтр одним SQL. Контракт узкий — передай личность, получи кандидатов
+          под правами; сам джойн потребитель не строит и схему прав не видит.
+        </p>
+        <p class="note">
+          <strong>Запрос — значение, не код.</strong> Примитивы —
+          параметризованный SQL: запрос, вектор и фильтры идут <em>связанными
+          значениями</em>, не склейкой в тело запроса; поля
+          <code>sql</code>-фильтра (тип, источник, статус, даты) — закрытый
+          список, не произвольный ввод; агрегаты — тоже закрытый набор
+          (метрика × измерение из перечня), не свободный SQL. Любой вход — хоть
+          из RAG, хоть из агента — в SQL-инъекцию не превратится.
+        </p>
+        <p class="note">
+          Жёсткий ACL-фильтр поверх приближённого индекса HNSW даёт подводный
+          камень — разобран
+          <a href="data-model.html#chunks" class="xref-page"
+            >у самой таблицы <code>chunks</code></a
+          >.
+        </p>
+      </div>
+
+      <!-- ════════════════ ГРАНИЦА ════════════════ -->
+      <div class="section" id="boundary">
+        <div class="section__title">Граница: retrieval здесь, ответ — дальше</div>
+        <p class="desc">
+          KS заканчивается на отборе кандидатов. Что идёт поверх — за границей
+          модуля, у двух потребителей: один берёт собранный hybrid-результат
+          <em>одним</em> вызовом и доводит его до ответа (Query Engine — по
+          решению chat-модели), другой берёт инструменты по намерению —
+          <code>search</code> · <code>graph</code> · <code>sql</code> — в
+          агентном цикле (Agent Engine).
+        </p>
+        <p class="note">
+          <code>sql</code> отдаёт и второй формат: не кандидатов для fusion, а
+          <strong>готовый агрегат</strong> (счёт, группировка, тренд) над
+          ACL-prefilter'нутым срезом. Это вне слияния — отдельный режим
+          инструмента; интерпретирует итог уже агент.
+        </p>
+
+        <div class="hs-bound">
+          <div class="hs-bound__col hs-bound__col--here">
+            <div class="hs-bound__head">
+              <span class="hs-bound__who">Knowledge Store</span>
+              <span class="hs-bound__act">retrieval</span>
+            </div>
+            <p class="hs-bound__d">
+              Четыре ACL-фильтрованных примитива и их fusion. Отдаёт кандидатов —
+              фрагменты и сущности, ранжированные, под правами. На этом
+              storage-слой кончается.
+            </p>
+          </div>
+          <div class="hs-bound__seam">▸</div>
+          <div class="hs-bound__col hs-bound__col--there">
+            <div class="hs-bound__head">
+              <span class="hs-bound__who">Query Engine</span>
+              <span class="hs-bound__act">RAG по запросу</span>
+            </div>
+            <p class="hs-bound__d">
+              Когда chat-модель зовёт поиск, берёт собранный hybrid-результат и
+              доводит до grounding-ответа: rerank (RRF из KS в v1), упаковка
+              контекста и генерация
+              <span class="ai-tag" title="Этап использует нейросеть — инференс модели"
+                ><span class="ai-tag__icon"></span>AI</span
+              >
+              LLM. Один опциональный вызов, без агентной петли.
+            </p>
+          </div>
+        </div>
+
+        <p class="note">
+          Потребители retrieval-слоя — оба ещё стабы:
+          собранный результат уходит на RAG в
+          <a
+            class="xref-badge"
+            href="../../query-engine/_workzone/retrieval.html#boundary"
+            >→ Query Engine</a
+          >, а инструменты по намерению (search · graph · sql) — в
+          <a
+            class="xref-badge"
+            href="../../agent-engine/_workzone/runtime.html#tools"
+            >→ Agent Engine</a
+          >.
+        </p>
+      </div>
+
+      <!-- ════════════════ ПУСТОЙ ИНДЕКС ════════════════
+           Источник истины для всего инварианта «нет данных → нет KS-инструментов».
+           Производное свойство, не настройка: образец — is_available() у SMTP.
+           Харнесс читает его и не кладёт KS-инструменты в схему модели. -->
+      <div class="section" id="emptiness">
+        <div class="section__title">Пустой индекс: производное свойство <code>is_empty</code></div>
+        <p class="desc">
+          База может быть пуста — компания развернула платформу, но не подключила
+          источники, или приём ещё не дал ни одного фрагмента. Тогда в
+          <a href="data-model.html#chunks" class="xref-page">chunks</a> нет ни
+          строки: retrieval не по чему работать, и звать его незачем. KS
+          выставляет это наружу <strong>производным свойством</strong>
+          <code>is_empty</code> — есть ли вообще фрагменты для поиска. Это не флаг
+          и не «режим», который кто-то включает, а следствие наличия данных —
+          ровно как <code>is_available()</code> у SMTP: свойство модели, не
+          тумблер. Реализация вправе держать дешёвую кэшируемую метрику вместо
+          счёта на лету.
+        </p>
+        <p class="note">
+          Свойство читает общий
+          <a href="../../agent-engine/_workzone/harness.html#params" class="xref-module"
+            >tool-calling харнесс</a>: при <code>is_empty</code> он не вносит
+          KS-инструменты в схему модели вовсе — на <em>обеих</em> поверхностях,
+          и в чате (<code>search_knowledge</code>), и у агента (ядро
+          <code>search</code> · <code>graph</code> · <code>sql</code>). Модель не
+          видит поиска и отвечает как обычный ассистент; заземление не «выключено»,
+          его условие просто не наступило. Первый принятый фрагмент переключает
+          свойство сам — инструменты появляются без единой настройки.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

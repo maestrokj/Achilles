@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — AI Foundation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="ai-foundation.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← Back to architecture</a>
+        <h1 class="header__title">AI Foundation</h1>
+        <div class="header__sub">cross-cutting layer · registry of the platform's AI resources</div>
+      </div>
+
+      <!-- ═══ Description ═══ Cross-cutting registry of AI resources: providers,
+           models, tools, system prompt — and the management of them (assignments,
+           lists, spend). Consumers read from here; it has no frontend of its own —
+           the screens live in Admin, budgets are platform_settings columns. -->
+      <div class="desc">
+        <p>
+          A single <strong>registry of the platform's AI resources</strong>:
+          providers and their models, the tool catalog, and the neural networks'
+          system prompt — plus their management: assigning models to system
+          functions, chat and agent model lists, the spend aggregate. The ORM
+          models live in the shared core (<code>core</code>), Admin gives them CRUD
+          and screens, and the consumers — Harvester, Knowledge Store, Query
+          Engine, Agent Engine — read the assignments from here, with no cycles
+          between modules.
+        </p>
+      </div>
+
+      <!-- ═══ Architecture ═══ Registry console: a row of connections (provider
+           slots with a status dot) feeds the model catalog; below, three instrument
+           blocks — function assignments · chat/agent lists · spend gauge — and two
+           module toggles (tools · prompt_settings). The status line voices the
+           essence: the registry stores, the runtimes execute (Embeddings runtime ·
+           KS; Tool-calling harness · QE↔AE), consumers read. Styles — af-* in
+           ai-foundation.css. -->
+      <div class="section" id="registry">
+        <h2 class="section__title">Architecture</h2>
+
+        <div class="af-console">
+          <!-- Row of connections — provider slots -->
+          <div class="af-bus">
+            <div class="af-bus__cap">
+              <span class="af-bus__lbl">Connections</span>
+              <span class="af-bus__tbl">ai_providers</span>
+              <span class="af-bus__note">key at-rest · connection status</span>
+            </div>
+            <div class="af-slots">
+              <div class="af-slot">
+                <div class="af-slot__hd">
+                  <span class="af-dot af-dot--on"></span>
+                  <span class="af-slot__name">Platform</span>
+                </div>
+                <div class="af-slot__meta">built-in</div>
+              </div>
+              <div class="af-slot">
+                <div class="af-slot__hd">
+                  <span class="af-dot af-dot--on"></span>
+                  <span class="af-slot__name">OpenAI</span>
+                </div>
+                <div class="af-slot__meta">key ••••</div>
+              </div>
+              <div class="af-slot">
+                <div class="af-slot__hd">
+                  <span class="af-dot af-dot--warn"></span>
+                  <span class="af-slot__name">Anthropic</span>
+                </div>
+                <div class="af-slot__meta">key ••••</div>
+              </div>
+              <div class="af-slot">
+                <div class="af-slot__hd">
+                  <span class="af-dot af-dot--off"></span>
+                  <span class="af-slot__name">+ slot</span>
+                </div>
+                <div class="af-slot__meta">free</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="af-feed">providers supply models <b>──▶</b></div>
+
+          <!-- Model catalog -->
+          <div class="af-catalog">
+            <div class="af-panel__cap" style="margin-bottom: 0.5rem">
+              <span class="af-panel__label">Model catalog</span>
+              <span class="af-panel__tbl">ai_models</span>
+            </div>
+            <div class="af-grid">
+              <div class="af-cell af-cell--chat"><b>gpt-4o</b>chat</div>
+              <div class="af-cell af-cell--chat"><b>gpt-4o-mini</b>chat</div>
+              <div class="af-cell af-cell--chat"><b>claude</b>chat</div>
+              <div class="af-cell af-cell--chat"><b>o-series</b>chat</div>
+              <div class="af-cell af-cell--emb"><b>BGE-M3</b>embed</div>
+              <div class="af-cell af-cell--emb"><b>Qwen3-0.6B</b>embed</div>
+            </div>
+            <div class="af-legend">
+              <span><i class="af-key af-key--chat"></i> chat</span>
+              <span><i class="af-key af-key--emb"></i> embedding</span>
+            </div>
+          </div>
+
+          <!-- Three instrument blocks: assignments · lists · spend -->
+          <div class="af-gauges">
+            <div class="af-panel">
+              <div class="af-panel__cap">
+                <span class="af-panel__label">Assignments</span>
+                <span class="af-panel__tbl">model_assignments</span>
+              </div>
+              <div class="af-assign">
+                <div class="af-asg">
+                  <span class="af-asg__fn">embedding</span>
+                  <span class="af-asg__wire"></span>
+                  <span class="af-asg__mdl"><span class="af-dot af-dot--on"></span>BGE-M3</span>
+                </div>
+                <div class="af-asg">
+                  <span class="af-asg__fn">RAG</span>
+                  <span class="af-asg__wire"></span>
+                  <span class="af-asg__mdl"><span class="af-dot af-dot--on"></span>gpt-4o</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="af-panel">
+              <div class="af-panel__cap">
+                <span class="af-panel__label">Lists</span>
+                <span class="af-panel__tbl">chat · agent</span>
+              </div>
+              <div class="af-lists">
+                <div>
+                  <div class="af-list__hd">chat_models</div>
+                  <div class="af-pills">
+                    <span class="af-pill af-pill--def">gpt-4o</span>
+                    <span class="af-pill">claude</span>
+                  </div>
+                </div>
+                <div>
+                  <div class="af-list__hd">agent_models</div>
+                  <div class="af-pills">
+                    <span class="af-pill af-pill--def">claude</span>
+                    <span class="af-pill">o-series</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="af-panel">
+              <div class="af-panel__cap">
+                <span class="af-panel__label">Spend</span>
+                <span class="af-panel__tbl">model_usage</span>
+              </div>
+              <div class="af-cost">
+                <div class="af-cost__row">
+                  <span>tokens / day</span>
+                  <span class="af-cost__num">1.2M</span>
+                </div>
+                <div class="af-bar"><div class="af-bar__fill" style="width: 64%"></div></div>
+                <div class="af-cost__row">
+                  <span class="af-cost__cap">cost · budget in <a class="xref-module" href="../admin-panel/_workzone/data-model.html#singleton">platform_settings</a></span>
+                  <span class="af-cost__num">$38</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Two module toggles: tools · prompt_settings -->
+          <div class="af-mods">
+            <div class="af-mod">
+              <span class="af-mod__name">tools</span>
+              <div class="af-mod__role">tool catalog · open type registry</div>
+              <div class="af-toggles">
+                <div class="af-tg af-tg--on">
+                  <span class="af-tg__sw"></span>
+                  <span class="af-tg__lbl"><b>chat</b> · available in chat</span>
+                </div>
+                <div class="af-tg af-tg--on">
+                  <span class="af-tg__sw"></span>
+                  <span class="af-tg__lbl"><b>agents</b> · available to agents</span>
+                </div>
+              </div>
+            </div>
+            <div class="af-mod">
+              <span class="af-mod__name">prompt_settings</span>
+              <div class="af-mod__role">system prompt · layered composition</div>
+              <div class="af-layers">
+                <span class="af-lyr af-lyr--gov">safety</span>
+                <span class="af-lyr af-lyr--gov">org</span>
+                <span class="af-lyr">eng</span>
+                <span class="af-lyr">runtime</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status line: the registry stores, the runtimes execute -->
+          <div class="af-status">
+            the registry <b>stores</b>
+            <span class="af-status__sep">·</span>
+            the runtimes execute
+            <a class="xref-module" href="../knowledge-store/_workzone/embedding-runtime.html#scaling">Embeddings runtime</a>
+            <span class="af-status__sep">·</span>
+            <a class="xref-module" href="../agent-engine/_workzone/harness.html#primitive">Tool-calling harness</a>
+            <span class="af-status__sep">·</span>
+            read by
+            <span class="af-status__cons">Harvester · Knowledge Store · Query Engine · Agent Engine</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ API ═══ Full contract paths under the module's version. -->
+      <section class="section" id="api">
+        <div class="section__title">API</div>
+        <ul class="api-list">
+          <li><span class="api-list__m">GET · POST</span><span class="api-list__p">/api/v1/admin/ai/providers</span></li>
+          <li><span class="api-list__m">GET · PATCH · DELETE</span><span class="api-list__p">/api/v1/admin/ai/providers/{id}</span></li>
+          <li><span class="api-list__m">GET · POST</span><span class="api-list__p">/api/v1/admin/ai/models</span></li>
+          <li><span class="api-list__m">PATCH · DELETE</span><span class="api-list__p">/api/v1/admin/ai/models/{id}</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/admin/ai/providers/{id}/discovery</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/admin/ai/providers/{id}/check</span></li>
+          <li><span class="api-list__m">GET · PATCH</span><span class="api-list__p">/api/v1/admin/ai/assignments</span></li>
+          <li><span class="api-list__m">GET · POST</span><span class="api-list__p">/api/v1/admin/ai/tools</span></li>
+          <li><span class="api-list__m">PATCH · DELETE</span><span class="api-list__p">/api/v1/admin/ai/tools/{id}</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/admin/ai/tools/{id}/check</span></li>
+        </ul>
+      </section>
+
+      <!-- ═══ Workzone ═══ Several pages: the AI domain's data home, the tool
+           catalog, and the system prompt copy. -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Design</span>
+        </div>
+        <p class="workzone-hint">
+          Detailed design decisions for the module.
+        </p>
+
+        <div class="wz-nav">
+          <a class="wz-link" href="_workzone/data-model.html">
+            <span>Data model</span>
+          </a>
+          <a class="wz-link" href="_workzone/cost-accounting.html">
+            <span>Cost accounting</span>
+          </a>
+          <a class="wz-link" href="_workzone/tool-catalog.html">
+            <span>Tool catalog</span>
+          </a>
+          <a class="wz-link" href="_workzone/prompt-library.html">
+            <span>Prompt copy</span>
+          </a>
+          <a class="wz-link" href="_workzone/tests.html">
+            <span>Test cases</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ═══ Wireframes (surfaces) ═══ The module has no frontend of its own —
+           the registry is managed by Admin Panel screens (precedent:
+           Notifications). A pointer. -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Wireframes</span>
+          <span class="workzone-title">Surfaces</span>
+        </div>
+        <p class="workzone-hint">
+          The module has no frontend of its own: the registry is managed by Admin
+          Panel screens —
+          <a href="../admin-panel/_wireframes/ai-models.html" class="xref-badge">→ AI models</a>
+          (providers · models · assignments),
+          <a href="../admin-panel/_wireframes/usage.html" class="xref-badge">→ AI usage</a>
+          (spend by person and model, limits),
+          <a href="../admin-panel/_wireframes/ai-behavior.html" class="xref-badge">→ AI prompt</a>
+          (system prompt) and
+          <a href="../admin-panel/_wireframes/tools.html" class="xref-badge">→ AI tools</a>
+          (catalog and enablement).
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

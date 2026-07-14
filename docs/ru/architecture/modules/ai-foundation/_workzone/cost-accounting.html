@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — AI Foundation: Учёт расходов</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="cost-accounting.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← AI Foundation</a>
+        <h1 class="header__title">Учёт расходов</h1>
+        <div class="header__sub">ai-foundation · workzone</div>
+      </div>
+
+      <p class="desc">
+        Платформа метит <strong>каждый вызов модели</strong> — кто, на что и
+        сколько потратил, — чтобы показать расход и держать бюджет. Учёт
+        сквозной: один денежный агрегат по моделям плюс привязка токенов к людям
+        из журналов. Деньги считаются по моделям и по компании; по людям — пока
+        в токенах.
+      </p>
+
+      <!-- ════════════════ MENTAL MODEL ════════════════
+           Каждый AI-вызов метится в два места: model_usage (полный расход
+           платформы, в деньгах) и — для чата/агентов — журналы (атрибуция к
+           человеку, в токенах). Экран Расходы AI читает оба. -->
+      <div class="ca-hero">
+        <div class="ca-flow">
+          <div class="ca-node ca-node--calls">
+            <span class="ca-node__g">✦</span>
+            <span class="ca-node__t">Вызовы AI</span>
+            <span class="ca-node__s">индексация · поиск<br />чат · агенты</span>
+          </div>
+          <div class="ca-edge">
+            <span class="ca-edge__arr">──▶</span>
+            <span class="ca-edge__lbl">каждый вызов метится</span>
+          </div>
+          <div class="ca-node ca-node--store">
+            <span class="ca-node__g">▦</span>
+            <span class="ca-node__t">Учёт — два пути</span>
+            <span class="ca-node__s">model_usage · агрегат<br />журналы · атрибуция</span>
+          </div>
+          <div class="ca-edge">
+            <span class="ca-edge__arr">──▶</span>
+            <span class="ca-edge__lbl">читает экран</span>
+          </div>
+          <div class="ca-node ca-node--screen">
+            <span class="ca-node__g">▤</span>
+            <span class="ca-node__t">Расходы AI</span>
+            <span class="ca-node__s">итого · по людям<br />по моделям · лимиты</span>
+          </div>
+        </div>
+        <div class="ca-hero__foot">
+          <span><b>model_usage</b> — полный расход платформы, в деньгах</span>
+          <span><b>журналы</b> — привязка токенов к человеку</span>
+        </div>
+      </div>
+
+      <!-- ════════════════ КАРТА · ЧТО СЧИТАЕМ ════════════════
+           Четыре среза экрана = четыре строки происхождения данных. -->
+      <div class="section" id="map">
+        <div class="section__title">
+          Что считаем и откуда
+          <a href="../../admin-panel/_wireframes/usage.html" class="xref-badge">→ Расходы AI</a>
+        </div>
+        <p class="desc">
+          Экран показывает четыре среза; у каждого — свой источник, единица и
+          охват. Один контур учёта, четыре проекции.
+        </p>
+        <table class="ca-map">
+          <thead>
+            <tr><th>Срез</th><th>Источник</th><th>Единица</th><th>Охват</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a href="../../admin-panel/_wireframes/usage.html#total" class="xref-module">Итого по компании</a></td>
+              <td class="ca-map__src"><code>model_usage</code> · <code>SUM</code> за период</td>
+              <td>токены + $</td>
+              <td>все функции</td>
+            </tr>
+            <tr>
+              <td><a href="../../admin-panel/_wireframes/usage.html#by-user" class="xref-module">По сотрудникам</a></td>
+              <td class="ca-map__src">журналы: <code>messages</code> · <code>agent_runs</code></td>
+              <td>токены</td>
+              <td>чат + агенты</td>
+            </tr>
+            <tr>
+              <td><a href="../../admin-panel/_wireframes/usage.html#by-model" class="xref-module">По моделям</a></td>
+              <td class="ca-map__src"><code>model_usage</code> · по модели · функции</td>
+              <td>$ (вход / выход)</td>
+              <td>все функции</td>
+            </tr>
+            <tr>
+              <td><a href="../../admin-panel/_wireframes/usage.html#limits" class="xref-module">Лимиты</a></td>
+              <td class="ca-map__src"><a href="../../admin-panel/_workzone/data-model.html#singleton" class="xref-module"><code>platform_settings</code></a></td>
+              <td>токены · $</td>
+              <td>потолки + оповещение</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ════════════════ ПОЧЕМУ ДВА ИСТОЧНИКА ════════════════ -->
+      <div class="section" id="two-sources">
+        <div class="section__title">Почему два источника</div>
+        <p class="desc">
+          Расход пишется в два места не от дублирования, а потому что они отвечают
+          на разные вопросы.
+        </p>
+        <div class="ca-vs">
+          <div class="ca-vs__col ca-vs__col--agg">
+            <div class="ca-vs__head">
+              <span class="ca-vs__name">model_usage</span>
+              <span class="ca-vs__kind">агрегат</span>
+            </div>
+            <ul class="ca-vs__lines">
+              <li class="ca-vs__line">копит requests · вход · выход · <code>cost</code> по модели · функции · дню</li>
+              <li class="ca-vs__line">ловит и безличный расход — индексацию и RAG-поиск</li>
+              <li class="ca-vs__line">основа для «итого по компании» и «по моделям», в деньгах</li>
+            </ul>
+          </div>
+          <div class="ca-vs__col ca-vs__col--journal">
+            <div class="ca-vs__head">
+              <span class="ca-vs__name">журналы</span>
+              <span class="ca-vs__kind">атрибуция</span>
+            </div>
+            <ul class="ca-vs__lines">
+              <li class="ca-vs__line">чат — <a href="../../query-engine/_workzone/data-model.html#messages" class="xref-module"><code>messages.tokens_used</code></a>; агенты — <a href="../../agent-engine/_workzone/data-model.html#agent-runs" class="xref-module"><code>agent_runs.tokens_used</code></a></li>
+              <li class="ca-vs__line">расход на человека — <code>SUM</code> из журналов, без счётчика</li>
+              <li class="ca-vs__line">основа для «по сотрудникам», в токенах</li>
+            </ul>
+          </div>
+        </div>
+        <p class="ca-vs__take">
+          Пересекаются по чату и агентам, но <b>агрегат шире</b>: он ловит
+          индексацию и поиск, которые к человеку не привязать. Поэтому «итого по
+          компании» ≠ сумме по людям. Деньги <b>на человека</b> требуют разнести
+          цену вход/выход по каждому сообщению и прогону — это
+          <span class="iter v2">v2</span>.
+        </p>
+      </div>
+
+      <!-- ════════════════ ПЕРИОДЫ И БЮДЖЕТ ════════════════ -->
+      <div class="section" id="periods">
+        <div class="section__title">Периоды и бюджет</div>
+        <p class="desc">
+          Панорама за неделю, месяц и год — это одна и та же таблица под разным
+          окном.
+        </p>
+        <ul class="stk-dec__list">
+          <li>
+            <b>Итого по периоду</b> — производная <code>SUM</code> по
+            <code>model_usage</code> за календарное окно (неделя · месяц · год),
+            не отдельная таблица-счётчик. Тот же приём, что у
+            <a href="../../agent-engine/_workzone/governance.html#budget" class="xref-module">бюджета агентов</a> — «бюджет производный».
+          </li>
+          <li>
+            <b>Оповещение о бюджете</b> — месячный $-порог на всю организацию
+            (<a href="../../admin-panel/_workzone/data-model.html#ai-budget" class="xref-module"><code>ai_monthly_budget</code></a>):
+            месячная плитка «итого» сверяется с ним, при достижении —
+            уведомление типа Budget, запросы не блокируются.
+          </li>
+          <li>
+            <b>Недельные токен-потолки</b> на сотрудника
+            (<a href="../../admin-panel/_workzone/data-model.html#user-usage" class="xref-module">агенты · чат</a>)
+            сверяются с журнальным расходом, окно календарное, сброс в
+            воскресенье 00:00 в зоне организации.
+          </li>
+        </ul>
+      </div>
+
+      <!-- ════════════════ ГРАНИЦЫ v1 / v2 ════════════════ -->
+      <div class="section" id="scope">
+        <div class="section__title">Границы v1 / v2</div>
+        <div class="ca-scope">
+          <div class="ca-rail">
+            <span class="ca-rail__tag ca-rail__tag--v1">v1</span>
+            <span class="ca-rail__body">
+              Токены везде; <b>деньги</b> по моделям и по компании; месячное
+              оповещение о бюджете; недельные токен-потолки (агенты — блокирующий,
+              чат — справочный).
+            </span>
+          </div>
+          <div class="ca-rail ca-rail--v2">
+            <span class="ca-rail__tag ca-rail__tag--v2">v2</span>
+            <span class="ca-rail__body">
+              <b>Бюджеты по орг-структуре</b> — потолки и оповещения не двумя
+              полюсами (вся компания + человек), а развитой системой выделения
+              токенов на команды и отделы, по иерархии. Деньги <b>на человека</b>;
+              тренды, графики и экспорт; блокировка чата сверх потолка; суточный
+              агрегат <code>user_usage</code> при росте нагрузки.
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

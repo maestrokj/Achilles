@@ -1,0 +1,234 @@
+/* Agent Engine — runtime page diagrams: prompt composition · agent loop · tools triad.
+   Loaded by _workzone/runtime.html on top of module.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ═══════════════════════════════════════════
+   Prompt composition — stacked layers
+   ═══════════════════════════════════════════ */
+.rt-compose {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.2rem 0 0.3rem;
+}
+
+.rt-layer {
+  display: grid;
+  grid-template-columns: 1.6rem 1fr auto;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-md);
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+}
+
+.rt-layer--platform {
+  border-color: var(--s1);
+  background: var(--tint-6);
+}
+.rt-layer--agent {
+  border-color: var(--s3);
+  border-style: dashed;
+}
+
+.rt-layer__n {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.rt-layer__name {
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+.rt-layer__name small {
+  display: block;
+  font-weight: 400;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
+
+.rt-layer__who {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.rt-compose__seam {
+  text-align: center;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+  margin-top: 0.2rem;
+}
+.rt-compose__seam b {
+  color: var(--text);
+}
+
+/* ═══════════════════════════════════════════
+   Agent loop — cycle
+   ═══════════════════════════════════════════ */
+.rt-loop {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: stretch;
+  gap: 0.7rem;
+  margin: 0.3rem 0;
+}
+
+.rt-end {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.25rem;
+  min-width: 7rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  text-align: center;
+}
+.rt-end--in {
+  border-color: var(--s2);
+}
+.rt-end--out {
+  border-color: var(--s3);
+  background: var(--s3-pale);
+}
+.rt-end__g {
+  font-size: 1.1rem;
+}
+.rt-end__t {
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+.rt-end__s {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+.rt-cycle {
+  position: relative;
+  border: 2px dashed var(--accent-muted);
+  border-radius: var(--radius);
+  padding: 0.9rem 0.9rem 0.7rem;
+  background: var(--paper);
+}
+.rt-cycle__cap {
+  position: absolute;
+  top: -0.62rem;
+  left: 0.9rem;
+  background: var(--paper);
+  padding: 0 0.45rem;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+.rt-steps {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+.rt-step {
+  flex: 1 1 0;
+  min-width: 5.5rem;
+  text-align: center;
+  padding: 0.5rem 0.4rem;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+}
+.rt-step__g {
+  font-size: 1rem;
+}
+.rt-step__t {
+  font-weight: 700;
+  font-size: 0.8rem;
+  margin-top: 0.1rem;
+}
+.rt-step__s {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+.rt-step--ai {
+  border-color: var(--accent);
+}
+.rt-arr {
+  color: var(--text-muted);
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+.rt-cycle__back {
+  margin-top: 0.55rem;
+  text-align: center;
+  font-size: 0.74rem;
+  color: var(--text-dim);
+}
+.rt-cycle__back b {
+  color: var(--accent);
+}
+
+/* ═══════════════════════════════════════════
+   Tools triad
+   ═══════════════════════════════════════════ */
+.rt-tools {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+  margin: 0.3rem 0;
+}
+.rt-tool {
+  padding: 0.75rem 0.85rem;
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-top: 3px solid var(--s2);
+}
+.rt-tool__name {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+.rt-tool__intent {
+  font-size: 0.73rem;
+  color: var(--text-muted);
+  margin: 0.1rem 0 0.35rem;
+}
+.rt-tool__desc {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+/* ── shared: footnote rail of secondary facts ── */
+.rt-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.3rem;
+  margin-top: 0.4rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.76rem;
+  color: var(--text-dim);
+}
+.rt-foot b {
+  color: var(--text);
+}
+
+@media (max-width: 680px) {
+  .rt-loop {
+    grid-template-columns: 1fr;
+  }
+  .rt-tools {
+    grid-template-columns: 1fr;
+  }
+}

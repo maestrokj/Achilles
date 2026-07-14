@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Platform ACL</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Platform ACL <span class="iter v2">v2</span></h1>
+        <div class="header__sub">
+          admin panel · макеты · безопасность
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Экран рендерится в контентной области каркаса">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--keep" href="../../shared-ui/_wireframes/loading-states.html#keep-previous" title="Смена страницы или фильтра — прежние строки остаются (keep-previous)">
+              <span class="in-load__icon"></span>загрузка
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">Правила, сужающие видимость данных поверх ACL источников.</p>
+
+      <!-- ═══ Макет ═══ -->
+      <div class="section" id="platform-acl">
+        <div class="section__title">
+          Правила ограничений
+          <a href="../../auth-security/_workzone/authorization.html#data-acl" class="xref-badge">→ Auth &amp; Security</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">platform acl</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/acl
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/acl · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-row wf-spread">
+                  <span class="wf-title">Платформенные ограничения</span>
+                  <button class="wf-btn wf-btn--primary">
+
+                    Добавить правило
+                    <span class="wf-annot wf-annot--on-accent">1</span></button>
+                </div>
+                <div class="wf-input wf-input--sm">
+                  <span class="wf-input__icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                  </span>
+                  Поиск по области — источник или контейнер
+                </div>
+                <div class="wf-filters">
+                  <span class="wf-filter">Источник <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Статус <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-annot">2</span>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr><th>Область</th><th>Доступ</th><th>Статус</th><th></th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Slack — все каналы</td>
+                      <td>роли <span class="wf-chip">Owner</span> <span class="wf-chip">Admin</span> <span class="wf-annot">3</span></td>
+                      <td><span class="wf-chip wf-chip--ok">активно</span></td>
+                      <td><a class="wf-a">Изменить</a> <span class="wf-sep">·</span> <span class="wf-guarded"
+                          ><a class="wf-a wf-a--danger">Удалить</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                        ></span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Confluence — пространство HR</td>
+                      <td>группа <span class="wf-chip">HR</span></td>
+                      <td><span class="wf-chip wf-chip--ok">активно</span></td>
+                      <td><a class="wf-a">Изменить</a> <span class="wf-sep">·</span> <span class="wf-guarded"
+                          ><a class="wf-a wf-a--danger">Удалить</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                        ></span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">фильтр · источник</div>
+              <div class="wf-pop">
+                <span class="wf-filter" tabindex="0">Источник <span class="wf-filter__caret">▾</span></span>
+                <div class="wf-menu">
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> Slack</span>
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> Confluence</span>
+                  <span class="wf-opt"><span class="wf-opt__box"></span> Jira</span>
+                  <span class="wf-opt"><span class="wf-opt__box"></span> GitLab</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-backdrop">
+            <div class="wf-gallery">
+              <div class="wf-frame">
+                <div class="wf-stage__caption">панель «правило доступа»</div>
+                <div class="wf-screen wf-screen--modal">
+                  <div class="wf-body">
+                    <div class="wf-stack">
+                      <span class="wf-title">Правило доступа</span>
+                      <div class="wf-row">
+                        <div class="wf-field">
+                          <span class="wf-label">Источник</span>
+                          <div class="wf-input">
+                            Confluence
+                            <span class="wf-input__action">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                            </span>
+                          </div>
+                        </div>
+                        <div class="wf-field">
+                          <span class="wf-label">Контейнер</span>
+                          <div class="wf-input">
+                            пространство HR
+                            <span class="wf-input__action">
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Кому видно <span class="wf-annot">4</span></span>
+                        <div class="wf-input wf-input--focus">
+                          <span class="wf-chip">HR</span>
+                          <span class="wf-input__action">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                          </span>
+                        </div>
+                        <span class="wf-hint">Роль платформы или группа из источника</span>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Статус</span>
+                        <div class="wf-row">
+                          <span class="wf-toggle wf-toggle--on"></span> Активно
+                        </div>
+                      </div>
+                      <button class="wf-btn wf-btn--primary wf-btn--block">
+                        Сохранить правило
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">кому видно · роли и группы</div>
+              <div class="wf-pop">
+                <div class="wf-input wf-input--sm" tabindex="0">
+                  Добавить роль или группу ▾
+                </div>
+                <div class="wf-menu">
+                  <span class="wf-label">Роли платформы</span>
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> Owner</span>
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> Admin</span>
+                  <span class="wf-opt"><span class="wf-opt__box"></span> Member</span>
+                  <hr class="wf-menu__sep" />
+                  <span class="wf-label">Группы из источника</span>
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> HR · Confluence</span>
+                  <span class="wf-opt"><span class="wf-opt__box"></span> Eng · Slack</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              «Добавить правило» и «Изменить» открывают одну боковую панель — область, кому видно, статус.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Поиск по области и фасеты Источник · Статус —
+              <a href="../_workzone/list-controls.html#facets" class="xref-page">единое для всех списков</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Правило адресует источник или контейнер и сужает круг, которому данные видны.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Субъект — платформенная роль (Owner / Admin / Member) или группа, унаследованная из источника.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

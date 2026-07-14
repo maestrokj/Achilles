@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — AI Foundation</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../shared.css" />
+    <link rel="stylesheet" href="../module.css" />
+    <link rel="stylesheet" href="ai-foundation.css" />
+    <script src="../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../../architecture-scheme.html">← К схеме</a>
+        <h1 class="header__title">AI Foundation</h1>
+        <div class="header__sub">сквозной слой · реестр AI-ресурсов платформы</div>
+      </div>
+
+      <!-- ═══ Описание ═══ Сквозной реестр AI-ресурсов: провайдеры, модели,
+           инструменты, системный prompt — и управление ими (назначения,
+           списки, расходы). Потребители читают отсюда; своего фронтенда нет —
+           экраны в Admin, бюджеты — колонки platform_settings. -->
+      <div class="desc">
+        <p>
+          Единый <strong>реестр AI-ресурсов платформы</strong>: провайдеры и их
+          модели, каталог инструментов и системный prompt нейросетей — плюс
+          управление ими: назначение моделей системным функциям, списки моделей
+          чата и агентов, агрегат расходов. ORM-модели живут в общем ядре
+          (<code>core</code>), Admin даёт к ним CRUD и экраны, а потребители —
+          Harvester, Knowledge Store, Query Engine, Agent Engine — читают
+          назначения отсюда, без циклов между модулями.
+        </p>
+      </div>
+
+      <!-- ═══ Архитектура ═══ Реестр-пульт: ряд подключений (провайдеры-слоты
+           со статус-точкой) питает каталог моделей; ниже три приборных блока —
+           назначения функций · списки chat/agent · датчик расходов — и два
+           модуля-тумблера (tools · prompt_settings). Строка-статус озвучивает
+           суть: реестр хранит, рантаймы исполняют (Embeddings runtime · KS;
+           Tool-calling harness · QE↔AE), потребители читают. Стили — af-* в
+           ai-foundation.css. -->
+      <div class="section" id="registry">
+        <h2 class="section__title">Архитектура</h2>
+
+        <div class="af-console">
+          <!-- Ряд подключений — провайдеры-слоты -->
+          <div class="af-bus">
+            <div class="af-bus__cap">
+              <span class="af-bus__lbl">Подключения</span>
+              <span class="af-bus__tbl">ai_providers</span>
+              <span class="af-bus__note">ключ at-rest · статус соединения</span>
+            </div>
+            <div class="af-slots">
+              <div class="af-slot">
+                <div class="af-slot__hd">
+                  <span class="af-dot af-dot--on"></span>
+                  <span class="af-slot__name">Platform</span>
+                </div>
+                <div class="af-slot__meta">встроенный</div>
+              </div>
+              <div class="af-slot">
+                <div class="af-slot__hd">
+                  <span class="af-dot af-dot--on"></span>
+                  <span class="af-slot__name">OpenAI</span>
+                </div>
+                <div class="af-slot__meta">key ••••</div>
+              </div>
+              <div class="af-slot">
+                <div class="af-slot__hd">
+                  <span class="af-dot af-dot--warn"></span>
+                  <span class="af-slot__name">Anthropic</span>
+                </div>
+                <div class="af-slot__meta">key ••••</div>
+              </div>
+              <div class="af-slot">
+                <div class="af-slot__hd">
+                  <span class="af-dot af-dot--off"></span>
+                  <span class="af-slot__name">+ слот</span>
+                </div>
+                <div class="af-slot__meta">свободно</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="af-feed">провайдеры дают модели <b>──▶</b></div>
+
+          <!-- Каталог моделей -->
+          <div class="af-catalog">
+            <div class="af-panel__cap" style="margin-bottom: 0.5rem">
+              <span class="af-panel__label">Каталог моделей</span>
+              <span class="af-panel__tbl">ai_models</span>
+            </div>
+            <div class="af-grid">
+              <div class="af-cell af-cell--chat"><b>gpt-4o</b>chat</div>
+              <div class="af-cell af-cell--chat"><b>gpt-4o-mini</b>chat</div>
+              <div class="af-cell af-cell--chat"><b>claude</b>chat</div>
+              <div class="af-cell af-cell--chat"><b>o-series</b>chat</div>
+              <div class="af-cell af-cell--emb"><b>BGE-M3</b>embed</div>
+              <div class="af-cell af-cell--emb"><b>Qwen3-0.6B</b>embed</div>
+            </div>
+            <div class="af-legend">
+              <span><i class="af-key af-key--chat"></i> chat</span>
+              <span><i class="af-key af-key--emb"></i> embedding</span>
+            </div>
+          </div>
+
+          <!-- Три приборных блока: назначения · списки · расходы -->
+          <div class="af-gauges">
+            <div class="af-panel">
+              <div class="af-panel__cap">
+                <span class="af-panel__label">Назначения</span>
+                <span class="af-panel__tbl">model_assignments</span>
+              </div>
+              <div class="af-assign">
+                <div class="af-asg">
+                  <span class="af-asg__fn">embedding</span>
+                  <span class="af-asg__wire"></span>
+                  <span class="af-asg__mdl"><span class="af-dot af-dot--on"></span>BGE-M3</span>
+                </div>
+                <div class="af-asg">
+                  <span class="af-asg__fn">RAG</span>
+                  <span class="af-asg__wire"></span>
+                  <span class="af-asg__mdl"><span class="af-dot af-dot--on"></span>gpt-4o</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="af-panel">
+              <div class="af-panel__cap">
+                <span class="af-panel__label">Списки</span>
+                <span class="af-panel__tbl">chat · agent</span>
+              </div>
+              <div class="af-lists">
+                <div>
+                  <div class="af-list__hd">chat_models</div>
+                  <div class="af-pills">
+                    <span class="af-pill af-pill--def">gpt-4o</span>
+                    <span class="af-pill">claude</span>
+                  </div>
+                </div>
+                <div>
+                  <div class="af-list__hd">agent_models</div>
+                  <div class="af-pills">
+                    <span class="af-pill af-pill--def">claude</span>
+                    <span class="af-pill">o-series</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="af-panel">
+              <div class="af-panel__cap">
+                <span class="af-panel__label">Расходы</span>
+                <span class="af-panel__tbl">model_usage</span>
+              </div>
+              <div class="af-cost">
+                <div class="af-cost__row">
+                  <span>токены / день</span>
+                  <span class="af-cost__num">1.2M</span>
+                </div>
+                <div class="af-bar"><div class="af-bar__fill" style="width: 64%"></div></div>
+                <div class="af-cost__row">
+                  <span class="af-cost__cap">cost · бюджет в <a class="xref-module" href="../admin-panel/_workzone/data-model.html#singleton">platform_settings</a></span>
+                  <span class="af-cost__num">$38</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Два модуля-тумблера: tools · prompt_settings -->
+          <div class="af-mods">
+            <div class="af-mod">
+              <span class="af-mod__name">tools</span>
+              <div class="af-mod__role">каталог инструментов · открытый реестр типов</div>
+              <div class="af-toggles">
+                <div class="af-tg af-tg--on">
+                  <span class="af-tg__sw"></span>
+                  <span class="af-tg__lbl"><b>chat</b> · доступно в диалоге</span>
+                </div>
+                <div class="af-tg af-tg--on">
+                  <span class="af-tg__sw"></span>
+                  <span class="af-tg__lbl"><b>agents</b> · доступно агентам</span>
+                </div>
+              </div>
+            </div>
+            <div class="af-mod">
+              <span class="af-mod__name">prompt_settings</span>
+              <div class="af-mod__role">системный prompt · слойная композиция</div>
+              <div class="af-layers">
+                <span class="af-lyr af-lyr--gov">safety</span>
+                <span class="af-lyr af-lyr--gov">org</span>
+                <span class="af-lyr">eng</span>
+                <span class="af-lyr">runtime</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Строка-статус: реестр хранит, рантаймы исполняют -->
+          <div class="af-status">
+            реестр <b>хранит</b>
+            <span class="af-status__sep">·</span>
+            исполняют рантаймы
+            <a class="xref-module" href="../knowledge-store/_workzone/embedding-runtime.html#scaling">Embeddings runtime</a>
+            <span class="af-status__sep">·</span>
+            <a class="xref-module" href="../agent-engine/_workzone/harness.html#primitive">Tool-calling harness</a>
+            <span class="af-status__sep">·</span>
+            читают
+            <span class="af-status__cons">Harvester · Knowledge Store · Query Engine · Agent Engine</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ API ═══ Полные пути контракта модуля под версией. -->
+      <section class="section" id="api">
+        <div class="section__title">API</div>
+        <ul class="api-list">
+          <li><span class="api-list__m">GET · POST</span><span class="api-list__p">/api/v1/admin/ai/providers</span></li>
+          <li><span class="api-list__m">GET · PATCH · DELETE</span><span class="api-list__p">/api/v1/admin/ai/providers/{id}</span></li>
+          <li><span class="api-list__m">GET · POST</span><span class="api-list__p">/api/v1/admin/ai/models</span></li>
+          <li><span class="api-list__m">PATCH · DELETE</span><span class="api-list__p">/api/v1/admin/ai/models/{id}</span></li>
+          <li><span class="api-list__m">GET</span><span class="api-list__p">/api/v1/admin/ai/providers/{id}/discovery</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/admin/ai/providers/{id}/check</span></li>
+          <li><span class="api-list__m">GET · PATCH</span><span class="api-list__p">/api/v1/admin/ai/assignments</span></li>
+          <li><span class="api-list__m">GET · POST</span><span class="api-list__p">/api/v1/admin/ai/tools</span></li>
+          <li><span class="api-list__m">PATCH · DELETE</span><span class="api-list__p">/api/v1/admin/ai/tools/{id}</span></li>
+          <li><span class="api-list__m">POST</span><span class="api-list__p">/api/v1/admin/ai/tools/{id}/check</span></li>
+        </ul>
+      </section>
+
+      <!-- ═══ Workzone ═══ Три страницы: дом данных AI-домена, каталог
+           инструментов и тексты системного prompt. -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Workzone</span>
+          <span class="workzone-title">Проектирование</span>
+        </div>
+        <p class="workzone-hint">
+          Детальные решения по проектированию модуля.
+        </p>
+
+        <div class="wz-nav">
+          <a class="wz-link" href="_workzone/data-model.html">
+            <span>Модель данных</span>
+          </a>
+          <a class="wz-link" href="_workzone/cost-accounting.html">
+            <span>Учёт расходов</span>
+          </a>
+          <a class="wz-link" href="_workzone/tool-catalog.html">
+            <span>Каталог инструментов</span>
+          </a>
+          <a class="wz-link" href="_workzone/prompt-library.html">
+            <span>Тексты prompt</span>
+          </a>
+          <a class="wz-link" href="_workzone/tests.html">
+            <span>Тест-кейсы</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ═══ Макеты (surface'ы) ═══ Своего фронтенда у модуля нет — реестром
+           управляют экраны Admin Panel (прецедент: Notifications). Указатель. -->
+      <hr class="workzone-divider" />
+      <div class="workzone">
+        <div class="workzone-header">
+          <span class="workzone-badge">Макеты</span>
+          <span class="workzone-title">Surface'ы</span>
+        </div>
+        <p class="workzone-hint">
+          Своего фронтенда у модуля нет: реестром управляют экраны Admin Panel —
+          <a href="../admin-panel/_wireframes/ai-models.html" class="xref-badge">→ AI-модели</a>
+          (провайдеры · модели · назначения),
+          <a href="../admin-panel/_wireframes/usage.html" class="xref-badge">→ Расходы AI</a>
+          (расход по людям и моделям, лимиты),
+          <a href="../admin-panel/_wireframes/ai-behavior.html" class="xref-badge">→ Промпт AI</a>
+          (системный prompt) и
+          <a href="../admin-panel/_wireframes/tools.html" class="xref-badge">→ Инструменты AI</a>
+          (каталог и допуск).
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

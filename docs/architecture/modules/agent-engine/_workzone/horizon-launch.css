@@ -1,0 +1,129 @@
+/* Agent Engine — horizon-launch.html signature diagram: the autonomy lifecycle.
+   Three beats of a richer-than-v1 run — Wakes (event/cron triggers) ▸ Spends
+   (a money budget with an alert threshold and a kill switch) ▸ Reports (finish
+   notification + result delivered to chat). The middle beat carries a grey money
+   meter that deliberately echoes governance's token meter (.gv-meter), one beat
+   removed: same instrument, rendered in the deferred grey ground.
+   Loaded by horizon-launch.html on top of module.css + horizon.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+.hzl-flow {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+/* A beat — a workzone-style block (paper, hairline, grey left rail, shadow). */
+.hzl-beat {
+  flex: 1 1 0;
+  min-width: 11rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.85rem 0.95rem;
+  background: var(--surface);
+  border: 1.5px solid var(--hz-line);
+  border-left: 3px solid var(--hz-dim);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow);
+}
+.hzl-beat__cap {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--hz-dim);
+}
+.hzl-beat__name {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+.hzl-beat__name .hzl-g {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+/* A single line item inside a beat (a trigger kind, a delivery target). */
+.hzl-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.79rem;
+  line-height: 1.4;
+  color: var(--hz-ink);
+}
+.hzl-item__g {
+  font-size: 0.95rem;
+  line-height: 1;
+  flex: none;
+}
+
+.hzl-arr {
+  align-self: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--hz-dim);
+}
+
+/* ── Money meter — echoes .gv-meter, one beat removed: grey fills, a single
+   warm spark at the alert threshold, a dashed kill ceiling. ── */
+.hzl-meter {
+  position: relative;
+  display: flex;
+  height: 1.5rem;
+  margin-top: 0.1rem;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1.5px solid var(--hz-line);
+}
+.hzl-meter__used {
+  flex: 0 0 60%;
+  background: var(--hz-panel-2);
+}
+.hzl-meter__free {
+  flex: 1 1 auto;
+  background: var(--surface);
+}
+/* Alert threshold — the one lit mark: "you're nearing the cap". */
+.hzl-meter__alert {
+  position: absolute;
+  top: -0.18rem;
+  bottom: -0.18rem;
+  left: 60%;
+  border-left: 2px solid var(--hz-spark);
+}
+/* Kill ceiling — dashed grey: hard stop, instant. */
+.hzl-meter__kill {
+  position: absolute;
+  top: -0.18rem;
+  bottom: -0.18rem;
+  left: 88%;
+  border-left: 2px dashed var(--hz-dim);
+}
+.hzl-meter-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.8rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--hz-dim);
+}
+.hzl-meter-legend b {
+  color: var(--hz-spark);
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .hzl-flow {
+    flex-direction: column;
+  }
+  .hzl-arr {
+    transform: rotate(90deg);
+  }
+}

@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Auth: Status Screen</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Auth / Security</a>
+        <h1 class="header__title">Status Screen</h1>
+        <div class="header__sub">auth / security · макеты · публичные</div>
+      </div>
+
+      <p class="desc">Общий экран-результат для тупиковых состояний auth: ссылка недействительна, просрочена или уже использована.</p>
+
+      <!-- ═══ Макет ═══ Каталог вариантов одного шаблона. -->
+      <div class="section">
+        <div class="section__title">Макет · каталог вариантов</div>
+        <div class="wf-stage">
+          <div class="wf-gallery">
+            <!-- ── Вариант: setup-done (info) ─────────────────────────── -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">setup-done · info</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/setup
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/setup · in-place</span>
+                      </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                      <h2 class="wf-title">
+                        Платформа уже настроена <span class="wf-annot">1</span></h2>
+                    </div>
+
+                    <div class="wf-alert wf-row">
+
+                      Первичная настройка уже выполнена: аккаунт владельца создан. Этот экран открывается только при первом запуске.
+                      <span class="wf-annot">2</span></div>
+
+                    <p class="wf-subtitle wf-center">
+
+                      Войдите под своей учётной записью, чтобы продолжить.
+                      <span class="wf-annot">3</span></p>
+
+                    <a class="wf-btn wf-btn--primary wf-btn--block" href="login.html">
+
+                      Перейти ко входу
+                      <span class="wf-annot wf-annot--on-accent">4</span></a>
+                  </div>
+                </div>
+              </div>
+              </div>
+
+            <!-- ── Вариант: invite-invalid (error) ────────────────────── -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">invite-invalid · error</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/invite/9c2f4e…7a
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/invite/&lt;token&gt; · in-place</span>
+                      </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                      <h2 class="wf-title">Приглашение недействительно</h2>
+                    </div>
+
+                    <div class="wf-alert wf-alert--error">
+                      Приглашение устарело или уже использовано. Ссылки действуют
+                      48 часов и срабатывают один раз — попросите администратора
+                      выслать новое.
+                    </div>
+
+                    <p class="wf-subtitle wf-center">
+                      Новое приглашение отправит Owner или Admin вашей команды.
+                    </p>
+
+                    <div class="wf-center">
+                      <a class="wf-a" href="login.html">← Вернуться ко входу</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              </div>
+
+            <!-- ── Вариант: reset-expired (error) ─────────────────────── -->
+            <div class="wf-frame">
+              <div class="wf-stage__caption">reset-expired · error</div>
+              <div class="wf-screen wf-screen--narrow">
+                <div class="wf-chrome">
+                  <div class="wf-chrome__dots">
+                    <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+                  </div>
+                  <div class="wf-chrome__url" tabindex="0">
+                    achilles.local/reset-password/a8f3c9…2b
+                    <span class="wf-urltip">
+                      <span class="wf-urltip__route">/reset-password/&lt;token&gt; · in-place</span>
+                      </span>
+                  </div>
+                </div>
+                <div class="wf-body">
+                  <div class="wf-stack">
+                    <div class="wf-center wf-stack wf-stack--tight">
+                      <div class="wf-brand"><span class="wf-brand__mark">A</span> Achilles</div>
+                      <h2 class="wf-title">Ссылка недействительна</h2>
+                    </div>
+
+                    <div class="wf-alert wf-alert--error">
+                      Ссылка для сброса устарела или уже использована. Запросите
+                      новую — старая больше не работает.
+                    </div>
+
+                    <p class="wf-subtitle wf-center">
+                      Ссылки действуют 1 час и срабатывают один раз.
+                    </p>
+
+                    <a class="wf-btn wf-btn--primary wf-btn--block" href="../_features/password-recovery/forgot-password.html">
+                      Запросить новую ссылку
+                    </a>
+
+                    <div class="wf-center">
+                      <a class="wf-a" href="login.html">← Вернуться ко входу</a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              <strong>Заголовок</strong> — суть состояния одной строкой.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              <strong>Сообщение</strong> — что произошло и что делать; тон задаёт <code>info</code> · <code>--error</code> · <code>--ok</code>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              <strong>Подпись</strong> — уточнение или кто
+              поможет (опционально).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              <strong>Действия</strong> — primary-CTA (опционально) + выход.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

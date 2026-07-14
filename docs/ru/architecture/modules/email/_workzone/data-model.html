@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Email: Модель данных</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="data-model.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Email</a>
+        <h1 class="header__title">Модель данных</h1>
+        <div class="header__sub">email · workzone</div>
+      </div>
+
+      <p class="desc">
+        Транспорт хранит ровно одно: настройки SMTP. Singleton
+        <code>smtp_settings</code> в общем ядре, пароль — шифротекстом,
+        готовность к отправке — предикатом на модели. Сервис, режимы и ошибки
+        доставки — <a href="delivery.html" class="xref-page">в доставке</a>.
+      </p>
+
+      <div class="stk-stack">
+        <!-- ── L1 · Конфигурация транспорта ── ДОМ SMTP-домена: singleton,
+             поля, шифрование пароля, опциональность + предикат живучести.
+             Email — функциональный владелец; экран редактирования в Admin. -->
+        <div class="stk-layer stk-layer--config" id="data-model">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">1</span>
+            <span class="stk-layer__name">Конфигурация транспорта</span>
+            <span class="stk-layer__role"
+              >Singleton. Одна строка на инстанс, секрет at-rest.</span
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="dm-tbl">
+              <div class="dm-tbl__head">
+                <span class="dm-tbl__name">smtp_settings</span>
+                <span class="dm-tbl__sub">настройки SMTP</span>
+                <div class="dm-badges">
+                  <span class="dm-badge dm-badge--flag">singleton · CHECK (id = 1)</span>
+                </div>
+              </div>
+              <table class="dm-fields">
+                <tbody>
+                  <tr class="is-pk">
+                    <td class="dm-f">id</td>
+                    <td class="dm-t">BigInteger</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--pk">PK</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (id = 1)">CHECK</span>
+                    </td>
+                    <td class="dm-note">всегда <code>1</code> · singleton</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">host</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">адрес сервера · <code>NULL</code> пока не настроен</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">port</td>
+                    <td class="dm-t">Integer</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">порт · <code>NULL</code> пока не настроен</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">security</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT 'starttls'">DEFAULT</span
+                      ><span class="dm-c dm-c--chk" title="CHECK (none | starttls | ssl_tls)">CHECK</span>
+                    </td>
+                    <td class="dm-note">
+                      none · starttls · ssl_tls · DEFAULT <code>'starttls'</code>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">username</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">логин SMTP-аккаунта</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">password_enc</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">шифротекст AES-256-GCM · → шифрование</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">from_address</td>
+                    <td class="dm-t">Text</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">RFC 5322 · display-name + адрес отправителя</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">is_enabled</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--nn">NOT NULL</span
+                      ><span class="dm-c dm-c--def" title="DEFAULT false">DEFAULT</span>
+                    </td>
+                    <td class="dm-note">мастер-выключатель · DEFAULT <code>false</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">last_test_ok</td>
+                    <td class="dm-t">Boolean</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">
+                      итог «Проверить соединение» · <code>NULL</code> = не проверяли
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">last_test_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--null">NULL</span>
+                    </td>
+                    <td class="dm-note">когда проверяли · <code>NULL</code> = не проверяли</td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">created_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>server_default=now()</code></td>
+                  </tr>
+                  <tr>
+                    <td class="dm-f">updated_at</td>
+                    <td class="dm-t">DateTime(tz)</td>
+                    <td class="dm-cons">
+                      <span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span>
+                    </td>
+                    <td class="dm-note"><code>now()</code> + trigger</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="ownership">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Singleton в core, отдельный от platform_settings</span
+                >
+                <a class="xref-badge" href="../../admin-panel/_workzone/data-model.html#data-model"
+                  >→ platform_settings</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Своя таблица, не колонки в <code>platform_settings</code>: секрет
+                и runtime-состояние (<code>last_test_*</code>) не раздувают общие
+                настройки. ORM-модель — в <code>core/models.py</code> (общее ядро,
+                как <code>PlatformSettings</code>): её читают и Email, и
+                потребители (инвайт, сброс), без циклов между модулями. Поведением
+                владеет Email; экран редактирования и кнопка проверки —
+                <a href="../../admin-panel/_wireframes/platform-settings.html#smtp" class="xref-module">Admin Panel</a>.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="smtp-encryption">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Пароль — шифрование at-rest</span
+                >
+                <a class="xref-badge" href="../../auth-security/_workzone/protection.html#crypto-core"
+                  >→ Крипто-ядро</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                <code>password_enc</code> хранится шифротекстом, не открытым
+                паролём. Хешировать нельзя — для логина на сервер нужен исходный
+                пароль, значит обратимое <code>AES-256-GCM</code>. Шифр и работа
+                с ключом — крипто-ядро Auth&nbsp;/&nbsp;Security,
+                Email — его потребитель, своего механизма не заводит. Расшифровка
+                только в момент <code>send</code>; наружу (API, экспорт) пароль не
+                уходит — UI получает лишь флаг «задан / не задан». Секрет —
+                <b>сервисный</b>: app-пароль или API-ключ провайдера для системного
+                ящика (<code>no-reply@…</code>), а не личный логин; на экране поле
+                так и подписано — «Пароль или API-ключ», с подсказкой про App
+                Password для Gmail&nbsp;/&nbsp;Office&nbsp;365.
+              </div>
+            </div>
+
+            <div class="stk-dec stk-dec--full" id="availability">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t">Опциональность и живучесть — <code>is_available()</code></span
+                >
+                <a class="xref-badge xref-badge--page" href="delivery.html#errors"
+                  >→ Путь ошибок</a
+                >
+              </div>
+              <div class="stk-dec__d">
+                Готовность транспорта — один предикат, свойство модели:
+                <code>is_enabled</code> И заполнены обязательные поля (host, port,
+                from_address). Живёт на модели в core — Email и потребители
+                (инвайт, сброс) читают одну истину, не пересобирая её из колонок.
+                <code>last_test_ok</code> — <b>совет</b>, не ворота: «не
+                проверяли» ≠ «сломано», а настоящая страховка доставки — ретраи
+                очереди. Это best-effort пре-чек для UX (погасить кнопку, выбрать
+                фолбэк), не гарантия доставки: SMTP может лечь в момент отправки —
+                путь ошибок.
+                Как именно потребитель деградирует (инвайт заблокирован, сброс —
+                временным паролём) — решает он, описано у него.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mod-conn">
+          <div class="mod-conn__line"></div>
+          <div class="mod-conn__arrow"></div>
+        </div>
+
+        <!-- ── L2 · Миграция ── Создаёт таблицу и тем же шагом заселяет
+             singleton строкой «не настроен». -->
+        <div class="stk-layer stk-layer--migration" id="migration">
+          <div class="stk-layer__bar">
+            <span class="stk-layer__n">2</span>
+            <span class="stk-layer__name">Миграция</span>
+            <span class="stk-layer__role"
+              >Создаёт таблицу и сразу заселяет singleton.</span
+            >
+          </div>
+          <div class="stk-layer__body">
+            <div class="stk-dec stk-dec--full">
+              <div class="stk-dec__h">
+                <span class="stk-dec__t"><code>alembic/versions/NNN_core_smtp_settings.py</code></span
+                >
+              </div>
+              <div class="stk-dec__d">
+                Создаёт таблицу <code>smtp_settings</code> и тем же шагом заселяет
+                singleton строкой <code>is_enabled = false</code> с NULL-полями —
+                «не настроен» из коробки; приложение всегда <code>UPDATE</code>,
+                не <code>INSERT</code>. <code>downgrade()</code> —
+                <code>DROP TABLE</code>.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

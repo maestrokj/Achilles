@@ -1,0 +1,32 @@
+/* Admin Panel — stack & structure page deltas, on top of the swl-* kit.
+   Two lanes (Backend, Frontend) come from the kit; this sheet adds a
+   full-width cross-cutting lane (.swl-lane--full / --core) for routing, and
+   the extra spacing for stacked decision notes. The platform_settings data
+   model and its migration live on a separate page (_workzone/data-model.html).
+   Everything else (lanes, columns, groups, pills, notes) comes from
+   modules/swimlane.css.
+   Loaded by _workzone/stack.html on top of ../../swimlane.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Cross-cutting full-width lane (routing) ── */
+.swl-lane--core {
+  border-left: var(--border-w) solid var(--s2);
+}
+
+.swl-lane--core .swl-lane__tag {
+  background: var(--s2);
+}
+
+/* Full-width body — a single column (routing, data model, migration) */
+.swl-lane--full .swl-lane__body {
+  grid-template-columns: 1fr;
+}
+
+/* ── Stacked decision notes — spacing deltas ── */
+.swl-note:first-of-type {
+  margin-top: 0;
+}
+
+.swl-note + .swl-note {
+  margin-top: 0.5rem;
+}

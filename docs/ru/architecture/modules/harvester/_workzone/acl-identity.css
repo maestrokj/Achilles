@@ -1,0 +1,32 @@
+/* Harvester — acl-identity workzone diagram.
+   Rights + people + their sync: three bands in one stk-stack — the source ACL
+   carried verbatim, the people imported alongside content, and the ongoing
+   permission sync. Reuses the stk-* kit wholesale; the only bespoke addition is
+   the three per-band accent presets (one --stk-lc each), mirroring how
+   pipeline.css colours its Extract → Transform → Load bands.
+   Loaded by _workzone/acl-identity.html on top of ../../module.css
+   + ../../layered-stack.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* ── Band accent presets — acl (cool) → identity (accent) → sync (warm) ── */
+.acl-band--acl {
+  --stk-lc: var(--s2);
+  --stk-lc-pale: var(--s2-pale);
+}
+.acl-band--identity {
+  --stk-lc: var(--accent);
+  --stk-lc-pale: var(--tint-8);
+}
+.acl-band--sync {
+  --stk-lc: var(--s3);
+  --stk-lc-pale: var(--s3-pale);
+}
+
+/* Xref slot at the foot of a decision block — holds the cross-link to the
+   screen / module that owns the next step (Admin Panel · Knowledge Store). */
+.stk-dec__xref {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+}

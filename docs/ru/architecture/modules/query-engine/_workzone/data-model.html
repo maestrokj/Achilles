@@ -1,0 +1,585 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Query Engine: Модель данных</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="data-model.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Query Engine</a>
+        <h1 class="header__title">Модель данных</h1>
+        <div class="header__sub">query-engine · workzone</div>
+      </div>
+
+      <p class="desc">
+        Query Engine хранит <strong>диалог</strong> и
+        <strong>сигнал обращений</strong>, но не знания. Дом данных модуля — это
+        сессии и сообщения беседы (<a href="#conversations" class="xref-anchor"
+          >conversations</a
+        >, <a href="#messages" class="xref-anchor">messages</a>), снимок
+        retrieval на каждый grounding-ответ (<a href="#retrieval-trace" class="xref-anchor"
+          >retrieval_trace</a
+        >) и агрегат частоты обращений к сущностям
+        (<a href="#access-counter" class="xref-anchor">access_counter</a>).
+        Сами сущности живут в Knowledge Store: id, которые здесь записаны, —
+        <strong>ссылки</strong>, не копии. Где проходит эта линия — на
+        <a href="#boundary" class="xref-anchor">границе с Knowledge Store</a>.
+      </p>
+
+      <!-- ════════════════ CONVERSATIONS ════════════════ -->
+      <div class="section" id="conversations">
+        <div class="section__title">
+          Сессия диалога: <code>conversations</code>
+        </div>
+        <p class="desc">
+          Верхний уровень — сессия беседы пользователя на одном из surface'ов
+          (web · slack · telegram · mattermost · mcp · расширение). Сессия владеет ходом диалога: история
+          сообщений привязана к ней, и модель смотрит в её прошлые реплики, когда
+          формулирует запрос к поиску. Изменяемая строка — заголовок, выбранная
+          chat-модель и <code>updated_at</code> правятся по мере беседы.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--qe">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Сессия</span>
+              <span class="stk-layer__role">Беседа на одном surface — владеет проходом.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">conversations</span>
+                  <span class="dm-tbl__sub">сессии диалога</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → users</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">user_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → users, ON DELETE CASCADE">FK→users</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">владелец сессии · CASCADE · его identity — вход retrieval</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">surface</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (web | slack | telegram | mattermost | mcp | extension)">CHECK</span>
+                      </td>
+                      <td class="dm-note">откуда беседа · web · slack · telegram · mattermost · mcp · extension</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">title</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">заголовок · автогенерится из первого сообщения, правится</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">selected_model</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">липкий выбор chat-модели · валидируется по allow-list Admin · NULL = модель по умолчанию</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">meta</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">гибкие атрибуты сессии · контекст surface'а · у Slack — ключ треда <code>(team, channel, thread_ts)</code>, у Telegram — <code>chat_id</code>, у Mattermost — <code>(channel_id, root_id)</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · правка заголовка и нового сообщения</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Сессия едина для всех surface'ов</span>
+                </div>
+                <div class="stk-dec__d">
+                  Одна модель диалога на платформу: surface (web · slack ·
+                  telegram · mattermost · mcp · расширение) — лишь поле, а не отдельная таблица на каждый
+                  клиент. Тонкие клиенты пишут в общий контракт, поэтому история
+                  и перенос контекста ведут себя одинаково всюду. Беседа
+                  изменяема: <code>title</code> доводится, <code>updated_at</code>
+                  двигает каждое новое сообщение — отсюда оба timestamp и триггер
+                  <code>set_updated_at()</code>.
+                </div>
+              </div>
+
+              <div class="stk-dec stk-dec--full" id="sticky-model">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Выбор модели липкий — два слоя: беседа, затем человек</span>
+                </div>
+                <div class="stk-dec__d">
+                  Сотрудник выбирает chat-модель из
+                  <a href="../../admin-panel/_wireframes/ai-models.html#model-assignment" class="xref-module"
+                    >allow-list, который собирает Admin</a>; выбор
+                  <strong>прилипает</strong> к беседе — держится для следующих
+                  ответов и переживает перезагрузку, поэтому живёт строкой на
+                  сессии (<code>selected_model</code>), а не разовым выбором на
+                  клиенте. Это <strong>намерение</strong> «чем генерировать
+                  дальше», и его нельзя путать с <code>messages.model</code>: тот
+                  фиксирует <strong>факт</strong> «чем сгенерён конкретный ответ».
+                  Тот же выбор прилипает и к <strong>человеку</strong>
+                  (<a href="../../auth-security/_workzone/data-model.html#col-last_chat_model" class="xref-module"><code>users.last_chat_model</code></a>),
+                  заводя каждую <em>новую</em> беседу впереди дефолта админа — так
+                  вернувшийся сотрудник попадает на модель, что выбрал последней, а
+                  не на сброс. Резолв идёт от самого близкого к общему:
+                  <strong>выбор этого хода → <code>selected_model</code> беседы
+                  → <code>last_chat_model</code> человека → дефолт админа</strong>;
+                  устаревшее значение (выбыло из allow-list) тихо падает на
+                  следующий слой. Поэтому пустой <code>selected_model</code> — уже
+                  не «дефолт админа», а «наследует личный дефолт». Эта липкая пара
+                  принадлежит surface'ам, где <em>есть</em> пикер (Web); мессенджеры
+                  (Slack/Telegram/Mattermost) и машинные surface'ы не несут ни слоя
+                  и всегда идут на дефолте админа. Смена модели правит строку —
+                  отсюда движение <code>updated_at</code>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ MESSAGES ════════════════ -->
+      <div class="section" id="messages">
+        <div class="section__title">
+          Сообщение диалога: <code>messages</code>
+        </div>
+        <p class="desc">
+          Append-only лента сообщений сессии: запрос пользователя и ответ ассистента
+          приходят строками по порядку, прошлые не переписываются. На
+          assistant-сообщении фиксируется, какая chat-модель его сгенерировала и
+          сколько токенов потрачено (<code>tokens_used</code> — весь оборот реплики,
+          вход + выход; расход чата по людям), и сюда же копится <code>feedback</code> —
+          оценка ответа большим пальцем, сырьё для замера качества.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--qe">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Сообщение</span>
+              <span class="stk-layer__role">Реплика беседы — запрос или ответ.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">messages</span>
+                  <span class="dm-tbl__sub">сообщения диалога</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → conversations</span>
+                    <span class="dm-badge dm-badge--flag">append-only</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">conversation_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → conversations, ON DELETE CASCADE">FK→conversations</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">сессия · CASCADE · история по ней</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">role</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (user | assistant)">CHECK</span>
+                      </td>
+                      <td class="dm-note">user · assistant</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">content</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">текст реплики</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">model</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">чем сгенерён ответ · факт, не намерение (ср. <code>conversations.selected_model</code>) · только assistant</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">tokens_used</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--null">NULL</span></td>
+                      <td class="dm-note">токены реплики · весь оборот вход + выход (контекст RAG + ответ), не только выход · ставится при финализации · сырьё расхода чата по людям (<a href="../../admin-panel/_wireframes/usage.html" class="xref-module">Расходы AI</a>) · только assistant</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">feedback</td>
+                      <td class="dm-t">SmallInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--chk" title="CHECK (feedback IN (-1, 1))">CHECK</span>
+                      </td>
+                      <td class="dm-note">thumbs ±1 на assistant-сообщение · правится постфактум · сырьё оценки качества</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · только под правку <code>feedback</code></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Лента append-only, но <code>feedback</code> правится — отсюда оба timestamp</span>
+                </div>
+                <div class="stk-dec__d">
+                  Само сообщение иммутабельно: текст реплики и роль не переписываются —
+                  по правилу журнала хватило бы одного <code>created_at</code>.
+                  Но <code>feedback</code> — исключение: палец вверх/вниз
+                  пользователь ставит и <strong>меняет</strong> после того, как
+                  сообщение уже записано, а это in-place <code>UPDATE</code> строки.
+                  Раз строка получает <code>UPDATE</code> хотя бы по одному полю,
+                  по конвенции проекта ей нужны <strong>оба</strong> timestamp и
+                  триггер <code>set_updated_at()</code> — <code>updated_at</code>
+                  честно отмечает момент оценки. Тело сообщения при этом остаётся
+                  неизменным: ленту мы не редактируем, только аннотируем оценкой.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ RETRIEVAL TRACE ════════════════ -->
+      <div class="section" id="retrieval-trace">
+        <div class="section__title">
+          Снимок retrieval: <code>retrieval_trace</code>
+        </div>
+        <p class="desc">
+          На каждый <strong>grounding-ответ</strong> — когда модель позвала
+          поиск — иммутабельный снимок того, что вернул retrieval:
+          самостоятельный запрос, отданный инструменту, кандидаты с их скорами и
+          <strong>цитаты</strong>, реально попавшие в ответ. Цитата держит маркер
+          (<code>[1]</code>, <code>[2]</code>…), запись-источник и победивший
+          фрагмент-чанк — этого хватает, чтобы перерисовать историю с теми же
+          ссылками, не переспрашивая retrieval. Разговорный ответ снимка не
+          имеет — искать было нечего; снимок <strong>ровно один</strong> на
+          сообщение (<code>UNIQUE</code> на <code>message_id</code>), связь 0..1.
+          Снимок — ответная основа
+          <a href="retrieval.html#access-signal" class="xref-page">сигнала
+            обращений</a>: из <code>citations</code> копится частота в
+          <a href="#access-counter" class="xref-anchor">access_counter</a>.
+          Записывается один раз и не правится.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--qe">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Снимок</span>
+              <span class="stk-layer__role">Что нашёл retrieval на этот ответ.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">retrieval_trace</span>
+                  <span class="dm-tbl__sub">снимок retrieval на сообщение</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--fk">FK → messages</span>
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (message_id)</span>
+                    <span class="dm-badge dm-badge--flag">immutable</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr class="is-fk">
+                      <td class="dm-f">message_id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--fk" title="FK → messages, ON DELETE CASCADE">FK→messages</span
+                        ><span class="dm-c dm-c--idx">IDX</span>
+                      </td>
+                      <td class="dm-note">assistant-сообщение, к которому снимок · CASCADE · UNIQUE → ровно один снимок, вставка идемпотентна</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">search_query</td>
+                      <td class="dm-t">Text</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">самостоятельный запрос, отданный инструменту · вход в retrieval</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">candidates</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--ref" title="id сущностей KS — ссылки, не копии">REF</span>
+                      </td>
+                      <td class="dm-note">id сущностей KS + скоры · ССЫЛКИ в KS, не копии данных</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">citations</td>
+                      <td class="dm-t">JSONB</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--null">NULL</span
+                        ><span class="dm-c dm-c--ref" title="id сущностей и чанков KS — ссылки, не копии">REF</span>
+                      </td>
+                      <td class="dm-note">цитаты ответа · маркер → запись (<code>entity_id</code>) + победивший фрагмент (<code>chunk_id</code>) + скор, в порядке <code>[1][2]</code> · основа реплея и сигнала обращений</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> · только · снимок не правится</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Снимок пишется раз — отсюда только <code>created_at</code></span>
+                </div>
+                <div class="stk-dec__d">
+                  Trace — фотография момента retrieval: что переписали, что нашли,
+                  что взяли. После записи он не меняется — append-only журнал, по
+                  конвенции проекта ему хватает одного <code>created_at</code>,
+                  <code>updated_at</code> был бы бессмысленным. <code>candidates</code>
+                  и <code>citations</code> держат <strong>id сущностей и чанков
+                  Knowledge Store</strong>, не их тексты: тело знания живёт в KS,
+                  здесь — лишь ссылка на него и скор. Цитата фиксирует и запись, и
+                  победивший чанк именно затем, чтобы историю можно было
+                  перерисовать с теми же ссылками, не переспрашивая retrieval. Из
+                  <code>citations</code> retrieval катит частоту в
+                  <a href="#access-counter" class="xref-anchor">access_counter</a>
+                  (по их <code>entity_id</code>) — механику держит
+                  <a href="retrieval.html#access-signal" class="xref-page"
+                    >сигнал обращений</a
+                  >.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ ACCESS COUNTER ════════════════ -->
+      <div class="section" id="access-counter">
+        <div class="section__title">
+          Счётчик обращений: <code>access_counter</code>
+        </div>
+        <p class="desc">
+          Агрегат частоты обращений к сущностям: сколько раз сущность реально
+          вошла в ответ или по её цитате кликнули — и когда последний. Растёт
+          upsert'ом из двух источников:
+          <a href="#retrieval-trace" class="xref-anchor">citations</a>
+          (вошедшее в ответ) на каждом ходе и клик по цитате в выдаче; Knowledge
+          Store читает его JOIN'ом при пересчёте
+          <em>staleness</em> — спрос на сущность поднимает её приоритет доводки.
+          Изменяемый счётчик — отсюда оба timestamp.
+        </p>
+
+        <div class="stk-stack">
+          <div class="stk-layer stk-layer--signal">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">4</span>
+              <span class="stk-layer__name">Счётчик</span>
+              <span class="stk-layer__role">Частота обращений к сущности — сигнал в KS.</span>
+            </div>
+            <div class="stk-layer__body">
+              <div class="dm-tbl">
+                <div class="dm-tbl__head">
+                  <span class="dm-tbl__name">access_counter</span>
+                  <span class="dm-tbl__sub">агрегат обращений</span>
+                  <div class="dm-badges">
+                    <span class="dm-badge dm-badge--uniq">UNIQUE (entity_ref)</span>
+                    <span class="dm-badge dm-badge--flag">upsert · counter</span>
+                  </div>
+                </div>
+                <table class="dm-fields">
+                  <tbody>
+                    <tr class="is-pk">
+                      <td class="dm-f">id</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--pk">PK</span></td>
+                      <td class="dm-note">—</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">entity_ref</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--ref" title="id сущности KS — ссылка, не FK через границу модуля">REF</span>
+                      </td>
+                      <td class="dm-note">id сущности KS · ССЫЛКА, не FK через границу модуля · ключ upsert · индекс несёт <code>UNIQUE</code></td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">hits</td>
+                      <td class="dm-t">BigInteger</td>
+                      <td class="dm-cons">
+                        <span class="dm-c dm-c--nn">NOT NULL</span
+                        ><span class="dm-c dm-c--def" title="server_default=0">DEFAULT</span>
+                      </td>
+                      <td class="dm-note">вошла в ответ или клик по цитате · инкремент upsert'ом</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">last_accessed_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--nn">NOT NULL</span></td>
+                      <td class="dm-note">когда обратились последний раз · вход staleness</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">created_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> · первое обращение к сущности</td>
+                    </tr>
+                    <tr>
+                      <td class="dm-f">updated_at</td>
+                      <td class="dm-t">DateTime(tz)</td>
+                      <td class="dm-cons"><span class="dm-c dm-c--def" title="server_default=now() + trigger set_updated_at()">DEFAULT</span></td>
+                      <td class="dm-note"><code>now()</code> + trigger · каждый инкремент</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Счётчик-агрегат · upsert по сущности — отсюда оба timestamp</span>
+                </div>
+                <div class="stk-dec__d">
+                  Одна строка на сущность: повторное обращение делает upsert по
+                  <code>entity_ref</code> — <code>hits++</code> и
+                  <code>last_accessed_at = now()</code>. Это in-place
+                  <code>UPDATE</code> в чистом виде, поэтому строке нужны
+                  <strong>оба</strong> timestamp с триггером. Счётчик — агрегат
+                  спроса: ответную долю можно пересобрать из снимков
+                  <a href="#retrieval-trace" class="xref-anchor">retrieval_trace</a>
+                  (по <code>citations</code>), а клик по цитате приходит
+                  отдельным живым событием и в снимок не пишется — потому держим
+                  агрегат как источник истины, а не только кэш над лентой;
+                  staleness читает его JOIN'ом без скана. Механику —
+                  что считаем обращением и как сигнал течёт в KS — держит
+                  <a href="retrieval.html#access-signal" class="xref-page"
+                    >сигнал обращений</a
+                  >.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════════════ ГРАНИЦА С KNOWLEDGE STORE ════════════════ -->
+      <div class="section" id="boundary">
+        <div class="section__title">Граница с Knowledge Store: ссылки, не копии</div>
+        <p class="desc">
+          Query Engine не хранит знаний. Id сущностей и чанков в
+          <code>retrieval_trace</code> (<code>candidates</code>,
+          <code>citations</code>) и id сущностей в <code>access_counter</code>
+          (<code>entity_ref</code>) — это <strong>ссылки</strong> в
+          <a href="../../knowledge-store/_workzone/data-model.html" class="xref-module"
+            >модель данных Knowledge Store</a
+          >, а не копии тел сущностей. Тело знания, его текст и права — там;
+          здесь — диалог, что нашлось на сообщение, и спрос на сущность.
+        </p>
+
+        <div class="dm-border">
+          <div class="dm-border__col dm-border__col--here">
+            <div class="dm-border__head">
+              <span class="dm-border__who">Query Engine</span>
+              <span class="dm-border__act">ссылается</span>
+            </div>
+            <p class="dm-border__d">
+              Держит диалог (<code>conversations</code>, <code>messages</code>),
+              снимок retrieval на сообщение и счётчик обращений. Из найденного —
+              только <strong>id и скор</strong>: ссылка на запись и победивший
+              чанк KS, не их тело. Сигнал спроса (<code>access_counter</code>) KS читает
+              JOIN'ом при пересчёте staleness.
+            </p>
+          </div>
+          <div class="dm-border__seam">▸</div>
+          <div class="dm-border__col dm-border__col--there">
+            <div class="dm-border__head">
+              <span class="dm-border__who">Knowledge Store</span>
+              <span class="dm-border__act">хранит знание</span>
+            </div>
+            <p class="dm-border__d">
+              Source of truth сущностей: тело, фрагменты с векторами, граф,
+              права. По id из trace восстанавливает запись для цитирования.
+              Принимает сигнал обращений и поднимает по нему приоритет доводки —
+              знание остаётся целиком на стороне KS.
+            </p>
+          </div>
+        </div>
+
+        <p class="note">
+          Граница: «знание → Knowledge Store, диалог и сигнал обращений → Query
+          Engine». Цитирование тянет запись по <code>entity_id</code> из
+          <a href="../../knowledge-store/_workzone/data-model.html#entities" class="xref-module"
+            >entities</a
+          >, а фрагмент-доказательство по <code>chunk_id</code> — из
+          <a href="../../knowledge-store/_workzone/data-model.html#chunks" class="xref-module"
+            >chunks</a
+          >.
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,14 @@
+/* Agent Engine — stack & structure page deltas, on top of the swl-* kit.
+   Backend lane + a thin-client Frontend lane (module has no own UI). Fills the
+   kit's .swl-defer callout twice — the deferred external-orchestration decision
+   (n8n) and the shared tool-calling harness pointer — with no bespoke callout
+   CSS (the shape comes from modules/swimlane.css). The only local delta is a
+   gap above the second column head.
+   Loaded by _workzone/stack.html on top of ../../swimlane.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+/* Second column head (API routes follows the structure tree + its note) needs
+   a clear gap so it reads as a new block, not a continuation of the one above. */
+.swl-col__head:not(:first-child) {
+  margin-top: 1.5rem;
+}

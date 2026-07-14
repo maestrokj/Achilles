@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Harvester: ACL и личности</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../layered-stack.css" />
+    <link rel="stylesheet" href="acl-identity.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Harvester</a>
+        <h1 class="header__title">ACL и личности</h1>
+        <div class="header__sub">harvester · workzone</div>
+      </div>
+
+      <p class="desc">
+        Вместе с контентом Harvester забирает из источника два сопутствующих
+        набора данных — <a href="#acl" class="xref-anchor">права доступа</a> и
+        <a href="#identity" class="xref-anchor">личности людей</a> — и держит их
+        <a href="#permission-sync" class="xref-anchor">в актуальном состоянии</a>
+        наравне с самими сущностями. Harvester их <strong>производит</strong>;
+        модель таблиц, хранение и резолюцию держит
+        <a href="../../knowledge-store/_workzone/acl-identity.html#resolution" class="xref-module">Knowledge Store</a>.
+        Права сохраняются в оригинальных терминах
+        источника, без интерпретации; люди сводятся по <code>email</code>;
+        синхронизация прав — часть общих режимов синхронизации, отдельного
+        механизма под неё нет. Сам сбор и того, и другого идёт через коннектор —
+        механику выборки держит
+        <a href="sources.html#fetch" class="xref-page">sources</a>.
+      </p>
+
+      <div class="stk-stage stk-stage--solo">
+        <div class="stk-stack">
+          <!-- ════════ ACL ════════ -->
+          <div class="stk-layer acl-band--acl" id="acl">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">1</span>
+              <span class="stk-layer__name">Права доступа</span>
+              <span class="stk-layer__role"
+                >ACL источника переносится вместе с контентом.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">ACL в оригинальных терминах</span>
+                </div>
+                <div class="stk-dec__d">
+                  Harvester сохраняет права источника так, как их выдаёт сам
+                  источник: проект в Jira, пространство в Confluence, канал в
+                  Slack. Никакого маппинга на платформенные уровни доступа здесь
+                  нет — права забираются и сохраняются рядом с сущностью один к
+                  одному. Захват двусторонний: и тег группы на сущности (в каком
+                  проекте, пространстве, канале она лежит), и членство в группе —
+                  кто в неё входит; без обеих граней нельзя ответить, кому
+                  сущность доступна. Это сознательная граница: Harvester
+                  фиксирует, кому что было доступно <em>в источнике</em>, и не
+                  пытается решить, что это значит на платформе.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Интерпретация — не здесь</span>
+                </div>
+                <div class="stk-dec__d">
+                  Перевод оригинального ACL в платформенные уровни доступа —
+                  задача других слоёв; Harvester не решает, кому что
+                  <em>должно</em> быть видно на платформе. Контракт прост: права
+                  переносятся вместе с контентом и сохраняются неискажёнными.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Применение на выдаче — pre-filter</span>
+                </div>
+                <div class="stk-dec__d">
+                  Права применяются на запросе как pre-filter: кандидаты сужаются
+                  по доступу <em>до</em> ранжирования по близости — не
+                  «отранжировать и затем отбросить запретное» (так искажаются
+                  счётчики и пустеют страницы). Доступ резолвится джойном
+                  <code>пользователь → его личности → членства в группах
+                  источника → группа-ACL сущности</code>; фрагмент наследует ACL
+                  сущности, своего не имеет. ACL и членство лежат в реляционной
+                  базе рядом с векторами — поэтому отбор по правам идёт тем же
+                  запросом, что и поиск по смыслу. Само применение — за слоем
+                  выдачи.
+                </div>
+                <div class="stk-dec__xref">
+                  <a class="xref-badge"
+                    href="../../query-engine/_workzone/retrieval.html#identity"
+                    >→ Query Engine</a
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ IDENTITY ════════ -->
+          <div class="stk-layer acl-band--identity" id="identity">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">2</span>
+              <span class="stk-layer__name">Личности (identity)</span>
+              <span class="stk-layer__role"
+                >Тот же коннектор отдаёт и людей; свод по email.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Один API — и контент, и люди</span>
+                </div>
+                <div class="stk-dec__d">
+                  Пользователей отдаёт тот же API коннектора, что и контент,
+                  поэтому отдельного канала под людей не нужно. При подключении
+                  источника идёт полный импорт его пользователей; дальше
+                  incremental подхватывает новых по мере появления — теми же
+                  механизмами, что и сущности.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Свод по email · разбор несовпавших</span>
+                </div>
+                <div class="stk-dec__d">
+                  Люди из разных источников сводятся в одну личность по
+                  <code>email</code> — явному и надёжному ключу. Кого по
+                  <code>email</code> сопоставить не удалось, Harvester не
+                  угадывает: такие записи уходят на ручной разбор в Admin Panel,
+                  где их привязывают к существующей личности или заводят как
+                  новую. При upsert личности Harvester заодно ставит мост к
+                  платформенному аккаунту того же <code>email</code>, если такой
+                  уже есть (<code>identity.user_id</code>) — та же авто-связь по
+                  точному email; правило держит
+                  <a href="../../knowledge-store/_workzone/acl-identity.html#identity" class="xref-module"
+                    >Knowledge Store</a
+                  >.
+                </div>
+                <div class="stk-dec__xref">
+                  <a
+                    href="../../admin-panel/_wireframes/users.html#identity-mapping"
+                    class="xref-badge"
+                    >→ Admin Panel · Identity Mapping</a
+                  >
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Нечёткий свод — не здесь</span>
+                </div>
+                <div class="stk-dec__d">
+                  Свод вида «разные <code>email</code>, но тот же человек» —
+                  нечёткое сопоставление личностей между источниками — Harvester
+                  не делает. Это задача deep entity resolution в Knowledge Store,
+                  за пределами нашей границы; здесь мы сводим только по точному
+                  совпадению <code>email</code>.
+                </div>
+                <div class="stk-dec__xref">
+                  <a
+                    class="xref-badge"
+                    href="../../knowledge-store/_workzone/lifecycle.html#entity-resolution"
+                    >→ Knowledge Store</a
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mod-conn">
+            <div class="mod-conn__line"></div>
+            <div class="mod-conn__arrow"></div>
+          </div>
+
+          <!-- ════════ PERMISSION SYNC ════════ -->
+          <div class="stk-layer acl-band--sync" id="permission-sync">
+            <div class="stk-layer__bar">
+              <span class="stk-layer__n">3</span>
+              <span class="stk-layer__name">Синхронизация прав</span>
+              <span class="stk-layer__role"
+                >Часть общих режимов синхронизации, не отдельный механизм.</span
+              >
+            </div>
+            <div class="stk-layer__body">
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Права — на общих режимах синхронизации</span>
+                </div>
+                <div class="stk-dec__d">
+                  Права меняются — кого-то добавили в проект, кого-то убрали из
+                  канала — и эти изменения нужно отслеживать. Отдельного
+                  механизма для этого Harvester не вводит: синхронизация ACL
+                  выполняется в тех же режимах, что и синхронизация контента.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Incremental · reconciliation</span>
+                </div>
+                <div class="stk-dec__d">
+                  <a href="sync-modes.html#incremental" class="xref-page"
+                    >Incremental</a
+                  >
+                  обновляет ACL точечно — по webhook или polling, как и
+                  сущности.
+                  <a href="sync-modes.html#reconciliation" class="xref-page"
+                    >Reconciliation</a
+                  >
+                  делает полную сверку прав: выявляет то, что incremental упустил
+                  (пропущенные события, отзывы доступа), и приводит сохранённый
+                  ACL в соответствие с источником.
+                </div>
+              </div>
+              <div class="stk-dec stk-dec--full">
+                <div class="stk-dec__h">
+                  <span class="stk-dec__t">Отзыв вступает в силу с задержкой</span>
+                </div>
+                <div class="stk-dec__d">
+                  Сохранённый ACL eventually consistent: между изменением в
+                  источнике и его синхронизацией есть окно. Для <em>выдачи</em> доступа
+                  это безопасно — пока новое право ещё не синхронизировано, человек видит
+                  меньше, чем ему уже разрешено, не больше. Для <em>отзыва</em>
+                  окно означает обратное: отозванное остаётся видимым до
+                  ближайшего incremental,
+                  <a href="sync-modes.html#partial-resync" class="xref-page"
+                    >partial re-sync</a
+                  >
+                  или reconciliation — это принятый компромисс, а не недосмотр.
+                  Жёсткую гарантию «отозванное не утечёт в ответ» даёт не
+                  Harvester, а финальная проверка прав на самой выдаче — она
+                  находится за слоем запросов.
+                </div>
+                <div class="stk-dec__xref">
+                  <a class="xref-badge"
+                    href="../../query-engine/_workzone/retrieval.html#live-check"
+                    >→ Query Engine</a
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

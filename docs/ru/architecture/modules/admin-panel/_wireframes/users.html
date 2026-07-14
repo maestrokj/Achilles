@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Admin: Пользователи</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Three sheets: tokens · page chrome · wireframe kit -->
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../wireframe.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page">
+      <div class="header">
+        <a class="back" href="../index.html">← Admin Panel</a>
+        <h1 class="header__title">Пользователи</h1>
+        <div class="header__sub">
+          admin panel · макеты · управление
+          <div class="header__markers">
+            <a class="in-shell" href="layout.html" title="Экран рендерится в контентной области каркаса">
+              <span class="in-shell__frame"></span>shell
+            </a>
+            <a class="in-load in-load--keep" href="../../shared-ui/_wireframes/loading-states.html#keep-previous" title="Смена страницы или фильтра — прежние строки остаются (keep-previous)">
+              <span class="in-load__icon"></span>загрузка
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <p class="desc">Управление пользователями: список, приглашения и привязка к source-аккаунтам в трёх табах.</p>
+
+      <!-- ═══ Таб «Список» ═══ -->
+      <div class="section" id="users-tabs">
+        <div class="section__title">
+          Таб «Список»
+          <a href="../../auth-security/_workzone/authentication.html#user-lifecycle" class="xref-badge">→ Auth &amp; Security</a>
+          <a href="../../auth-security/_workzone/data-model.html#data-model" class="xref-badge">→ Auth &amp; Security</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">таб «список»</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-chrome">
+              <div class="wf-chrome__dots">
+                <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+              </div>
+              <div class="wf-chrome__url" tabindex="0">
+                achilles.local/admin/users
+                <span class="wf-urltip">
+                  <span class="wf-urltip__route">/admin/users · Owner / Admin</span>
+                </span>
+              </div>
+            </div>
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-row wf-spread">
+                  <span class="wf-title">Пользователи</span>
+                  <div class="wf-row">
+                    <button class="wf-btn">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+
+                      Экспорт <span class="wf-annot">1</span></button>
+                    <a class="wf-btn" href="../../auth-security/_features/user-onboarding/bulk-invite-upload.html">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+
+                      Импорт <span class="wf-annot">2</span></a>
+                    <button class="wf-btn wf-btn--primary">
+
+                      Пригласить
+                      <span class="wf-annot wf-annot--on-accent">3</span></button>
+                  </div>
+                </div>
+                <div class="wf-tabs">
+                  <span class="wf-tab wf-tab--active">Список</span>
+                  <span class="wf-tab">Приглашения</span>
+                  <span class="wf-tab">Identity Mapping</span>
+                </div>
+                <div class="wf-input wf-input--sm">
+                  <span class="wf-input__icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                  </span>
+                  Поиск по имени и email
+                </div>
+                <div class="wf-filters">
+                  <span class="wf-filter">Роль <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Статус <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Последний вход <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-annot">4</span>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr>
+                      <th>Имя</th><th>Email</th><th>Роль</th><th>Статус</th><th>Последний вход</th><th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr class="wf-rowlink">
+                      <td><a href="user-card.html" class="wf-userlink">Анна Орлова</a> <span class="wf-annot">5</span></td>
+                      <td>anna@company.com</td>
+                      <td><span class="wf-chip">Owner</span></td>
+                      <td><span class="wf-chip wf-chip--ok">active</span></td>
+                      <td>5 мин назад</td>
+                      <td>⋯</td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><a href="user-card.html" class="wf-userlink">Дмитрий Соколов</a></td>
+                      <td>dmitry@company.com</td>
+                      <td><span class="wf-chip">Admin</span> <span class="wf-annot">6</span></td>
+                      <td><span class="wf-chip wf-chip--ok">active</span></td>
+                      <td>вчера</td>
+                      <td>⋯</td>
+                    </tr>
+                    <tr class="wf-rowlink">
+                      <td><a href="user-card.html" class="wf-userlink">Игорь Лебедев</a></td>
+                      <td>igor@company.com</td>
+                      <td><span class="wf-chip">Member</span></td>
+                      <td><span class="wf-chip wf-chip--ok">active</span></td>
+                      <td>3 дня назад</td>
+                      <td>⋯ <span class="wf-annot">7</span></td>
+                    </tr>
+                    <tr class="wf-rowlink wf-table__row--muted">
+                      <td><a href="user-card.html" class="wf-userlink">Мария Ким</a></td>
+                      <td>maria@company.com</td>
+                      <td><span class="wf-chip">Member</span></td>
+                      <td><span class="wf-chip">deactivated</span> <span class="wf-annot">8</span></td>
+                      <td>месяц назад</td>
+                      <td>⋯</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="wf-pager">
+                  <span class="wf-pager__count">1–50 из 128</span>
+                  <div class="wf-pager__pages">
+                    <span class="wf-page wf-page--nav wf-page--off">‹</span>
+                    <span class="wf-page wf-page--active">1</span>
+                    <span class="wf-page">2</span>
+                    <span class="wf-page">3</span>
+                    <span class="wf-page wf-page--nav">›</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame">
+              <div class="wf-stage__caption">⋯ меню действий · Owner</div>
+              <div class="wf-pop">
+                <button class="wf-btn">⋯</button>
+                <div class="wf-menu">
+                  <span class="wf-menu__item">Сменить роль</span>
+                  <span class="wf-menu__item"
+                    ><span class="wf-guarded"
+                      >Деактивировать<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a></span
+                  ></span>
+                  <span class="wf-menu__item">Сбросить пароль</span>
+                  <hr class="wf-menu__sep" />
+                  <span class="wf-menu__item wf-menu__item--danger"
+                    ><span class="wf-guarded"
+                      >Удалить<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#type-to-confirm" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a></span
+                  ></span>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">экспорт</div>
+              <div class="wf-pop">
+                <button class="wf-btn">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>
+                  Экспорт
+                </button>
+                <div class="wf-menu">
+                  <span class="wf-menu__item">CSV <span class="wf-menu__why">для таблиц</span></span>
+                  <span class="wf-menu__item">JSON <span class="wf-menu__why">для интеграций</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="wf-frame">
+              <div class="wf-stage__caption">фильтр · роль</div>
+              <div class="wf-pop">
+                <span class="wf-filter" tabindex="0">Роль <span class="wf-filter__caret">▾</span></span>
+                <div class="wf-menu">
+                  <span class="wf-opt"><span class="wf-opt__box"></span> Owner</span>
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> Admin</span>
+                  <span class="wf-opt"><span class="wf-opt__box wf-opt__box--on"></span> Member</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              «Экспорт» выгружает текущий список (с учётом поиска и фильтров) в CSV или JSON; секреты в выгрузку не попадают.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              «Импорт» — массовый онбординг: загрузка списка email пачкой, под тем же SMTP-гейтом, что «Пригласить». Мастер —
+              <a href="../../auth-security/_features/user-onboarding/index.html" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              «Пригласить» открывает модал (email + роль). Пока SMTP не настроен, кнопка неактивна — причина в подсказке при наведении (<a href="#invites-no-smtp" class="xref-anchor">smtp не настроен</a>).
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Фильтры — фасеты Роль · Статус · Последний вход. Поведение поиска и фильтров —
+              <a href="../_workzone/list-controls.html#facets" class="xref-page">единое для всех списков</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">5</span>
+              Клик по строке открывает
+              <a href="user-card.html" class="xref-page">карточку пользователя</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">6</span>
+              Роли: Owner управляет всеми, Admin — только Member. Единственного Owner нельзя понизить или деактивировать (guard). Правила —
+              <a href="../../auth-security/_workzone/authentication.html#user-lifecycle" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">7</span>
+              ⋯ открывает меню строки: сменить роль · деактивировать / реактивировать · сбросить пароль · удалить. Состав зависит от прав: «Удалить» (с подтверждением) видит только Owner; self-деактивация запрещена.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">8</span>
+              Deactivated: вход закрыт, сессии и API-ключи при реактивации не восстанавливаются —
+              <a href="../../auth-security/_workzone/authentication.html#user-lifecycle" class="xref-module">Auth &amp; Security</a>.
+            </li>
+            <li class="wf-legend__item wf-legend__item--note">
+              «Последний вход» — схема в
+              <a href="../../auth-security/_workzone/data-model.html#data-model" class="xref-module">модели данных</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Приглашения ═══ -->
+      <div class="section" id="invites">
+        <div class="section__title">
+          Приглашения
+          <a href="../../auth-security/_workzone/authentication.html#user-lifecycle" class="xref-badge">→ Auth &amp; Security</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">таб «приглашения»</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-tabs">
+                  <span class="wf-tab">Список</span>
+                  <span class="wf-tab wf-tab--active">Приглашения</span>
+                  <span class="wf-tab">Identity Mapping</span>
+                </div>
+                <div class="wf-input wf-input--sm">
+                  <span class="wf-input__icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                  </span>
+                  Поиск по email
+                </div>
+                <div class="wf-filters">
+                  <span class="wf-filter">Статус <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Роль <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-annot">1</span>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr><th>Email</th><th>Роль</th><th>Статус</th><th></th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>colleague@company.com</td>
+                      <td><span class="wf-chip">Member</span></td>
+                      <td><span class="wf-chip wf-chip--warn">pending</span></td>
+                      <td><a class="wf-a">Переотправить</a> <span class="wf-sep">·</span> <span class="wf-guarded"
+                          ><a class="wf-a wf-a--danger">Отозвать</a><a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a
+                        ></span>
+                        <span class="wf-annot">2</span></td>
+                    </tr>
+                    <tr>
+                      <td>igor@company.com</td>
+                      <td><span class="wf-chip">Member</span></td>
+                      <td><span class="wf-chip wf-chip--ok">accepted</span></td>
+                      <td></td>
+                    </tr>
+                    <tr class="wf-table__row--muted">
+                      <td>old@company.com</td>
+                      <td><span class="wf-chip">Admin</span></td>
+                      <td><span class="wf-chip wf-chip--err">expired</span></td>
+                      <td><a class="wf-a">Переотправить</a></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-backdrop">
+            <div class="wf-gallery">
+              <div class="wf-frame">
+                <div class="wf-stage__caption">модал «пригласить»</div>
+                <div class="wf-screen wf-screen--modal">
+                  <div class="wf-body">
+                    <div class="wf-stack">
+                      <span class="wf-title">Пригласить пользователя</span>
+                      <div class="wf-field">
+                        <span class="wf-label">Email</span>
+                        <div class="wf-input wf-input--focus">colleague@company.com</div>
+                      </div>
+                      <div class="wf-field">
+                        <span class="wf-label">Роль</span>
+                        <div class="wf-input">
+                          Member
+                          <span class="wf-input__action">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9" /></svg>
+                          </span>
+                        </div>
+                      </div>
+                      <button class="wf-btn wf-btn--primary wf-btn--block">
+
+                        Отправить приглашение
+                        <span class="wf-annot wf-annot--on-accent">3</span></button>
+                      <span class="wf-hint">Ссылка-приглашение действует 48 часов</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-gallery">
+            <div class="wf-frame wf-frame--center" id="invites-no-smtp">
+              <div class="wf-stage__caption">smtp не настроен · подсказка</div>
+              <div class="wf-pop">
+                <button class="wf-btn wf-btn--primary wf-btn--disabled">
+                  Пригласить <span class="wf-annot">4</span>
+                </button>
+                <div class="wf-tip">
+                  Приглашения отправляются по email. Настройте почтовый сервер,
+                  чтобы приглашать пользователей.
+                  <a class="wf-a" href="platform-settings.html#smtp">Настроить SMTP →</a>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Поиск по email и фильтры (Статус · Роль), статусы pending · accepted · expired. Поведение —
+              <a href="../_workzone/list-controls.html#search" class="xref-page">единое для всех списков</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              «Переотправить» выпускает новую ссылку, «Отозвать» гасит текущую. По просроченной ссылке приглашённый видит
+              <a href="../../auth-security/_wireframes/status-screen.html" class="xref-module">status screen</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Приглашение уходит письмом; принимающая сторона — экран
+              <a href="../../auth-security/_wireframes/invite-accept.html" class="xref-module">Invite Accept</a>. Механика токена — <a href="../../auth-security/_workzone/authentication.html#user-lifecycle" class="xref-module">invite flow</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">4</span>
+              Письмо — единственный канал приглашения: пока SMTP не настроен, «Пригласить» и «Переотправить» неактивны, причина — в подсказке при наведении. Ссылка ведёт в
+              <a href="platform-settings.html#smtp" class="xref-page">настройки</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- ═══ Таб «Identity Mapping» ═══ -->
+      <div class="section" id="identity-mapping">
+        <div class="section__title">
+          Таб «Identity Mapping»
+          <a href="../../knowledge-store/_workzone/acl-identity.html#source-principal" class="xref-badge">→ Knowledge Store</a>
+          <a href="../../harvester/_workzone/acl-identity.html#identity" class="xref-badge">→ Harvester</a>
+          <a href="../../auth-security/_workzone/authorization.html#identity" class="xref-badge">→ Auth &amp; Security</a>
+        </div>
+        <div class="wf-stage">
+          <div class="wf-stage__caption">таб «identity mapping»</div>
+          <div class="wf-screen wf-screen--wide">
+            <div class="wf-body">
+              <div class="wf-stack">
+                <div class="wf-tabs">
+                  <span class="wf-tab">Список</span>
+                  <span class="wf-tab">Приглашения</span>
+                  <span class="wf-tab wf-tab--active">Identity Mapping</span>
+                </div>
+                <div class="wf-input wf-input--sm">
+                  <span class="wf-input__icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                  </span>
+                  Поиск по пользователю
+                </div>
+                <div class="wf-filters">
+                  <span class="wf-filter">Источник <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-filter">Статус связи <span class="wf-filter__caret">▾</span></span>
+                  <span class="wf-annot">1</span>
+                </div>
+                <table class="wf-table">
+                  <thead>
+                    <tr><th>Пользователь</th><th>Jira</th><th>Slack</th><th>Confluence</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><span class="wf-idcell"><a href="user-card.html" class="wf-userlink">Анна Орлова</a><span class="wf-idcell__email">anna@company.com</span></span></td>
+                      <td><a class="wf-chip wf-chip--ok"
+                          >anna@… <span class="wf-chip__edit"
+                            ><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                        ></a></td>
+                      <td><a class="wf-chip wf-chip--ok"
+                          >@anna <span class="wf-chip__edit"
+                            ><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                        ></a></td>
+                      <td><a class="wf-chip wf-chip--ok"
+                          >anna@… <span class="wf-chip__edit"
+                            ><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                        ></a></td>
+                    </tr>
+                    <tr>
+                      <td><span class="wf-idcell"><a href="user-card.html" class="wf-userlink">Дмитрий Соколов</a><span class="wf-idcell__email">dmitry@company.com</span></span></td>
+                      <td><a class="wf-chip wf-chip--ok"
+                          >dmitry@… <span class="wf-chip__edit"
+                            ><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                        ></a> <span class="wf-annot">2</span></td>
+                      <td><a class="wf-chip"
+                          >@dmitri <span class="wf-chip__pin" title="Закреплено вручную"
+                            ><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="17" x2="12" y2="22" /><path d="M5 17h14l-1.5-3V7a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7Z" /></svg></span> <span class="wf-chip__edit"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+                        ></a></td>
+                      <td><span class="wf-chip wf-chip--warn">unmatched</span> <a class="wf-a">Привязать</a> <span class="wf-annot">3</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="wf-frame">
+            <div class="wf-stage__caption">поповер привязки · slack</div>
+            <div class="wf-pop">
+              <a class="wf-chip" tabindex="0"
+                >@dmitri <span class="wf-chip__edit"
+                  ><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg></span
+              ></a>
+              <div class="wf-menu">
+                <div class="wf-input wf-input--sm">
+                  <span class="wf-input__icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                  </span>
+                  Аккаунт Slack
+                </div>
+                <span class="wf-menu__item">@dmitri <span class="wf-menu__why">текущая · вручную</span></span>
+                <span class="wf-menu__item">@dmitry.s <span class="wf-menu__why">похоже</span></span>
+                <span class="wf-menu__item">@d.sokolov</span>
+                <hr class="wf-menu__sep" />
+                <span class="wf-menu__item wf-menu__item--danger"
+                  ><span class="wf-guarded"
+                    >Отвязать<a class="wf-guard" href="../../shared-ui/_wireframes/confirm-dialog.html#reversible" title="Действие защищено подтверждением"><span class="wf-guard__icon"></span></a></span
+                ></span>
+              </div>
+            </div>
+          </div>
+
+          <ol class="wf-legend">
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">1</span>
+              Поиск по пользователю и фильтры (Источник · Статус связи: matched · unmatched · manual). Поведение —
+              <a href="../_workzone/list-controls.html#search" class="xref-page">единое для всех списков</a>.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">2</span>
+              Любая ячейка кликабельна (карандаш на hover) — клик открывает поповер привязки, так что админ переопределяет и уверенный авто-матч. Связь, выбранную вручную, авто-матч больше не перезаписывает (метка-пин); «Отвязать» возвращает ячейку в unmatched.
+            </li>
+            <li class="wf-legend__item">
+              <span class="wf-annot wf-legend__num">3</span>
+              Авто-матч консервативен: что не сошлось по точному email — остаётся unmatched. «Привязать» открывает поиск по аккаунтам источника для ручной связки; нечёткое сведение — v2. Алгоритм в
+              <a href="../../auth-security/_workzone/authorization.html#identity" class="xref-module">Auth &amp; Security</a>.
+            </li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

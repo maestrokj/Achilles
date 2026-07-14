@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — HTTP API: Contract checks</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../tests.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← HTTP API</a>
+        <h1 class="header__title">Contract checks</h1>
+        <div class="header__sub">http api · conformance</div>
+      </div>
+
+      <!-- ── Overview band: why the suite lives at the layer ── -->
+      <div class="test-overview">
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10" /><circle cx="12" cy="12" r="6" /><circle cx="12" cy="12" r="2" /></svg> Decisions taken</div>
+          <div class="decision-box">
+            <strong>Cross-cutting invariants are owned by the layer, not the module</strong>
+            Error shape, UTC serialization, pagination, rate limit — identical
+            across all routers. One parameterized suite runs against the ASGI app
+            and sweeps the registered routes automatically: a new endpoint inherits
+            the checks without carrying its own copy. Modules test the semantics of
+            their own resources (who owns it, which code for which violation) —
+            these shared facets aren't duplicated there.
+          </div>
+          <div class="decision-box">
+            <strong>The rules live on the <a href="../index.html#conventions" class="xref-page">HTTP&nbsp;API map</a></strong>
+            Here — their enforcement by test. A rule states "how it should be," the
+            case below verifies it holds, on every router of both tiers (<code>/api/v1</code>,
+            <code>/public/v1</code>).
+          </div>
+        </div>
+
+        <div class="test-panel">
+          <div class="test-panel__title"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" /><path d="M12 9v6" /><path d="M16 15v6" /><path d="M16 3v6" /><path d="M3 15h18" /><path d="M3 9h18" /><path d="M8 15v6" /><path d="M8 3v6" /></svg> Stack and coverage</div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Tooling</span>
+            <span>httpx · ASGI transport — the real app without a network</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Route sweep</span>
+            <span>introspection of <code>app.routes</code> — every registered route in the parameters</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Schema</span>
+            <span>Schemathesis over OpenAPI — catches 500s and schema mismatches; the envelope and semantics are covered by the cases below</span>
+          </div>
+          <div class="test-stack-row">
+            <span class="test-stack-row__lbl">Markers</span>
+            <span><code>@pytest.mark.api</code> — the contract layer over the app</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ API P1 ═══ Cross-cutting contract: what OpenAPI doesn't specify but
+           what must hold uniformly on every router. -->
+      <div class="test-sec" id="conformance">
+        <span class="test-sec__badge test-sec__badge--p1">API · P1</span>
+        <span class="test-sec__title">Cross-cutting invariants — one contract for all routers</span>
+        <span class="test-sec__meta">httpx · ASGI · parameterized over <code>app.routes</code></span>
+      </div>
+      <div class="test-grid">
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg></span><span class="name">test_api_conformance.py</span></div>
+            <div class="test-card__sub">Error · codes · time · version · identity · rate limit</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge xref-badge--page" href="../index.html#conventions">→ Common rules</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">single error shape</span><span class="test-case__e">any failure → RFC 9457 <code>application/problem+json</code>: <code>{type, title, status, detail, code, request_id}</code> (+ <code>errors[]</code> on 422); the client reads the machine <code>code</code>, doesn't parse text; one shape across all routers</span></div>
+              <div class="test-case"><span class="test-case__k">business violation → 4xx, not 500</span><span class="test-case__e">a rule violation returns its own code (<code>401 · 403 · 404 · 409 · 422 · 429</code>), doesn't fall through to <code>500</code>; <code>500</code> is only an unplanned failure</span></div>
+              <div class="test-case"><span class="test-case__k">code vocabulary mapped</span><span class="test-case__e"><code>401</code> no identity · <code>403</code> no permission · <code>404</code> no resource (private masked as 404, not 403) · <code>409</code> conflict/lock · <code>422</code> body validation · <code>429</code> rate limit</span></div>
+              <div class="test-case"><span class="test-case__k">time — UTC ISO-8601</span><span class="test-case__e">every <code>datetime</code> in a response serializes as <code>…Z</code> (UTC); neither naive nor local zone; the timezone is applied by the frontend</span></div>
+              <div class="test-case"><span class="test-case__k">version in the path</span><span class="test-case__e"><code>/api/v1</code> · <code>/public/v1</code>; no version → <code>404</code>; a breaking change → a new version, the old one still lives</span></div>
+              <div class="test-case"><span class="test-case__k">identity before the handler</span><span class="test-case__e">a JWT or an <code>ach_…</code> key resolves to <code>user_id</code> → role → ACL before entering the handler; no identity → <code>401</code> uniformly on protected routes</span></div>
+              <div class="test-case"><span class="test-case__k">rate limit → 429 + Retry-After</span><span class="test-case__e">exceeding the window → <code>429</code> with a <code>Retry-After</code> header; the body is the same envelope (<a href="../../cache-workers/_workzone/rate-limit.html#primitive" class="xref-module">rate-limit</a>)</span></div>
+              <div class="test-case"><span class="test-case__k">no bare routes</span><span class="test-case__e">parameterized over <code>app.routes</code>: every protected route answers <code>401</code> without identity — a new endpoint won't slip past the check</span></div>
+            </div>
+          </details>
+        </div>
+
+        <div class="test-card test-card--p1">
+          <div class="test-card__head">
+            <div class="test-card__file"><span class="ico"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9" /><path d="M14 17H5" /><circle cx="17" cy="17" r="3" /><circle cx="7" cy="7" r="3" /></svg></span><span class="name">test_api_pagination.py</span></div>
+            <div class="test-card__sub">One list contract for list GETs</div>
+            <div class="test-card__badges">
+              <span class="test-tag">API</span><span class="test-tag test-tag--p1">P1</span>
+              <a class="xref-badge" href="../../admin-panel/_workzone/list-controls.html#pagination">→ list-controls</a>
+            </div>
+          </div>
+          <details class="test-cases"><summary>Cases</summary>
+            <div class="test-case-list">
+              <div class="test-case"><span class="test-case__k">single page envelope</span><span class="test-case__e">a list <code>GET</code> returns the same shape (items + cursor/total), one across all routers, not a per-endpoint schema</span></div>
+              <div class="test-case"><span class="test-case__k">page-size cap</span><span class="test-case__e">a request over the server cap is trimmed to the limit, not an unbounded result; a default size when the parameter is absent</span></div>
+              <div class="test-case"><span class="test-case__k">stable ordering</span><span class="test-case__e">sorting is deterministic on equal keys (tie-break by <code>id</code>) — pages don't overlap or drop rows</span></div>
+              <div class="test-case"><span class="test-case__k">cursor survives insertion</span><span class="test-case__e">cursor pagination doesn't shift the window when new rows are inserted between page requests</span></div>
+              <div class="test-case"><span class="test-case__k">bad parameter → 422</span><span class="test-case__e">a negative/non-numeric <code>limit</code>, a corrupt cursor → <code>422</code> (envelope), not <code>500</code> and not a silent default</span></div>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

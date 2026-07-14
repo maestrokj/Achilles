@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Achilles — Email: Стек и структура</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../../../../shared.css" />
+    <link rel="stylesheet" href="../../module.css" />
+    <link rel="stylesheet" href="../../swimlane.css" />
+    <link rel="stylesheet" href="../email.css" />
+    <script src="../../../doc-nav.js" defer></script>
+  </head>
+  <body>
+    <div class="page page--wide">
+      <div class="header">
+        <a class="back" href="../index.html">← Email</a>
+        <h1 class="header__title">Стек и структура</h1>
+        <div class="header__sub">email · workzone</div>
+      </div>
+
+      <!-- ════════════ ДОРОЖКА: BACKEND ════════════ Backend-only модуль —
+           одна дорожка, две колонки: стек по назначению | дерево пакета. -->
+      <div class="swl-lane swl-lane--be">
+        <div class="swl-lane__rail">
+          <span class="swl-lane__tag">Backend</span>
+        </div>
+        <div class="swl-lane__body">
+          <!-- col: stack -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /><path d="M12 22V12" /><polyline points="3.29 7 12 12 20.71 7" /><path d="m7.5 4.27 9 5.15" /></svg> стек — библиотеки</div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7" /><rect x="2" y="4" width="20" height="16" rx="2" /></svg> Доставка</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="async SMTP — отправка писем">aiosmtplib</span>
+                <span class="swl-pill" data-tip="очередь задач поверх Redis — фоновая отправка с ретраями">SAQ</span>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.659 22H18a2 2 0 0 0 2-2V8a2.4 2.4 0 0 0-.706-1.706l-3.588-3.588A2.4 2.4 0 0 0 14 2H6a2 2 0 0 0-2 2v9.34" /><path d="M14 2v5a1 1 0 0 0 1 1h5" /><path d="M10.378 12.622a1 1 0 0 1 3 3.003L8.36 20.637a2 2 0 0 1-.854.506l-2.867.837a.5.5 0 0 1-.62-.62l.836-2.869a2 2 0 0 1 .506-.853z" /></svg> Шаблоны</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="рендеринг HTML-шаблонов писем">Jinja2</span>
+                <span class="swl-pill swl-pill--std" data-tip="stdlib — сборка MIME, multipart/alternative">email · MIME</span>
+              </div>
+            </div>
+
+            <div class="swl-grp">
+              <div class="swl-grp__head">
+                <span class="swl-grp__label"><svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" /><circle cx="12" cy="12" r="3" /></svg> Конфиг и крипто</span>
+              </div>
+              <div class="swl-grp__pills">
+                <span class="swl-pill" data-tip="параметры воркера: темп, пачка, таймаут — из env">Pydantic Settings</span>
+                <span class="swl-pill" data-tip="расшифровка пароля SMTP — переиспользуем крипто-ядро Auth">AES-256-GCM · Auth</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- col: structure -->
+          <div class="swl-col">
+            <div class="mod-label swl-col__head">
+              <svg class="doc-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1h-2.5a1 1 0 0 1-.8-.4l-.9-1.2A1 1 0 0 0 15 3h-2a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M20 21a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2.9a1 1 0 0 1-.88-.55l-.42-.85a1 1 0 0 0-.92-.6H13a1 1 0 0 0-1 1v5a1 1 0 0 0 1 1Z" /><path d="M3 5a2 2 0 0 0 2 2h3" /><path d="M3 3v13a2 2 0 0 0 2 2h3" /></svg> структура — файлы · <code>achilles/email/</code>
+            </div>
+<pre class="file-tree">
+email/             <span class="dim">модуль = отдельный пакет (как любой модуль)</span>
+├── *.py           <span class="dim">обычные файлы модуля</span>
+├── templates/     <span class="dim">письма: invite · reset · test · notification (RU/EN)</span>
+└── jobs.py        <span class="dim">SAQ-задачи фоновой отправки (как в других модулях)</span>
+</pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Локальная разработка ═══ Ловушка писем в dev. -->
+      <div class="section">
+        <h2 class="section__title">Локальная разработка</h2>
+        <div class="decision-box">
+          <strong>Mailpit</strong> — локальный SMTP-сервер-ловушка в
+          <code>docker-compose</code> dev: ловит все письма, показывает их в
+          веб-UI и наружу не отправляет. Берём его, а не MailHog (тот давно
+          заброшен; Mailpit — его живой преемник с тем же назначением).
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

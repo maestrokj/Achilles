@@ -1,0 +1,108 @@
+/* Agent Engine — horizon-swarm.html signature diagram: fan-out / fan-in.
+   A coordinator splits one question across a swarm of sub-agents working in
+   parallel, then converges their findings into one synthesis — reach past a
+   single context window.
+   Loaded by horizon-swarm.html on top of module.css + horizon.css.
+   Placement convention: docs/architecture/README.md §Styling. */
+
+.hzw-fan {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+/* Coordinator (in) and synthesis (out) — the two lit ends, like the poster spine. */
+.hzw-end {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.2rem;
+  padding: 0.85rem 0.9rem;
+  min-width: 7.5rem;
+  background: var(--paper);
+  border: 2px solid var(--hz-spark);
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 4px var(--hz-spark-pale);
+}
+.hzw-end__g {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+.hzw-end__t {
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+.hzw-end__s {
+  font-size: 0.68rem;
+  line-height: 1.3;
+  color: var(--hz-ink);
+}
+
+/* Fan glyph — a bracket reading "one ▸ many" / "many ▸ one". */
+.hzw-fanout,
+.hzw-fanin {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--hz-dim);
+  line-height: 1;
+}
+.hzw-fanin {
+  transform: scaleX(-1);
+}
+
+/* The swarm — a column of parallel sub-agents. */
+.hzw-swarm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.hzw-agent {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.7rem;
+  background: var(--surface);
+  border: 1.5px solid var(--hz-line);
+  border-left: 3px solid var(--hz-dim);
+  border-radius: var(--radius-md);
+  box-shadow: var(--card-shadow);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--hz-ink);
+  white-space: nowrap;
+}
+.hzw-agent__g {
+  font-size: 0.9rem;
+}
+.hzw-agent__slice {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--hz-dim);
+  margin-left: auto;
+  padding-left: 0.6rem;
+}
+
+/* Extra capabilities the swarm unlocks — a quiet chip row under the stage. */
+.hzw-extras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 720px) {
+  .hzw-fan {
+    flex-direction: column;
+  }
+  .hzw-fanout,
+  .hzw-fanin {
+    transform: rotate(90deg);
+  }
+  .hzw-fanin {
+    transform: rotate(90deg) scaleX(-1);
+  }
+}
